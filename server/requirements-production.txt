@@ -1,0 +1,2 @@
+cryptography==50.0.2
+gunicorn==26.2.0

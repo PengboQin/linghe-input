@@ -1,0 +1,20 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput" android:versionCode="32" android:versionName="0.1.31">
+ <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36"/>
+ <uses-permission android:name="android.permission.INTERNET"/>
+ <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+ <uses-permission android:name="android.permission.CAMERA"/>
+ <uses-feature android:name="android.hardware.camera" android:required="false"/>
+ <application android:name=".LingheApplication" android:label="灵鹤输入法" android:theme="@style/AppTheme" android:icon="@drawable/app_icon" android:allowBackup="false" android:supportsRtl="true" android:extractNativeLibs="true">
+  <activity android:name=".ActivityArchiveActivity" android:exported="false"/>
+  <service android:name=".ActivityArchiveJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+  <activity android:name=".DeviceSyncActivity" android:exported="false"/>
+  <activity android:name=".QRScanActivity" android:exported="false"/>
+  <service android:name=".SyncJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+  <activity android:name=".PersonalLexiconActivity" android:exported="false"/>
+  <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+  <service android:name=".LingheInputService" android:label="灵鹤输入法" android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">
+   <intent-filter><action android:name="android.view.InputMethod"/></intent-filter>
+   <meta-data android:name="android.view.im" android:resource="@xml/input_method"/>
+  </service>
+ </application>
+</manifest>

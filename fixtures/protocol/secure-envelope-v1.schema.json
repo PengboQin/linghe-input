@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:private-input:secure-envelope:v1",
+  "title": "Private Input secure message v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "group", "sender", "event", "epoch", "sequence", "domain", "issuedAt", "expiresAt", "ciphertext", "signature"],
+  "properties": {
+    "version": {"const": 1},
+    "group": {"type": "string", "format": "uuid"},
+    "sender": {"type": "string", "format": "uuid"},
+    "event": {"type": "string", "format": "uuid"},
+    "epoch": {"type": "integer", "minimum": 1, "maximum": 18446744073709551615},
+    "sequence": {"type": "integer", "minimum": 1, "maximum": 18446744073709551615},
+    "domain": {"enum": [1, 2]},
+    "issuedAt": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615},
+    "expiresAt": {"type": "integer", "minimum": 1, "maximum": 18446744073709551615},
+    "ciphertext": {"type": "string", "contentEncoding": "base64", "minLength": 24, "maxLength": 2796224},
+    "signature": {"type": "string", "contentEncoding": "base64", "pattern": "^[A-Za-z0-9+/]{86}==$"}
+  },
+  "allOf": [{"if": {"properties": {"domain": {"const": 2}}}, "then": {"properties": {"ciphertext": {"maxLength": 87404}}}}],
+  "$comment": "Schema validation does not verify signatures, decoded bytes, expiry duration or trust. Swift decoder currently tolerates extra JSON fields; emitted messages contain only this schema's fields. Relay strict parsing remains to implement."
+}

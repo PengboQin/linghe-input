@@ -1,0 +1,2959 @@
+{
+  "schema_version": 1,
+  "suite_id": "linghe-input-quality-20261020",
+  "privacy": "Public synthetic requirements only. No real archived text, device/group/event IDs, addresses, or private paths.",
+  "capture_rules": {
+    "not_run_candidates": null,
+    "observed_empty_candidates": [],
+    "rank_origin": 1,
+    "capture_layers": [
+      "engine",
+      "composition",
+      "system_keyboard",
+      "learning_sync"
+    ],
+    "state_isolation": "one synthetic fixture per case; no cross-case training",
+    "all_product_cases_initially": "not_run"
+  },
+  "legacy_sources": [
+    {
+      "path": "fixtures/pinyin-ranking-selected-prefix-20261018.json",
+      "reuse": "long sentence active tail and staged selection; old verification text historical only"
+    },
+    {
+      "path": "fixtures/mixed-input-lim-20261018.json",
+      "reuse": "controlled Chinese/English contrast; no full-order invention"
+    },
+    {
+      "path": "fixtures/pinyin-ranking-din-20261018.json",
+      "reuse": "historical only: later user request filters missing-glyph characters; do not inherit required rare glyph or inferred learning rank1"
+    }
+  ],
+  "cases": [
+    {
+      "id": "douxian-common-before-rare",
+      "suite_class": "regression",
+      "input": {
+        "raw": "douxian",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [
+        {
+          "text": "都先",
+          "class": "daily expression",
+          "source": "user judgment, not corpus-frequency measurement"
+        },
+        {
+          "text": "窦宪",
+          "class": "valid rare name",
+          "source": "user judgment; keep recall"
+        }
+      ],
+      "assertions": {
+        "required": [
+          "都先",
+          "窦宪"
+        ],
+        "before": [
+          [
+            "都先",
+            "窦宪"
+          ]
+        ],
+        "not_first": [
+          "窦宪"
+        ]
+      },
+      "rank_hints": [
+        {
+          "text": "都先",
+          "range": [
+            1,
+            2
+          ],
+          "source": "user position illustration; advisory only"
+        },
+        {
+          "text": "窦宪",
+          "range": [
+            4,
+            5
+          ],
+          "source": "user position illustration; advisory only"
+        }
+      ],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "douxian"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "nine-968-exact-you",
+      "suite_class": "regression",
+      "input": {
+        "raw": "968",
+        "mode": "nine-key",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "有"
+        ],
+        "not_first": [
+          "我不"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "raw-not-auto-rewritten",
+          "layer": "composition",
+          "path": "raw_input",
+          "op": "equals",
+          "expected": "968"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "968"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "No claim that every exact valid homophone must follow 有. Exact you route must survive repair."
+      ]
+    },
+    {
+      "id": "nine-you-prefix-survives-tail",
+      "suite_class": "regression",
+      "input": {
+        "raw": "968943",
+        "mode": "nine-key",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "you-still-filterable",
+          "layer": "composition",
+          "path": "filter_options",
+          "op": "contains",
+          "expected": "you"
+        },
+        {
+          "id": "raw-preserved",
+          "layer": "composition",
+          "path": "raw_input",
+          "op": "equals",
+          "expected": "968943"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "968943"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "968943 is synthetic extension (you xie); user only supplied 968."
+      ]
+    },
+    {
+      "id": "nine-3-unfinished-initials",
+      "suite_class": "regression",
+      "input": {
+        "raw": "3",
+        "mode": "nine-key",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "d-filter",
+          "layer": "composition",
+          "path": "filter_options",
+          "op": "contains",
+          "expected": "d"
+        },
+        {
+          "id": "e-filter",
+          "layer": "composition",
+          "path": "filter_options",
+          "op": "contains",
+          "expected": "e"
+        },
+        {
+          "id": "f-filter",
+          "layer": "composition",
+          "path": "filter_options",
+          "op": "contains",
+          "expected": "f"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "3"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "No exact order prescribed. e may be a complete syllable; d/f legal unfinished initials."
+      ]
+    },
+    {
+      "id": "nine-quan-next-fou-not-pruned",
+      "suite_class": "regression",
+      "input": {
+        "raw": "782636874472666",
+        "mode": "nine-key",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "dou-remains",
+          "layer": "composition",
+          "path": "filter_options",
+          "op": "contains",
+          "expected": "dou"
+        },
+        {
+          "id": "fou-remains",
+          "layer": "composition",
+          "path": "filter_options",
+          "op": "contains",
+          "expected": "fou"
+        },
+        {
+          "id": "no-host-commit",
+          "layer": "composition",
+          "path": "commits",
+          "op": "length_equals",
+          "expected": 0
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "782636874472666"
+        },
+        {
+          "action": "select_filter",
+          "value": "quan"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Code derived from quan dou shi pao mo. User wants ambiguous next syllable choices preserved, not forced phrase correction."
+      ]
+    },
+    {
+      "id": "nine-longer-syllable-before-short",
+      "suite_class": "regression",
+      "input": {
+        "raw": "2426384",
+        "mode": "nine-key",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "longer-prefix-order",
+          "layer": "composition",
+          "path": "filter_consumed_keys",
+          "op": "nonincreasing"
+        },
+        {
+          "id": "counts-traced",
+          "layer": "composition",
+          "path": "filter_consumed_keys",
+          "op": "nonempty"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "2426384"
+        },
+        {
+          "action": "inspect_filter",
+          "value": "current unfinished syllable"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Adapter must capture actual options and consumed key counts as evidence, not ABC collation. Applies to chao/zhao vs cha/zha; ties unconstrained.",
+        "Count vector must align one-to-one with captured filter_options in trace; adapter may not supply a precomputed success flag."
+      ]
+    },
+    {
+      "id": "nine-repeat-four-nonempty",
+      "suite_class": "regression",
+      "input": {
+        "raw": "444444",
+        "mode": "nine-key",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "nonempty": true
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "raw-preserved",
+          "layer": "composition",
+          "path": "raw_input",
+          "op": "equals",
+          "expected": "444444"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "444444"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "nine-repeat-with-real-tail",
+      "suite_class": "regression",
+      "input": {
+        "raw": "44444426",
+        "mode": "nine-key",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "nonempty": true
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "tail-route",
+          "layer": "composition",
+          "path": "tail_readings",
+          "op": "contains",
+          "expected": "hao"
+        },
+        {
+          "id": "raw-kept",
+          "layer": "composition",
+          "path": "raw_input",
+          "op": "equals",
+          "expected": "44444426"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "44444426"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "26 can be hao under ha abbreviation pattern, but no single forced final phrase specified; valid 的 and other tails remain possible."
+      ]
+    },
+    {
+      "id": "latin-repeat-with-haode-tail",
+      "suite_class": "regression",
+      "input": {
+        "raw": "hhhhhhaode",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "nonempty": true
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "haode-tail",
+          "layer": "composition",
+          "path": "tail_readings",
+          "op": "contains",
+          "expected": "hao de"
+        },
+        {
+          "id": "raw-finish",
+          "layer": "composition",
+          "path": "raw_finish_result",
+          "op": "equals",
+          "expected": "hhhhhhaode"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "hhhhhhaode"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "repeat-tail-unfinished-d",
+      "suite_class": "regression",
+      "input": {
+        "raw": "hhhhhhaod",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "pending-d-not-discarded",
+          "layer": "composition",
+          "path": "remaining_input",
+          "op": "equals",
+          "expected": "d"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "hhhhhhaod"
+        },
+        {
+          "action": "select_prefix",
+          "value": "repeat ha prefix and 好; leave final d"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "missing-i-shshenme",
+      "suite_class": "regression",
+      "input": {
+        "raw": "shshenme",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "是什么"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "raw-spelling-available",
+          "layer": "composition",
+          "path": "raw_finish_result",
+          "op": "equals",
+          "expected": "shshenme"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "shshenme"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "initials-csm",
+      "suite_class": "regression",
+      "input": {
+        "raw": "csm",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "吃什么"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "csm"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Required recall only; user did not require rank 1. Historical user confirmation is not a current run."
+      ]
+    },
+    {
+      "id": "unfinished-shih",
+      "suite_class": "regression",
+      "input": {
+        "raw": "shih",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "时候"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "shih"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "transposition-linaxaing",
+      "suite_class": "regression",
+      "input": {
+        "raw": "linaxaing",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "联想"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "keep-original",
+          "layer": "composition",
+          "path": "raw_finish_result",
+          "op": "equals",
+          "expected": "linaxaing"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "linaxaing"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "umlaut-v",
+      "suite_class": "regression",
+      "input": {
+        "raw": "lve",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "略"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "lve"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false,
+        "inferred_parts": "Concrete target/contrast drawn from existing public fixture or engineering example; input principle is user explicit, target not a unique reconstruction."
+      },
+      "notes": [
+        "Same target must be recallable; not identical full candidate order. 略 is engineering target illustrating user lve/lue equivalence."
+      ]
+    },
+    {
+      "id": "umlaut-u",
+      "suite_class": "regression",
+      "input": {
+        "raw": "lue",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "略"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "lue"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false,
+        "inferred_parts": "Concrete target/contrast drawn from existing public fixture or engineering example; input principle is user explicit, target not a unique reconstruction."
+      },
+      "notes": [
+        "Same target must be recallable; not identical full candidate order. 略 is engineering target illustrating user lve/lue equivalence."
+      ]
+    },
+    {
+      "id": "umlaut-u-diaeresis",
+      "suite_class": "regression",
+      "input": {
+        "raw": "lüe",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "略"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "lüe"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Same target must be recallable; not identical full candidate order. 略 is engineering target illustrating user lve/lue equivalence."
+      ]
+    },
+    {
+      "id": "english-apple-neighbor-errors",
+      "suite_class": "regression",
+      "input": {
+        "raw": "aoole",
+        "mode": "english-26",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "apple"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "original-kept",
+          "layer": "composition",
+          "path": "raw_finish_result",
+          "op": "equals",
+          "expected": "aoole"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "aoole"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "english-apple-prefix",
+      "suite_class": "regression",
+      "input": {
+        "raw": "appl",
+        "mode": "english-26",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "apple"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "appl"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "english-marked-no-letter-spaces",
+      "suite_class": "regression",
+      "input": {
+        "raw": "apple",
+        "mode": "english-26",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "marked-word",
+          "layer": "system_keyboard",
+          "path": "marked_text",
+          "op": "equals",
+          "expected": "apple"
+        },
+        {
+          "id": "inserted-word",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "apple"
+        },
+        {
+          "id": "once-only",
+          "layer": "system_keyboard",
+          "path": "commits",
+          "op": "length_equals",
+          "expected": 1
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "apple"
+        },
+        {
+          "action": "inspect_marked",
+          "value": "host text before selection"
+        },
+        {
+          "action": "select_candidate",
+          "value": "apple"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "english-long-word-display",
+      "suite_class": "regression",
+      "input": {
+        "raw": "application",
+        "mode": "english-26",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "selected-full-word",
+          "layer": "system_keyboard",
+          "path": "selected_text",
+          "op": "equals",
+          "expected": "application"
+        },
+        {
+          "id": "visible-readable",
+          "layer": "system_keyboard",
+          "path": "candidate_text_readable",
+          "op": "equals",
+          "expected": true
+        },
+        {
+          "id": "commit-full",
+          "layer": "system_keyboard",
+          "path": "commit_text",
+          "op": "equals",
+          "expected": "application"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "application"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Readable via natural width/scroll, no fixed no-ellipsis rule imposed for all screen sizes."
+      ]
+    },
+    {
+      "id": "chinese-context-lim",
+      "suite_class": "regression",
+      "input": {
+        "raw": "lim",
+        "mode": "mixed",
+        "context": {
+          "before": "请放到",
+          "after": "去"
+        }
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "里面",
+          "limit"
+        ],
+        "before": [
+          [
+            "里面",
+            "limit"
+          ]
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "not-forced-English",
+          "layer": "composition",
+          "path": "mode",
+          "op": "equals",
+          "expected": "chinese"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "lim"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false,
+        "inferred_parts": "Concrete target/contrast drawn from existing public fixture or engineering example; input principle is user explicit, target not a unique reconstruction."
+      },
+      "notes": [
+        "Target 里面 and contrast limit are public engineering concretization of user request to prioritize Chinese context; no full order."
+      ]
+    },
+    {
+      "id": "numeric-decimal-no-swallow",
+      "suite_class": "regression",
+      "input": {
+        "raw": "1.4",
+        "mode": "numeric",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "decimal-host-output",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "1.4"
+        },
+        {
+          "id": "four-key-handled",
+          "layer": "system_keyboard",
+          "path": "last_key_result",
+          "op": "equals",
+          "expected": "4"
+        },
+        {
+          "id": "no-stuck-preedit",
+          "layer": "system_keyboard",
+          "path": "remaining_input",
+          "op": "equals",
+          "expected": ""
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "1.4"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "numeric-email-symbol-does-not-block",
+      "suite_class": "regression",
+      "input": {
+        "raw": "3@4",
+        "mode": "numeric",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "symbol-then-digit",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "3@4"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "3@4"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "punctuation-keeps-context",
+      "suite_class": "regression",
+      "input": {
+        "raw": "nihao",
+        "mode": "full-pinyin",
+        "context": {
+          "before": "今天的计划确定了。",
+          "after": ""
+        }
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "prediction-not-dropped",
+          "layer": "composition",
+          "path": "prediction_candidates",
+          "op": "nonempty"
+        },
+        {
+          "id": "context-retained",
+          "layer": "composition",
+          "path": "context_before",
+          "op": "contains",
+          "expected": "计划确定了。"
+        }
+      ],
+      "steps": [
+        {
+          "action": "commit",
+          "value": "今天的计划确定了"
+        },
+        {
+          "action": "symbol",
+          "value": "。"
+        },
+        {
+          "action": "inspect_prediction",
+          "value": "suggestions after punctuation"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "No particular next word asserted: continuity rather than guessing intent."
+      ]
+    },
+    {
+      "id": "long-sentence-expanded-space",
+      "suite_class": "regression",
+      "input": {
+        "raw": "wokankanzhegedaoshihounengyouduochang",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "long-full-commit",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "我看看这个到时候能有多长"
+        },
+        {
+          "id": "tail-exhausted",
+          "layer": "system_keyboard",
+          "path": "remaining_input",
+          "op": "equals",
+          "expected": ""
+        },
+        {
+          "id": "not-frozen",
+          "layer": "system_keyboard",
+          "path": "next_raw_input",
+          "op": "equals",
+          "expected": "a"
+        },
+        {
+          "id": "actual-visible-selection",
+          "layer": "system_keyboard",
+          "path": "selected_visible_text",
+          "op": "equals_path",
+          "expected": "committed_selected_text"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "wokankanzhegedaoshihounengyouduochang"
+        },
+        {
+          "action": "select_prefix",
+          "value": "我看看 这个"
+        },
+        {
+          "action": "expand",
+          "value": "up then down"
+        },
+        {
+          "action": "select_visible",
+          "value": "space"
+        },
+        {
+          "action": "finish_remaining",
+          "value": "space"
+        },
+        {
+          "action": "type_next_round",
+          "value": "a"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Whole-sentence or valid staged choices both allowed. Driver must retain full trace and final state; never compare ellipsized label to full committed payload."
+      ]
+    },
+    {
+      "id": "long-sentence-expanded-click",
+      "suite_class": "regression",
+      "input": {
+        "raw": "wokankanzhegedaoshihounengyouduochang",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "long-full-commit",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "我看看这个到时候能有多长"
+        },
+        {
+          "id": "tail-exhausted",
+          "layer": "system_keyboard",
+          "path": "remaining_input",
+          "op": "equals",
+          "expected": ""
+        },
+        {
+          "id": "not-frozen",
+          "layer": "system_keyboard",
+          "path": "next_raw_input",
+          "op": "equals",
+          "expected": "a"
+        },
+        {
+          "id": "actual-visible-selection",
+          "layer": "system_keyboard",
+          "path": "selected_visible_text",
+          "op": "equals_path",
+          "expected": "committed_selected_text"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "wokankanzhegedaoshihounengyouduochang"
+        },
+        {
+          "action": "select_prefix",
+          "value": "我看看 这个"
+        },
+        {
+          "action": "expand",
+          "value": "up then down"
+        },
+        {
+          "action": "select_visible",
+          "value": "click"
+        },
+        {
+          "action": "finish_remaining",
+          "value": "click"
+        },
+        {
+          "action": "type_next_round",
+          "value": "a"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Whole-sentence or valid staged choices both allowed. Driver must retain full trace and final state; never compare ellipsized label to full committed payload."
+      ]
+    },
+    {
+      "id": "partial-prefix-tail-retained",
+      "suite_class": "regression",
+      "input": {
+        "raw": "wokankanzheged",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "unfinished-tail",
+          "layer": "composition",
+          "path": "remaining_input",
+          "op": "equals",
+          "expected": "d"
+        },
+        {
+          "id": "composition-alive",
+          "layer": "composition",
+          "path": "is_composing",
+          "op": "equals",
+          "expected": true
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "wokankanzheged"
+        },
+        {
+          "action": "select_prefix",
+          "value": "我看看"
+        },
+        {
+          "action": "select_prefix",
+          "value": "这个"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "repair-clean-control",
+      "suite_class": "regression",
+      "input": {
+        "raw": "shishenme",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "是什么"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "original-still-available",
+          "layer": "composition",
+          "path": "raw_finish_result",
+          "op": "equals",
+          "expected": "shishenme"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "shishenme"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Required alternative, never permission to silently overwrite raw composition."
+      ]
+    },
+    {
+      "id": "repair-extra-key",
+      "suite_class": "regression",
+      "input": {
+        "raw": "shishenmee",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "是什么"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "original-still-available",
+          "layer": "composition",
+          "path": "raw_finish_result",
+          "op": "equals",
+          "expected": "shishenmee"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "shishenmee"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Required alternative, never permission to silently overwrite raw composition."
+      ]
+    },
+    {
+      "id": "repair-transposed-key",
+      "suite_class": "regression",
+      "input": {
+        "raw": "shihsenme",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "required": [
+          "是什么"
+        ]
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "original-still-available",
+          "layer": "composition",
+          "path": "raw_finish_result",
+          "op": "equals",
+          "expected": "shihsenme"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "shihsenme"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Required alternative, never permission to silently overwrite raw composition."
+      ]
+    },
+    {
+      "id": "no-forced-correction-custom-name",
+      "suite_class": "regression",
+      "input": {
+        "raw": "douxianding",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "literal-output-preserved",
+          "layer": "system_keyboard",
+          "path": "literal_finish_result",
+          "op": "equals",
+          "expected": "douxianding"
+        },
+        {
+          "id": "no-silent-replacement",
+          "layer": "system_keyboard",
+          "path": "silent_replacement",
+          "op": "equals",
+          "expected": false
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "douxianding"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Negative control: user can explicitly finish literal; candidates may still suggest repairs."
+      ]
+    },
+    {
+      "id": "no-forced-correction-source-code",
+      "suite_class": "regression",
+      "input": {
+        "raw": "foo_bar42",
+        "mode": "english-26",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "literal-output-preserved",
+          "layer": "system_keyboard",
+          "path": "literal_finish_result",
+          "op": "equals",
+          "expected": "foo_bar42"
+        },
+        {
+          "id": "no-silent-replacement",
+          "layer": "system_keyboard",
+          "path": "silent_replacement",
+          "op": "equals",
+          "expected": false
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "foo_bar42"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Negative control: user can explicitly finish literal; candidates may still suggest repairs."
+      ]
+    },
+    {
+      "id": "no-forced-correction-invented-word",
+      "suite_class": "regression",
+      "input": {
+        "raw": "zorpnax",
+        "mode": "english-26",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "literal-output-preserved",
+          "layer": "system_keyboard",
+          "path": "literal_finish_result",
+          "op": "equals",
+          "expected": "zorpnax"
+        },
+        {
+          "id": "no-silent-replacement",
+          "layer": "system_keyboard",
+          "path": "silent_replacement",
+          "op": "equals",
+          "expected": false
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "zorpnax"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Negative control: user can explicitly finish literal; candidates may still suggest repairs."
+      ]
+    },
+    {
+      "id": "no-forced-correction-english-acronym",
+      "suite_class": "regression",
+      "input": {
+        "raw": "APIv2",
+        "mode": "english-26",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "literal-output-preserved",
+          "layer": "system_keyboard",
+          "path": "literal_finish_result",
+          "op": "equals",
+          "expected": "APIv2"
+        },
+        {
+          "id": "no-silent-replacement",
+          "layer": "system_keyboard",
+          "path": "silent_replacement",
+          "op": "equals",
+          "expected": false
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "APIv2"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Negative control: user can explicitly finish literal; candidates may still suggest repairs."
+      ]
+    },
+    {
+      "id": "no-forced-correction-version-number",
+      "suite_class": "regression",
+      "input": {
+        "raw": "1.4.2",
+        "mode": "numeric",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "literal-output-preserved",
+          "layer": "system_keyboard",
+          "path": "literal_finish_result",
+          "op": "equals",
+          "expected": "1.4.2"
+        },
+        {
+          "id": "no-silent-replacement",
+          "layer": "system_keyboard",
+          "path": "silent_replacement",
+          "op": "equals",
+          "expected": false
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "1.4.2"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Negative control: user can explicitly finish literal; candidates may still suggest repairs."
+      ]
+    },
+    {
+      "id": "dynamic-learning-direction",
+      "suite_class": "regression",
+      "input": {
+        "raw": "douxian",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "controlled-choices-v1",
+        "operations": [
+          {
+            "action": "load_baseline",
+            "fixture": "default-counts-v1"
+          },
+          {
+            "action": "explicit_select",
+            "text": "都先",
+            "count": "parameter_from_run"
+          },
+          {
+            "action": "compare_to_baseline",
+            "metric": "target_rank"
+          }
+        ],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "selected-direction",
+          "layer": "learning_sync",
+          "path": "learning_target",
+          "op": "equals",
+          "expected": "都先"
+        },
+        {
+          "id": "not-worse-for-same-query",
+          "layer": "learning_sync",
+          "path": "rank_after",
+          "op": "lte_path",
+          "expected": "rank_before"
+        },
+        {
+          "id": "idempotent-count",
+          "layer": "learning_sync",
+          "path": "single_confirmed_commit_delta",
+          "op": "equals",
+          "expected": 1
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "douxian"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "No invented rule such as 3 selections must become rank 1. Run records exact choice count and prior baseline."
+      ]
+    },
+    {
+      "id": "explicit-pin-wins",
+      "suite_class": "regression",
+      "input": {
+        "raw": "douxian",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "pin-rare-v1",
+        "operations": [
+          {
+            "action": "pin",
+            "reading": "dou xian",
+            "text": "窦宪"
+          }
+        ],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {
+        "rank_range": {
+          "窦宪": [
+            1,
+            1
+          ]
+        }
+      },
+      "rank_hints": [],
+      "contracts": [],
+      "steps": [
+        {
+          "action": "type",
+          "value": "douxian"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "frequency-reset-restores-scope",
+      "suite_class": "regression",
+      "input": {
+        "raw": "douxian",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "reset-frequency-v1",
+        "operations": [
+          {
+            "action": "save_clean_baseline"
+          },
+          {
+            "action": "train_synthetic"
+          },
+          {
+            "action": "reset_frequency"
+          }
+        ],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "frequency-baseline",
+          "layer": "learning_sync",
+          "path": "frequency_projection",
+          "op": "equals_path",
+          "expected": "baseline_frequency_projection"
+        },
+        {
+          "id": "explicit-entries-not-erased",
+          "layer": "learning_sync",
+          "path": "explicit_entries",
+          "op": "equals_path",
+          "expected": "baseline_explicit_entries"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "douxian"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Pin scope is recorded separately according to existing product reset setting; no assumed deletion."
+      ]
+    },
+    {
+      "id": "offline-max-idempotent",
+      "suite_class": "regression",
+      "input": {
+        "raw": "",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "offline-two-replicas-v1",
+        "operations": [
+          {
+            "replica": "A",
+            "local_count": 10
+          },
+          {
+            "replica": "B",
+            "local_count": 3
+          },
+          {
+            "action": "merge_B_into_A_twice"
+          }
+        ],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "sum-unique-replicas",
+          "layer": "learning_sync",
+          "path": "merged_count",
+          "op": "equals",
+          "expected": 13
+        },
+        {
+          "id": "duplicate-delivery-unchanged",
+          "layer": "learning_sync",
+          "path": "second_merge_count",
+          "op": "equals",
+          "expected": 13
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": ""
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "legacy-import-no-double-count",
+      "suite_class": "regression",
+      "input": {
+        "raw": "",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "legacy-import-v1",
+        "operations": [
+          {
+            "action": "legacy_baseline",
+            "count": 10
+          },
+          {
+            "action": "new_commit",
+            "count": 3
+          },
+          {
+            "action": "import_same_legacy_again"
+          }
+        ],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "no-duplicate-import",
+          "layer": "learning_sync",
+          "path": "merged_count",
+          "op": "equals",
+          "expected": 13
+        },
+        {
+          "id": "no-fabricated-recent-days",
+          "layer": "learning_sync",
+          "path": "legacy_recent_bucket_count",
+          "op": "equals",
+          "expected": 0
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": ""
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "recent-new-habit-no-hard-threshold",
+      "suite_class": "regression",
+      "input": {
+        "raw": "douxian",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "recency-trusted-days-v1",
+        "operations": [
+          {
+            "action": "load_old_counts"
+          },
+          {
+            "action": "choose_target_on_trusted_recent_days"
+          },
+          {
+            "action": "merge_offline_twice"
+          }
+        ],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "no-duplicate-recency",
+          "layer": "learning_sync",
+          "path": "second_merge_projection",
+          "op": "equals_path",
+          "expected": "first_merge_projection"
+        },
+        {
+          "id": "recent-score-direction",
+          "layer": "learning_sync",
+          "path": "recent_target_score_after",
+          "op": "gte_path",
+          "expected": "recent_target_score_before"
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "douxian"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Old cumulative counts and rare spellings remain. No arbitrary universal rank cutoff imposed."
+      ]
+    },
+    {
+      "id": "context-focus-boundary",
+      "suite_class": "regression",
+      "input": {
+        "raw": "shih",
+        "mode": "full-pinyin",
+        "context": {
+          "before": "只在当前输入框内",
+          "after": "处理"
+        }
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "bounded-before",
+          "layer": "system_keyboard",
+          "path": "context_before_max_characters",
+          "op": "equals",
+          "expected": 20
+        },
+        {
+          "id": "focus-clears",
+          "layer": "system_keyboard",
+          "path": "after_focus_change_cached_context",
+          "op": "equals",
+          "expected": ""
+        },
+        {
+          "id": "secure-clears",
+          "layer": "system_keyboard",
+          "path": "secure_field_cached_context",
+          "op": "equals",
+          "expected": ""
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "shih"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "20 is a controlled fixture setting, not a universal promise. System API unavailable => explicit unavailable fact/evidence, never cross-app harvesting."
+      ]
+    },
+    {
+      "id": "candidate-expanded-touch-freeze",
+      "suite_class": "regression",
+      "input": {
+        "raw": "nihaoshijie",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "visible-selection-commit",
+          "layer": "system_keyboard",
+          "path": "selected_visible_text",
+          "op": "equals_path",
+          "expected": "commit_text"
+        },
+        {
+          "id": "commit-once",
+          "layer": "system_keyboard",
+          "path": "commits",
+          "op": "length_equals",
+          "expected": 1
+        },
+        {
+          "id": "expanded-closes",
+          "layer": "system_keyboard",
+          "path": "expanded_after_final_commit",
+          "op": "equals",
+          "expected": false
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "nihaoshijie"
+        },
+        {
+          "action": "expand",
+          "value": "candidate list"
+        },
+        {
+          "action": "pointer_down",
+          "value": "visible candidate"
+        },
+        {
+          "action": "wait_for",
+          "value": "pending rerank deadline"
+        },
+        {
+          "action": "pointer_up",
+          "value": "same cell"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "symbol-scroll-starts-on-glyph",
+      "suite_class": "regression",
+      "input": {
+        "raw": "",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "drag-scroll",
+          "layer": "system_keyboard",
+          "path": "scroll_offset_changed",
+          "op": "equals",
+          "expected": true
+        },
+        {
+          "id": "no-symbol-commit",
+          "layer": "system_keyboard",
+          "path": "commits",
+          "op": "length_equals",
+          "expected": 0
+        }
+      ],
+      "steps": [
+        {
+          "action": "drag",
+          "value": "start on punctuation glyph, continue through rail"
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_supplement",
+        "confidence": "supplemental_hypothesis",
+        "source": "user-feedback-in-current-project-conversation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      }
+    },
+    {
+      "id": "nas-pattern-english-letter-order",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "apple",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "fragment-order",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "apple"
+        }
+      ],
+      "steps": [
+        {
+          "action": "commit_fragments",
+          "value": [
+            "a",
+            "p",
+            "p",
+            "l",
+            "e"
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "NAS read-only quality analysis: de-identified aggregate pattern; all text/steps synthetic, not reconstructed private output",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Exploration of observability/driver contract, not a confirmed user error or known intended correction."
+      ]
+    },
+    {
+      "id": "nas-pattern-english-backspace-retype",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "apple",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "edit-order",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "apple"
+        }
+      ],
+      "steps": [
+        {
+          "action": "commit_fragments",
+          "value": [
+            "a",
+            "p",
+            "x"
+          ]
+        },
+        {
+          "action": "backspace",
+          "value": 1
+        },
+        {
+          "action": "commit_fragments",
+          "value": [
+            "p",
+            "l",
+            "e"
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "NAS read-only quality analysis: de-identified aggregate pattern; all text/steps synthetic, not reconstructed private output",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Exploration of observability/driver contract, not a confirmed user error or known intended correction."
+      ]
+    },
+    {
+      "id": "nas-pattern-mixed-term-boundary",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "今天调试 API v2 接口",
+        "mode": "mixed",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "term-boundaries",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "今天调试 API v2 接口"
+        }
+      ],
+      "steps": [
+        {
+          "action": "commit_fragments",
+          "value": [
+            "今天调试",
+            " API",
+            " v2",
+            " 接口"
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "NAS read-only quality analysis: de-identified aggregate pattern; all text/steps synthetic, not reconstructed private output",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Exploration of observability/driver contract, not a confirmed user error or known intended correction."
+      ]
+    },
+    {
+      "id": "nas-pattern-number-unit-model",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "S50 16GB 1.4",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "model-literal",
+          "layer": "system_keyboard",
+          "path": "final_text",
+          "op": "equals",
+          "expected": "S50 16GB 1.4"
+        }
+      ],
+      "steps": [
+        {
+          "action": "literal_type",
+          "value": "S50 16GB 1.4"
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "NAS read-only quality analysis: de-identified aggregate pattern; all text/steps synthetic, not reconstructed private output",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Exploration of observability/driver contract, not a confirmed user error or known intended correction."
+      ]
+    },
+    {
+      "id": "nas-pattern-fragment-commit-order",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "明天去公园",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "commit-order",
+          "layer": "system_keyboard",
+          "path": "commits",
+          "op": "equals",
+          "expected": [
+            "明天",
+            "去",
+            "公园"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "action": "commit_fragments",
+          "value": [
+            "明天",
+            "去",
+            "公园"
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "NAS read-only quality analysis: de-identified aggregate pattern; all text/steps synthetic, not reconstructed private output",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Exploration of observability/driver contract, not a confirmed user error or known intended correction."
+      ]
+    },
+    {
+      "id": "nas-pattern-clipboard-not-personal-training",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "synthetic copied paragraph",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "no-implicit-learning",
+          "layer": "learning_sync",
+          "path": "confirmed_user_selection_delta",
+          "op": "equals",
+          "expected": 0
+        }
+      ],
+      "steps": [
+        {
+          "action": "observe_clipboard",
+          "value": "synthetic copied paragraph"
+        },
+        {
+          "action": "inspect_learning_delta"
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "NAS read-only quality analysis: de-identified aggregate pattern; all text/steps synthetic, not reconstructed private output",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Exploration of observability/driver contract, not a confirmed user error or known intended correction."
+      ]
+    },
+    {
+      "id": "nas-pattern-test-markers-excluded-from-habits",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "synthetic-test-only-marker",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state; never day-to-day profile"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "no-test-learning",
+          "layer": "learning_sync",
+          "path": "habit_training_delta",
+          "op": "equals",
+          "expected": 0
+        }
+      ],
+      "steps": [
+        {
+          "action": "ingest_test_event",
+          "value": "synthetic-test-only-marker"
+        },
+        {
+          "action": "inspect_analytics_training"
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "NAS read-only quality analysis: de-identified aggregate pattern; all text/steps synthetic, not reconstructed private output",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Exploration of observability/driver contract, not a confirmed user error or known intended correction."
+      ]
+    },
+    {
+      "id": "archive-unknown-edit-not-invented",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "synthetic-diagnostic-contract-v1",
+        "operations": [
+          {
+            "action": "ingest_commit_without_edit_metadata"
+          }
+        ],
+        "scope": "synthetic only; does not enable new collection"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "unknown-remains-unknown",
+          "layer": "learning_sync",
+          "path": "normalized_event.edit.kind",
+          "op": "equals",
+          "expected": "unknown"
+        },
+        {
+          "id": "no-fake-paragraph",
+          "layer": "learning_sync",
+          "path": "automatic_merge_decision",
+          "op": "equals",
+          "expected": "unresolved"
+        }
+      ],
+      "steps": [
+        {
+          "action": "ingest_commit_without_edit_metadata"
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "De-identified NAS aggregate observability gaps; future diagnostic contract proposal, not current implementation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Final committed text cannot prove original raw keys, correction, intended phrase, or sent status."
+      ]
+    },
+    {
+      "id": "archive-request-is-not-sent",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "synthetic-diagnostic-contract-v1",
+        "operations": [
+          {
+            "action": "ingest_event",
+            "value": {
+              "kind": "insert_requested"
+            }
+          }
+        ],
+        "scope": "synthetic only; does not enable new collection"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "delivery-status",
+          "layer": "learning_sync",
+          "path": "normalized_event.delivery_status",
+          "op": "equals",
+          "expected": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "action": "ingest_event",
+          "value": {
+            "kind": "insert_requested"
+          }
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "De-identified NAS aggregate observability gaps; future diagnostic contract proposal, not current implementation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Only explicit host confirmation can establish insertion; insertion still does not establish message delivery."
+      ]
+    },
+    {
+      "id": "archive-missing-version-alert",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "synthetic-diagnostic-contract-v1",
+        "operations": [
+          {
+            "action": "ingest_commit_without_build_or_model_version"
+          }
+        ],
+        "scope": "synthetic only; does not enable new collection"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "missing-build-is-visible",
+          "layer": "learning_sync",
+          "path": "quality_alerts",
+          "op": "contains",
+          "expected": "missing_build_or_model_version"
+        }
+      ],
+      "steps": [
+        {
+          "action": "ingest_commit_without_build_or_model_version"
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "De-identified NAS aggregate observability gaps; future diagnostic contract proposal, not current implementation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Future diagnostic contract; missing version prevents attributing an old event to current build."
+      ]
+    },
+    {
+      "id": "archive-fragment-session-isolation",
+      "suite_class": "exploratory",
+      "input": {
+        "raw": "",
+        "mode": "protocol",
+        "context": null
+      },
+      "state": {
+        "fixture": "synthetic-diagnostic-contract-v1",
+        "operations": [
+          {
+            "action": "ingest_fragments",
+            "value": [
+              {
+                "text": "合成甲",
+                "session": "A",
+                "seq": 1
+              },
+              {
+                "text": "合成乙",
+                "session": "B",
+                "seq": 1
+              }
+            ]
+          }
+        ],
+        "scope": "synthetic only; does not enable new collection"
+      },
+      "judgments": [],
+      "assertions": {},
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "no-cross-focus-paragraph",
+          "layer": "learning_sync",
+          "path": "merged_cross_session_fragments",
+          "op": "equals",
+          "expected": 0
+        }
+      ],
+      "steps": [
+        {
+          "action": "ingest_fragments",
+          "value": [
+            {
+              "text": "合成甲",
+              "session": "A",
+              "seq": 1
+            },
+            {
+              "text": "合成乙",
+              "session": "B",
+              "seq": 1
+            }
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "nas_synthetic_pattern",
+        "confidence": "exploratory",
+        "source": "De-identified NAS aggregate observability gaps; future diagnostic contract proposal, not current implementation",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Synthetic session names only. Stable seq is per device/session; wall time alone must not merge editors."
+      ]
+    },
+    {
+      "id": "platform-missing-glyph-filter",
+      "suite_class": "regression",
+      "input": {
+        "raw": "din",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": {
+        "fixture": "clean-public-v1",
+        "operations": [],
+        "scope": "isolated synthetic state"
+      },
+      "judgments": [],
+      "assertions": {
+        "nonempty": true
+      },
+      "rank_hints": [],
+      "contracts": [
+        {
+          "id": "no-unrenderable-candidate",
+          "layer": "system_keyboard",
+          "path": "unrenderable_visible_candidates",
+          "op": "length_equals",
+          "expected": 0
+        }
+      ],
+      "steps": [
+        {
+          "action": "type",
+          "value": "din"
+        },
+        {
+          "action": "inspect_platform_font_coverage",
+          "value": "actual candidate font"
+        }
+      ],
+      "provenance": {
+        "kind": "user_feedback",
+        "confidence": "explicit_requirement",
+        "source": "User later request: filter missing-glyph characters; supersedes rare-glyph required in legacy din fixture",
+        "execution_evidence": "not_run",
+        "historical_reports_are_current_evidence": false
+      },
+      "notes": [
+        "Do not globally blacklist a scalar solely because another platform font cannot render it. Record font and fallback versions."
+      ]
+    }
+  ]
+}

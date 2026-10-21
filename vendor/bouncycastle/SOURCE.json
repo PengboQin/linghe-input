@@ -1,0 +1,8 @@
+{
+  "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.81/bcprov-jdk18on-1.81.jar",
+  "version": "1.81",
+  "sha256": "249f396412b0c0ce67f25c8197da757b241b8be3ec4199386c00704a2457459b",
+  "license": "Bouncy Castle license / MIT",
+  "purpose": "portable lightweight cryptography; no global provider changes",
+  "androidJar": "base Java8 classes only, multi-release duplicates omitted"
+}

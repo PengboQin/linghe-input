@@ -1,0 +1,11 @@
+build/
+artifacts/
+evidence/
+.tools/
+secrets/
+*.mobileprovision
+*.p12
+*.p8
+*.jks
+*.sqlite*
+.DS_Store

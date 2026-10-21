@@ -1,0 +1,58 @@
+{
+  "userFeedback": "Mac long sentence candidates do not commit on Space; exact sentence/host payload unavailable",
+  "provenance": "All phrases below are engineering synthetic cases; not user host contents",
+  "cases": [
+    {
+      "raw": "womingtianxianggennimenyiqiqugongyuansanburanhuohuijiachifan",
+      "routes": [
+        "physical49 nil",
+        "physical49 empty",
+        "physical49 space",
+        "visible number",
+        "click"
+      ],
+      "expected": "actual selected visible full candidate replaces marked range once"
+    },
+    {
+      "raw": "nihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihao",
+      "rawKeys": 175,
+      "routes": [
+        "physical49 nil",
+        "physical49 empty",
+        "physical49 space",
+        "visible number",
+        "click"
+      ]
+    },
+    {
+      "canonical": "ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao'ni'hao",
+      "utf8Bytes": 244,
+      "modes": [
+        "pinyin",
+        "nine-stage"
+      ],
+      "expected": "bounded fresh-session replay and visible full candidate commit"
+    },
+    {
+      "raw": "din",
+      "kind": "completion"
+    },
+    {
+      "raw": "shijei",
+      "kind": "repair"
+    },
+    {
+      "raw": "hhhhhnihao",
+      "kind": "composed"
+    },
+    {
+      "raw": "nihaoshijie",
+      "kind": "partial prefix then suffix"
+    },
+    {
+      "priorCommit": "你好",
+      "thenRaw": "womingtianxianggennimenyiqiqugongyuansanburanhuohuijiachifan",
+      "kind": "recent own commit anchor protection"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+bind = "127.0.0.1:8028"
+workers = 1
+worker_class = "gthread"
+threads = 4
+timeout = 20
+graceful_timeout = 20
+keepalive = 2
+max_requests = 5000
+max_requests_jitter = 100
+limit_request_line = 2048
+limit_request_fields = 50
+limit_request_field_size = 4096
+forwarded_allow_ips = ""
+accesslog = None
+errorlog = "-"
+loglevel = "warning"
+capture_output = False

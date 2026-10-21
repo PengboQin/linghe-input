@@ -1,0 +1,617 @@
+{
+  "policy": "Independent platform snapshot; no automatic overwrite of main shared sources. Hashes describe archived bytes, not feature parity.",
+  "files": [
+    {
+      "path": "core/include/desktop_candidates.hpp",
+      "main_sha256": "75fb4ef67c0e587d4b409082eb79da579d6d6141bcb2324d27ace2a62637c8d6",
+      "windows_sha256": "c6bd08e45b7b57e50542991a3dd41d0eab6f5ec14116ff0814de50b260f7aa5f",
+      "same_bytes": false
+    },
+    {
+      "path": "core/include/pinyin_repair.h",
+      "main_sha256": "27feb57373363854a336058193af4e2a69194801ff0ffbb2b17b73c517e3cf57",
+      "windows_sha256": "27feb57373363854a336058193af4e2a69194801ff0ffbb2b17b73c517e3cf57",
+      "same_bytes": true
+    },
+    {
+      "path": "core/include/pinyin_text.h",
+      "main_sha256": "7f252e4423633740c648f09ec8d31743cf1e1f3a8b10ce93d1bfdc1f45524648",
+      "windows_sha256": "803f4fb4a3e29afcd5287aa6f4b2f23867447c164da5e7da9cd8eb8f7b27534e",
+      "same_bytes": false
+    },
+    {
+      "path": "core/include/private_input.h",
+      "main_sha256": "082d7fc2fe8b998fbef16eeeaf71b6a35b6d331371bd85a073b15431c1ce4131",
+      "windows_sha256": "7bb7c2ae3abb8e366936e7abadcd85a1fb5a0150a2072c7f661f2c9e84f50866",
+      "same_bytes": false
+    },
+    {
+      "path": "core/include/private_pinyin_syllables.h",
+      "main_sha256": "edd79e9144170d11f42b0abe7b581469a4c916f278b857e0d909f0c55fd77774",
+      "windows_sha256": "edd79e9144170d11f42b0abe7b581469a4c916f278b857e0d909f0c55fd77774",
+      "same_bytes": true
+    },
+    {
+      "path": "core/src/language_scoring.cpp",
+      "main_sha256": "a5901b3318f5c2e7074ee00df644976e18726fe1b786d8c073f9fe284ece4f72",
+      "windows_sha256": "a5901b3318f5c2e7074ee00df644976e18726fe1b786d8c073f9fe284ece4f72",
+      "same_bytes": true
+    },
+    {
+      "path": "core/src/private_input.cpp",
+      "main_sha256": "29cf28c8b3edb24d691190efab7d72c6983cc84867ebacfe79f03c4b747c0d15",
+      "windows_sha256": "31ae81923f879265315e614b9f1f2510c93b1a7c8ce13c37e1988a7b9ac129da",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/candidate_management_smoke.cpp",
+      "main_sha256": "6c4b6ede87ee432faecd3d53983e823b171555f1ae0beda23adae6db586f2452",
+      "windows_sha256": "6c4b6ede87ee432faecd3d53983e823b171555f1ae0beda23adae6db586f2452",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/candidate_scroll_smoke.cpp",
+      "main_sha256": "93d089c4e8882e9121c45be375a677f0735446d652e44142eda3446ba6d20f8b",
+      "windows_sha256": "93d089c4e8882e9121c45be375a677f0735446d652e44142eda3446ba6d20f8b",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/dictionary_candidate.cpp",
+      "main_sha256": "d2d21e98d39fd4d61249378034682b7d1ecd55fb96ec4b084d10085bcee5849b",
+      "windows_sha256": "d2d21e98d39fd4d61249378034682b7d1ecd55fb96ec4b084d10085bcee5849b",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/engine_bridge_driver.cpp",
+      "main_sha256": "944712b8040cc8c463af5847f0eef2a03ca739da2283d3627bbddc46255706e2",
+      "windows_sha256": "944712b8040cc8c463af5847f0eef2a03ca739da2283d3627bbddc46255706e2",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/engine_smoke.cpp",
+      "main_sha256": "fdc89d7edc13ef784e59da506dd011d8671d626fd4430f1b73acb8db2b11aecf",
+      "windows_sha256": "fdc89d7edc13ef784e59da506dd011d8671d626fd4430f1b73acb8db2b11aecf",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/nine_filter_smoke.cpp",
+      "main_sha256": "63b2b8357b69a7edc1375f080bca6fc6105b44e8c3ad9b174e5d4af90c951f51",
+      "windows_sha256": "63b2b8357b69a7edc1375f080bca6fc6105b44e8c3ad9b174e5d4af90c951f51",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/nine_key_smoke.cpp",
+      "main_sha256": "fa8e5a3cff58610c065816dc99ab8462d58aaac37d1fc93c39e342cf82f2b412",
+      "windows_sha256": "fa8e5a3cff58610c065816dc99ab8462d58aaac37d1fc93c39e342cf82f2b412",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/pinyin_text_repair.cpp",
+      "main_sha256": "fa2bb61af8135736b3e1e12ea63229ccc5c686079836d49e62a3e2507c026c5f",
+      "windows_sha256": "fa2bb61af8135736b3e1e12ea63229ccc5c686079836d49e62a3e2507c026c5f",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/repair_smoke.cpp",
+      "main_sha256": "ca2fbada91cbdc792949c2df44ecb4d5f7a34dbe3b34966b40b3da56fa047b28",
+      "windows_sha256": "ca2fbada91cbdc792949c2df44ecb4d5f7a34dbe3b34966b40b3da56fa047b28",
+      "same_bytes": true
+    },
+    {
+      "path": "core/tests/windows_legacy_export.cpp",
+      "main_sha256": null,
+      "windows_sha256": "ef9fe6e6bb635da0a84d25f0429c68eed8e6b5a9b7ab1e21c12b075f840095c2",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/windows_long_composition.cpp",
+      "main_sha256": null,
+      "windows_sha256": "02e9c649072e1b935ad0accdde9e36a909a0d336d2e5850bb17236438eba943a",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/SOURCE.json",
+      "main_sha256": "32995822c707dc68817f293a49ed2cea71f0c9af06dacd988b790bee55b1f655",
+      "windows_sha256": "62d7ceb7cd86deb610813b4df6b77297be9c0401615749fc24a9ae6c4e6737ce",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/default.yaml",
+      "main_sha256": "09b5e5b3b238d81383f07cb1895cf0cc60434d9e0b27a186f84f619460ed0054",
+      "windows_sha256": "09b5e5b3b238d81383f07cb1895cf0cc60434d9e0b27a186f84f619460ed0054",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/essay.txt",
+      "main_sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+      "windows_sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/private_nine.schema.yaml",
+      "main_sha256": "f088f4c63a29228a9a2548f70e89d177a2e0615dba2a5f5c0a376d73d46ac8ae",
+      "windows_sha256": "dd652657fea2b8f127fcc5a7085a243959117a73ea55d5fab13ea827d26886da",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/private_nine_initials.schema.yaml",
+      "main_sha256": "e0f97dc68d070cad184eca2e919564ecda5feae298b7395069ba6000fc873ed2",
+      "windows_sha256": "fd9c0ca212755e42c26dbfedb9e77a0867cff3d08d80b5e38a6a2579688ffe42",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/private_nine_private.schema.yaml",
+      "main_sha256": "cbb219b95bcc2c495da2111bf8a18c1e5601b7159cd08e6fd92b624e71ad4321",
+      "windows_sha256": "a7d52c9fce16ba3e381ab195973b20deac674672afaca3f39810ee05e940e7f4",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/private_pinyin.dict.yaml",
+      "main_sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+      "windows_sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/private_pinyin.schema.yaml",
+      "main_sha256": "df35b4027ae681041237b9e3c582da5caaac336e145575f6369bfbfc10d6c513",
+      "windows_sha256": "df35b4027ae681041237b9e3c582da5caaac336e145575f6369bfbfc10d6c513",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/private_pinyin_exact.schema.yaml",
+      "main_sha256": "1f8f8ff29c4c8c873709434e5745d11689ccbad4433ca3d61d97ecf00ba6c417",
+      "windows_sha256": "1f8f8ff29c4c8c873709434e5745d11689ccbad4433ca3d61d97ecf00ba6c417",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/private_pinyin_private.schema.yaml",
+      "main_sha256": "5e87533cc44938048dbb305fa5a937fca9127655e2681afe9888315fde6e6749",
+      "windows_sha256": "5e87533cc44938048dbb305fa5a937fca9127655e2681afe9888315fde6e6749",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/private_zh_hans_compact.gram",
+      "main_sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "windows_sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/licenses/GPL-3.0.txt",
+      "main_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "windows_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/licenses/librime-octagram-LICENSE",
+      "main_sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400",
+      "windows_sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/licenses/rime-essay-AUTHORS",
+      "main_sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75",
+      "windows_sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/licenses/rime-essay-LICENSE",
+      "main_sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "windows_sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/licenses/rime-luna-pinyin-AUTHORS",
+      "main_sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8",
+      "windows_sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/licenses/rime-luna-pinyin-LICENSE",
+      "main_sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "windows_sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/licenses/rime-octagram-data-LICENSE",
+      "main_sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "windows_sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/CONTINUATION.json",
+      "main_sha256": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa",
+      "windows_sha256": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/LEXICON.json",
+      "main_sha256": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341",
+      "windows_sha256": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/MODEL-LICENSE.txt",
+      "main_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "windows_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/MODEL.json",
+      "main_sha256": "d3d9cbaac7d5048aa16629072f1877d8e69b400591f9de9ccc99973df888fd92",
+      "windows_sha256": "d3d9cbaac7d5048aa16629072f1877d8e69b400591f9de9ccc99973df888fd92",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/PINYIN.json",
+      "main_sha256": "8b434be5e270b5df44d8b0f4ef0876202af4eeb9b33d86c9379b8eefe951f7ab",
+      "windows_sha256": "8b434be5e270b5df44d8b0f4ef0876202af4eeb9b33d86c9379b8eefe951f7ab",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/continuation.bin",
+      "main_sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+      "windows_sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/nine-lexicon.bin",
+      "main_sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+      "windows_sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/pinyin-syllables.txt",
+      "main_sha256": "ddd9b253b4f3412d17ed1c119d9d3b36f1153e7c3ff7f62e20e59cdfd1856689",
+      "windows_sha256": "ddd9b253b4f3412d17ed1c119d9d3b36f1153e7c3ff7f62e20e59cdfd1856689",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/semantic/vocab.txt",
+      "main_sha256": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c",
+      "windows_sha256": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Package.swift",
+      "main_sha256": "e3d95bf7fe53994e2a96e4cc52b0a41bb96fc378b0954ec3870842750a745120",
+      "windows_sha256": "e3d95bf7fe53994e2a96e4cc52b0a41bb96fc378b0954ec3870842750a745120",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/CSQLite/module.modulemap",
+      "main_sha256": "bbfe59a972a3e8e09e347c04bc22c0eacd2544881af8a4b6068bfc30b38466e8",
+      "windows_sha256": "bbfe59a972a3e8e09e347c04bc22c0eacd2544881af8a4b6068bfc30b38466e8",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/CSQLite/shim.h",
+      "main_sha256": "b052d8e561e942f97b503033ecd2eaa2b35213bdbf374983efe9e68eabdfc024",
+      "windows_sha256": "b052d8e561e942f97b503033ecd2eaa2b35213bdbf374983efe9e68eabdfc024",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ContinuationLexicon.swift",
+      "main_sha256": "883350ec4113d9f81dfacf4d542c5bf6450ed16648b0b044286f439c8a6f1519",
+      "windows_sha256": "883350ec4113d9f81dfacf4d542c5bf6450ed16648b0b044286f439c8a6f1519",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/DesktopCandidateLayout.swift",
+      "main_sha256": "870a4bfa9a34efc05fabd862020ef933aec79a7087e47c10ae76d2640dda2c40",
+      "windows_sha256": "870a4bfa9a34efc05fabd862020ef933aec79a7087e47c10ae76d2640dda2c40",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/DeviceIdentity.swift",
+      "main_sha256": "128a72635a510f623716c7db621bb12912aa022e335e6720cb65170729ac2ca2",
+      "windows_sha256": "8740ca5a10a0cfdad960ba2d36b7b99eb41e1485c01d70c069bb8c7e513fadcf",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/DeviceInvitation.swift",
+      "main_sha256": "0752a3d5eb0d4d4bfb40937b1cac98cc8bfc2729425f5c6e99a2b5fbb7b1e12c",
+      "windows_sha256": "0752a3d5eb0d4d4bfb40937b1cac98cc8bfc2729425f5c6e99a2b5fbb7b1e12c",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/EnglishWordSuggestions.swift",
+      "main_sha256": "50b39661496c9abd3744520dc72260db7b2635d308dda475e76de6dda90e44c2",
+      "windows_sha256": "50b39661496c9abd3744520dc72260db7b2635d308dda475e76de6dda90e44c2",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Learning.swift",
+      "main_sha256": "158003551129025af2cfa5270d62f04d70e9e3748116f4c1e0079aa8e99b2e6f",
+      "windows_sha256": "158003551129025af2cfa5270d62f04d70e9e3748116f4c1e0079aa8e99b2e6f",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningPublication.swift",
+      "main_sha256": "b72195dae39fc79cfba7ced663e171c8f479be987a499a498848a157e30e6674",
+      "windows_sha256": "b72195dae39fc79cfba7ced663e171c8f479be987a499a498848a157e30e6674",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Membership.swift",
+      "main_sha256": "a692e1a045f4328cb42917207e4c00aaea88d54afa68932dc5fa259368628a30",
+      "windows_sha256": "6dace764791c27b56149b80b5b3433ee91ab8824e88be638b7940f75400178b1",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/MixedEnglishLexicon.swift",
+      "main_sha256": "d323ccdbc1e0f6c419883d1c88c0d631de3327d87eb8aa0981e6879400477f0c",
+      "windows_sha256": "d323ccdbc1e0f6c419883d1c88c0d631de3327d87eb8aa0981e6879400477f0c",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/NineKeyLexicon.swift",
+      "main_sha256": "e31cbe75c921875eee60f4a750c6c896de2ec68b053ad8b10ef10825c848e91f",
+      "windows_sha256": "1785e56b4e07e89072014142bc37ec819331539c38d7dc3c12cc45586aac7f91",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/NineKeyPrediction.swift",
+      "main_sha256": "351400d1f4ee7f1dfdf75d86f2a3f2cb4356baf5b7dd90f635aaab78b2c2f449",
+      "windows_sha256": "351400d1f4ee7f1dfdf75d86f2a3f2cb4356baf5b7dd90f635aaab78b2c2f449",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Pairing.swift",
+      "main_sha256": "0579fd07608ecde0c3bce7e1577012f7cf8d26c70836328f177c1c04ad007a14",
+      "windows_sha256": "5b2e5feb981c2cfac16db96ad7ff386767d25b644242ceff03e991f4e989fbf0",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PersonalLexicon.swift",
+      "main_sha256": "f92a5e91efbf3a770c823f0bf4973313d75b003c4d47c0c2034e9fed9641f8ca",
+      "windows_sha256": "e6a579f38d765fe16704da3259f733dc3de441438193795e727f935a77107427",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PersonalLexiconSync.swift",
+      "main_sha256": "b6d5a7b2ed66e3935730aff592056e4c67a8e7fefe60e9d653793f24ab929980",
+      "windows_sha256": "b6d5a7b2ed66e3935730aff592056e4c67a8e7fefe60e9d653793f24ab929980",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PinyinCorrection.swift",
+      "main_sha256": "a37d54f95f23897760550e96b045595f006c45a2bd9d69d4f0340874209be336",
+      "windows_sha256": "a37d54f95f23897760550e96b045595f006c45a2bd9d69d4f0340874209be336",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PinyinInputMatch.swift",
+      "main_sha256": "385a76f2aa38adc4e72ce8cd7388de71e9d92cea16d2781344be51c253920e97",
+      "windows_sha256": "385a76f2aa38adc4e72ce8cd7388de71e9d92cea16d2781344be51c253920e97",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/QuickPairing.swift",
+      "main_sha256": "f98737612a9dc679dc4227228acce5f3b60b3a65bdb8ee946e693eed8b7d3058",
+      "windows_sha256": "8a637638f0430cb2e93a5a323ff8ae1d52eb820b760fbae2d81b18a9844497d8",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RecentCommit.swift",
+      "main_sha256": "3bfe5bd058ecba1420d379262c3d2f5f0e686be535336617151dcfad85db9083",
+      "windows_sha256": "3bfe5bd058ecba1420d379262c3d2f5f0e686be535336617151dcfad85db9083",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RelayClient.swift",
+      "main_sha256": "a2c825523608d769f87556ac1616da9bcc37b7977e52fb2c2a0bd551a096dee1",
+      "windows_sha256": "e0d2d84422932c52602b96087c8b3906bc83453c08d0b837d61c565e682b5679",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RelayRequest.swift",
+      "main_sha256": "48466c0937674919c11707107b2180a401a15997eb7919b0b71a38658c527d5f",
+      "windows_sha256": "6c402f089903128ffa9531ce01a6d7052d184f0c41858b0856eff743525e754d",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RimeCheckpoint.swift",
+      "main_sha256": "b0adeb6ac0431a0c8838d4c71803cdc5f02e1df0ac5311922d8c7e1094798298",
+      "windows_sha256": "b0adeb6ac0431a0c8838d4c71803cdc5f02e1df0ac5311922d8c7e1094798298",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SecureMessage.swift",
+      "main_sha256": "ddd498c49b85d8e1e7bc9f67f51357415763fee75b60c6e0da75891f334b77d2",
+      "windows_sha256": "ddd498c49b85d8e1e7bc9f67f51357415763fee75b60c6e0da75891f334b77d2",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SecureReplicaStore.swift",
+      "main_sha256": "664d6fd384f6a9887b088de88a2f99a9df89906c4a4aec754a428485bfb44529",
+      "windows_sha256": "d53b9a7ee5f028055094b0d2ddd60a073995f93c988d38655a4c2901131bc2da",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SentencePrediction.swift",
+      "main_sha256": "505ffc0e879033e0e5b6b8dade6ce50e8e82f410ba4271974c4e935c41b660e2",
+      "windows_sha256": "505ffc0e879033e0e5b6b8dade6ce50e8e82f410ba4271974c4e935c41b660e2",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SharedClipboardCache.swift",
+      "main_sha256": "dc7152e0959a6d1cde94885fdcfc2ac15f6f62555f0547c0c034364f42bed118",
+      "windows_sha256": "dc7152e0959a6d1cde94885fdcfc2ac15f6f62555f0547c0c034364f42bed118",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SharedLearningSnapshot.swift",
+      "main_sha256": "d1ee0f047f92cc2fb73aed3d1040c2bd6eb5686257ee0ad7be99e22be1d3ccbb",
+      "windows_sha256": "84cec7533fbc8666d5206179b31e2d59eaee0e7365c7b9a0f74927129df5d27a",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SupplementaryLexicon.swift",
+      "main_sha256": "676b72b9cd21830d2f4cf1b34088aa86f81b5d26061b26bc3b3f192984af0af2",
+      "windows_sha256": "676b72b9cd21830d2f4cf1b34088aa86f81b5d26061b26bc3b3f192984af0af2",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SymbolUsage.swift",
+      "main_sha256": "afc2afde0962f26dd855006bdcde170b1247e09c684ab7735948792faefdc90b",
+      "windows_sha256": "afc2afde0962f26dd855006bdcde170b1247e09c684ab7735948792faefdc90b",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SyncConsentGate.swift",
+      "main_sha256": "bbc05c314a78f4abe4b0d2f4887042f4ab1e65636763a5247189fdecd7e13ae3",
+      "windows_sha256": "bbc05c314a78f4abe4b0d2f4887042f4ab1e65636763a5247189fdecd7e13ae3",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidChoiceParityTests.swift",
+      "main_sha256": "c7f169855deeea9cb1ea88bee04331c733bff7afab6514cd5620b65d3973052e",
+      "windows_sha256": "c7f169855deeea9cb1ea88bee04331c733bff7afab6514cd5620b65d3973052e",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidDataParityTests.swift",
+      "main_sha256": "406cc803b412fba61feded65a2fdbf0af0629fc6e1d62bac04bebace87ef381a",
+      "windows_sha256": "406cc803b412fba61feded65a2fdbf0af0629fc6e1d62bac04bebace87ef381a",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidLanguageParityTests.swift",
+      "main_sha256": "538539c246cd798caeea5a2a127db57c13d54ba4bf375ea69546f8f0c166f03b",
+      "windows_sha256": "538539c246cd798caeea5a2a127db57c13d54ba4bf375ea69546f8f0c166f03b",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidLearningParityTests.swift",
+      "main_sha256": "de7347b74f3e1ced4f6f901837c4311c45730e04c5592462069786697e52ebb9",
+      "windows_sha256": "de7347b74f3e1ced4f6f901837c4311c45730e04c5592462069786697e52ebb9",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidPersonalFixtureTests.swift",
+      "main_sha256": "104467eaf9f6617f1022009b4c208332a32ee20d0bc79fa93627b0056f8b91b9",
+      "windows_sha256": "104467eaf9f6617f1022009b4c208332a32ee20d0bc79fa93627b0056f8b91b9",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/ClipboardCacheTests.swift",
+      "main_sha256": "956932aa9db901ce6289cf097ccba756b92f271bec08744515068dbce82ce1c7",
+      "windows_sha256": "956932aa9db901ce6289cf097ccba756b92f271bec08744515068dbce82ce1c7",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/DesktopCandidateLayoutTests.swift",
+      "main_sha256": "eae591033b07f53b5ce8c99a350152173043015fb6bdf4c30d464dafed7b3c31",
+      "windows_sha256": "eae591033b07f53b5ce8c99a350152173043015fb6bdf4c30d464dafed7b3c31",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/IdentityAndPairingTests.swift",
+      "main_sha256": "831259d58c2de1aec4723ad2c4b20d6fddcb4f655f4f30f64b4d4a3a229a0399",
+      "windows_sha256": "cc396b5c89f3ebba5bae0203dab2f8a3692adcf1a5dfd8aa97860658d34ddf4d",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/InputCoverageTests.swift",
+      "main_sha256": "a0ab177afa285d952357b696568a841f92fdc5dba9a9ac65be66b644d5013c48",
+      "windows_sha256": "a0ab177afa285d952357b696568a841f92fdc5dba9a9ac65be66b644d5013c48",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningTests.swift",
+      "main_sha256": "9fe98cd474fb31ca0973eba0ab91bbe61b7434b0b0862791bdf7236dca123487",
+      "windows_sha256": "9fe98cd474fb31ca0973eba0ab91bbe61b7434b0b0862791bdf7236dca123487",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/MixedEnglishTests.swift",
+      "main_sha256": "1a2efa527bdb3547680a4a373d7b802235de5e9347ad831114817d4de69e2467",
+      "windows_sha256": "1a2efa527bdb3547680a4a373d7b802235de5e9347ad831114817d4de69e2467",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NativeInputSupportTests.swift",
+      "main_sha256": "5b2c970a230885a37817b4d439edd39f647cc3c4bdb586614a267d1edb961bb9",
+      "windows_sha256": "5b2c970a230885a37817b4d439edd39f647cc3c4bdb586614a267d1edb961bb9",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NativeRimeBridgeTests.swift",
+      "main_sha256": "8e6cf4b7cda701177e0e6d18da0c8be568a47a35388d93b819ed7e175aff4384",
+      "windows_sha256": "8e6cf4b7cda701177e0e6d18da0c8be568a47a35388d93b819ed7e175aff4384",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NineKeyPredictionTests.swift",
+      "main_sha256": "da2422cdc6c04dfc65bf41f4563a4221d87593df161cbdfa8840a0d38427cd79",
+      "windows_sha256": "da2422cdc6c04dfc65bf41f4563a4221d87593df161cbdfa8840a0d38427cd79",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PersonalLexiconSyncTests.swift",
+      "main_sha256": "a8000b5b840815414e2a0528313646acfe72db66e79cb51683ae90612a47b6d5",
+      "windows_sha256": "a8000b5b840815414e2a0528313646acfe72db66e79cb51683ae90612a47b6d5",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PersonalLexiconTests.swift",
+      "main_sha256": "5689ee2c7e8953441fa06b8f87704f1510ff993a679ed2c79be67b599fe678ff",
+      "windows_sha256": "5689ee2c7e8953441fa06b8f87704f1510ff993a679ed2c79be67b599fe678ff",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PinyinCorrectionTests.swift",
+      "main_sha256": "56d8a019079434f892c5531981e3557ac4cbb50a227fafbdbff486c79afefd1a",
+      "windows_sha256": "56d8a019079434f892c5531981e3557ac4cbb50a227fafbdbff486c79afefd1a",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PinyinInputMatchTests.swift",
+      "main_sha256": "dfa8be0d633870b60f1f1e05a7d0e0f830b0fc99d9b73acb2d379b0f55d1a00c",
+      "windows_sha256": "dfa8be0d633870b60f1f1e05a7d0e0f830b0fc99d9b73acb2d379b0f55d1a00c",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/QuickPairingTests.swift",
+      "main_sha256": "97715fa6784aa4fb95ef122bcceed3cfd43a950ed4dc45be3e246ec3bb27301d",
+      "windows_sha256": "97715fa6784aa4fb95ef122bcceed3cfd43a950ed4dc45be3e246ec3bb27301d",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RelayClientTests.swift",
+      "main_sha256": "acb9412ea6d54c253980fb65676e5a8675a9e88e149c58bc4469983fd0d7148e",
+      "windows_sha256": "01883183d023830c0c26b3e54dd85b8bbf352a03203e39ff3aae68b543c076bb",
+      "same_bytes": false
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RimeCheckpointTests.swift",
+      "main_sha256": "3c11ddc507c8b2ab9de01d2a3c8c3afb461b0afd4a18afbce5ed54a14726f81a",
+      "windows_sha256": "3c11ddc507c8b2ab9de01d2a3c8c3afb461b0afd4a18afbce5ed54a14726f81a",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SecureMessageTests.swift",
+      "main_sha256": "1e0079d9b1c1da3ff38cf2ef3337792a3a27b15c2118c8f9911591d7fe95f794",
+      "windows_sha256": "1e0079d9b1c1da3ff38cf2ef3337792a3a27b15c2118c8f9911591d7fe95f794",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SecureReplicaStoreTests.swift",
+      "main_sha256": "918a877cec58e3534ea55545f9d81a33c67a98b79911c0fc30611ddb563cce77",
+      "windows_sha256": "918a877cec58e3534ea55545f9d81a33c67a98b79911c0fc30611ddb563cce77",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SnapshotStoreTests.swift",
+      "main_sha256": "392fbcef39cb4d73e0a8eddb3d88893b6f9164b52e1a339f4ed03ef96bca0e53",
+      "windows_sha256": "392fbcef39cb4d73e0a8eddb3d88893b6f9164b52e1a339f4ed03ef96bca0e53",
+      "same_bytes": true
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SymbolUsageTests.swift",
+      "main_sha256": "3b3168e4a03a1e62f089199f1de0197ccc709ed10b5ca493d6cc9eb454abbfe6",
+      "windows_sha256": "3b3168e4a03a1e62f089199f1de0197ccc709ed10b5ca493d6cc9eb454abbfe6",
+      "same_bytes": true
+    }
+  ]
+}

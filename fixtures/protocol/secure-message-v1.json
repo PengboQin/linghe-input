@@ -1,0 +1,20 @@
+{
+  "envelope" : {
+    "ciphertext" : "A7XdOJEGmV8MRnnYxk/7NAMbomfQgY6XRinDTgmkgQBo155dpEw4sJym6Pxa18zKzKm4MFZ7LcYSDZzgeA==",
+    "domain" : 2,
+    "epoch" : 2,
+    "event" : "00000000-0000-4000-8000-000000000003",
+    "expiresAt" : 1600,
+    "group" : "00000000-0000-4000-8000-000000000001",
+    "issuedAt" : 1000,
+    "sender" : "00000000-0000-4000-8000-000000000002",
+    "sequence" : 7,
+    "signature" : "Y5yO028CRTF6e5it5x//+ht09lb/pZiSoOY+owX613w9pWSUMbNAd9FjyN8Gynq0eIEZWarZe0LqVi0xLbf8BQ==",
+    "version" : 1
+  },
+  "masterKey" : "ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=",
+  "plaintext" : "UHJpdmF0ZSBJbnB1dCBzeW50aGV0aWMgdmVjdG9yIC8g5ZCI5oiQ5paH5pys",
+  "signingPublic" : "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+  "signingSeed" : "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "warning" : "PUBLIC SYNTHETIC KEYS - test only"
+}

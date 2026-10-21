@@ -1,0 +1,45 @@
+{
+  "model": "hfl/chinese-electra-180g-small-discriminator",
+  "revision": "826a243f3f387450ef8d70de9c3d0706d8d8e924",
+  "license": "Apache-2.0",
+  "files": [
+    {
+      "path": "README.md",
+      "url": "https://huggingface.co/hfl/chinese-electra-180g-small-discriminator/resolve/826a243f3f387450ef8d70de9c3d0706d8d8e924/README.md",
+      "bytes": 1964,
+      "sha256": "4bd3261422223db28accfc6dae42e80282471923846d0d1e75087c229aba343f"
+    },
+    {
+      "path": "config.json",
+      "url": "https://huggingface.co/hfl/chinese-electra-180g-small-discriminator/resolve/826a243f3f387450ef8d70de9c3d0706d8d8e924/config.json",
+      "bytes": 627,
+      "sha256": "baca81bc1b187003480015d15215c1a37c306bdf10faf00f53ac99c4de437562"
+    },
+    {
+      "path": "vocab.txt",
+      "url": "https://huggingface.co/hfl/chinese-electra-180g-small-discriminator/resolve/826a243f3f387450ef8d70de9c3d0706d8d8e924/vocab.txt",
+      "bytes": 109540,
+      "sha256": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c"
+    },
+    {
+      "path": "pytorch_model.bin",
+      "url": "https://huggingface.co/hfl/chinese-electra-180g-small-discriminator/resolve/826a243f3f387450ef8d70de9c3d0706d8d8e924/pytorch_model.bin",
+      "bytes": 49439914,
+      "sha256": "45c0a4519ee767bd58ddd3573b9ceebb81a2c0fb65919a8b7513b57ee52009b3"
+    }
+  ],
+  "licenseURL": "https://raw.githubusercontent.com/ymcui/Chinese-ELECTRA/master/LICENSE",
+  "licenseSHA256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "conversion": {
+    "torch": "2.6.0",
+    "transformers": "4.51.3",
+    "coremltools": "8.3.0",
+    "numpy": "1.26.4",
+    "script": "experiments/semantic/convert_electra.py",
+    "batch": 4,
+    "sequenceLength": 48,
+    "weights": "int8 per channel",
+    "normalization": "fp32",
+    "attentionMask": "finite -10000; numerically checked against upstream fp32"
+  }
+}

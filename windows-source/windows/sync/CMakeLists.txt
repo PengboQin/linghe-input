@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.24)
+project(PrivateInputWindowsSync LANGUAGES CXX)
+if(NOT WIN32)
+  message(FATAL_ERROR "DPAPI identity target requires Windows")
+endif()
+set(CMAKE_CXX_STANDARD 17)
+set(PRIVATE_SODIUM_PREFIX "" CACHE PATH "Same-architecture pinned libsodium build/source prefix")
+add_library(PrivateInputIdentity STATIC DeviceIdentity.cpp)
+target_compile_definitions(PrivateInputIdentity PUBLIC UNICODE _UNICODE NOMINMAX _WIN32_WINNT=0x0A00)
+target_link_libraries(PrivateInputIdentity PUBLIC bcrypt crypt32 advapi32)
+add_executable(PrivateInputIdentityProbe ../tests/identity_smoke.cpp)
+target_link_libraries(PrivateInputIdentityProbe PRIVATE PrivateInputIdentity)
+if(MINGW)
+  target_link_options(PrivateInputIdentityProbe PRIVATE -municode -static)
+endif()
+# Portable AEAD and typed v1/v2 membership verification are implemented here.
+# Strict bounded Membership wire JSON is included. Semantic learning validation,
+# transactional storage and product
+# network/UI integration remain separate pending layers; TSF does not link it.
+if(PRIVATE_SODIUM_PREFIX)
+  find_path(SODIUM_HEADER sodium.h PATHS "${PRIVATE_SODIUM_PREFIX}/include" NO_DEFAULT_PATH REQUIRED)
+  find_library(SODIUM_LIBRARY NAMES sodium libsodium PATHS "${PRIVATE_SODIUM_PREFIX}/lib" NO_DEFAULT_PATH REQUIRED)
+  add_library(PrivateInputProtocol STATIC SecureProtocol.cpp Membership.cpp MembershipWire.cpp)
+  target_compile_definitions(PrivateInputProtocol PUBLIC SODIUM_STATIC)
+  target_include_directories(PrivateInputProtocol PRIVATE "${SODIUM_HEADER}")
+  target_link_libraries(PrivateInputProtocol PUBLIC "${SODIUM_LIBRARY}" advapi32 bcrypt)
+endif()

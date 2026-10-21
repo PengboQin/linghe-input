@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "policy": "Lightweight browsing tree; no binary blobs; no size-based original-source exclusion.",
+  "full_source_zip": {
+    "asset_name": "LingheInput-Source-20261020-preview1.zip",
+    "sha256": "87f4f25c701acb283d325f613d6189ba04efa39effad219f84d4d63b596e19c1",
+    "tag": "v0.2026.10.20-preview.1",
+    "only_complete_build_entrypoint": true,
+    "download_url": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.20-preview.1/LingheInput-Source-20261020-preview1.zip"
+  },
+  "audited_plan_sha256": "406b88b81f4f13c42fc51f81515ac7e84563a79cd2afc8ada55e39b33c9e6529",
+  "full_archive_manifest": "PUBLIC-SOURCE-MANIFEST.json",
+  "excluded_files": [
+    {
+      "path": "android/app/src/main/res/drawable/app_icon.png",
+      "sha256": "36df48674c4c24a6ba63c4ffb33029febdadd3a64b8eb66d19f6c2e251d5f34e",
+      "source_sha256": "36df48674c4c24a6ba63c4ffb33029febdadd3a64b8eb66d19f6c2e251d5f34e",
+      "bytes": 884136,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "apple/iOS/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "sha256": "36df48674c4c24a6ba63c4ffb33029febdadd3a64b8eb66d19f6c2e251d5f34e",
+      "source_sha256": "36df48674c4c24a6ba63c4ffb33029febdadd3a64b8eb66d19f6c2e251d5f34e",
+      "bytes": 884136,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "apple/macOS/InputMethod/LingheCraneMenu.tiff",
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "source_sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "bytes": 5572,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "apple/macOS/InputMethod/LingheCraneMenuTemplate.tiff",
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "source_sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "bytes": 5572,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "apple/macOS/InputMethod/LingheInputMenu.pdf",
+      "sha256": "bf9d0a0168970fe6663d9a1b6496c21183d362729392a2aa09110f49de8ce59e",
+      "source_sha256": "bf9d0a0168970fe6663d9a1b6496c21183d362729392a2aa09110f49de8ce59e",
+      "bytes": 1077,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "apple/macOS/InputMethod/PrivateInput.icns",
+      "sha256": "205f0f94936ed5f6cc1c5ffdd43c61d9695f788727d7a970027ffeda9fcfcd2d",
+      "source_sha256": "205f0f94936ed5f6cc1c5ffdd43c61d9695f788727d7a970027ffeda9fcfcd2d",
+      "bytes": 1317789,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "apple/macOS/InputMethod/PrivateInput.tiff",
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "source_sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "bytes": 5572,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "apple/macOS/InputMethod/PrivateInputTemplate.tiff",
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "source_sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "bytes": 5572,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "resources/rime/essay.txt",
+      "sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+      "source_sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+      "bytes": 5846161,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "resources/rime/private_pinyin.dict.yaml",
+      "sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+      "source_sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+      "bytes": 859873,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "resources/rime/private_zh_hans_compact.gram",
+      "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "source_sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "bytes": 40925228,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "resources/semantic/continuation.bin",
+      "sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+      "source_sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+      "bytes": 985151,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "resources/semantic/nine-lexicon.bin",
+      "sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+      "source_sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+      "bytes": 957112,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "vendor/dictionaries/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/essay.txt",
+      "sha256": "3e8512ebaa6657e35961b1f5762060717c647e3bf471d5e3b86e783b4e934ffb",
+      "source_sha256": "3e8512ebaa6657e35961b1f5762060717c647e3bf471d5e3b86e783b4e934ffb",
+      "bytes": 5887319,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "vendor/dictionaries/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/luna_pinyin.dict.yaml",
+      "sha256": "75bcf6eb3ff62b129882ed89cc22b2d80a5347aa72bcfa2ccc839bac298e7314",
+      "source_sha256": "75bcf6eb3ff62b129882ed89cc22b2d80a5347aa72bcfa2ccc839bac298e7314",
+      "bytes": 889896,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "windows-source/resources/rime/essay.txt",
+      "sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+      "source_sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+      "bytes": 5846161,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "windows-source/resources/rime/private_pinyin.dict.yaml",
+      "sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+      "source_sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+      "bytes": 859873,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "windows-source/resources/rime/private_zh_hans_compact.gram",
+      "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "source_sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "bytes": 40925228,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "windows-source/resources/semantic/continuation.bin",
+      "sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+      "source_sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+      "bytes": 985151,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "windows-source/resources/semantic/nine-lexicon.bin",
+      "sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+      "source_sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+      "bytes": 957112,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "windows-source/windows/resources/AppIcon.ico",
+      "sha256": "3909a2a6fa3368a4b2e22c6febb0f08810bc24a350815762a519b8fba39f066c",
+      "source_sha256": "3909a2a6fa3368a4b2e22c6febb0f08810bc24a350815762a519b8fba39f066c",
+      "bytes": 114269,
+      "reason": "explicit_binary_asset"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-history-1025.json",
+      "sha256": "167b29ba13aed8b44a3a45e567c9bf048f57a2a549d3ae8e9673261e668be014",
+      "source_sha256": "167b29ba13aed8b44a3a45e567c9bf048f57a2a549d3ae8e9673261e668be014",
+      "bytes": 515360,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-nul.json",
+      "sha256": "d7ddd8d32dac192ae5cab67bd3277430fbd6936009df110ed16ec18f4241980c",
+      "source_sha256": "d7ddd8d32dac192ae5cab67bd3277430fbd6936009df110ed16ec18f4241980c",
+      "bytes": 502,
+      "reason": "exact_binary_fixture"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-over2mib.json",
+      "sha256": "e7d99e4db1392275f200e288c860f9780a935c945e2d55f98c1b68a1f9f3fb5c",
+      "source_sha256": "e7d99e4db1392275f200e288c860f9780a935c945e2d55f98c1b68a1f9f3fb5c",
+      "bytes": 2097153,
+      "reason": "explicit_public_data"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-continuation.json",
+      "sha256": "157fe0f167c85a382805cd0dfcc026be70258eb23f2478484d49477740ccd5d4",
+      "source_sha256": "157fe0f167c85a382805cd0dfcc026be70258eb23f2478484d49477740ccd5d4",
+      "bytes": 502,
+      "reason": "exact_binary_fixture"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-five-byte.json",
+      "sha256": "2a3e35808304b3b2b539e9207cb69e7469b5fad6da72ca527f960daf9051aa19",
+      "source_sha256": "2a3e35808304b3b2b539e9207cb69e7469b5fad6da72ca527f960daf9051aa19",
+      "bytes": 506,
+      "reason": "exact_binary_fixture"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-out-of-range.json",
+      "sha256": "c2f9f0ee6778cebdc95744823231d8d6b265779522004812d4e157117c99dfc8",
+      "source_sha256": "c2f9f0ee6778cebdc95744823231d8d6b265779522004812d4e157117c99dfc8",
+      "bytes": 505,
+      "reason": "exact_binary_fixture"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-overlong.json",
+      "sha256": "d73abeafdde7ea0af4472e6c8dbff32c20c25859c4f285b3c586339e10532caf",
+      "source_sha256": "d73abeafdde7ea0af4472e6c8dbff32c20c25859c4f285b3c586339e10532caf",
+      "bytes": 503,
+      "reason": "exact_binary_fixture"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-surrogate.json",
+      "sha256": "f0c857bb0677323ca44bdd8ae383efd86dd3abaceff0d48d61b7a1d5fe1ce6d2",
+      "source_sha256": "f0c857bb0677323ca44bdd8ae383efd86dd3abaceff0d48d61b7a1d5fe1ce6d2",
+      "bytes": 504,
+      "reason": "exact_binary_fixture"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-truncated.json",
+      "sha256": "803599bd1bc881500ad8ae48ec1fe64733f8148a642e0c8daf64a0a7bc130cdc",
+      "source_sha256": "803599bd1bc881500ad8ae48ec1fe64733f8148a642e0c8daf64a0a7bc130cdc",
+      "bytes": 503,
+      "reason": "exact_binary_fixture"
+    }
+  ],
+  "restore": "Download the exact full source ZIP asset, verify SHA256, extract it into a fresh directory and follow BUILDING.md. Do not assume this lightweight tree alone is a complete build source."
+}

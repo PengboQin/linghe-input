@@ -1,0 +1,13 @@
+config_version: '0.2.0'
+schema_list:
+  - schema: private_pinyin
+  - schema: private_pinyin_private
+  - schema: private_nine
+  - schema: private_nine_private
+  - schema: private_nine_initials
+  - schema: private_pinyin_exact
+menu:
+  page_size: 7
+switcher:
+  caption: 输入设置
+  hotkeys: []

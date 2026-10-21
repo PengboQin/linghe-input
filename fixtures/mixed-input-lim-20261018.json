@@ -1,0 +1,107 @@
+{
+  "id": "chinese-mode-mixed-english-evidence",
+  "source": "User reports lim in Chinese 26-key mode appears English-prioritized; no exact Chinese target/order supplied.",
+  "capturePolicy": "isolated public dictionary; controlled provider; no personal words or host documents",
+  "cases": [
+    {
+      "id": "lim-english-prefix",
+      "raw": "lim",
+      "context": [
+        "",
+        ""
+      ],
+      "provider": [
+        "limit",
+        "limited"
+      ],
+      "required": [
+        "里面",
+        "limit"
+      ],
+      "before": [
+        [
+          "里面",
+          "limit"
+        ]
+      ],
+      "preedit": "native Chinese segmentation"
+    },
+    {
+      "id": "lim-english-exact-artifact",
+      "raw": "lim",
+      "context": [
+        "请放到",
+        "去"
+      ],
+      "provider": [
+        "lim",
+        "limit"
+      ],
+      "required": [
+        "里面",
+        "limit"
+      ],
+      "before": [
+        [
+          "里面",
+          "lim"
+        ],
+        [
+          "里面",
+          "limit"
+        ]
+      ]
+    },
+    {
+      "id": "can-valid-full-pinyin",
+      "raw": "can",
+      "context": [
+        "这句继续写",
+        "才完整"
+      ],
+      "provider": [
+        "can",
+        "cancel"
+      ],
+      "first": "Chinese; full exact order unspecified"
+    },
+    {
+      "id": "known-english-apple",
+      "raw": "apple",
+      "context": [
+        "我想输入",
+        ""
+      ],
+      "required": [
+        "apple"
+      ],
+      "display": "apple",
+      "commit": "apple"
+    },
+    {
+      "id": "known-english-prefix",
+      "raw": "appl",
+      "context": [
+        "",
+        ""
+      ],
+      "required": [
+        "apple"
+      ],
+      "commit": "apple"
+    },
+    {
+      "id": "selected-Chinese-prefix",
+      "raw": "nihaoshijielim",
+      "operation": "select 你好 then 世界",
+      "rawFinish": "你好世界lim",
+      "englishChoice": "你好世界limit"
+    },
+    {
+      "id": "explicit-english",
+      "mode": "English",
+      "raw": "limit",
+      "behavior": "unhandled pass-through; no Chinese composition"
+    }
+  ]
+}

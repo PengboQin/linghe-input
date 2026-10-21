@@ -1,0 +1,4563 @@
+{
+  "schema_version": 1,
+  "policy": "positive-path-and-extension-allowlist-v1",
+  "source_license": "GPL-3.0-only for original code; third-party licenses retained",
+  "created_at_unix": 1792544100,
+  "member_count": 897,
+  "uncompressed_bytes": 117259331,
+  "export_template_changes": [
+    {
+      "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
+      "kind": "reserved_host_for_documentation_placeholder",
+      "count": 1
+    },
+    {
+      "file": "android/app/src/main/java/live/linghe/privateinput/MainActivity.java",
+      "kind": "operator_url_to_reserved_example",
+      "count": 1
+    },
+    {
+      "file": "android/tests/host/live/linghe/privateinput/ActivitySourceContextTest.java",
+      "kind": "reserved_process_path_in_negative_fixture",
+      "count": 1
+    },
+    {
+      "file": "apple/project.yml",
+      "kind": "blank_signing_team",
+      "count": 1
+    },
+    {
+      "file": "apple/iOS/App/AppLegalView.swift",
+      "kind": "operator_url_to_reserved_example",
+      "count": 1
+    },
+    {
+      "file": "apple/iOS/App/AppLegalView.swift",
+      "kind": "operator_url_to_reserved_example",
+      "count": 1
+    },
+    {
+      "file": "server/deploy/README.md",
+      "kind": "reserved_host_for_documentation_placeholder",
+      "count": 1
+    },
+    {
+      "file": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RelayClientTests.swift",
+      "kind": "documentation_ip_in_endpoint_validation_fixture",
+      "count": 1
+    },
+    {
+      "file": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RelayClientTests.swift",
+      "kind": "documentation_ip_in_endpoint_validation_fixture",
+      "count": 1
+    },
+    {
+      "file": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/RelayClientTests.swift",
+      "kind": "documentation_ip_in_endpoint_validation_fixture",
+      "count": 1
+    },
+    {
+      "file": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/RelayClientTests.swift",
+      "kind": "documentation_ip_in_endpoint_validation_fixture",
+      "count": 1
+    },
+    {
+      "file": "windows-source/windows/tests/uninstall_policy.cpp",
+      "kind": "reserved_user_path_in_negative_fixture",
+      "count": 1
+    },
+    {
+      "file": "windows-source/windows/tests/activity/clipboard_context.cpp",
+      "kind": "reserved_process_path_in_negative_fixture",
+      "count": 2
+    }
+  ],
+  "complete_rebuild_verified": false,
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "bytes": 1881,
+      "sha256": "c4cffbdd8606aa38b5dd1aaeaf6d62bbffdc5815470cc9c8242452c6c69bdaa8"
+    },
+    {
+      "path": "android/app/src/main/cpp/CMakeLists.txt",
+      "bytes": 990,
+      "sha256": "f244fd5a23db7fc9f1f8637e8c75c355b68dd8beba4a47a52e5bd229bf5fea7e"
+    },
+    {
+      "path": "android/app/src/main/cpp/jni.cpp",
+      "bytes": 14233,
+      "sha256": "348b3ca58a32e28cb361b0efe09a9e02c4c6fac22e860f2793a6b416e2b09608"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
+      "bytes": 6694,
+      "sha256": "a9ccaa3aae2dfd33da7e8465760a96102ecbab58d407bffb0080da5f14600b1e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveEditText.java",
+      "bytes": 1343,
+      "sha256": "5843bfcd5f1639926153398b51fb66829b6a675a9f2ffa09a7d43cc533c518ae"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveJob.java",
+      "bytes": 446,
+      "sha256": "98fdf8eaf93f14caa7d798f9573543ac9af406a94bd4b6f2ef3c3c72841aabab"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveManager.java",
+      "bytes": 27649,
+      "sha256": "d1b99d8c3b59156d2ea0426ca83efcb4a21d790f16bfa6c91482eea44fe70d2c"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveProvider.java",
+      "bytes": 347,
+      "sha256": "ae37790a9e01bf786418e1706c4d3d8ce636f2f619104d8343f71be279ecca75"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveQueue.java",
+      "bytes": 5026,
+      "sha256": "e1b6331684b054b9706c63f64472b46412cf3d5a1908cec5901d07ef096c879c"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveRules.java",
+      "bytes": 1881,
+      "sha256": "4fe27f9fcb057cf45ae04e11c20634ad1c61cdf2e6f2e8c768d829012cfdf6ce"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveWire.java",
+      "bytes": 1411,
+      "sha256": "179d155852b1f065c8c2bf793d9812f77a49847c5c0bc8116dda5826877fd76d"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ActivitySourceContext.java",
+      "bytes": 1875,
+      "sha256": "f99e3f66658c5148235c630cb9b411295acd569996df898d67f630794e9abdd6"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/AppFiles.java",
+      "bytes": 2288,
+      "sha256": "3391ec2c98ff45eaddf1e681e8a7c690be721be70b4aef2c726d587a5c7a36c9"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardBridge.java",
+      "bytes": 10034,
+      "sha256": "bcf660afcfd1fc9b630449f92db1224273fd4adbc48c7dd4ea61f934a7b7704c"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardObservation.java",
+      "bytes": 613,
+      "sha256": "170239e3bf24cbf26d39df964dd15545c9f6ea6de827dab37f1b59d11e622687"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardState.java",
+      "bytes": 2899,
+      "sha256": "4eda77067b8f73a2e156d66de4d48d314c0446fce08a0244cb26eab41325da65"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/AutomaticSyncCadence.java",
+      "bytes": 792,
+      "sha256": "e73ab745115cdca3859dc81e3bb6a93fb16682d2ae95b81bb42d5fb3c5ae16a0"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CandidateViews.java",
+      "bytes": 10613,
+      "sha256": "5a0034c5d1bb6f684191c93b4614ceccc680b56d3c74190e2373914571769d4e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ChoiceMemory.java",
+      "bytes": 7058,
+      "sha256": "3312eb27824fff20291e97dfe5cd15ab9ec972101b25fb4fe0bf341ba10b8cab"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ChoiceOrder.java",
+      "bytes": 2278,
+      "sha256": "f1de42b6ce4c1652898f90512bfd7f196cc7e3f2d7d1223633395429858c92b0"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardCandidateReader.java",
+      "bytes": 3492,
+      "sha256": "ad8178e064504606ae2a411693268820e25d4e506cfb94098a69c61be7e44d58"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardCandidateState.java",
+      "bytes": 2011,
+      "sha256": "5863587399af334d49256f38309a1dd93192a189ad7cab2e63877103ae9ba3de"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardLiveAuthority.java",
+      "bytes": 5579,
+      "sha256": "0ddf7c2899d203d64c52d13438946feb14e3a88fe65faee596cd9a0ff9788115"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardLiveClient.java",
+      "bytes": 8167,
+      "sha256": "739c00b1281cf86d07b2cf49b6eb541bed201e0675325ce818cac661f69e8b93"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardLiveStore.java",
+      "bytes": 5816,
+      "sha256": "0d5b49f23a6ac964a6534bc39467ff315b8304be29f9419f75b06e4899050c1b"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardLiveWire.java",
+      "bytes": 7406,
+      "sha256": "6279f5ba6900ad9012109eb82f731d470be6fdb4066a150b42c0e3b9611ad58e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardRefreshPolicy.java",
+      "bytes": 405,
+      "sha256": "f0f2f44277a787d68a877d37df639f335208348a99385376329b4eab77ce8105"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CommonExpressionOrder.java",
+      "bytes": 3631,
+      "sha256": "35a08e52ffba9ad2e45a9221b6c7e3027a215bc59f66121eceba83a7f03f3732"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ContextWindow.java",
+      "bytes": 1163,
+      "sha256": "8b57d8d3d5394edb339a2c2bd01867208edb0b0ca41205777be6c9e89813e1ab"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/DeviceSyncActivity.java",
+      "bytes": 16162,
+      "sha256": "36dfee32c83da9811efcb5b107f7dd0a7e8f6a65748b150fd057387f9a8b291a"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/EnglishCompletion.java",
+      "bytes": 2908,
+      "sha256": "95fa80bf65d489c13ea1dca61496ad45d72264984e2dee845bfad649567023ce"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/EnglishSuggestions.java",
+      "bytes": 1524,
+      "sha256": "1826fbefdfa83287d09dd590452a34c245f7c1b2dd9907ede7eb9a84f45d3c3f"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/EnglishWordSuggestions.java",
+      "bytes": 3712,
+      "sha256": "3f921b2a95a2febcbd302556427c706af5440fd336a0179a20005b28ff91215d"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/GlyphAvailability.java",
+      "bytes": 717,
+      "sha256": "ea28a32fbcc909b18fd52ef07624a7cb1c7fe630cb548c773f3be99d77e12148"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/InputQuality.java",
+      "bytes": 15739,
+      "sha256": "4c38d49bc052df4fce789f13a4b25527f25d1eb71f437722a79ca5344b265f3b"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/InputTheme.java",
+      "bytes": 2130,
+      "sha256": "b7d110c4e8ec534e81c7c6e461be3a043dc1d3f4fc1d6ec5eca4d6ef77bb2cf8"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/KeyboardButton.java",
+      "bytes": 2783,
+      "sha256": "32a5100f526762fdbe8c1e4327de86da32b6e47ab9beb0becae3c097c7b07221"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LearningCoordinator.java",
+      "bytes": 6108,
+      "sha256": "5742ddaf17b926d1360fa04872532617e88dae2894bd52276ff2506e16131888"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LearningModel.java",
+      "bytes": 11351,
+      "sha256": "8d3fc9e30bda141acab70a04b2f656409cddbb171593f327e1b2e1f147321fdc"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LearningSnapshotFile.java",
+      "bytes": 1217,
+      "sha256": "9476d37ccf497add304b45287221e30fb10ebbeba424b820b8826a5ef1527d07"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LexiconDocuments.java",
+      "bytes": 1139,
+      "sha256": "dbc0533049c5794668caa982dd2f3514856d5a7d83c5ec87eaa935aad5cd7525"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LingheApplication.java",
+      "bytes": 2358,
+      "sha256": "8b88f6f0fa55c642d99910cb3f06dafd9b2b16f8b745288c3996852b460bf24e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LingheInputService.java",
+      "bytes": 73815,
+      "sha256": "cf37e024594526e96525a0a2b527997efbe79c921bdfd541ff68bf5cba379254"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LosslessJson.java",
+      "bytes": 4573,
+      "sha256": "d3c250fad87b984f9a718bc215abe7f0dc4f5b2b23ec08cb1689d930c96b5326"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/MainActivity.java",
+      "bytes": 14556,
+      "sha256": "669fd999e865112bd770e63b59b55d63943b7e40aab33a7580b1037e9ceb468e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/NativeCore.java",
+      "bytes": 1857,
+      "sha256": "1c5a61902e9e59a35bd8400195319b5cf1048d9f332e95fa576059d1e30e38d6"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/NineSpelling.java",
+      "bytes": 5816,
+      "sha256": "d82377690541fc08805162464ed4e9f7ca03263220433ee44e48a6876acec01f"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/OwnCommitTracker.java",
+      "bytes": 2575,
+      "sha256": "6dc0c1a9f5d313906f25b7536cd4a53057fc738c523e2971b34879cd7fe64900"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/OwnText.java",
+      "bytes": 1317,
+      "sha256": "e70b70d5771e506d3681ec501a7de88bf5cbe0507c2e611e47e7998ee8f95e8b"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/PersonalChangeSignal.java",
+      "bytes": 376,
+      "sha256": "dd9b091a54c08e53ec6a699d66b597bf7b8721c20f9c97fb947278d3c3091625"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/PersonalLexicon.java",
+      "bytes": 18853,
+      "sha256": "6a922b59976867e08f85a59d7ef74461dfaa1192130995eb27ea609339951902"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/PersonalLexiconActivity.java",
+      "bytes": 13102,
+      "sha256": "5b495d2af84fbb1fdf22ce764ffad9fc366c5a94bf1046d6fcfd27b04c8482f1"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/PersonalReset.java",
+      "bytes": 4241,
+      "sha256": "45d75cdfc07a11731965ee457790638a47af996c4926ad0bdeec3f690a8acd40"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/PinyinCorrector.java",
+      "bytes": 7123,
+      "sha256": "a5b359f99adcf7c27b8e8828a598e11a50b9e9631447c4bf3ecf6cd505903e2d"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/PinyinMatch.java",
+      "bytes": 2560,
+      "sha256": "94778693d97a52f68c6686226ed0490eb25bd43145e9ae562510a635382ead57"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/PublicLanguageData.java",
+      "bytes": 6832,
+      "sha256": "4ac0f79231b0a32169467e5082966928e7ac60087d64b4ac0917e4faa8a389a1"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/QRScanActivity.java",
+      "bytes": 4993,
+      "sha256": "fc3e03b104f504f1203c4056710c3e05c1b958433e0f55d23cf10856740f7c66"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearning.java",
+      "bytes": 13297,
+      "sha256": "f1ea04586653889b99a31c033f58ff0d73fcb2532988ae2c0cb6895ce31a5e49"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningScope.java",
+      "bytes": 1225,
+      "sha256": "f7a4198fb87feb7cf3ce2b342faf6e61c8c91a8ef453ebf16b17f8d8dc96cff7"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningSlot.java",
+      "bytes": 1455,
+      "sha256": "b82441600fb884c2e2f96b01b7281ed85439ac146a4b95dd200b39e24a412881"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningStore.java",
+      "bytes": 16405,
+      "sha256": "7dc4f5c973b890b2cd39b755ca78cebdfa05da8a0572690b6e06a5c5dee11674"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningSync.java",
+      "bytes": 10044,
+      "sha256": "ef2ebb1b3d76e248bfbc8f5b248fa28fc6e983e9fbfc35b166db4f1eb5aaf9f2"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningWire.java",
+      "bytes": 2791,
+      "sha256": "b15831c7aa8c1698c2956948b373af59e30a29acbef911786652b7e0d615f37b"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ReplayAdvancePolicy.java",
+      "bytes": 849,
+      "sha256": "77cf7c50c31ef4f7787c01cda0cc5afacdc7f498e56e4580cb8be5b63cba440b"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RimeCheckpoint.java",
+      "bytes": 6704,
+      "sha256": "18a9ec974e0e7ce6f5fae6a7240654718a167f35d37ea16833eb0300c46e3b8e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SharedTextEntry.java",
+      "bytes": 1164,
+      "sha256": "fed5cccccdec710f38d6673b2add91a92bcfbce9e177ababc00ac1266f8f001f"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SpaceCursorGesture.java",
+      "bytes": 2303,
+      "sha256": "7fab4112253dc877dcd2d24dec78704d9148dee663257e66f71e73ea4c34eb67"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SymbolOrder.java",
+      "bytes": 546,
+      "sha256": "d831aaf996835e89e83929923c58bd634aba02eed2d1212be4a85e3c80bce492"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SymbolPairing.java",
+      "bytes": 873,
+      "sha256": "c1276696a70a4befa1b7f2618095ae03165e2aeacae4ec5dcf79a15f1acd5a92"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/Symbols.java",
+      "bytes": 2603,
+      "sha256": "09728760c37415de38681f85d07332da305812157377785a93e2cde80eb8521b"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SyncClient.java",
+      "bytes": 50393,
+      "sha256": "42e589fff240b40efded348fedd84b251d86f7c27d181a2bb898429f390ae397"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SyncCrypto.java",
+      "bytes": 21815,
+      "sha256": "942de9e652cb23033c9f13c229aa0a7d996b3228782d5313251de5fe40789580"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SyncJob.java",
+      "bytes": 1009,
+      "sha256": "02fea8b165ce1a13c23a7718614ede9a8a60a37429cc3781cc1d465f71b705e6"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SyncPhasePolicy.java",
+      "bytes": 782,
+      "sha256": "296d69d8ac29c73328ef809d850087ab75682db608832a7a06d33fb7d21834a4"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SyncStore.java",
+      "bytes": 3123,
+      "sha256": "d0982189fae21326bceb931b1bcc9702fb4ade22cf62e460972d04b7815840ce"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SyncTasks.java",
+      "bytes": 166,
+      "sha256": "71b496f19e7166f66a47f821da5cba107031af12d3d683d18ea901a5045ed259"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/Ui.java",
+      "bytes": 2456,
+      "sha256": "225e4c4ddc4e0fc58b5118729af86d283672a53b9a39aab2c0e509acde349997"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/app_icon.png",
+      "bytes": 884136,
+      "sha256": "36df48674c4c24a6ba63c4ffb33029febdadd3a64b8eb66d19f6c2e251d5f34e"
+    },
+    {
+      "path": "android/app/src/main/res/values/strings.xml",
+      "bytes": 119,
+      "sha256": "d1bad6194f93caed4a5d4763201d848a7afce49c0a45b15cd7c160ef9704ebd1"
+    },
+    {
+      "path": "android/app/src/main/res/values/styles.xml",
+      "bytes": 3093,
+      "sha256": "3ffe7a7e042b9528834d37f4fa1b36579fa28b3227164903df63cc16b0dd3e66"
+    },
+    {
+      "path": "android/app/src/main/res/values-night/styles.xml",
+      "bytes": 363,
+      "sha256": "4a65519018896ca92615c39b22e7b238eb385f21a0f64878c2cf9a1e7dc8c99e"
+    },
+    {
+      "path": "android/app/src/main/res/xml/input_method.xml",
+      "bytes": 355,
+      "sha256": "1ea8fcf892c40b027fcfaa84b71e2e3e6d7277ed136abbe28680ee76dd513794"
+    },
+    {
+      "path": "android/tests/AndroidManifest.xml",
+      "bytes": 3270,
+      "sha256": "eb0f8b5dce36e4f34e6379703aac65f1ab9de4c15323bda16776cbac7e89383e"
+    },
+    {
+      "path": "android/tests/cli/CliAppleParity15.java",
+      "bytes": 4099,
+      "sha256": "0cf5a2523d631ffdbdcc61971ef24a195f005a7aa924a2ecea21f47b2b228921"
+    },
+    {
+      "path": "android/tests/cli/CliCheckpointCheck.java",
+      "bytes": 8586,
+      "sha256": "3fb41ae82e3aa4373fe31f3399995d6d26df23cda380dd74a0190070d1660de2"
+    },
+    {
+      "path": "android/tests/cli/CliChoiceCheck.java",
+      "bytes": 7218,
+      "sha256": "c8d9ebc2d7f79934011fce2a6a8a16e4ae0c68e37a99a77b4bcea81eb78af51c"
+    },
+    {
+      "path": "android/tests/cli/CliData10Check.java",
+      "bytes": 11178,
+      "sha256": "f9931e5e932cf635fce0547cdc12d38f23e4742a1eb287981ec41c6ed3687962"
+    },
+    {
+      "path": "android/tests/cli/CliLanguageCheck.java",
+      "bytes": 4462,
+      "sha256": "fec99e3023dde535b9688cb392ce3142c3cf61f6eb69d3e630aa96cb6b085cf7"
+    },
+    {
+      "path": "android/tests/cli/CliLearningCheck.java",
+      "bytes": 7075,
+      "sha256": "b071a238855b6c321d62e627b771276da1189854e2294bc127d13febb4bcb6ec"
+    },
+    {
+      "path": "android/tests/cli/CliPersonalCheck.java",
+      "bytes": 4578,
+      "sha256": "5034dae83dc32dc9a8c0e114c5d8f970e4ee46d49866f6d648e89375cdeecbab"
+    },
+    {
+      "path": "android/tests/cli/CliQualityCheck.java",
+      "bytes": 9012,
+      "sha256": "7c349efb88765ea18369bb2d8671c3e3f49faa75599c5020b9b751b91a102271"
+    },
+    {
+      "path": "android/tests/host/InputAlgorithmsTest.java",
+      "bytes": 1923,
+      "sha256": "e75623ba7be097e8c2af14f5bcffde5943bd7b945fe8517db2468c338b643051"
+    },
+    {
+      "path": "android/tests/host/InputThemeParityTest.java",
+      "bytes": 1291,
+      "sha256": "1c272f7f0353d50c891f2866b338972eddeb1ebeec2b58e16846cc1ce949d92e"
+    },
+    {
+      "path": "android/tests/host/RecentLearningCryptoVectorTest.java",
+      "bytes": 3230,
+      "sha256": "efb657cf543e2f8ea312d09a391ff66d57c878506157ab333693256e6d102f05"
+    },
+    {
+      "path": "android/tests/host/RecentLearningOrderingTest.java",
+      "bytes": 1729,
+      "sha256": "3b246ed58f500d0b2c5397e50e01ecddf3775285b75b3ef091f47b3d9da80aaa"
+    },
+    {
+      "path": "android/tests/host/RecentLearningParityTest.java",
+      "bytes": 12063,
+      "sha256": "a07dd2e73197607d32919cb7b960c4bbe05c5a1348bca6959b17730b92003c2a"
+    },
+    {
+      "path": "android/tests/host/RecentLearningSlotTest.java",
+      "bytes": 1797,
+      "sha256": "c3b49ebf38e129418ae81cb849e521231f6ea311c7ee311aefddecc7c74f848d"
+    },
+    {
+      "path": "android/tests/host/SymbolGlyphParityTest.java",
+      "bytes": 1752,
+      "sha256": "1789227b825f1beb6f1079bb247396b4ecb723d4ef5bdb81ee11f3a68e60be42"
+    },
+    {
+      "path": "android/tests/host/live/linghe/privateinput/ActivityArchiveRulesTest.java",
+      "bytes": 2989,
+      "sha256": "2467ce5320abb4024a41d24689f1455bd487e4401f2d4a56790b666747c2c19a"
+    },
+    {
+      "path": "android/tests/host/live/linghe/privateinput/ActivitySourceContextTest.java",
+      "bytes": 1642,
+      "sha256": "4c3b020adbc3e0f2968e3648c39a132d0180403122a086e3ad416d8671c22c53"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/ActivityArchiveHttpInstrumentation.java",
+      "bytes": 13303,
+      "sha256": "abb8dccb3e6624c45c8b390f1d24be3baa55d3d8110add8fd1df6c9e2de3a910"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/ActivityArchiveInstrumentation.java",
+      "bytes": 948,
+      "sha256": "fd1335771c3ea1fb7c84e19238af6cdeba0b3cf9e67527cb3aa056ca4ecdc092"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/ActivityArchiveQueueCheck.java",
+      "bytes": 5832,
+      "sha256": "4054ddcb0a4d46bf732ebac1fc7c88947e440dc71127f128418733a00edb61fb"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/ClipboardCandidateCheck.java",
+      "bytes": 3729,
+      "sha256": "90a4f00188558aca1ed4f9216adc5271df6cf568f03a148c757dc19eb59c6705"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/ClipboardLiveCheck.java",
+      "bytes": 19497,
+      "sha256": "2bc3a7d4c40c75d5756084a76ef11b80fe8e281f4208b85e0aab37e7f179f6ea"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/DataSnapshot.java",
+      "bytes": 2303,
+      "sha256": "551b4d34a9e6954f97c2ff1651d0e336f247ae6c118df79c2a60b0a29afcc70d"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/DocumentHarnessProbe.java",
+      "bytes": 2716,
+      "sha256": "343cc8bca26153f3e1319e79723ee795d868c3baa27fe49ae740f3849331a14e"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/EngineCheck.java",
+      "bytes": 8668,
+      "sha256": "55c403c828e71a1b8c6aa653250a1824a6d23f260d164ce7f1634babf3a0666c"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/FixtureDocuments.java",
+      "bytes": 5796,
+      "sha256": "ba37de4ad8cd9b649ba5b50b278f3283088a54cb03620fac1de848b50e5a8d3c"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/IndependentSyncCheck.java",
+      "bytes": 8400,
+      "sha256": "944e9b8945a05b94708241df0710dd5b76608d219b5840264b9d3a7f43692266"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/InputInteractionCheck.java",
+      "bytes": 10597,
+      "sha256": "ef30e7a6c924960db57dc47d4890da5e1853c4a45d463a82d921d742be98a7bd"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/LearningAcceptanceService.java",
+      "bytes": 3378,
+      "sha256": "d873dd601903a0cdf327ef1f7522c01612c3a58b48a0740b1975600d98431bc4"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/LearningProof.java",
+      "bytes": 2458,
+      "sha256": "1b3ebf686a31ea71895097c5cc0d82b7ba3424b3dc7a62bfe15ccd80da03d531"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/LexiconAcceptanceActivity.java",
+      "bytes": 2578,
+      "sha256": "62f6f655f544130a6c0eb182005b03803fb4aea5e5d9944991eb9836cf0dc28b"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/PersonalDataCheck.java",
+      "bytes": 13513,
+      "sha256": "6cd9411799458965a27623fecd80e319c53b62e1b1a2e157146fa4865f23b557"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/SelectionCheck.java",
+      "bytes": 12229,
+      "sha256": "499f65ad8eea6be4f14d61a7fa71032e8ad263acdc148868974d738dc24fc17a"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/SyncAcceptanceActivity.java",
+      "bytes": 624,
+      "sha256": "c3eeeefd0336e1d7cd9d9a8e9526f52ca89b31129c5b9797bacd0512e04fa32b"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/SyncBacklogRecoveryCheck.java",
+      "bytes": 22369,
+      "sha256": "02ef6bef6e22bf70fc1e6104ee105054ca5d0409980d4588482d555758a8c2a1"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/SyncCheck.java",
+      "bytes": 5681,
+      "sha256": "e85978ec900cffea0319464bcea759f715a1252c8be7112e5ccae768cf09d55d"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/SyncOwnerCheck.java",
+      "bytes": 5806,
+      "sha256": "44d116f13f00f7e613309daa8a0a35fd6ca2e29d3949a7dc4c54a9ae7fb65682"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/TypingAcceptanceActivity.java",
+      "bytes": 2599,
+      "sha256": "1ee292efbd60e5ae7ddc551581c10ed8ad98c33635b099b86f962dcdb53b5d53"
+    },
+    {
+      "path": "android/tests/res/xml/acceptance_input_method.xml",
+      "bytes": 290,
+      "sha256": "ca55d5c4acbc3e83bf6dc6f27b41faf2d85951cf708db86989a97aa224c45f92"
+    },
+    {
+      "path": "apple/PrivateBuild.example.xcconfig",
+      "bytes": 114,
+      "sha256": "ba728f009251e3b1a39f054ebbca900cc8906f807147bd5d85fb997e01023a39"
+    },
+    {
+      "path": "apple/project.yml",
+      "bytes": 12091,
+      "sha256": "03c58780d42868d341bd79af718908d1b88dc916ad68f26937db9356e4b5d8ee"
+    },
+    {
+      "path": "apple/Shared/ActivityArchiveController.swift",
+      "bytes": 20969,
+      "sha256": "e16e2a3f170b4454db3dc0f95f3726e8c3862191990074d776112dbded4a9a41"
+    },
+    {
+      "path": "apple/Shared/ActivityArchiveView.swift",
+      "bytes": 18033,
+      "sha256": "b92eb2d5dd8589b72da07bd84d4dc0f8178610aa64938aaae9d4312e57344c63"
+    },
+    {
+      "path": "apple/Shared/AppleClipboardLiveStorage.swift",
+      "bytes": 14111,
+      "sha256": "d29766c47ce96dd3cf020897899f04271ebb841cbfaf4badf5d7d7ee2f0d805f"
+    },
+    {
+      "path": "apple/Shared/AutomaticClipboardBridge.swift",
+      "bytes": 10986,
+      "sha256": "8e8ff67ac9901c34125e669913775360ed62929b8b82804f426d598c5209fb7c"
+    },
+    {
+      "path": "apple/Shared/Bridge.h",
+      "bytes": 135,
+      "sha256": "bae0d19de07f7e6f037c07b6c7a93bac1fae47cb398d1028fb5660fc586451cc"
+    },
+    {
+      "path": "apple/Shared/CandidateGlyphSupport.swift",
+      "bytes": 3619,
+      "sha256": "d443ed65d796581faba8cf335fcb3d35e773a4b54687eab8e165e1f9bb3f2e88"
+    },
+    {
+      "path": "apple/Shared/ClipboardCacheCoordinator.swift",
+      "bytes": 13142,
+      "sha256": "b915fe6939a5801ff875bbd5835dfdabfb784a7348afa9bdc1029f52ef34db3c"
+    },
+    {
+      "path": "apple/Shared/ClipboardLiveCoordinator.swift",
+      "bytes": 9028,
+      "sha256": "1c2a052afd730cf243f7bdb8de0f545dc31d2778917c68cad78dd9b330b718a2"
+    },
+    {
+      "path": "apple/Shared/ClipboardReadPausePolicy.swift",
+      "bytes": 497,
+      "sha256": "e644fcfd97f40520121eed7e6b611e9bbab13b9be497c9aa15ae3f208ad31d07"
+    },
+    {
+      "path": "apple/Shared/DeviceInvitationView.swift",
+      "bytes": 2445,
+      "sha256": "16a3a3dc7c2ae0728b75d2ae0886c268534d53ca71a266ef5b65d88f6e0b76f4"
+    },
+    {
+      "path": "apple/Shared/DeviceMemberSections.swift",
+      "bytes": 3903,
+      "sha256": "5a9af9351336f9d529a235d25278701f185c3f3b2934aa57edfc49140b86d865"
+    },
+    {
+      "path": "apple/Shared/DeviceSyncModel.swift",
+      "bytes": 12626,
+      "sha256": "dcd103a8f86abdc23a41efeb360e3bb235d4d8c5ec9e04d61e6ad795cff0f4bf"
+    },
+    {
+      "path": "apple/Shared/DeviceSyncSession.swift",
+      "bytes": 43831,
+      "sha256": "fd7667e30e318ebf1c02e4d8d23b0bb9cbb20c8515cc5819f7694ab380708f4d"
+    },
+    {
+      "path": "apple/Shared/InlineComposition.swift",
+      "bytes": 4419,
+      "sha256": "1f3c48a9990e6bbfed12f3820478cfddcf0c4824f75d8bb5d3f6f2ecdf4e6573"
+    },
+    {
+      "path": "apple/Shared/InputSettingsView.swift",
+      "bytes": 14358,
+      "sha256": "c08811531eeca537f34db6f238a0a9d2adfe31327b00a6d17500ad3c0a63c5fa"
+    },
+    {
+      "path": "apple/Shared/InputTheme.swift",
+      "bytes": 3102,
+      "sha256": "2fc8fe2862de6356c5b52b94f2896b1862ecf387f4d0a0e2bea7188f93d65d3f"
+    },
+    {
+      "path": "apple/Shared/KeyboardHeight.swift",
+      "bytes": 816,
+      "sha256": "b0844e71992016c2b2d2a9b707b9eadba3668a8aac1d4c2ee5d4b3f1927b7dcc"
+    },
+    {
+      "path": "apple/Shared/KeyboardPreferences.swift",
+      "bytes": 10047,
+      "sha256": "437ad277b3d2b303b34e5bf1502594e4b82f9dcb9ddaa6d925b07b05dad516fb"
+    },
+    {
+      "path": "apple/Shared/LearningCheckpointGate.swift",
+      "bytes": 1423,
+      "sha256": "94e885e86121e23628f4e936362a7e6fc535600fb6f0aa91a943a7ee50ba0ade"
+    },
+    {
+      "path": "apple/Shared/LearningRefreshPreparation.swift",
+      "bytes": 5512,
+      "sha256": "73e8b893d9b17df1208cd31379af3ef6a79324cc66f0b8074f0378f96f1a23db"
+    },
+    {
+      "path": "apple/Shared/LocalLearningCoordinator.swift",
+      "bytes": 17072,
+      "sha256": "56a01f9bcbee32858b3f8da56dfc9aad77e29409eee2c81435d4af42b10d190f"
+    },
+    {
+      "path": "apple/Shared/NativeEngine.swift",
+      "bytes": 151898,
+      "sha256": "97b9719f331c39f7975fe47c1ad890c08165cd3945201321a948e8a02785978d"
+    },
+    {
+      "path": "apple/Shared/PersonalDataReset.swift",
+      "bytes": 5360,
+      "sha256": "d06e150d2ffac806e8a0ca7550dee9b8382cfb73c4812934a63a3ebf127fa43d"
+    },
+    {
+      "path": "apple/Shared/PersonalLexiconSettings.swift",
+      "bytes": 9829,
+      "sha256": "655be2fa396bf3fc58db8af7ba9fba4b9cdb3b194da453c14a6404b2807b9c01"
+    },
+    {
+      "path": "apple/Shared/RecencyCoordinator.swift",
+      "bytes": 12666,
+      "sha256": "5a258e3cb198e5cab4f6562416b79ce861c660379ca7f80eac6d1ad50347da49"
+    },
+    {
+      "path": "apple/Shared/SemanticRanker.swift",
+      "bytes": 8404,
+      "sha256": "6589a6a02a0015c3acfebdd1dfdf0c5df3f8ad218b36b4affbc4271c82cae17d"
+    },
+    {
+      "path": "apple/Shared/SharedSnapshotProbe.swift",
+      "bytes": 2050,
+      "sha256": "4ea6cf614cccab59f04b4a4ccd8e48b525f73915364b81506c00e0d48bfab3ad"
+    },
+    {
+      "path": "apple/Shared/SharedTextCopy.swift",
+      "bytes": 2753,
+      "sha256": "65f871472b38e4c1241f29da9d75df3a3e2d45151932445b66b030055307272a"
+    },
+    {
+      "path": "apple/Shared/SymbolPairing.swift",
+      "bytes": 997,
+      "sha256": "6b248393dc5b621615fa4c6534afebe3ee1d0ce81ce65e85d175f1bc1c18f682"
+    },
+    {
+      "path": "apple/Tests/iOS/KeyboardUITests.swift",
+      "bytes": 154214,
+      "sha256": "c133d5ed9e5db98759a7cb1e980024991586919df6f9270924be9d28da4a598f"
+    },
+    {
+      "path": "apple/Tests/iOS/PairingEntryUITests.swift",
+      "bytes": 2233,
+      "sha256": "401052ba03b47e830e17d3b8bf995c23bd373e07b5164d383d40c9483403a665"
+    },
+    {
+      "path": "apple/Tests/iOS/RealDeviceSyncUITests.swift",
+      "bytes": 4100,
+      "sha256": "46e9c8e1165ef2be7b5062a0fea36e907d576b0bdc4bcdd79853f865110bf2dc"
+    },
+    {
+      "path": "apple/Tests/iOS/SyncUITests.swift",
+      "bytes": 15338,
+      "sha256": "be72dd7fba0e23c334509fc4a31320d32c39f9865edbcdaa6b1d3e58a52af1be"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/CandidateGlyphSupportTests.swift",
+      "bytes": 1682,
+      "sha256": "8e430024c9a693821341331c12ce574c0de5625b285f36d810cba2c54d4503ce"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/CandidateHighlightTests.swift",
+      "bytes": 8550,
+      "sha256": "1bf7be95d2eb0d89a881eaccb57075cbcc10cd77f494dc416a68f3530dfe40fe"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/CandidatePresentationTests.swift",
+      "bytes": 4449,
+      "sha256": "47307daeb2db7dbb7c919acd8278c9ddd66dbeef3277818d081bbb6a3a244939"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/ClipboardCandidateStateTests.swift",
+      "bytes": 6319,
+      "sha256": "8589e0001c00dd46d2510d5a34a99593670a2bb36f6b3e8747ac6494eddfaf57"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/DeletionPredictionLatchTests.swift",
+      "bytes": 2776,
+      "sha256": "4d838b76e6c2c032887a16317ce93975434d00359efa7fe7854e018123395e98"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/InputThemeTests.swift",
+      "bytes": 5913,
+      "sha256": "47e1d77a4cf1d02ded2304bb346d69e4391b679aa1d2ac532c9438945616fadb"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/KeyboardAppearanceTests.swift",
+      "bytes": 2200,
+      "sha256": "a733bdf3b469329199ced11be7fca3b20157e214c735d4014c7c404359fdba9e"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/KeyboardHeightPreviewTests.swift",
+      "bytes": 2530,
+      "sha256": "05b59b6f68dba6c847c9147762291245435787a63b93fe9dc1ae9bfb468b6d10"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/KeyboardScrollSurfaceRoutingTests.swift",
+      "bytes": 4578,
+      "sha256": "5614e695831e7d71759e570a66d4d70575c3c1defa0e40d563221891ecc17cc2"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/SharedTextPanelTests.swift",
+      "bytes": 4292,
+      "sha256": "cf3f25c93e383da053096fc3e04564da37823beaa6cdfa0654e335e01a1c2f06"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/StableCandidatePublicationTests.swift",
+      "bytes": 3392,
+      "sha256": "d034896878e353434ab01ed55f1f4d1d2fd0074e357ae32d27eacf482e6aba01"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/SymbolAlignmentTests.swift",
+      "bytes": 7394,
+      "sha256": "dfc1de93253e1fe2174bf8e8ce9cc958fe8421c52e787d516e75585af4e8e0e8"
+    },
+    {
+      "path": "apple/Tests/iOSUnit/SymbolPairingTests.swift",
+      "bytes": 1234,
+      "sha256": "fc19c3546be0ab46e3a61b6ceba53f6a9d5929f5f234399c67323d16134d9198"
+    },
+    {
+      "path": "apple/Tests/macOS/CandidateGlyphSupportTests.swift",
+      "bytes": 1682,
+      "sha256": "8e430024c9a693821341331c12ce574c0de5625b285f36d810cba2c54d4503ce"
+    },
+    {
+      "path": "apple/Tests/macOS/InlineCompositionTests.swift",
+      "bytes": 3840,
+      "sha256": "e7e176a04d717d575c7b9c479eb3942136817ae5827cf7f2fca0241c2995fab4"
+    },
+    {
+      "path": "apple/Tests/macOS/KeyboardHeightTests.swift",
+      "bytes": 1054,
+      "sha256": "a3b608eebab7c3d02e0ac9e15e2c12ffe0bb5a5d3d6ce9ac07dddf14c8faf4e7"
+    },
+    {
+      "path": "apple/Tests/macOS/MacArchiveEnglishInsertionTests.swift",
+      "bytes": 5401,
+      "sha256": "0938ff4bb107a9f0452f39fe62088890c419f250edddca08aa2225c18165f7ce"
+    },
+    {
+      "path": "apple/Tests/macOS/MacCandidateNavigationTests.swift",
+      "bytes": 14995,
+      "sha256": "980c0aba2f8377c63a7657e4ded93c6c7e3b421c445918cc42cf17bc389b8c2d"
+    },
+    {
+      "path": "apple/Tests/macOS/MacCandidateStableInteractionTests.swift",
+      "bytes": 10178,
+      "sha256": "468e4266233e941daaff343419674e06c4b9af48ead4fb605cb52241a1a9d3c9"
+    },
+    {
+      "path": "apple/Tests/macOS/MacCandidateVisibilityTests.swift",
+      "bytes": 3256,
+      "sha256": "7c18a9461b281db86d66c636c96912d17d46dd0bd1330d6d03ea626eba4636b4"
+    },
+    {
+      "path": "apple/Tests/macOS/MacInputSessionTests.swift",
+      "bytes": 150151,
+      "sha256": "e5ea4b6f0dcd780aaf9e7b2614d79eccdc3d95dd946b6af30b4170523d362dd5"
+    },
+    {
+      "path": "apple/Tests/macOS/MacLongCommitTests.swift",
+      "bytes": 18784,
+      "sha256": "1172d587e14f9084d907e36f1f5587d7d75055d33b7ae631666b94316ab9ecee"
+    },
+    {
+      "path": "apple/Tests/macOS/MacMixedInputPolicyTests.swift",
+      "bytes": 7061,
+      "sha256": "a07472f6b6ef5d028557ba251a2c67e1345236058cf6ee211a7625cff09a7dab"
+    },
+    {
+      "path": "apple/Tests/macOS/MacSharedTextAccessTests.swift",
+      "bytes": 1482,
+      "sha256": "dd4f79b026c1455cb2330f1926c858982faa0351a1f4cf60241ab1f648558cf3"
+    },
+    {
+      "path": "apple/Tests/macOS/MacSymbolInsertionTests.swift",
+      "bytes": 2299,
+      "sha256": "e238f561ed90dd5ae99e3f8be52c711adf4d285491b3f4c21dd79dff4867b458"
+    },
+    {
+      "path": "apple/Tests/macOS/MacThemeTests.swift",
+      "bytes": 4507,
+      "sha256": "a2099a5e11c18e725f6b7a43bf099fdd0937970c4fd49101faf1596bd62e230b"
+    },
+    {
+      "path": "apple/Tests/macOS/PersonalDataResetTests.swift",
+      "bytes": 2340,
+      "sha256": "b36d292dba5cee21b22c091bacca7ed74734482d7a78830b358320484599b4b5"
+    },
+    {
+      "path": "apple/Tests/macOS/SharedTextCopyTests.swift",
+      "bytes": 4440,
+      "sha256": "1323ee65096915495542ec7945828c182877477466154b5094d50c012e8c42bd"
+    },
+    {
+      "path": "apple/iOS/AppTheme.swift",
+      "bytes": 1843,
+      "sha256": "448d552917ae12c190adad85fde988f2cd9debdda0da74c7d306d4b08db0d595"
+    },
+    {
+      "path": "apple/iOS/App/App.entitlements",
+      "bytes": 504,
+      "sha256": "b4c2d7c2182b0799b90420f92f39f9ff994ba9349d2cf64e17b1eec1f95cae4b"
+    },
+    {
+      "path": "apple/iOS/App/AppLegalView.swift",
+      "bytes": 2360,
+      "sha256": "c7ef6fd87cfd7c86a6a62e77e9e73c47fc07bbc4588c3bad93535092a549ba75"
+    },
+    {
+      "path": "apple/iOS/App/DeviceSyncView.swift",
+      "bytes": 9958,
+      "sha256": "f94715333da2566533b5876dbd1efadca28a620e15f7661387b8b059a446a81e"
+    },
+    {
+      "path": "apple/iOS/App/Info.plist",
+      "bytes": 2198,
+      "sha256": "9301d31ddbfe0e556db969db95a4ed91b213d49930dcca7877a432bf05866601"
+    },
+    {
+      "path": "apple/iOS/App/InputThemeModifier.swift",
+      "bytes": 651,
+      "sha256": "6abcab6e4ccfed3b71a646a139a38495f792a1f8ac4073b72466256b90225741"
+    },
+    {
+      "path": "apple/iOS/App/NativeKeyboardHostProbe.swift",
+      "bytes": 4019,
+      "sha256": "9c5daa8dcb9717fa1ad78291139b9fd4eda8b6ad5303facf14b06471f81e0e46"
+    },
+    {
+      "path": "apple/iOS/App/PairingScannerView.swift",
+      "bytes": 3243,
+      "sha256": "18e72fa73692087d2b681e58115575bb0b28a5f7e4b29c37c05ffe7540ea5d2e"
+    },
+    {
+      "path": "apple/iOS/App/PrivacyInfo.xcprivacy",
+      "bytes": 1089,
+      "sha256": "d235e69f76b64948476e6b12f6df582e7d5fa795c9e0e75b6b4d8337942ae259"
+    },
+    {
+      "path": "apple/iOS/App/PrivateInputApp.swift",
+      "bytes": 7419,
+      "sha256": "64b0654b47166a6047966a8e34639b958e375c2bae9e1405d0d8e2a208e38af4"
+    },
+    {
+      "path": "apple/iOS/App/SharedTextView.swift",
+      "bytes": 8639,
+      "sha256": "0497c294a1712c67cad67fc190062e4ae121ad59a9827f3834754ccecceaf91b"
+    },
+    {
+      "path": "apple/iOS/App/ThirdPartyNotices.txt",
+      "bytes": 89674,
+      "sha256": "ac7a0c2b3346fc914bcbf5fcb692e8f0fcd7023a7f9ef2d60dc0b4fe3fe98ced"
+    },
+    {
+      "path": "apple/iOS/App/Assets.xcassets/Contents.json",
+      "bytes": 60,
+      "sha256": "f5fb0e1f3a8142892ed092efb5955c1c2cc537003a89ad7bbdb9dade7fe8985f"
+    },
+    {
+      "path": "apple/iOS/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "bytes": 884136,
+      "sha256": "36df48674c4c24a6ba63c4ffb33029febdadd3a64b8eb66d19f6c2e251d5f34e"
+    },
+    {
+      "path": "apple/iOS/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "bytes": 203,
+      "sha256": "852920cb36e95beb53771138a4b8195a16fcce1cc31250632f246081cc638f9a"
+    },
+    {
+      "path": "apple/iOS/Keyboard/CandidateCell.swift",
+      "bytes": 6747,
+      "sha256": "e25d2207ee9f0812f516ba00b227ab3d602324c2a85c5f4ee6d4199545a4ae39"
+    },
+    {
+      "path": "apple/iOS/Keyboard/CandidateExpansionButton.swift",
+      "bytes": 294,
+      "sha256": "5bc99a125372a18df331fcc5bcf840aacf08eb933b99f441e5a7e4c3211b1dcb"
+    },
+    {
+      "path": "apple/iOS/Keyboard/CandidateListLayout.swift",
+      "bytes": 3565,
+      "sha256": "a9d08e9b9fb22e68b7c8aa5fd95e9aabb8463e3728799c095d8734220b2ecd51"
+    },
+    {
+      "path": "apple/iOS/Keyboard/ClipboardPasteCandidateView.swift",
+      "bytes": 4697,
+      "sha256": "ace406ef3499cbe6bb608ed1fce4119d73cdcd2ae70fe24f235c2d8afe5b9bc2"
+    },
+    {
+      "path": "apple/iOS/Keyboard/GlyphCenteredLabel.swift",
+      "bytes": 1612,
+      "sha256": "da02f231501b6582d8811a5f4dac15d468f05ec28667e112fc9ab79a0f33b63e"
+    },
+    {
+      "path": "apple/iOS/Keyboard/Info.plist",
+      "bytes": 1397,
+      "sha256": "a9cbe315295ea53afe908b910046e717f7ad4b533309f50a4fc298f9073bdbb6"
+    },
+    {
+      "path": "apple/iOS/Keyboard/KeyFeedback.swift",
+      "bytes": 1224,
+      "sha256": "cb64eecc612636c83ee503566e1ce1c9af3e99fae1c83f65d8d6358ae105c4cc"
+    },
+    {
+      "path": "apple/iOS/Keyboard/Keyboard.entitlements",
+      "bytes": 504,
+      "sha256": "b4c2d7c2182b0799b90420f92f39f9ff994ba9349d2cf64e17b1eec1f95cae4b"
+    },
+    {
+      "path": "apple/iOS/Keyboard/KeyboardAppearanceSync.swift",
+      "bytes": 885,
+      "sha256": "361f8f023cd8299198f9f8850ed174c0c2a19c002a1fe8477f4c29deb9ed653d"
+    },
+    {
+      "path": "apple/iOS/Keyboard/KeyboardCellTouchButton.swift",
+      "bytes": 2876,
+      "sha256": "f88be5c4ec48135f8d8232fde3e844245d259aed113e75effd57df5074d167eb"
+    },
+    {
+      "path": "apple/iOS/Keyboard/KeyboardHeightAdjustmentView.swift",
+      "bytes": 7250,
+      "sha256": "ea4d337ef0d43f142f802ed22c85c3ddd3269e7c6b3f86bd640d52af5687b00f"
+    },
+    {
+      "path": "apple/iOS/Keyboard/KeyboardRailView.swift",
+      "bytes": 10251,
+      "sha256": "92aee37c6defb489482a66b9418b8e42bff914f5523415c4c8b016c02de18cfb"
+    },
+    {
+      "path": "apple/iOS/Keyboard/KeyboardViewController.swift",
+      "bytes": 129125,
+      "sha256": "1768935daffcc23ccb536e384be3dffcc8c2c505e6c76edcbf0e57593ee21e32"
+    },
+    {
+      "path": "apple/iOS/Keyboard/PrivacyInfo.xcprivacy",
+      "bytes": 1089,
+      "sha256": "d235e69f76b64948476e6b12f6df582e7d5fa795c9e0e75b6b4d8337942ae259"
+    },
+    {
+      "path": "apple/iOS/Keyboard/SharedTextPanel.swift",
+      "bytes": 11495,
+      "sha256": "18efa9fc6e6dde463cc8e72f68639f86eb4da6a643eb3aed600b1ecf0ec7ede1"
+    },
+    {
+      "path": "apple/iOS/Keyboard/StableCandidatePublication.swift",
+      "bytes": 4048,
+      "sha256": "f9268573680a3153925d3611bdcd666883271f71b86a75457abd7fc45a5fd023"
+    },
+    {
+      "path": "apple/iOS/Keyboard/SymbolCatalog.swift",
+      "bytes": 3287,
+      "sha256": "14e577cd37d8b3c11d229b0e2ebb4b348ca7b0b30ebeb6fd36e76df01fef98f2"
+    },
+    {
+      "path": "apple/macOS/AcceptanceHost/main.swift",
+      "bytes": 4723,
+      "sha256": "f9039a58d54d9ecfde09300e84cc43c5d1d940bc7fa1c9996bb731eb4cbad667"
+    },
+    {
+      "path": "apple/macOS/InputMethod/DeviceSyncWindow.swift",
+      "bytes": 9141,
+      "sha256": "4fbec7e8e9f0def2266036fb590d5937e5d06de53f505e2591f3d3e1c744201c"
+    },
+    {
+      "path": "apple/macOS/InputMethod/IMKClientGeometry.h",
+      "bytes": 203,
+      "sha256": "2ba909a991ae288ceb72d7a99ef053a09dcab48bc404ae4ea6eade5bed8f8c4c"
+    },
+    {
+      "path": "apple/macOS/InputMethod/IMKClientGeometry.m",
+      "bytes": 1540,
+      "sha256": "09276c1d0bae2386380c1c26a1ca55a0aecd3617e80a77f66d19ae41833fe733"
+    },
+    {
+      "path": "apple/macOS/InputMethod/Info.plist",
+      "bytes": 3151,
+      "sha256": "5fcdd4dcf398faa7158066bbb69e22b1bd408a8871922e81bc479175eff8342b"
+    },
+    {
+      "path": "apple/macOS/InputMethod/InputController.swift",
+      "bytes": 20122,
+      "sha256": "cb63f08ded029b40d156f890412ea45fada43edc5002209f7745ac80ea1e0afe"
+    },
+    {
+      "path": "apple/macOS/InputMethod/LingheCraneMenu.tiff",
+      "bytes": 5572,
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+    },
+    {
+      "path": "apple/macOS/InputMethod/LingheCraneMenuTemplate.tiff",
+      "bytes": 5572,
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+    },
+    {
+      "path": "apple/macOS/InputMethod/LingheInputMenu.pdf",
+      "bytes": 1077,
+      "sha256": "bf9d0a0168970fe6663d9a1b6496c21183d362729392a2aa09110f49de8ce59e"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacArchiveEnglishInsertion.swift",
+      "bytes": 3177,
+      "sha256": "bf43e2a7c781741a5dd68dbe8564178748e95422db82c103fbb23fd7436e102d"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacCandidatePanel.swift",
+      "bytes": 21750,
+      "sha256": "0d5effc1416a6ef6f00a5e5fe218cf3294b5b779b3fc4085de1828d5bf439f39"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacCandidatePlacement.swift",
+      "bytes": 1184,
+      "sha256": "156f2dfdd546a8177ef363447c305ce58a65c83679472846bedced663d503345"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacClipboardSuggestion.swift",
+      "bytes": 3650,
+      "sha256": "c699e3ef8193740abdddb00b15fd2f2921c866b028f5f12dac6b5dc5d8b0a6e1"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacEnglishDictionary.swift",
+      "bytes": 829,
+      "sha256": "c520c9c31c8bba5bbf16727d170970fc1441238d924cc424236796ba631d08f8"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacInputSession.swift",
+      "bytes": 24131,
+      "sha256": "86b97793f08d92de8aeae46b1630a91e8b321256156bcd373abf84f3a7150a88"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacSemanticRanker.swift",
+      "bytes": 5455,
+      "sha256": "9d195a4646fdf37060c9a728bacb5cdbc17c2f9fe1b4562b0ec6b621d4d9634d"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacSettingsLayout.swift",
+      "bytes": 3477,
+      "sha256": "b95f483fed6e30953779df6ebeb388ce3e0cec75e397dfa7d1c34cc7540be4f2"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacSharedTextView.swift",
+      "bytes": 6670,
+      "sha256": "d0ed8034e07a8a3696725bf117022b5d804ab7c3416a72a5a9ca020393730e1a"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacSymbolInsertion.swift",
+      "bytes": 913,
+      "sha256": "1137b27938952db689a82e562e78723475b7b89a0aa8de7cb1f35ff3e5efa9db"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacTheme.swift",
+      "bytes": 3394,
+      "sha256": "0618df0a854728c07034e98b8aef106a31670d4cbdd41723ee6b09410778458f"
+    },
+    {
+      "path": "apple/macOS/InputMethod/PrivateInput.icns",
+      "bytes": 1317789,
+      "sha256": "205f0f94936ed5f6cc1c5ffdd43c61d9695f788727d7a970027ffeda9fcfcd2d"
+    },
+    {
+      "path": "apple/macOS/InputMethod/PrivateInput.tiff",
+      "bytes": 5572,
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+    },
+    {
+      "path": "apple/macOS/InputMethod/PrivateInputTemplate.tiff",
+      "bytes": 5572,
+      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+    },
+    {
+      "path": "apple/macOS/InputMethod/main.swift",
+      "bytes": 3711,
+      "sha256": "01ca6ec61b8458e689fd4f132cdd2530b517c197b7a17e50aa4d25299f79ef2a"
+    },
+    {
+      "path": "core/include/desktop_candidates.hpp",
+      "bytes": 1058,
+      "sha256": "75fb4ef67c0e587d4b409082eb79da579d6d6141bcb2324d27ace2a62637c8d6"
+    },
+    {
+      "path": "core/include/pinyin_repair.h",
+      "bytes": 10631,
+      "sha256": "27feb57373363854a336058193af4e2a69194801ff0ffbb2b17b73c517e3cf57"
+    },
+    {
+      "path": "core/include/pinyin_text.h",
+      "bytes": 7639,
+      "sha256": "7f252e4423633740c648f09ec8d31743cf1e1f3a8b10ce93d1bfdc1f45524648"
+    },
+    {
+      "path": "core/include/private_input.h",
+      "bytes": 5358,
+      "sha256": "082d7fc2fe8b998fbef16eeeaf71b6a35b6d331371bd85a073b15431c1ce4131"
+    },
+    {
+      "path": "core/include/private_pinyin_syllables.h",
+      "bytes": 5023,
+      "sha256": "edd79e9144170d11f42b0abe7b581469a4c916f278b857e0d909f0c55fd77774"
+    },
+    {
+      "path": "core/src/language_scoring.cpp",
+      "bytes": 3211,
+      "sha256": "a5901b3318f5c2e7074ee00df644976e18726fe1b786d8c073f9fe284ece4f72"
+    },
+    {
+      "path": "core/src/private_input.cpp",
+      "bytes": 48834,
+      "sha256": "29cf28c8b3edb24d691190efab7d72c6983cc84867ebacfe79f03c4b747c0d15"
+    },
+    {
+      "path": "core/tests/candidate_management_smoke.cpp",
+      "bytes": 4443,
+      "sha256": "6c4b6ede87ee432faecd3d53983e823b171555f1ae0beda23adae6db586f2452"
+    },
+    {
+      "path": "core/tests/candidate_scroll_smoke.cpp",
+      "bytes": 2147,
+      "sha256": "93d089c4e8882e9121c45be375a677f0735446d652e44142eda3446ba6d20f8b"
+    },
+    {
+      "path": "core/tests/dictionary_candidate.cpp",
+      "bytes": 5680,
+      "sha256": "d2d21e98d39fd4d61249378034682b7d1ecd55fb96ec4b084d10085bcee5849b"
+    },
+    {
+      "path": "core/tests/engine_bridge_driver.cpp",
+      "bytes": 2353,
+      "sha256": "944712b8040cc8c463af5847f0eef2a03ca739da2283d3627bbddc46255706e2"
+    },
+    {
+      "path": "core/tests/engine_smoke.cpp",
+      "bytes": 4594,
+      "sha256": "fdc89d7edc13ef784e59da506dd011d8671d626fd4430f1b73acb8db2b11aecf"
+    },
+    {
+      "path": "core/tests/nine_filter_smoke.cpp",
+      "bytes": 6105,
+      "sha256": "63b2b8357b69a7edc1375f080bca6fc6105b44e8c3ad9b174e5d4af90c951f51"
+    },
+    {
+      "path": "core/tests/nine_key_smoke.cpp",
+      "bytes": 3283,
+      "sha256": "fa8e5a3cff58610c065816dc99ab8462d58aaac37d1fc93c39e342cf82f2b412"
+    },
+    {
+      "path": "core/tests/nine_prefix_smoke.cpp",
+      "bytes": 12393,
+      "sha256": "7c4843ba0e7e964d8ca25b92d4eb781828825a67fcd3bf62393a4e3c5805ef78"
+    },
+    {
+      "path": "core/tests/pinyin_text_repair.cpp",
+      "bytes": 2870,
+      "sha256": "fa2bb61af8135736b3e1e12ea63229ccc5c686079836d49e62a3e2507c026c5f"
+    },
+    {
+      "path": "core/tests/repair_smoke.cpp",
+      "bytes": 3157,
+      "sha256": "ca2fbada91cbdc792949c2df44ecb4d5f7a34dbe3b34966b40b3da56fa047b28"
+    },
+    {
+      "path": "docs/CLIPBOARD-LIVE-WIRE-V1-20261020.md",
+      "bytes": 11240,
+      "sha256": "c9aead4daeea2b37b6036566f92450ae300d3bebea943d7a03cd55512a33b5ff"
+    },
+    {
+      "path": "docs/RECENCY-WIRE-V1-20261019.md",
+      "bytes": 5334,
+      "sha256": "874541fd1b621ea6e20823d9401ace8017bcf716a53f7393bad324a1b306f169"
+    },
+    {
+      "path": "docs/stages/P1/dependencies.lock.json",
+      "bytes": 2307,
+      "sha256": "0ebb682e5953215590230639a62b019cf9058cf3fdd9724ea170ae0b708b2213"
+    },
+    {
+      "path": "docs/stages/P1/licenses/boost-LICENSE_1_0.txt",
+      "bytes": 1338,
+      "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+    },
+    {
+      "path": "docs/stages/P1/licenses/leveldb-LICENSE",
+      "bytes": 1484,
+      "sha256": "ccc19f1da0798ed666609b65a5b44dd8b3abe6fc08b9c0592eb76e82e174db19"
+    },
+    {
+      "path": "docs/stages/P1/licenses/librime-LICENSE",
+      "bytes": 1513,
+      "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+    },
+    {
+      "path": "docs/stages/P1/licenses/marisa-trie-COPYING.md",
+      "bytes": 2275,
+      "sha256": "edf58dab34c3dc239ba4ba2d5d3d844d8c5b442aa4dd1149fac81b2d8c6cb8d1"
+    },
+    {
+      "path": "docs/stages/P1/licenses/opencc-LICENSE",
+      "bytes": 9165,
+      "sha256": "b534e465949558eec2597b04f5092b5e161236a68dfbfd04d547592ac3964308"
+    },
+    {
+      "path": "docs/stages/P1/licenses/yaml-cpp-LICENSE",
+      "bytes": 1061,
+      "sha256": "aa6fcc27be034e41e21dd832f9175bfe694a48491d9e14ff0fa278e19ad14f1b"
+    },
+    {
+      "path": "docs/stages/P2/dictionary/grammar.lock.json",
+      "bytes": 2734,
+      "sha256": "b235a35ca6f0b929c5d7e218afdd0bac795b8c746b5c223e10d0beab6428b9d8"
+    },
+    {
+      "path": "docs/stages/P2/dictionary/macbert.lock.json",
+      "bytes": 1258,
+      "sha256": "12b6c2149a15cbc6536423450401cd4d8fbede23e39c31ec8b39b002a4c6b6ce"
+    },
+    {
+      "path": "docs/stages/P2/dictionary/semantic.lock.json",
+      "bytes": 1883,
+      "sha256": "11f4490737587da983dfe2063b626f2c823c14f6144598fcbb56b70e08b403d1"
+    },
+    {
+      "path": "docs/stages/P2/dictionary/upstream.lock.json",
+      "bytes": 2857,
+      "sha256": "f6ce380246dcaf175ab5c5331b4af0ca4b2b7092c3df8852a0ea9fae9e11c5a1"
+    },
+    {
+      "path": "docs/stages/P3/test-dependencies.lock.json",
+      "bytes": 1056,
+      "sha256": "611a7df26ebc9d8b6bdc6d74715bc79f95a9a21dd3b24f667a763e020aa805cf"
+    },
+    {
+      "path": "docs/stages/P3/windows-crypto.lock.json",
+      "bytes": 501,
+      "sha256": "35e341c62a7c160d1c7ba6afdcd252b0fc70b048ed8d3fa348b0f1d95ac49157"
+    },
+    {
+      "path": "experiments/macbert/convert.py",
+      "bytes": 3961,
+      "sha256": "c7703f52aef2a902f95b2218367f598d1f75c1e9a2398e7c85ea4611c7597a7e"
+    },
+    {
+      "path": "experiments/semantic/convert_electra.py",
+      "bytes": 4117,
+      "sha256": "792598f95c5e6593448818d008b34d24f61eda14ffa09be7f4feadd314eb0e61"
+    },
+    {
+      "path": "experiments/semantic/convert_model.py",
+      "bytes": 3319,
+      "sha256": "24950867cfba122d87c35450d98a6ad498dd2a1433df91c05eeb6c3a8ca1da00"
+    },
+    {
+      "path": "experiments/semantic/requirements-tested.txt",
+      "bytes": 503,
+      "sha256": "b410dad71f513263e570db40dcc6bf320f03718cac9110c36dadca31518ed1b0"
+    },
+    {
+      "path": "fixtures/mac-long-commit-20261018.json",
+      "bytes": 1828,
+      "sha256": "596514ce0e340c62f76225516ef53ad5025afaf6522e50b3f30b3ff8bafc6208"
+    },
+    {
+      "path": "fixtures/mixed-input-lim-20261018.json",
+      "bytes": 2127,
+      "sha256": "108c47a9f29bd6091e91e77dbd11c47c31a6bbe7110f0911b4bc8dc9f9e78e27"
+    },
+    {
+      "path": "fixtures/pinyin-ranking-din-20261018.json",
+      "bytes": 2117,
+      "sha256": "7d6a2bc99b0135d8d6c31788a550593da65d9a0feb06ebf018cb269c3a371552"
+    },
+    {
+      "path": "fixtures/pinyin-ranking-selected-prefix-20261018.json",
+      "bytes": 1484,
+      "sha256": "87dd56e6e05174b0ab14cfd912b44edfd78f16c6bf79a01df036b50f5bb13578"
+    },
+    {
+      "path": "fixtures/input-quality/README.md",
+      "bytes": 737,
+      "sha256": "42a9212ba44787fc41a66e1f8e5518efc215165be327e52d9634d3fcc8b6c5f3"
+    },
+    {
+      "path": "fixtures/input-quality/benchmark-20261020.json",
+      "bytes": 80863,
+      "sha256": "7f8a3b3709642656ec6bd6f9e685ef9466dd57519023bb0011fe3bf04709c612"
+    },
+    {
+      "path": "fixtures/input-quality/results-template-20261020.json",
+      "bytes": 26585,
+      "sha256": "5a5c2a4a0772a87c5ae64a8b67f07ee695231ae3c249b5bf71a4dc3db2956e4d"
+    },
+    {
+      "path": "fixtures/protocol/clipboard-live-v1.json",
+      "bytes": 7174,
+      "sha256": "37be9daffe2b9d40c60cb9bc8fa7d481152ae05690c9783d907dbff2acc27748"
+    },
+    {
+      "path": "fixtures/protocol/relay-membership-v1.json",
+      "bytes": 2185,
+      "sha256": "c396ce165f07614a1b90bd3d787bccb600785c254cb6b0004866030bac26a819"
+    },
+    {
+      "path": "fixtures/protocol/secure-envelope-v1.schema.json",
+      "bytes": 1506,
+      "sha256": "58164b04daf7dd083bcccad80f9648ce42bc2abb43d1343ca1859d09e1b2854c"
+    },
+    {
+      "path": "fixtures/protocol/secure-message-v1-python.json",
+      "bytes": 471,
+      "sha256": "6510b47c4acac8d4388c99632580b87a0d9fd9417cdea15d3e86fcb48646ffce"
+    },
+    {
+      "path": "fixtures/protocol/secure-message-v1.json",
+      "bytes": 854,
+      "sha256": "a672af713ecc5918817c47adcf6a6e585d1b64c49221df3bfb905ab8a43e01bb"
+    },
+    {
+      "path": "resources/phrases/classics.tsv",
+      "bytes": 1011,
+      "sha256": "360ff17b979553a73f1ec1adebb56e9b64fb826c59c280f020c75922b01748fa"
+    },
+    {
+      "path": "resources/rime/SOURCE.json",
+      "bytes": 14877,
+      "sha256": "32995822c707dc68817f293a49ed2cea71f0c9af06dacd988b790bee55b1f655"
+    },
+    {
+      "path": "resources/rime/default.yaml",
+      "bytes": 293,
+      "sha256": "09b5e5b3b238d81383f07cb1895cf0cc60434d9e0b27a186f84f619460ed0054"
+    },
+    {
+      "path": "resources/rime/essay.txt",
+      "bytes": 5846161,
+      "sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2"
+    },
+    {
+      "path": "resources/rime/private_nine.schema.yaml",
+      "bytes": 1432,
+      "sha256": "f088f4c63a29228a9a2548f70e89d177a2e0615dba2a5f5c0a376d73d46ac8ae"
+    },
+    {
+      "path": "resources/rime/private_nine_initials.schema.yaml",
+      "bytes": 1480,
+      "sha256": "e0f97dc68d070cad184eca2e919564ecda5feae298b7395069ba6000fc873ed2"
+    },
+    {
+      "path": "resources/rime/private_nine_private.schema.yaml",
+      "bytes": 1441,
+      "sha256": "cbb219b95bcc2c495da2111bf8a18c1e5601b7159cd08e6fd92b624e71ad4321"
+    },
+    {
+      "path": "resources/rime/private_pinyin.dict.yaml",
+      "bytes": 859873,
+      "sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93"
+    },
+    {
+      "path": "resources/rime/private_pinyin.schema.yaml",
+      "bytes": 1053,
+      "sha256": "df35b4027ae681041237b9e3c582da5caaac336e145575f6369bfbfc10d6c513"
+    },
+    {
+      "path": "resources/rime/private_pinyin_exact.schema.yaml",
+      "bytes": 881,
+      "sha256": "1f8f8ff29c4c8c873709434e5745d11689ccbad4433ca3d61d97ecf00ba6c417"
+    },
+    {
+      "path": "resources/rime/private_pinyin_private.schema.yaml",
+      "bytes": 912,
+      "sha256": "5e87533cc44938048dbb305fa5a937fca9127655e2681afe9888315fde6e6749"
+    },
+    {
+      "path": "resources/rime/private_zh_hans_compact.gram",
+      "bytes": 40925228,
+      "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e"
+    },
+    {
+      "path": "resources/rime/licenses/GPL-3.0.txt",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "resources/rime/licenses/librime-octagram-LICENSE",
+      "bytes": 1513,
+      "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+    },
+    {
+      "path": "resources/rime/licenses/rime-essay-AUTHORS",
+      "bytes": 393,
+      "sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75"
+    },
+    {
+      "path": "resources/rime/licenses/rime-essay-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "resources/rime/licenses/rime-luna-pinyin-AUTHORS",
+      "bytes": 273,
+      "sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8"
+    },
+    {
+      "path": "resources/rime/licenses/rime-luna-pinyin-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "resources/rime/licenses/rime-octagram-data-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "resources/semantic/CONTINUATION.json",
+      "bytes": 459,
+      "sha256": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa"
+    },
+    {
+      "path": "resources/semantic/LEXICON.json",
+      "bytes": 474,
+      "sha256": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341"
+    },
+    {
+      "path": "resources/semantic/MODEL-LICENSE.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "resources/semantic/MODEL.json",
+      "bytes": 1962,
+      "sha256": "d3d9cbaac7d5048aa16629072f1877d8e69b400591f9de9ccc99973df888fd92"
+    },
+    {
+      "path": "resources/semantic/PINYIN.json",
+      "bytes": 370,
+      "sha256": "8b434be5e270b5df44d8b0f4ef0876202af4eeb9b33d86c9379b8eefe951f7ab"
+    },
+    {
+      "path": "resources/semantic/continuation.bin",
+      "bytes": 985151,
+      "sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4"
+    },
+    {
+      "path": "resources/semantic/nine-lexicon.bin",
+      "bytes": 957112,
+      "sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281"
+    },
+    {
+      "path": "resources/semantic/pinyin-syllables.txt",
+      "bytes": 1797,
+      "sha256": "ddd9b253b4f3412d17ed1c119d9d3b36f1153e7c3ff7f62e20e59cdfd1856689"
+    },
+    {
+      "path": "resources/semantic/vocab.txt",
+      "bytes": 109540,
+      "sha256": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c"
+    },
+    {
+      "path": "resources/semantic-mac/MODEL-LICENSE.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "resources/semantic-mac/MODEL.json",
+      "bytes": 1439,
+      "sha256": "85ed6ac96d2657cae4a840dab89b955356e833e38673a13f4679f94d9c9da21c"
+    },
+    {
+      "path": "resources/semantic-mac/vocab.txt",
+      "bytes": 109540,
+      "sha256": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c"
+    },
+    {
+      "path": "scripts/bootstrap_android.py",
+      "bytes": 4899,
+      "sha256": "fc240523850f7aaa6049fa78c7614ac32bf65f37402f4d7caf76f2ccfc75f920"
+    },
+    {
+      "path": "scripts/bootstrap_dependencies.py",
+      "bytes": 2923,
+      "sha256": "4920c2f1aa49f48801c7d360ca61ccea870c68a8e72eff025dd8ad9eea8bc651"
+    },
+    {
+      "path": "scripts/build_android.py",
+      "bytes": 7686,
+      "sha256": "94ece3aad144a49b8dc542476b849656999563c2ec58b5cb29743d74ac09ac0c"
+    },
+    {
+      "path": "scripts/build_android_rime.py",
+      "bytes": 2715,
+      "sha256": "5e7f116539a911174659216ab72e6398b97dff8cafdb6f653cc5c6e1d1fe9c77"
+    },
+    {
+      "path": "scripts/build_android_tests.py",
+      "bytes": 2571,
+      "sha256": "5da92f276e8027171be491ce102529ca3cfcb7fa71b2425aabde950d87b57f6c"
+    },
+    {
+      "path": "scripts/build_continuation_lexicon.py",
+      "bytes": 1776,
+      "sha256": "ec655f7f6788965b5b019524c40a7153c458ac04e5f9cfc81031657563599905"
+    },
+    {
+      "path": "scripts/build_pinyin_syllables.py",
+      "bytes": 1467,
+      "sha256": "834b533bc1a7f6bc97f85524ecf9431468d96fc6b3b35829c2826bdc14fbd36c"
+    },
+    {
+      "path": "scripts/build_rime.py",
+      "bytes": 4365,
+      "sha256": "df2275ab8e65d3c896fd3adaef33aa42e492c6bd9e3787d33cbec491db862dbc"
+    },
+    {
+      "path": "scripts/build_semantic_lexicon.py",
+      "bytes": 2156,
+      "sha256": "0778e4df2347e739766746f44a92fca855c3f1b487593890afe759fbd14f7e5d"
+    },
+    {
+      "path": "scripts/export_linghe_icons.swift",
+      "bytes": 2070,
+      "sha256": "002d715665cde4d9e861f0e1d04690542c87e9ac59608eb1ecb31094a6c265a2"
+    },
+    {
+      "path": "scripts/export_linghe_menu_icon.swift",
+      "bytes": 4167,
+      "sha256": "8d888342696de06bc61cfe600bccd4bd8aff120bf9e07872c3c9ca4b802f1098"
+    },
+    {
+      "path": "scripts/generate_android_shared_assets.py",
+      "bytes": 1309,
+      "sha256": "0650e8fa036e5e55e8064c5cebd71c318d4a819724a6f54a25af7e0b9c107452"
+    },
+    {
+      "path": "scripts/make_input_source_icon.swift",
+      "bytes": 534,
+      "sha256": "b3b496da4e9bc7706e58a31425070b39f1a32690664f5ac76f8b45021996a384"
+    },
+    {
+      "path": "scripts/prepare_dictionary.py",
+      "bytes": 7287,
+      "sha256": "bd64f9f908f0120329d7969c8dcb98b048a878936422a0046b62beb6c61070bc"
+    },
+    {
+      "path": "scripts/prepare_grammar.py",
+      "bytes": 1914,
+      "sha256": "0ba9d010af610604182836bd081ae3f54026be84e5d99b98e8656fd936bb480e"
+    },
+    {
+      "path": "scripts/prepare_macbert_model.py",
+      "bytes": 843,
+      "sha256": "13e3d88e99ae74c3146989461e96a3ae8bca6b97dadba592d9e9d103872d42b4"
+    },
+    {
+      "path": "scripts/prepare_semantic_model.py",
+      "bytes": 3209,
+      "sha256": "0af323b25854755134bae70e999b54bb420d40cc344b5be60812921549536b9d"
+    },
+    {
+      "path": "scripts/rebuild_dictionary.py",
+      "bytes": 2763,
+      "sha256": "9060e8f16f73c7bc41805cb61ffb8eb83e55b84c4f4993c34a4afdfe1cbc0e49"
+    },
+    {
+      "path": "scripts/test_candidate_management.sh",
+      "bytes": 808,
+      "sha256": "518c16b19aba497f2f329af5c3f5e598a6fcdba5d392d6db3ed18a3022f03371"
+    },
+    {
+      "path": "scripts/test_engine.sh",
+      "bytes": 883,
+      "sha256": "32ddcfa798d74072602a38e9932cdea9d93b62b7c6f83fe41c88a9f05b9ff56a"
+    },
+    {
+      "path": "scripts/test_network_sync.sh",
+      "bytes": 289,
+      "sha256": "8d3195e2514123cca129fd8d2405a9c759f7df8ba9af85595a7cc872f492a7db"
+    },
+    {
+      "path": "scripts/test_nine_filter.sh",
+      "bytes": 695,
+      "sha256": "04a93e532542e3f9f22b794a1c88b3bb5927dcd5db5076462d47ff72d673e04c"
+    },
+    {
+      "path": "scripts/test_protocol_vector.py",
+      "bytes": 2221,
+      "sha256": "49855d2d24a2d0b8b0155438789b9fd7b993a58da96597bcb4698e47e0bc94fa"
+    },
+    {
+      "path": "scripts/test_rime_bridge.sh",
+      "bytes": 795,
+      "sha256": "32bd4b413f13cc2c70bcf9392e17bbe3e3a5567d2c4a88e80769a6d4765c5af9"
+    },
+    {
+      "path": "scripts/test_secure_storage.sh",
+      "bytes": 412,
+      "sha256": "aa15d0a1fbd0fa86a099e481eae40e0c6daddf09e753328a5952164d5f9eea56"
+    },
+    {
+      "path": "server/clipboard_live.py",
+      "bytes": 15964,
+      "sha256": "c671430b12258a5ec1b765e5a8cf044d4e39a05893324cf1b35a89c0315ab57f"
+    },
+    {
+      "path": "server/device_administration.py",
+      "bytes": 5871,
+      "sha256": "df937e175d92fdb42af69a0795869d20a05356c1c65705b6fe9f423fa3a3467b"
+    },
+    {
+      "path": "server/expire_relay.py",
+      "bytes": 2403,
+      "sha256": "b0acf1242fbf70f5fb486d3005ac8d62f3d7ed71261f42fe7fac93ba17ca2b7f"
+    },
+    {
+      "path": "server/generate_clipboard_live_vector.py",
+      "bytes": 3686,
+      "sha256": "469f493552e7c37045f2860d0f67fc95b3e6dd0a3a5f1429ba02396599e943d9"
+    },
+    {
+      "path": "server/gunicorn.conf.py",
+      "bytes": 353,
+      "sha256": "b96804c4941e953b19d6960fbe80822237bb951739f8140a7fdec46e400e162a"
+    },
+    {
+      "path": "server/openapi.yaml",
+      "bytes": 7124,
+      "sha256": "82219867590af90308302a258a927f8396931934074a4ca8ddea5f2f7608c4e9"
+    },
+    {
+      "path": "server/private_input_relay.py",
+      "bytes": 40617,
+      "sha256": "84546ab8b745dcacc707af2aad7893c084f1b567619fb8f0875e2fdc5b704a2a"
+    },
+    {
+      "path": "server/production_wsgi.py",
+      "bytes": 1838,
+      "sha256": "42e1f86f97090f021cd3bd250e0c9922ea1964451c0f3180d0be7e273457bad1"
+    },
+    {
+      "path": "server/quick_pairing.py",
+      "bytes": 6811,
+      "sha256": "587950cff60742f4fe29c845aa9b995d0c601ccb9fdd26ee394c1bc8fa5a4aa1"
+    },
+    {
+      "path": "server/recent_learning.py",
+      "bytes": 8984,
+      "sha256": "c98b6914fd3aac6ee2929cc7888b0fdde107f7731de6d2e182db9aea54b67177"
+    },
+    {
+      "path": "server/requirements-production.txt",
+      "bytes": 38,
+      "sha256": "5edee6f4c3c1c8253e55f21e1da88bc262bbb68d1f3ec66b8b63128583b7cb04"
+    },
+    {
+      "path": "server/requirements-test.txt",
+      "bytes": 174,
+      "sha256": "325ce7326b54f61a9a34ae5e0736b90626a00f06e47856d9cf621171e72de9ba"
+    },
+    {
+      "path": "server/test_archive_presence_bridge.py",
+      "bytes": 4424,
+      "sha256": "0164c6b2a6befeab366573c04b4fc523b13f491f30ff172f7457252c6635e28c"
+    },
+    {
+      "path": "server/test_clipboard_live.py",
+      "bytes": 21730,
+      "sha256": "28784e9525ea4fc9952fc6b0fd7f60dba2e32c74639bca5dcdd128236d30158c"
+    },
+    {
+      "path": "server/test_control_server.py",
+      "bytes": 1111,
+      "sha256": "d768adf1331a6fb72f00c8d1c6871b90ef068daa1cb90f8c316e377e5062f479"
+    },
+    {
+      "path": "server/test_production_wsgi.py",
+      "bytes": 1339,
+      "sha256": "e5e1c3e756396a8f792b71c8dd6daf4933ef7c1c3f579236885135d239cbf8c6"
+    },
+    {
+      "path": "server/test_quick_pairing.py",
+      "bytes": 3792,
+      "sha256": "241d9f4e5273edeff4758c051f2d9fac71dc900f64c83c0407d9be211eb71123"
+    },
+    {
+      "path": "server/test_recent_learning.py",
+      "bytes": 9122,
+      "sha256": "5ff51cdccfc0c11f12437f5bc4efc6bd8afa3bff426039f22f96768bd3e8406d"
+    },
+    {
+      "path": "server/test_relay.py",
+      "bytes": 16458,
+      "sha256": "878c57306aee0422ee613f324616bb2ab7fa41e62037750941277cb1210ba398"
+    },
+    {
+      "path": "server/activity_archive/CONTRACT.md",
+      "bytes": 8080,
+      "sha256": "141a04d4360fcacc6e4673b85f8747a8e7cbfb3ef3c5a1d1cf7b157d1e5037c4"
+    },
+    {
+      "path": "server/activity_archive/README.md",
+      "bytes": 12266,
+      "sha256": "3cfd77e87d6bdd07ba1008652701251137cac964eb5b72c528c4e593afdcf278"
+    },
+    {
+      "path": "server/activity_archive/__init__.py",
+      "bytes": 475,
+      "sha256": "cc9576264b52b67557f190a1e7629db2bfecb556402be5e514f30a3da04e3803"
+    },
+    {
+      "path": "server/activity_archive/admin.py",
+      "bytes": 3192,
+      "sha256": "45f4523a43a3ce96c418c552b196b8751f10cdee5d28a7172512755a1581ec39"
+    },
+    {
+      "path": "server/activity_archive/metadata.py",
+      "bytes": 2011,
+      "sha256": "f4a9e605699472dba955004baaacf591ff853fa960e7aa3436922b9be45463be"
+    },
+    {
+      "path": "server/activity_archive/openapi.yaml",
+      "bytes": 8070,
+      "sha256": "d0ffa20a7bb2d1726bc670dd2df602ff43ee57354da99d804c89279d229d09cb"
+    },
+    {
+      "path": "server/activity_archive/production.py",
+      "bytes": 1835,
+      "sha256": "3bc64192d5a8458e7e1e11bddf622eda9368261fbfb2d79f3e38a015cd4d7b82"
+    },
+    {
+      "path": "server/activity_archive/service.py",
+      "bytes": 54700,
+      "sha256": "f2ddff352ef290890180f78d99fd836851c30c5add411d60682ab7d1645c04de"
+    },
+    {
+      "path": "server/activity_archive/deploy/private-input-activity-expire.service",
+      "bytes": 593,
+      "sha256": "5fe8defb46bd4110e4e85a6790745fb459405d66708bfae06f180867a58e5268"
+    },
+    {
+      "path": "server/activity_archive/deploy/private-input-activity-expire.timer",
+      "bytes": 233,
+      "sha256": "a2f60a7a301be9e4b6ca73b0a28e64e3e140c5b83c076119af337976106c20b1"
+    },
+    {
+      "path": "server/activity_archive/deploy/private-input-activity.service",
+      "bytes": 981,
+      "sha256": "b4f956094ba98911086a011e5819ad25b7da2bd81ecbe830c3d1d018263e3e54"
+    },
+    {
+      "path": "server/activity_archive/fixtures/activity-request-v1.json",
+      "bytes": 1025,
+      "sha256": "b96e99bdaf9f226ce83b9e475e175448c32a236e74442170ec9d7c9f9ab22485"
+    },
+    {
+      "path": "server/activity_archive/tests/test_archive.py",
+      "bytes": 43454,
+      "sha256": "475011971549b7c93f2313ec4a70944eeadd115996c563298ae39305605bbcdb"
+    },
+    {
+      "path": "server/deploy/README.md",
+      "bytes": 11834,
+      "sha256": "39a2f5134c180c0ea8d38db11d50dc8b6cedf37f4bae8958c02268f3195c89be"
+    },
+    {
+      "path": "server/deploy/private-input-relay-expire.service",
+      "bytes": 525,
+      "sha256": "64c387f188ba65c5c38ea9c45e9a1cc1647e344544c4c626b678ee80fc52639a"
+    },
+    {
+      "path": "server/deploy/private-input-relay-expire.timer",
+      "bytes": 152,
+      "sha256": "2b87e9509771dff3da21384b8c2a0309795da2b2231d840e437558c03faec275"
+    },
+    {
+      "path": "server/deploy/private-input-relay.service",
+      "bytes": 858,
+      "sha256": "8ad61e3f2e2a1f7aaa791939ff500e228f7ebac8786168a0fa27e6894dbc8f83"
+    },
+    {
+      "path": "server/deploy/relay.caddy.example",
+      "bytes": 573,
+      "sha256": "b72b3f2a321b4ad3107cf75bee1429ed9d6f5384ce2d0c1699a221a3ff09aab3"
+    },
+    {
+      "path": "shared/PrivateInputKit/Package.swift",
+      "bytes": 877,
+      "sha256": "e3d95bf7fe53994e2a96e4cc52b0a41bb96fc378b0954ec3870842750a745120"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/CSQLite/module.modulemap",
+      "bytes": 80,
+      "sha256": "bbfe59a972a3e8e09e347c04bc22c0eacd2544881af8a4b6068bfc30b38466e8"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/CSQLite/shim.h",
+      "bytes": 21,
+      "sha256": "b052d8e561e942f97b503033ecd2eaa2b35213bdbf374983efe9e68eabdfc024"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityClient.swift",
+      "bytes": 17111,
+      "sha256": "c7386e3873c19e40cfc1a79b5ca9689fd37fd1e9fa2dd1d7ff9e8942fa40e691"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityModels.swift",
+      "bytes": 12996,
+      "sha256": "e7cef6d981e146942009d8abcbbe13e95d914d169e92d3e4c70be803b28d421b"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityQueue.swift",
+      "bytes": 21303,
+      "sha256": "13fcec94f903f03dd47f00384a970bd0c16be922787b77887baf025356c4fdd3"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivitySourceContext.swift",
+      "bytes": 2131,
+      "sha256": "e933c36b4573adcba0ae03a96465551999fa2e68e2d512b6a47ba5b5d3b73726"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/AutomaticClipboardState.swift",
+      "bytes": 5148,
+      "sha256": "1940e5b60977f86a74d8dde1ef60f444f3a36267d01c681ade01aae0eeaa78aa"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardLiveClient.swift",
+      "bytes": 4030,
+      "sha256": "2d2794312eb200ff34c4ee261f8b2a0fcf117eeb97c396abcfe8938cec931670"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardLiveProtocol.swift",
+      "bytes": 12506,
+      "sha256": "f381a736cdcd554028df5248287ac63b9bff04eee951b4a41eca097b21ffb414"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardLiveStore.swift",
+      "bytes": 13370,
+      "sha256": "f44a0bb53badb87e4939a213e9a06cc60892d43005fa788396f551def803c3ca"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ContinuationLexicon.swift",
+      "bytes": 4034,
+      "sha256": "883350ec4113d9f81dfacf4d542c5bf6450ed16648b0b044286f439c8a6f1519"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/DesktopCandidateLayout.swift",
+      "bytes": 1321,
+      "sha256": "870a4bfa9a34efc05fabd862020ef933aec79a7087e47c10ae76d2640dda2c40"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/DeviceIdentity.swift",
+      "bytes": 7531,
+      "sha256": "128a72635a510f623716c7db621bb12912aa022e335e6720cb65170729ac2ca2"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/DeviceInvitation.swift",
+      "bytes": 2172,
+      "sha256": "0752a3d5eb0d4d4bfb40937b1cac98cc8bfc2729425f5c6e99a2b5fbb7b1e12c"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/EnglishWordSuggestions.swift",
+      "bytes": 3916,
+      "sha256": "50b39661496c9abd3744520dc72260db7b2635d308dda475e76de6dda90e44c2"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Learning.swift",
+      "bytes": 8631,
+      "sha256": "158003551129025af2cfa5270d62f04d70e9e3748116f4c1e0079aa8e99b2e6f"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningImportJournal.swift",
+      "bytes": 7865,
+      "sha256": "916050f4f46bcb86f943cefd0a580671583d81851a05b6cdf26cbf88fd96a206"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningPublication.swift",
+      "bytes": 460,
+      "sha256": "b72195dae39fc79cfba7ced663e171c8f479be987a499a498848a157e30e6674"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Membership.swift",
+      "bytes": 9596,
+      "sha256": "a692e1a045f4328cb42917207e4c00aaea88d54afa68932dc5fa259368628a30"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/MixedEnglishLexicon.swift",
+      "bytes": 3552,
+      "sha256": "d323ccdbc1e0f6c419883d1c88c0d631de3327d87eb8aa0981e6879400477f0c"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/NineKeyLexicon.swift",
+      "bytes": 5975,
+      "sha256": "e31cbe75c921875eee60f4a750c6c896de2ec68b053ad8b10ef10825c848e91f"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/NineKeyPrediction.swift",
+      "bytes": 13883,
+      "sha256": "351400d1f4ee7f1dfdf75d86f2a3f2cb4356baf5b7dd90f635aaab78b2c2f449"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Pairing.swift",
+      "bytes": 18278,
+      "sha256": "0579fd07608ecde0c3bce7e1577012f7cf8d26c70836328f177c1c04ad007a14"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PersonalLexicon.swift",
+      "bytes": 10012,
+      "sha256": "f92a5e91efbf3a770c823f0bf4973313d75b003c4d47c0c2034e9fed9641f8ca"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PersonalLexiconSync.swift",
+      "bytes": 4192,
+      "sha256": "b6d5a7b2ed66e3935730aff592056e4c67a8e7fefe60e9d653793f24ab929980"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PinyinCorrection.swift",
+      "bytes": 9160,
+      "sha256": "a37d54f95f23897760550e96b045595f006c45a2bd9d69d4f0340874209be336"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PinyinInputMatch.swift",
+      "bytes": 5651,
+      "sha256": "385a76f2aa38adc4e72ce8cd7388de71e9d92cea16d2781344be51c253920e97"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/QuickPairing.swift",
+      "bytes": 2634,
+      "sha256": "f98737612a9dc679dc4227228acce5f3b60b3a65bdb8ee946e693eed8b7d3058"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RecentCommit.swift",
+      "bytes": 1631,
+      "sha256": "3bfe5bd058ecba1420d379262c3d2f5f0e686be535336617151dcfad85db9083"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RecentLearning.swift",
+      "bytes": 16846,
+      "sha256": "f8b4bc1bfa742bdbc221959c62869bd273d542aa2b62735d1c6ebf2bc8705827"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RecentLearningSync.swift",
+      "bytes": 13461,
+      "sha256": "5db647c11f20e4c1f155089afc3b89ceb219fb8d9020163b2bd60d0b3a4bcd94"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RelayClient.swift",
+      "bytes": 20352,
+      "sha256": "a2c825523608d769f87556ac1616da9bcc37b7977e52fb2c2a0bd551a096dee1"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RelayRequest.swift",
+      "bytes": 1913,
+      "sha256": "48466c0937674919c11707107b2180a401a15997eb7919b0b71a38658c527d5f"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RimeCheckpoint.swift",
+      "bytes": 4882,
+      "sha256": "b0adeb6ac0431a0c8838d4c71803cdc5f02e1df0ac5311922d8c7e1094798298"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SecureMessage.swift",
+      "bytes": 8201,
+      "sha256": "ddd498c49b85d8e1e7bc9f67f51357415763fee75b60c6e0da75891f334b77d2"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SecureReplicaStore.swift",
+      "bytes": 27792,
+      "sha256": "664d6fd384f6a9887b088de88a2f99a9df89906c4a4aec754a428485bfb44529"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SentencePrediction.swift",
+      "bytes": 10633,
+      "sha256": "505ffc0e879033e0e5b6b8dade6ce50e8e82f410ba4271974c4e935c41b660e2"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SharedClipboardCache.swift",
+      "bytes": 4690,
+      "sha256": "dc7152e0959a6d1cde94885fdcfc2ac15f6f62555f0547c0c034364f42bed118"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SharedLearningSnapshot.swift",
+      "bytes": 3225,
+      "sha256": "d1ee0f047f92cc2fb73aed3d1040c2bd6eb5686257ee0ad7be99e22be1d3ccbb"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SupplementaryLexicon.swift",
+      "bytes": 2868,
+      "sha256": "676b72b9cd21830d2f4cf1b34088aa86f81b5d26061b26bc3b3f192984af0af2"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SymbolUsage.swift",
+      "bytes": 1315,
+      "sha256": "afc2afde0962f26dd855006bdcde170b1247e09c684ab7735948792faefdc90b"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SyncConsentGate.swift",
+      "bytes": 1176,
+      "sha256": "bbc05c314a78f4abe4b0d2f4887042f4ab1e65636763a5247189fdecd7e13ae3"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/ActivityArchiveTests.swift",
+      "bytes": 23520,
+      "sha256": "dd652f5bd13be343690c1a862369a3ecc05d91ee6da3d08249ca3a2b57de8d27"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidChoiceParityTests.swift",
+      "bytes": 5119,
+      "sha256": "c7f169855deeea9cb1ea88bee04331c733bff7afab6514cd5620b65d3973052e"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidDataParityTests.swift",
+      "bytes": 2860,
+      "sha256": "406cc803b412fba61feded65a2fdbf0af0629fc6e1d62bac04bebace87ef381a"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidLanguageParityTests.swift",
+      "bytes": 3393,
+      "sha256": "538539c246cd798caeea5a2a127db57c13d54ba4bf375ea69546f8f0c166f03b"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidLearningParityTests.swift",
+      "bytes": 6577,
+      "sha256": "de7347b74f3e1ced4f6f901837c4311c45730e04c5592462069786697e52ebb9"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidPersonalFixtureTests.swift",
+      "bytes": 2282,
+      "sha256": "104467eaf9f6617f1022009b4c208332a32ee20d0bc79fa93627b0056f8b91b9"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AutomaticClipboardRetryTests.swift",
+      "bytes": 1239,
+      "sha256": "403d001a72b48501920503ac7aa7b759027f4b16478c19e915dbebf327520816"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/ClipboardCacheTests.swift",
+      "bytes": 3457,
+      "sha256": "956932aa9db901ce6289cf097ccba756b92f271bec08744515068dbce82ce1c7"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/ClipboardLiveTests.swift",
+      "bytes": 13666,
+      "sha256": "cce6a064b2276a68931499fc4538b71c1e42bd75f85ca3ef410f515d8fdecbd4"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/DesktopCandidateLayoutTests.swift",
+      "bytes": 1510,
+      "sha256": "eae591033b07f53b5ce8c99a350152173043015fb6bdf4c30d464dafed7b3c31"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/IdentityAndPairingTests.swift",
+      "bytes": 13886,
+      "sha256": "831259d58c2de1aec4723ad2c4b20d6fddcb4f655f4f30f64b4d4a3a229a0399"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/IndependentGroupTests.swift",
+      "bytes": 7087,
+      "sha256": "8a844f7b93297ce23290a959255c5d2e0b6517c4a4cd8a1cb8d7d32ac69168db"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/InputCoverageTests.swift",
+      "bytes": 3520,
+      "sha256": "a0ab177afa285d952357b696568a841f92fdc5dba9a9ac65be66b644d5013c48"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningImportJournalTests.swift",
+      "bytes": 10842,
+      "sha256": "514a65e85e0b8f71fe4b45c45836836c40c6477d0416553548f5285ebb885f44"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningTests.swift",
+      "bytes": 4516,
+      "sha256": "9fe98cd474fb31ca0973eba0ab91bbe61b7434b0b0862791bdf7236dca123487"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/MixedEnglishTests.swift",
+      "bytes": 2036,
+      "sha256": "1a2efa527bdb3547680a4a373d7b802235de5e9347ad831114817d4de69e2467"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NativeInputSupportTests.swift",
+      "bytes": 2373,
+      "sha256": "5b2c970a230885a37817b4d439edd39f647cc3c4bdb586614a267d1edb961bb9"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NativeRimeBridgeTests.swift",
+      "bytes": 3518,
+      "sha256": "8e6cf4b7cda701177e0e6d18da0c8be568a47a35388d93b819ed7e175aff4384"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NineKeyLexiconTests.swift",
+      "bytes": 1796,
+      "sha256": "75cb6e5d972224fb178a8c5a10266b2cde6e1c1f655947672f5edba776939888"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NineKeyPredictionTests.swift",
+      "bytes": 12415,
+      "sha256": "da2422cdc6c04dfc65bf41f4563a4221d87593df161cbdfa8840a0d38427cd79"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PersonalLexiconSyncTests.swift",
+      "bytes": 5262,
+      "sha256": "a8000b5b840815414e2a0528313646acfe72db66e79cb51683ae90612a47b6d5"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PersonalLexiconTests.swift",
+      "bytes": 4596,
+      "sha256": "5689ee2c7e8953441fa06b8f87704f1510ff993a679ed2c79be67b599fe678ff"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PinyinCorrectionTests.swift",
+      "bytes": 1503,
+      "sha256": "56d8a019079434f892c5531981e3557ac4cbb50a227fafbdbff486c79afefd1a"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PinyinInputMatchTests.swift",
+      "bytes": 1815,
+      "sha256": "dfa8be0d633870b60f1f1e05a7d0e0f830b0fc99d9b73acb2d379b0f55d1a00c"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/QuickPairingTests.swift",
+      "bytes": 1368,
+      "sha256": "97715fa6784aa4fb95ef122bcceed3cfd43a950ed4dc45be3e246ec3bb27301d"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RecentLearningSyncTests.swift",
+      "bytes": 12297,
+      "sha256": "8a777bb2993910e3a8b8430fbf636d164aa381126c938ab16e4f5496287cd883"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RecentLearningTests.swift",
+      "bytes": 21220,
+      "sha256": "89536a444c459c376bd5fba9f7faa3c64c615ffd884192b76712a97f0bd83391"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RelayClientTests.swift",
+      "bytes": 25068,
+      "sha256": "8fd1189e6d0eb50aa28041e6aa27120d6561ac1a1be4cd840bd7727b63d35c91"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/RimeCheckpointTests.swift",
+      "bytes": 5363,
+      "sha256": "3c11ddc507c8b2ab9de01d2a3c8c3afb461b0afd4a18afbce5ed54a14726f81a"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SecureMessageTests.swift",
+      "bytes": 5477,
+      "sha256": "1e0079d9b1c1da3ff38cf2ef3337792a3a27b15c2118c8f9911591d7fe95f794"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SecureReplicaStoreTests.swift",
+      "bytes": 13362,
+      "sha256": "918a877cec58e3534ea55545f9d81a33c67a98b79911c0fc30611ddb563cce77"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SharedTextFidelityTests.swift",
+      "bytes": 4805,
+      "sha256": "aea87e8ca0cce6e637716ddb663492524047ed849d9b8b960d4cacb13550cda2"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SnapshotStoreTests.swift",
+      "bytes": 5031,
+      "sha256": "392fbcef39cb4d73e0a8eddb3d88893b6f9164b52e1a339f4ed03ef96bca0e53"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SymbolUsageTests.swift",
+      "bytes": 1477,
+      "sha256": "3b3168e4a03a1e62f089199f1de0197ccc709ed10b5ca493d6cc9eb454abbfe6"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/SyncBacklogRecoveryTests.swift",
+      "bytes": 11551,
+      "sha256": "d4168314f51be2f3d0654360433edf0f35cafac71ca0656849d810cfc7f0fffe"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tools/PrivateInputNetworkPeer/main.swift",
+      "bytes": 4598,
+      "sha256": "f6314749134dd4187a152834176d4ccc27422a78e381c53941fcd95f28abbd49"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tools/PrivateInputRelayProbe/main.swift",
+      "bytes": 9060,
+      "sha256": "e38d3678335f243e6afbeff4e36a48d23fc768b3f38d521bf7c58a2e08270913"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tools/PrivateInputVectors/main.swift",
+      "bytes": 3808,
+      "sha256": "9ec8ac3f89fee06f3d22844699b2b2fef60053b9ee08cc8959bae6fa4519ce9f"
+    },
+    {
+      "path": "vendor/bouncycastle/LICENSE.html",
+      "bytes": 1175,
+      "sha256": "edbbb10380b1271998b867a2e36b1cbee226e03d438726e1a91f80c5dde11849"
+    },
+    {
+      "path": "vendor/bouncycastle/SOURCE.json",
+      "bytes": 412,
+      "sha256": "f034e09f985b69d881598094179241269ca5f63aa89cd567a330cbae957a9468"
+    },
+    {
+      "path": "vendor/dictionaries/licenses/GPL-3.0.txt",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "vendor/dictionaries/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/AUTHORS",
+      "bytes": 393,
+      "sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75"
+    },
+    {
+      "path": "vendor/dictionaries/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "vendor/dictionaries/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/README.md",
+      "bytes": 228,
+      "sha256": "e34e69e56829dc3eb9236bd750e982bb0849be635756e26cde196c62b9409342"
+    },
+    {
+      "path": "vendor/dictionaries/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/essay.txt",
+      "bytes": 5887319,
+      "sha256": "3e8512ebaa6657e35961b1f5762060717c647e3bf471d5e3b86e783b4e934ffb"
+    },
+    {
+      "path": "vendor/dictionaries/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/AUTHORS",
+      "bytes": 273,
+      "sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8"
+    },
+    {
+      "path": "vendor/dictionaries/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "vendor/dictionaries/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/README.md",
+      "bytes": 460,
+      "sha256": "536daa306647bd9b4ef736d264fc36c9d77e30a123cebe56469a0ab5f27d9597"
+    },
+    {
+      "path": "vendor/dictionaries/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/luna_pinyin.dict.yaml",
+      "bytes": 889896,
+      "sha256": "75bcf6eb3ff62b129882ed89cc22b2d80a5347aa72bcfa2ccc839bac298e7314"
+    },
+    {
+      "path": "vendor/librime-octagram/LICENSE",
+      "bytes": 1513,
+      "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_db.cc",
+      "bytes": 3206,
+      "sha256": "b3109361c079bba25f58cc85a78f72ab9e3ad43260bd6e3d7389bd0020a5d596"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_db.h",
+      "bytes": 1005,
+      "sha256": "57f32ab7c722b93d68637b9906eb2205b95664200c3dd70628e0529fb0c706c7"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_encoding.cc",
+      "bytes": 1545,
+      "sha256": "b1e5d0162e5b06dda87fd7d63d91697ada812bd5b8f94af820c5174903c7e789"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_encoding.h",
+      "bytes": 519,
+      "sha256": "f74738734980136322f99d542d50e3b7c684468229c876f9ff8f517a8e39099c"
+    },
+    {
+      "path": "vendor/librime-octagram/src/octagram.cc",
+      "bytes": 6311,
+      "sha256": "0dfe54e4fab36b733699b334f96801f6872a47f63cb1be68f5c256a6e256e11d"
+    },
+    {
+      "path": "vendor/librime-octagram/src/octagram.h",
+      "bytes": 963,
+      "sha256": "018772555e6574120814585f9757b3377e1a0712535ff1c5be3936b24e9087d6"
+    },
+    {
+      "path": "vendor/libsodium-1.0.22/LICENSE",
+      "bytes": 823,
+      "sha256": "508a76d186356c0dd807a670ef510964f8724557024796a2c426c6c0e19ab683"
+    },
+    {
+      "path": "vendor/zxing/LICENSE",
+      "bytes": 13320,
+      "sha256": "3f62881f0566227a24b12e5a754cc79f39aaa94883038e95c94812e1f50af42f"
+    },
+    {
+      "path": "vendor/zxing/SOURCE.json",
+      "bytes": 287,
+      "sha256": "e8fe4e296f277cfd5a780f4ec464ce59c30927637642b32ccea6ccafb1d6b911"
+    },
+    {
+      "path": "windows-source/core/include/desktop_candidates.hpp",
+      "bytes": 1222,
+      "sha256": "c6bd08e45b7b57e50542991a3dd41d0eab6f5ec14116ff0814de50b260f7aa5f"
+    },
+    {
+      "path": "windows-source/core/include/pinyin_repair.h",
+      "bytes": 10631,
+      "sha256": "27feb57373363854a336058193af4e2a69194801ff0ffbb2b17b73c517e3cf57"
+    },
+    {
+      "path": "windows-source/core/include/pinyin_text.h",
+      "bytes": 8558,
+      "sha256": "803f4fb4a3e29afcd5287aa6f4b2f23867447c164da5e7da9cd8eb8f7b27534e"
+    },
+    {
+      "path": "windows-source/core/include/private_input.h",
+      "bytes": 5188,
+      "sha256": "7bb7c2ae3abb8e366936e7abadcd85a1fb5a0150a2072c7f661f2c9e84f50866"
+    },
+    {
+      "path": "windows-source/core/include/private_pinyin_syllables.h",
+      "bytes": 5023,
+      "sha256": "edd79e9144170d11f42b0abe7b581469a4c916f278b857e0d909f0c55fd77774"
+    },
+    {
+      "path": "windows-source/core/src/language_scoring.cpp",
+      "bytes": 3211,
+      "sha256": "a5901b3318f5c2e7074ee00df644976e18726fe1b786d8c073f9fe284ece4f72"
+    },
+    {
+      "path": "windows-source/core/src/private_input.cpp",
+      "bytes": 51189,
+      "sha256": "31ae81923f879265315e614b9f1f2510c93b1a7c8ce13c37e1988a7b9ac129da"
+    },
+    {
+      "path": "windows-source/core/tests/candidate_management_smoke.cpp",
+      "bytes": 4443,
+      "sha256": "6c4b6ede87ee432faecd3d53983e823b171555f1ae0beda23adae6db586f2452"
+    },
+    {
+      "path": "windows-source/core/tests/candidate_scroll_smoke.cpp",
+      "bytes": 2147,
+      "sha256": "93d089c4e8882e9121c45be375a677f0735446d652e44142eda3446ba6d20f8b"
+    },
+    {
+      "path": "windows-source/core/tests/dictionary_candidate.cpp",
+      "bytes": 5680,
+      "sha256": "d2d21e98d39fd4d61249378034682b7d1ecd55fb96ec4b084d10085bcee5849b"
+    },
+    {
+      "path": "windows-source/core/tests/engine_bridge_driver.cpp",
+      "bytes": 2353,
+      "sha256": "944712b8040cc8c463af5847f0eef2a03ca739da2283d3627bbddc46255706e2"
+    },
+    {
+      "path": "windows-source/core/tests/engine_smoke.cpp",
+      "bytes": 4594,
+      "sha256": "fdc89d7edc13ef784e59da506dd011d8671d626fd4430f1b73acb8db2b11aecf"
+    },
+    {
+      "path": "windows-source/core/tests/nine_filter_smoke.cpp",
+      "bytes": 6105,
+      "sha256": "63b2b8357b69a7edc1375f080bca6fc6105b44e8c3ad9b174e5d4af90c951f51"
+    },
+    {
+      "path": "windows-source/core/tests/nine_key_smoke.cpp",
+      "bytes": 3283,
+      "sha256": "fa8e5a3cff58610c065816dc99ab8462d58aaac37d1fc93c39e342cf82f2b412"
+    },
+    {
+      "path": "windows-source/core/tests/pinyin_text_repair.cpp",
+      "bytes": 2870,
+      "sha256": "fa2bb61af8135736b3e1e12ea63229ccc5c686079836d49e62a3e2507c026c5f"
+    },
+    {
+      "path": "windows-source/core/tests/repair_smoke.cpp",
+      "bytes": 3157,
+      "sha256": "ca2fbada91cbdc792949c2df44ecb4d5f7a34dbe3b34966b40b3da56fa047b28"
+    },
+    {
+      "path": "windows-source/core/tests/windows_legacy_export.cpp",
+      "bytes": 2700,
+      "sha256": "ef9fe6e6bb635da0a84d25f0429c68eed8e6b5a9b7ab1e21c12b075f840095c2"
+    },
+    {
+      "path": "windows-source/core/tests/windows_long_composition.cpp",
+      "bytes": 5365,
+      "sha256": "02e9c649072e1b935ad0accdde9e36a909a0d336d2e5850bb17236438eba943a"
+    },
+    {
+      "path": "windows-source/resources/rime/SOURCE.json",
+      "bytes": 14833,
+      "sha256": "62d7ceb7cd86deb610813b4df6b77297be9c0401615749fc24a9ae6c4e6737ce"
+    },
+    {
+      "path": "windows-source/resources/rime/default.yaml",
+      "bytes": 293,
+      "sha256": "09b5e5b3b238d81383f07cb1895cf0cc60434d9e0b27a186f84f619460ed0054"
+    },
+    {
+      "path": "windows-source/resources/rime/essay.txt",
+      "bytes": 5846161,
+      "sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2"
+    },
+    {
+      "path": "windows-source/resources/rime/private_nine.schema.yaml",
+      "bytes": 1205,
+      "sha256": "dd652657fea2b8f127fcc5a7085a243959117a73ea55d5fab13ea827d26886da"
+    },
+    {
+      "path": "windows-source/resources/rime/private_nine_initials.schema.yaml",
+      "bytes": 1253,
+      "sha256": "fd9c0ca212755e42c26dbfedb9e77a0867cff3d08d80b5e38a6a2579688ffe42"
+    },
+    {
+      "path": "windows-source/resources/rime/private_nine_private.schema.yaml",
+      "bytes": 1214,
+      "sha256": "a7d52c9fce16ba3e381ab195973b20deac674672afaca3f39810ee05e940e7f4"
+    },
+    {
+      "path": "windows-source/resources/rime/private_pinyin.dict.yaml",
+      "bytes": 859873,
+      "sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93"
+    },
+    {
+      "path": "windows-source/resources/rime/private_pinyin.schema.yaml",
+      "bytes": 1053,
+      "sha256": "df35b4027ae681041237b9e3c582da5caaac336e145575f6369bfbfc10d6c513"
+    },
+    {
+      "path": "windows-source/resources/rime/private_pinyin_exact.schema.yaml",
+      "bytes": 881,
+      "sha256": "1f8f8ff29c4c8c873709434e5745d11689ccbad4433ca3d61d97ecf00ba6c417"
+    },
+    {
+      "path": "windows-source/resources/rime/private_pinyin_private.schema.yaml",
+      "bytes": 912,
+      "sha256": "5e87533cc44938048dbb305fa5a937fca9127655e2681afe9888315fde6e6749"
+    },
+    {
+      "path": "windows-source/resources/rime/private_zh_hans_compact.gram",
+      "bytes": 40925228,
+      "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e"
+    },
+    {
+      "path": "windows-source/resources/rime/licenses/GPL-3.0.txt",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "windows-source/resources/rime/licenses/librime-octagram-LICENSE",
+      "bytes": 1513,
+      "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+    },
+    {
+      "path": "windows-source/resources/rime/licenses/rime-essay-AUTHORS",
+      "bytes": 393,
+      "sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75"
+    },
+    {
+      "path": "windows-source/resources/rime/licenses/rime-essay-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "windows-source/resources/rime/licenses/rime-luna-pinyin-AUTHORS",
+      "bytes": 273,
+      "sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8"
+    },
+    {
+      "path": "windows-source/resources/rime/licenses/rime-luna-pinyin-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "windows-source/resources/rime/licenses/rime-octagram-data-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "windows-source/resources/semantic/CONTINUATION.json",
+      "bytes": 459,
+      "sha256": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa"
+    },
+    {
+      "path": "windows-source/resources/semantic/LEXICON.json",
+      "bytes": 474,
+      "sha256": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341"
+    },
+    {
+      "path": "windows-source/resources/semantic/MODEL-LICENSE.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "windows-source/resources/semantic/MODEL.json",
+      "bytes": 1962,
+      "sha256": "d3d9cbaac7d5048aa16629072f1877d8e69b400591f9de9ccc99973df888fd92"
+    },
+    {
+      "path": "windows-source/resources/semantic/PINYIN.json",
+      "bytes": 370,
+      "sha256": "8b434be5e270b5df44d8b0f4ef0876202af4eeb9b33d86c9379b8eefe951f7ab"
+    },
+    {
+      "path": "windows-source/resources/semantic/continuation.bin",
+      "bytes": 985151,
+      "sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4"
+    },
+    {
+      "path": "windows-source/resources/semantic/nine-lexicon.bin",
+      "bytes": 957112,
+      "sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281"
+    },
+    {
+      "path": "windows-source/resources/semantic/pinyin-syllables.txt",
+      "bytes": 1797,
+      "sha256": "ddd9b253b4f3412d17ed1c119d9d3b36f1153e7c3ff7f62e20e59cdfd1856689"
+    },
+    {
+      "path": "windows-source/resources/semantic/vocab.txt",
+      "bytes": 109540,
+      "sha256": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c"
+    },
+    {
+      "path": "windows-source/scripts/build_windows_cross.py",
+      "bytes": 5453,
+      "sha256": "7f10b8c6091a9c596ab697c572be21eb33390ebeb3738d65fa1aa21e2c76efac"
+    },
+    {
+      "path": "windows-source/scripts/package_windows_020.py",
+      "bytes": 6153,
+      "sha256": "3be148fb2805d18aa5f12466c3ad55c67592f043f2e67b7bc530c05066ca2f39"
+    },
+    {
+      "path": "windows-source/scripts/package_windows_preview.py",
+      "bytes": 3962,
+      "sha256": "253fd2b0a1c9caa4fc6812d3f9ada63cbd8190c93dbb6cd1b79662764d153f8f"
+    },
+    {
+      "path": "windows-source/scripts/windows_stage_fixture.py",
+      "bytes": 5058,
+      "sha256": "ca5722c5155cd7aafa7e62ed148b4641f8bd6d29e1a6678c24c3ad9c6d55ee2c"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Package.swift",
+      "bytes": 877,
+      "sha256": "e3d95bf7fe53994e2a96e4cc52b0a41bb96fc378b0954ec3870842750a745120"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/CSQLite/module.modulemap",
+      "bytes": 80,
+      "sha256": "bbfe59a972a3e8e09e347c04bc22c0eacd2544881af8a4b6068bfc30b38466e8"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/CSQLite/shim.h",
+      "bytes": 21,
+      "sha256": "b052d8e561e942f97b503033ecd2eaa2b35213bdbf374983efe9e68eabdfc024"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/ContinuationLexicon.swift",
+      "bytes": 4034,
+      "sha256": "883350ec4113d9f81dfacf4d542c5bf6450ed16648b0b044286f439c8a6f1519"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/DesktopCandidateLayout.swift",
+      "bytes": 1321,
+      "sha256": "870a4bfa9a34efc05fabd862020ef933aec79a7087e47c10ae76d2640dda2c40"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/DeviceIdentity.swift",
+      "bytes": 7299,
+      "sha256": "8740ca5a10a0cfdad960ba2d36b7b99eb41e1485c01d70c069bb8c7e513fadcf"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/DeviceInvitation.swift",
+      "bytes": 2172,
+      "sha256": "0752a3d5eb0d4d4bfb40937b1cac98cc8bfc2729425f5c6e99a2b5fbb7b1e12c"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/EnglishWordSuggestions.swift",
+      "bytes": 3916,
+      "sha256": "50b39661496c9abd3744520dc72260db7b2635d308dda475e76de6dda90e44c2"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/Learning.swift",
+      "bytes": 8631,
+      "sha256": "158003551129025af2cfa5270d62f04d70e9e3748116f4c1e0079aa8e99b2e6f"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/LearningPublication.swift",
+      "bytes": 460,
+      "sha256": "b72195dae39fc79cfba7ced663e171c8f479be987a499a498848a157e30e6674"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/Membership.swift",
+      "bytes": 5734,
+      "sha256": "6dace764791c27b56149b80b5b3433ee91ab8824e88be638b7940f75400178b1"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/MixedEnglishLexicon.swift",
+      "bytes": 3552,
+      "sha256": "d323ccdbc1e0f6c419883d1c88c0d631de3327d87eb8aa0981e6879400477f0c"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/NineKeyLexicon.swift",
+      "bytes": 3971,
+      "sha256": "1785e56b4e07e89072014142bc37ec819331539c38d7dc3c12cc45586aac7f91"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/NineKeyPrediction.swift",
+      "bytes": 13883,
+      "sha256": "351400d1f4ee7f1dfdf75d86f2a3f2cb4356baf5b7dd90f635aaab78b2c2f449"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/Pairing.swift",
+      "bytes": 18399,
+      "sha256": "5b2e5feb981c2cfac16db96ad7ff386767d25b644242ceff03e991f4e989fbf0"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/PersonalLexicon.swift",
+      "bytes": 9892,
+      "sha256": "e6a579f38d765fe16704da3259f733dc3de441438193795e727f935a77107427"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/PersonalLexiconSync.swift",
+      "bytes": 4192,
+      "sha256": "b6d5a7b2ed66e3935730aff592056e4c67a8e7fefe60e9d653793f24ab929980"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/PinyinCorrection.swift",
+      "bytes": 9160,
+      "sha256": "a37d54f95f23897760550e96b045595f006c45a2bd9d69d4f0340874209be336"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/PinyinInputMatch.swift",
+      "bytes": 5651,
+      "sha256": "385a76f2aa38adc4e72ce8cd7388de71e9d92cea16d2781344be51c253920e97"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/QuickPairing.swift",
+      "bytes": 1757,
+      "sha256": "8a637638f0430cb2e93a5a323ff8ae1d52eb820b760fbae2d81b18a9844497d8"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/RecentCommit.swift",
+      "bytes": 1631,
+      "sha256": "3bfe5bd058ecba1420d379262c3d2f5f0e686be535336617151dcfad85db9083"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/RelayClient.swift",
+      "bytes": 15859,
+      "sha256": "e0d2d84422932c52602b96087c8b3906bc83453c08d0b837d61c565e682b5679"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/RelayRequest.swift",
+      "bytes": 1838,
+      "sha256": "6c402f089903128ffa9531ce01a6d7052d184f0c41858b0856eff743525e754d"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/RimeCheckpoint.swift",
+      "bytes": 4882,
+      "sha256": "b0adeb6ac0431a0c8838d4c71803cdc5f02e1df0ac5311922d8c7e1094798298"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SecureMessage.swift",
+      "bytes": 8201,
+      "sha256": "ddd498c49b85d8e1e7bc9f67f51357415763fee75b60c6e0da75891f334b77d2"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SecureReplicaStore.swift",
+      "bytes": 23532,
+      "sha256": "d53b9a7ee5f028055094b0d2ddd60a073995f93c988d38655a4c2901131bc2da"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SentencePrediction.swift",
+      "bytes": 10633,
+      "sha256": "505ffc0e879033e0e5b6b8dade6ce50e8e82f410ba4271974c4e935c41b660e2"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SharedClipboardCache.swift",
+      "bytes": 4690,
+      "sha256": "dc7152e0959a6d1cde94885fdcfc2ac15f6f62555f0547c0c034364f42bed118"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SharedLearningSnapshot.swift",
+      "bytes": 2704,
+      "sha256": "84cec7533fbc8666d5206179b31e2d59eaee0e7365c7b9a0f74927129df5d27a"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SupplementaryLexicon.swift",
+      "bytes": 2868,
+      "sha256": "676b72b9cd21830d2f4cf1b34088aa86f81b5d26061b26bc3b3f192984af0af2"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SymbolUsage.swift",
+      "bytes": 1315,
+      "sha256": "afc2afde0962f26dd855006bdcde170b1247e09c684ab7735948792faefdc90b"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Sources/PrivateInputKit/SyncConsentGate.swift",
+      "bytes": 1176,
+      "sha256": "bbc05c314a78f4abe4b0d2f4887042f4ab1e65636763a5247189fdecd7e13ae3"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidChoiceParityTests.swift",
+      "bytes": 5119,
+      "sha256": "c7f169855deeea9cb1ea88bee04331c733bff7afab6514cd5620b65d3973052e"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidDataParityTests.swift",
+      "bytes": 2860,
+      "sha256": "406cc803b412fba61feded65a2fdbf0af0629fc6e1d62bac04bebace87ef381a"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidLanguageParityTests.swift",
+      "bytes": 3393,
+      "sha256": "538539c246cd798caeea5a2a127db57c13d54ba4bf375ea69546f8f0c166f03b"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidLearningParityTests.swift",
+      "bytes": 6577,
+      "sha256": "de7347b74f3e1ced4f6f901837c4311c45730e04c5592462069786697e52ebb9"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidPersonalFixtureTests.swift",
+      "bytes": 2282,
+      "sha256": "104467eaf9f6617f1022009b4c208332a32ee20d0bc79fa93627b0056f8b91b9"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/ClipboardCacheTests.swift",
+      "bytes": 3457,
+      "sha256": "956932aa9db901ce6289cf097ccba756b92f271bec08744515068dbce82ce1c7"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/DesktopCandidateLayoutTests.swift",
+      "bytes": 1510,
+      "sha256": "eae591033b07f53b5ce8c99a350152173043015fb6bdf4c30d464dafed7b3c31"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/IdentityAndPairingTests.swift",
+      "bytes": 14031,
+      "sha256": "cc396b5c89f3ebba5bae0203dab2f8a3692adcf1a5dfd8aa97860658d34ddf4d"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/InputCoverageTests.swift",
+      "bytes": 3520,
+      "sha256": "a0ab177afa285d952357b696568a841f92fdc5dba9a9ac65be66b644d5013c48"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningTests.swift",
+      "bytes": 4516,
+      "sha256": "9fe98cd474fb31ca0973eba0ab91bbe61b7434b0b0862791bdf7236dca123487"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/MixedEnglishTests.swift",
+      "bytes": 2036,
+      "sha256": "1a2efa527bdb3547680a4a373d7b802235de5e9347ad831114817d4de69e2467"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/NativeInputSupportTests.swift",
+      "bytes": 2373,
+      "sha256": "5b2c970a230885a37817b4d439edd39f647cc3c4bdb586614a267d1edb961bb9"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/NativeRimeBridgeTests.swift",
+      "bytes": 3518,
+      "sha256": "8e6cf4b7cda701177e0e6d18da0c8be568a47a35388d93b819ed7e175aff4384"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/NineKeyPredictionTests.swift",
+      "bytes": 12415,
+      "sha256": "da2422cdc6c04dfc65bf41f4563a4221d87593df161cbdfa8840a0d38427cd79"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/PersonalLexiconSyncTests.swift",
+      "bytes": 5262,
+      "sha256": "a8000b5b840815414e2a0528313646acfe72db66e79cb51683ae90612a47b6d5"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/PersonalLexiconTests.swift",
+      "bytes": 4596,
+      "sha256": "5689ee2c7e8953441fa06b8f87704f1510ff993a679ed2c79be67b599fe678ff"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/PinyinCorrectionTests.swift",
+      "bytes": 1503,
+      "sha256": "56d8a019079434f892c5531981e3557ac4cbb50a227fafbdbff486c79afefd1a"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/PinyinInputMatchTests.swift",
+      "bytes": 1815,
+      "sha256": "dfa8be0d633870b60f1f1e05a7d0e0f830b0fc99d9b73acb2d379b0f55d1a00c"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/QuickPairingTests.swift",
+      "bytes": 1368,
+      "sha256": "97715fa6784aa4fb95ef122bcceed3cfd43a950ed4dc45be3e246ec3bb27301d"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/RelayClientTests.swift",
+      "bytes": 22767,
+      "sha256": "66999d1ca811de184005043a35684caa680d1aaf094434a3a6ca2ae5d1d229f2"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/RimeCheckpointTests.swift",
+      "bytes": 5363,
+      "sha256": "3c11ddc507c8b2ab9de01d2a3c8c3afb461b0afd4a18afbce5ed54a14726f81a"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/SecureMessageTests.swift",
+      "bytes": 5477,
+      "sha256": "1e0079d9b1c1da3ff38cf2ef3337792a3a27b15c2118c8f9911591d7fe95f794"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/SecureReplicaStoreTests.swift",
+      "bytes": 13362,
+      "sha256": "918a877cec58e3534ea55545f9d81a33c67a98b79911c0fc30611ddb563cce77"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/SnapshotStoreTests.swift",
+      "bytes": 5031,
+      "sha256": "392fbcef39cb4d73e0a8eddb3d88893b6f9164b52e1a339f4ed03ef96bca0e53"
+    },
+    {
+      "path": "windows-source/shared/PrivateInputKit/Tests/PrivateInputKitTests/SymbolUsageTests.swift",
+      "bytes": 1477,
+      "sha256": "3b3168e4a03a1e62f089199f1de0197ccc709ed10b5ca493d6cc9eb454abbfe6"
+    },
+    {
+      "path": "windows-source/tools/build_offline_installer.py",
+      "bytes": 17839,
+      "sha256": "ac2e02880b71fabf560a8c52443993173c9fb72cd4b5cb861d6ffb8e60b9766e"
+    },
+    {
+      "path": "windows-source/tools/build_preview.py",
+      "bytes": 6043,
+      "sha256": "0598836859319a60830d90bb7615790737cfaba061ab0d7d66a0ba5a670a6c6a"
+    },
+    {
+      "path": "windows-source/tools/check_clipboard_live_vectors047.py",
+      "bytes": 2876,
+      "sha256": "c910a3d83b6b7338e5e3bc35a8e56da8e3d8bf0bf539676f42e6870f4df2c0e3"
+    },
+    {
+      "path": "windows-source/tools/run_group_client_fixture.py",
+      "bytes": 1308,
+      "sha256": "c93611a59a65174aab90e63e7176263d2b338bab5c28cf55c2f652a9f8067e9c"
+    },
+    {
+      "path": "windows-source/tools/test_offline_installer.py",
+      "bytes": 3955,
+      "sha256": "a6ff8b8365f20638f1fa2431b4d3e67d385838b721bafd4009872d72392253f4"
+    },
+    {
+      "path": "windows-source/tools/test_windows_clipboard_candidate.py",
+      "bytes": 2967,
+      "sha256": "9c1f74c44472234fa1297fff8a4a88b1a97198d33dbef1a8050242e2a6af57be"
+    },
+    {
+      "path": "windows-source/tools/test_windows_clipboard_live047.py",
+      "bytes": 2741,
+      "sha256": "a694b55a45d56dd9576fbfc9811f8732a1206befa9a4975c0f57e1974575a75b"
+    },
+    {
+      "path": "windows-source/tools/test_windows_clipboard_safety046.py",
+      "bytes": 4328,
+      "sha256": "53d746df228be6dcc7ded7646533e3a65a5fcabaf649642e60a4b098f7de119f"
+    },
+    {
+      "path": "windows-source/tools/test_windows_clipboard_transport047.py",
+      "bytes": 6679,
+      "sha256": "d4f194c462f11e789bc0f22bcb6b8f4c55783dbb5c8a2d926ad2ca5de9416b0d"
+    },
+    {
+      "path": "windows-source/tools/test_windows_content_reference.py",
+      "bytes": 2995,
+      "sha256": "b8a8ad6b96376753d085d891f7dc679d76e750f12fd9fb0efbdee62634c2e6b9"
+    },
+    {
+      "path": "windows-source/tools/test_windows_english.py",
+      "bytes": 1320,
+      "sha256": "83df6cd7fb3800872901c9acae4d51ce8762a384be5852bd7a35a6e8f0432d52"
+    },
+    {
+      "path": "windows-source/tools/test_windows_input.py",
+      "bytes": 2924,
+      "sha256": "8f91dc15fd18af58db8e93a91367d69d2dbcd1c0d149432895489c5512a999df"
+    },
+    {
+      "path": "windows-source/tools/test_windows_long_composition.py",
+      "bytes": 2063,
+      "sha256": "b9870830402c1da8787402424138c9f8c0c61c794fd917a8b796983965704b41"
+    },
+    {
+      "path": "windows-source/tools/test_windows_membership.py",
+      "bytes": 6092,
+      "sha256": "63a05b4dd7cc459f8a15995817d04646944f9eecbf5e21addbcb7ba0c049c548"
+    },
+    {
+      "path": "windows-source/tools/test_windows_membership_wire.py",
+      "bytes": 14622,
+      "sha256": "de0bbb17e010913cdc724c32b6450c76e799603753936606041bef2147c6a6a7"
+    },
+    {
+      "path": "windows-source/tools/test_windows_recent_reference.py",
+      "bytes": 1882,
+      "sha256": "750905c41bdf17af425d56fa9596cd153f1f098c921f2745e3e98b04c605dd8d"
+    },
+    {
+      "path": "windows-source/tools/windows_group_fixture_server.py",
+      "bytes": 1890,
+      "sha256": "530a8382de61300a6a7a18598e4262ef847570d3b0f2001bfd19a30f36007096"
+    },
+    {
+      "path": "windows-source/windows/CMakeLists.txt",
+      "bytes": 4109,
+      "sha256": "6c9cceb947b5cb4ba8906730dff36be9faff2fde75433efa5f328d050cfc7b2c"
+    },
+    {
+      "path": "windows-source/windows/PrivateInputTSF.def",
+      "bytes": 177,
+      "sha256": "97ad4245ff98b777b8a97ecb4948a07a59f1c0529c51130619db81436542a77e"
+    },
+    {
+      "path": "windows-source/windows/README.md",
+      "bytes": 3288,
+      "sha256": "511de60a2cf77457f69b9f3ab89ae4a438d6475bac191a6a65cca6853353775d"
+    },
+    {
+      "path": "windows-source/windows/activity/ArchiveCore.cpp",
+      "bytes": 5052,
+      "sha256": "029e32cfaa58b090b8d72a56002fac30422eb618882be6b0f803c9197a962233"
+    },
+    {
+      "path": "windows-source/windows/activity/ArchiveCore.h",
+      "bytes": 1915,
+      "sha256": "eb458ec7526328c59609808bac1ac83b68190f56b44589f6ca54fa7ba2332463"
+    },
+    {
+      "path": "windows-source/windows/activity/ArchiveQueue.cpp",
+      "bytes": 10885,
+      "sha256": "155996dd54f78946ad72bb47974272bf08c808810a70264f7458674e20df07a3"
+    },
+    {
+      "path": "windows-source/windows/activity/AutomaticClipboard.cpp",
+      "bytes": 3295,
+      "sha256": "e1cd2bd819fbd0be49ff805a6af86ec255a0c5a45fac0c58e3822240c416a11c"
+    },
+    {
+      "path": "windows-source/windows/activity/AutomaticClipboard.h",
+      "bytes": 1700,
+      "sha256": "cfd4b1b8cb38da604ccea6fb446ea72c1e99f3f5661dae99b69d8db537afc541"
+    },
+    {
+      "path": "windows-source/windows/activity/CMakeLists.txt",
+      "bytes": 5379,
+      "sha256": "53e641ab740ba0301a36f66bc1fec1c9ac15d2b717e52548f452e966a049f8a4"
+    },
+    {
+      "path": "windows-source/windows/activity/CaptureIPC.cpp",
+      "bytes": 7144,
+      "sha256": "aec7067435a0af58edca87834488b321e48e7af1a0a0b40aea1dc5e441e1d1e9"
+    },
+    {
+      "path": "windows-source/windows/activity/CaptureIPC.h",
+      "bytes": 1469,
+      "sha256": "56fd5ec59a5714afed77ed2172a65371aaea170907ed64c076f40ee37a008ab3"
+    },
+    {
+      "path": "windows-source/windows/activity/CaptureWire.h",
+      "bytes": 2426,
+      "sha256": "096f1d13e5921e368112a8304775e6994b1d815e27563c6aa4a8c05b61920cd0"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardCandidateIPC.h",
+      "bytes": 1967,
+      "sha256": "549f6df3e388d730371fe9ce007da43d18f715d9c1d7daa2602fddf4b169cec4"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardLiveProtocol.cpp",
+      "bytes": 14928,
+      "sha256": "6820ed140aee41b9767c15dc40fb03931fdfcd8f2def984e736589484a0e7721"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardLiveProtocol.h",
+      "bytes": 1985,
+      "sha256": "83988453b3a792e79f974ba629c495390d4a35fd493e6086219d36708ffd0fa3"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardLiveStore.cpp",
+      "bytes": 6694,
+      "sha256": "7e9c9592a67743c156b5ba1077682d3b3e2bfbfb627bcabb3b7b88b27cfbbb35"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardLiveStore.h",
+      "bytes": 1333,
+      "sha256": "da62d7b510727f9e3b7fd37e7ac9845ecc586fe05a119a3a8b58430bbd4574dc"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardLiveWorker.cpp",
+      "bytes": 8851,
+      "sha256": "e49ce457c71f2f0f8dd7e99d8e92ff301cd84fdbda30a868df9fa8a839e858e5"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardLiveWorker.h",
+      "bytes": 2652,
+      "sha256": "f936965d43bd4ef30a69d75d48da615112e9ebcdba8b819d1883ce11a412f002"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardPolicy.h",
+      "bytes": 973,
+      "sha256": "3d84e60c5078b1f6183253cfed5b72a842ce8c36f0e096aa4d53926519aaac4d"
+    },
+    {
+      "path": "windows-source/windows/activity/ClipboardReadSafety.h",
+      "bytes": 1999,
+      "sha256": "3177ada4c14a6893270fb49042d0f773a0688675d112ca89f9bdb1a52cb7f403"
+    },
+    {
+      "path": "windows-source/windows/activity/ContentModel.cpp",
+      "bytes": 9503,
+      "sha256": "65a3f77a615023b731af18ceb0370837761daf2f6342a33484d0bf2c61bfd8aa"
+    },
+    {
+      "path": "windows-source/windows/activity/ContentModel.h",
+      "bytes": 446,
+      "sha256": "f9c03de2abfc1950fd5c3ad6b5c63996eb75ec5f7aabe21238195167dc3a3709"
+    },
+    {
+      "path": "windows-source/windows/activity/ContentStore.cpp",
+      "bytes": 11773,
+      "sha256": "eabb6185c0b7af8ef81690968fa9f6f3e8734baa80a35c1c7859e4d55ff51b23"
+    },
+    {
+      "path": "windows-source/windows/activity/ContentStore.h",
+      "bytes": 1643,
+      "sha256": "16986c49da7a581462ca677235b3c3ec4858deda3e90fe19fb491867721c1276"
+    },
+    {
+      "path": "windows-source/windows/activity/GroupClient.cpp",
+      "bytes": 32184,
+      "sha256": "610d85d158f72b11828dc95bb1e6b6b2a88b5ba7c5955af01a77b4c1c25c702e"
+    },
+    {
+      "path": "windows-source/windows/activity/GroupClient.h",
+      "bytes": 2923,
+      "sha256": "2f28fa93089a108b67fbe6ac9dffc40ff0c452e7dd7e51e8c43c0f15c9e70c46"
+    },
+    {
+      "path": "windows-source/windows/activity/GroupProtocol.cpp",
+      "bytes": 6778,
+      "sha256": "34f2d136dfcd92297edf29138a611100c98e44bcd637a16058d5d825d36b24dd"
+    },
+    {
+      "path": "windows-source/windows/activity/GroupProtocol.h",
+      "bytes": 748,
+      "sha256": "bc1d53c83f6f930a3f7cbf4e80524e4a024161bcf4d4bb3bb14020d820e0d826"
+    },
+    {
+      "path": "windows-source/windows/activity/Json.cpp",
+      "bytes": 4690,
+      "sha256": "9f5e42eb60e07fac3fd471c6740b6de0694e6cbf2bb487740902c5081255dad7"
+    },
+    {
+      "path": "windows-source/windows/activity/Json.h",
+      "bytes": 1870,
+      "sha256": "73d451b3e054c1e15f450a60e27983d6b28511916ffe0e5d2c0704350aefc60b"
+    },
+    {
+      "path": "windows-source/windows/activity/LearningIPC.cpp",
+      "bytes": 2864,
+      "sha256": "5dc40d62cbdda3f9195af4eb6ad378e4045e0cb42727125012cd1f48d7e88843"
+    },
+    {
+      "path": "windows-source/windows/activity/LearningIPC.h",
+      "bytes": 2056,
+      "sha256": "c4ef7af451d19c111ee7156722bc3372ebe1bb48c4e3c86f942f1c57bede7d42"
+    },
+    {
+      "path": "windows-source/windows/activity/LegacyExport.cpp",
+      "bytes": 5511,
+      "sha256": "1d685ad38f3dc86d9378275f8d0c66f7d8ea835650ba934f87768c876126df5f"
+    },
+    {
+      "path": "windows-source/windows/activity/LegacyExport.rc",
+      "bytes": 29,
+      "sha256": "be77621697490dff2df195cf2e8669c15bf17eea8499abc86a797bb885854662"
+    },
+    {
+      "path": "windows-source/windows/activity/LegacyLearning.cpp",
+      "bytes": 1608,
+      "sha256": "0d2d228dd6cc36e9788e972be355885747ad95bd7139b4fe4857db58c2775b94"
+    },
+    {
+      "path": "windows-source/windows/activity/LegacyLearning.h",
+      "bytes": 163,
+      "sha256": "76226d220079f055f4e7db21326a411c2c74cd99c7c1016a61923609fc2ee627"
+    },
+    {
+      "path": "windows-source/windows/activity/PairAdmission.cpp",
+      "bytes": 4401,
+      "sha256": "17fbde598e970409fa4745c32696c6c54b6c7921250f71b3cdb11beb2158e27d"
+    },
+    {
+      "path": "windows-source/windows/activity/PairAdmission.h",
+      "bytes": 409,
+      "sha256": "5b54a165a767543b17989acd4115552e5b93fe4ca75350eadc25a0a5b6a27d05"
+    },
+    {
+      "path": "windows-source/windows/activity/Platform.cpp",
+      "bytes": 10490,
+      "sha256": "7b4c3410c56888e36efff7e02b77a9aee287d7bd6ecb3abd0c816d45ddae6174"
+    },
+    {
+      "path": "windows-source/windows/activity/Platform.h",
+      "bytes": 1075,
+      "sha256": "1e462ffa03099f35e3e822ec564c77d4cb35261e62473ad786fc0dc4c4647ecc"
+    },
+    {
+      "path": "windows-source/windows/activity/RecentModel.cpp",
+      "bytes": 7094,
+      "sha256": "dc91ff751462858424affa0c44a4aae3aeba78c6f85cf83d986770e3d7641a7f"
+    },
+    {
+      "path": "windows-source/windows/activity/RecentModel.h",
+      "bytes": 547,
+      "sha256": "b4c6a8406b8f7679eb1114b2926b7ea22b4303eeb4241b1e679e3d8b573202d3"
+    },
+    {
+      "path": "windows-source/windows/activity/RecentProtocol.cpp",
+      "bytes": 6983,
+      "sha256": "d333ddfd5492122b85a5975301a7747d421b431c7cbf2bb3a082b01ba9956d88"
+    },
+    {
+      "path": "windows-source/windows/activity/RecentProtocol.h",
+      "bytes": 582,
+      "sha256": "7507aba76b61b30a0f95007d0e9d73e76d7dd01fc4731cf4102cbd13fb67d4e6"
+    },
+    {
+      "path": "windows-source/windows/activity/SourceContext.h",
+      "bytes": 2540,
+      "sha256": "7e7c039da5be8cbc5543ce295c7959c5b953e510c9fbf3879779aabc09877a34"
+    },
+    {
+      "path": "windows-source/windows/activity/SourceContextWin.h",
+      "bytes": 3261,
+      "sha256": "ee77dc5cbab44191846b9e5fbb751f31e10e9fd3e7b4497731f7585cea23885e"
+    },
+    {
+      "path": "windows-source/windows/activity/Worker.cpp",
+      "bytes": 60431,
+      "sha256": "5ea9554d3ebbd8c13d48665a36e2a1ebc2a286bb7836d5971768d0f6d1830b9f"
+    },
+    {
+      "path": "windows-source/windows/installer/PayloadManifest.h",
+      "bytes": 6009,
+      "sha256": "19b9350682c117b777d22f585619b035eae929f2f0c6d0e840ef648b447c85fd"
+    },
+    {
+      "path": "windows-source/windows/installer/Settings.cpp",
+      "bytes": 11902,
+      "sha256": "57ae046ccf092585d962466b8f51ee9853b99a1e01e2ee4eb67c0b2f3d13d0ff"
+    },
+    {
+      "path": "windows-source/windows/installer/Setup.cpp",
+      "bytes": 38967,
+      "sha256": "d96af89d6bfe4e5a04fc94e381a207c0911a85b4f5c81f171c52857473b6b0de"
+    },
+    {
+      "path": "windows-source/windows/resources/AppIcon.ico",
+      "bytes": 114269,
+      "sha256": "3909a2a6fa3368a4b2e22c6febb0f08810bc24a350815762a519b8fba39f066c"
+    },
+    {
+      "path": "windows-source/windows/resources/PrivateInput.rc",
+      "bytes": 21,
+      "sha256": "b11351c17852607346f64ede0f41c0fabdf933faf9cd68bcf9c1ddcc5bea7075"
+    },
+    {
+      "path": "windows-source/windows/src/CandidateLayout.h",
+      "bytes": 4126,
+      "sha256": "095039b4be28333be73ba5195e81decceb0e58d18cf7683ec3bd25d7c9f0d366"
+    },
+    {
+      "path": "windows-source/windows/src/CandidateStream.h",
+      "bytes": 1311,
+      "sha256": "a5f6145ec6b2144f583d78d520fab0c9b949ade088ffeeffb0adb40d5cfbeee9"
+    },
+    {
+      "path": "windows-source/windows/src/CandidateWindow.cpp",
+      "bytes": 6327,
+      "sha256": "40f6f1f51d8ad2868239ed9d0e47fce8bd4b172ec3f51f0b952b83761e2431b7"
+    },
+    {
+      "path": "windows-source/windows/src/CandidateWindow.h",
+      "bytes": 1486,
+      "sha256": "515b1da429f778c23fcfa0bd42537273bb8802b754794601c7b392c6a5d91570"
+    },
+    {
+      "path": "windows-source/windows/src/ClipboardCandidatePolicy.h",
+      "bytes": 2399,
+      "sha256": "dfc7d2e86bd6e89e818cd2bdedabce38e4c1101bfcccbf87ce7a50d5968d0b17"
+    },
+    {
+      "path": "windows-source/windows/src/DesktopPreferences.h",
+      "bytes": 2174,
+      "sha256": "23748fa8eb7f2febaf93ca8fa91f3e37ad87c7e32b6b6332b3a3691486de238a"
+    },
+    {
+      "path": "windows-source/windows/src/DesktopTheme.h",
+      "bytes": 1055,
+      "sha256": "808ee74e774409a8f596f7a2e008717e543011d8069455e4ff57c741eef875dc"
+    },
+    {
+      "path": "windows-source/windows/src/EnglishSuggestions.h",
+      "bytes": 6173,
+      "sha256": "548ef6bfefd56bf42ab727a03e9f4dec3fb9c3ddb9da5aee51545c3e7a7e0f99"
+    },
+    {
+      "path": "windows-source/windows/src/GlyphFilter.h",
+      "bytes": 872,
+      "sha256": "0d7d55a99c98e62c95374f88bb2237ea8036cc30fe4e31d2b5b9baa992b95ae9"
+    },
+    {
+      "path": "windows-source/windows/src/NativeWindowTheme.h",
+      "bytes": 1492,
+      "sha256": "cc161d0bfd6658a2821a971c6ac7b6d5493331b292fede600995badcdfa7ad1c"
+    },
+    {
+      "path": "windows-source/windows/src/PrivateInputTSF.h",
+      "bytes": 1717,
+      "sha256": "8038bd28d08ae2bddb783be913aebc5a47ef95b3d277c0d5ea2ca871c4582782"
+    },
+    {
+      "path": "windows-source/windows/src/PublicContextModel.h",
+      "bytes": 3445,
+      "sha256": "7f41d5d534179d36af8b59734add8ceb82d702da0cb884e8e8589b51ce2ea138"
+    },
+    {
+      "path": "windows-source/windows/src/Registration.cpp",
+      "bytes": 8203,
+      "sha256": "f9a23c6ee358cf80937f6c7d8bf6e322d69d58a287bb9f4543053fac4626a489"
+    },
+    {
+      "path": "windows-source/windows/src/SymbolPairing.h",
+      "bytes": 610,
+      "sha256": "c76c0d0c3e5076af3e61161c4bd9e7aeed2c2fc70bd80fb0067260fddea2d4bd"
+    },
+    {
+      "path": "windows-source/windows/src/TextService.cpp",
+      "bytes": 52431,
+      "sha256": "7942c0a12d654739a276a2e56d5051e148a8696088e13e24c82513e655e456a0"
+    },
+    {
+      "path": "windows-source/windows/sync/CMakeLists.txt",
+      "bytes": 1634,
+      "sha256": "c7e02c1a96c4f66bf3c7cec7b287ac43ce8057250827bf14797d00543a166388"
+    },
+    {
+      "path": "windows-source/windows/sync/DeviceIdentity.cpp",
+      "bytes": 10640,
+      "sha256": "7db195becf0bfa77fe4e5a2d6ff4a1ecbae7c87840c6c790c5423dbcfbf0be95"
+    },
+    {
+      "path": "windows-source/windows/sync/DeviceIdentity.h",
+      "bytes": 1178,
+      "sha256": "064e3f5bdd40b70082defc1b4f83f3cd35bd4ac381a499a134e268ea9372049a"
+    },
+    {
+      "path": "windows-source/windows/sync/Membership.cpp",
+      "bytes": 6180,
+      "sha256": "d9f53b2b06885d17c4b2e709a1e54f62ab09046b2da66499f431f47cd447f442"
+    },
+    {
+      "path": "windows-source/windows/sync/Membership.h",
+      "bytes": 2236,
+      "sha256": "b9877778c5d6440685f5464203dbac14629ba7a281f400e46eba1ef358ea02a1"
+    },
+    {
+      "path": "windows-source/windows/sync/MembershipWire.cpp",
+      "bytes": 11984,
+      "sha256": "33d94a9d558189416efcd78d0820313652675be5f48d5e1f182efddd450bd267"
+    },
+    {
+      "path": "windows-source/windows/sync/MembershipWire.h",
+      "bytes": 920,
+      "sha256": "b66f101f666aa520a6518bc96cb16c1fdbfe4df9fbbfe23ad80c35e48952aaea"
+    },
+    {
+      "path": "windows-source/windows/sync/SecureProtocol.cpp",
+      "bytes": 6015,
+      "sha256": "220c88c7f3561fa0d85357534043e9d9ae1a6b7565d9e55fdc3a6c9ff2b61c64"
+    },
+    {
+      "path": "windows-source/windows/sync/SecureProtocol.h",
+      "bytes": 1228,
+      "sha256": "321224c981127819ff20a6b0dd6efced6563f0fd0eb5244e32c21a0eaccf91fb"
+    },
+    {
+      "path": "windows-source/windows/tests/SyntheticTextStore.h",
+      "bytes": 7677,
+      "sha256": "e150a0e78de00320e9255ef142711e7aff98cd63758daee88a93ad804163d338"
+    },
+    {
+      "path": "windows-source/windows/tests/candidate_layout.cpp",
+      "bytes": 4157,
+      "sha256": "9936f3a1a7e9c86f52fb12640c24c0a59b2126b6956e8bf3fe6ec8292134b38a"
+    },
+    {
+      "path": "windows-source/windows/tests/candidate_navigation.cpp",
+      "bytes": 2476,
+      "sha256": "e65dec531cd12eed73ef9d4b61d4aac0cd78f202dd400869bb89f1b4f447b192"
+    },
+    {
+      "path": "windows-source/windows/tests/category_setup.cpp",
+      "bytes": 2658,
+      "sha256": "c81403c5576f2fce553262fcd78275fc686ddb4de0ee507223754e9025f38b3a"
+    },
+    {
+      "path": "windows-source/windows/tests/clipboard_candidate.cpp",
+      "bytes": 2924,
+      "sha256": "331e339957ab246258b7207a3fb411875b6e99d38795fc19e61eaa95887b31ee"
+    },
+    {
+      "path": "windows-source/windows/tests/contextual_model.cpp",
+      "bytes": 721,
+      "sha256": "ed455149c1c99bedcca5a9af88bdb1bafa839eacbe15c35a436bd9b3c8de3017"
+    },
+    {
+      "path": "windows-source/windows/tests/desktop_parity.cpp",
+      "bytes": 1200,
+      "sha256": "af27c1f8e95b5ba78fd6ba96fffb2d27b0287e0aa4730cfe712844c99224335d"
+    },
+    {
+      "path": "windows-source/windows/tests/desktop_preferences.cpp",
+      "bytes": 596,
+      "sha256": "fda99c25a9019aaefebcead869558eb0cfa3124b6b14dfdc90a1bd12ab7a762d"
+    },
+    {
+      "path": "windows-source/windows/tests/dll_smoke.cpp",
+      "bytes": 3484,
+      "sha256": "25e9ee9312a20aef61794b084d415f9467a1830ad29f437b43c898d72e3736b0"
+    },
+    {
+      "path": "windows-source/windows/tests/english_suggestions.cpp",
+      "bytes": 1724,
+      "sha256": "caada9d7c75e3595d74a8674ee6a3d7e8063f3e8bedf08c70108f3c77a852be5"
+    },
+    {
+      "path": "windows-source/windows/tests/identity_smoke.cpp",
+      "bytes": 5759,
+      "sha256": "f1db3628075a7884584cb831990441fea7f8bb2b64dea65e4331d51dfdee4d17"
+    },
+    {
+      "path": "windows-source/windows/tests/membership_typed.cpp",
+      "bytes": 12639,
+      "sha256": "9e2187a8e56dca8179cdeb0c59637ef1d269a874b99aeb1cde4fefab042a9de7"
+    },
+    {
+      "path": "windows-source/windows/tests/membership_wire.cpp",
+      "bytes": 5711,
+      "sha256": "f9716a3fc95afb188bc3e5d6fb31d21923ba253e48baa160ec8bc9612584eb23"
+    },
+    {
+      "path": "windows-source/windows/tests/membership_wire_fuzz.cpp",
+      "bytes": 2036,
+      "sha256": "a22fb075bc323b8a58622ca514b6c0c388da58b38ae53f18affb2398104493fb"
+    },
+    {
+      "path": "windows-source/windows/tests/payload_manifest.cpp",
+      "bytes": 1681,
+      "sha256": "03399c475333bf9ef16449f8610da29d92377381b0cf686a8b67e142595b5025"
+    },
+    {
+      "path": "windows-source/windows/tests/protocol_vector.cpp",
+      "bytes": 2114,
+      "sha256": "ab62fbdf38926454d603c4c051f368f3c8aad95972e41b336f2c2f6847c347fc"
+    },
+    {
+      "path": "windows-source/windows/tests/registration_driver.cpp",
+      "bytes": 1028,
+      "sha256": "cf7179538df935b116e98bc8c13acf7d3e3a7626a1cdf5dd3e97081104de8b90"
+    },
+    {
+      "path": "windows-source/windows/tests/registration_readonly_probe.cpp",
+      "bytes": 2454,
+      "sha256": "4d04eb85e1a3a81394daa7a0e45a1de9c3577631e3fcc64df15d3b9cac392002"
+    },
+    {
+      "path": "windows-source/windows/tests/test_registration_identity.py",
+      "bytes": 2999,
+      "sha256": "790834fa096df4572cfad13b6f3964df87c5e1b022a4097211e22cf15cfd82bf"
+    },
+    {
+      "path": "windows-source/windows/tests/tsf_dll_host.cpp",
+      "bytes": 7790,
+      "sha256": "d3c8c82f4fe93a8c509046664ed5a2ce248b96f163cab86150485126dc2a3a46"
+    },
+    {
+      "path": "windows-source/windows/tests/tsf_host.cpp",
+      "bytes": 14835,
+      "sha256": "e1cc4a8ac2511e63e2b894d8cdaed32491e7a8dd1464f253932d940dadffc677"
+    },
+    {
+      "path": "windows-source/windows/tests/tsf_input_regression.cpp",
+      "bytes": 22378,
+      "sha256": "8d80e8cd92cd1779917235d03f6e4c59b3792430c9e3b455d06f60234f32f187"
+    },
+    {
+      "path": "windows-source/windows/tests/uninstall_policy.cpp",
+      "bytes": 4354,
+      "sha256": "14a1d690481614ef28f079b6c4b69617c61a9cd7de26bfb1a3068a8f1ca55470"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/CMakeLists.txt",
+      "bytes": 4116,
+      "sha256": "952f4aacbc9114eb09d38b3efa6a8aed5ea2d1c3602df44f5856bf5b49db2b8d"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/admission.cpp",
+      "bytes": 2810,
+      "sha256": "f1b0fc809c87c576bafaac2e1c4f0bf94cc9202eb4686097fa2ce79fb20c03c3"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/clipboard_candidate_archive.cpp",
+      "bytes": 1786,
+      "sha256": "038c68d8080648aacba7b7207b7a71ae5e5ed7c1c091047511356eb65bd16a7f"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/clipboard_context.cpp",
+      "bytes": 7636,
+      "sha256": "a5b94a77195405816d43b5eebb1ce2672f25dc1ffe48ba189d378d7853debce5"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/clipboard_live_protocol.cpp",
+      "bytes": 8850,
+      "sha256": "07abdecaebb063a116874b38119d9521ae73aa9cb20f9eaea23e88125cb85cf5"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/clipboard_live_store_worker.cpp",
+      "bytes": 8323,
+      "sha256": "64f8a3f6c58bbbc22caa1090e1490db6bda5ed372ed9bcda32d268126a5106b0"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/clipboard_read_safety.cpp",
+      "bytes": 4563,
+      "sha256": "4db7d127a8fe89907f2dd6b3ef2dde1546ec516315136bf92ec1d6e06a492734"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/clipboard_rejection_before.cpp",
+      "bytes": 2132,
+      "sha256": "65bcbb83dad2c0fe454c502f1811b90b5dd0f908358b19e6d81184314d54296c"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/content.cpp",
+      "bytes": 6248,
+      "sha256": "1b6212c3bd7bda45eb5bd7604dee1d623fe8badc1d7c5bd33b3d08992030c744"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/core.cpp",
+      "bytes": 5762,
+      "sha256": "5e77e521b21ab12622835396e2521dccf8aa3b802296fc2d70a80b83fa447ef2"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/group_client_host.cpp",
+      "bytes": 12899,
+      "sha256": "23a438a57c78001cabcdb0868da969c08d074a4d4018a742047fa70feef3c3a6"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/join_probe.cpp",
+      "bytes": 1852,
+      "sha256": "5295056655242112d96e0945d68965f9bf91b821463cf5920a582bab7ad47e7f"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/recent.cpp",
+      "bytes": 4896,
+      "sha256": "33bdc104538fc959b92d8acfdbb8d11bf2000839c51cba0728cabdf3242bcecc"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/windows_probe.cpp",
+      "bytes": 5281,
+      "sha256": "bcfe89091d9175271bdb0bec4064072d8ca0cda41ab3c342ae313caa473e47f9"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/wire_fixture.cpp",
+      "bytes": 2576,
+      "sha256": "320a4ca517f03aeea66b12572eeedb1ea6861c7c7ad0610be80a36163bc5c4b3"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/worker_probe.cpp",
+      "bytes": 7120,
+      "sha256": "0912f447661e27fb45d7c7eb2a674bcad033a40cb7c1d8cfaf106788c3fb66de"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/fixtures/clipboard-live-v1.json",
+      "bytes": 7174,
+      "sha256": "37be9daffe2b9d40c60cb9bc8fa7d481152ae05690c9783d907dbff2acc27748"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/relay_fixture/README.md",
+      "bytes": 623,
+      "sha256": "50d21cc6af726e8f8e9b5138b3d780a599e99f76aa83501253104e052d20bc2f"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/relay_fixture/SOURCE-SHA256.json",
+      "bytes": 483,
+      "sha256": "1430345dea62843674cfe6a38dbf7f25b580100da12939f0676cf6e54dd581c2"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/relay_fixture/device_administration.py",
+      "bytes": 5871,
+      "sha256": "df937e175d92fdb42af69a0795869d20a05356c1c65705b6fe9f423fa3a3467b"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/relay_fixture/private_input_relay.py",
+      "bytes": 39118,
+      "sha256": "c3958c5d3521b26ad9074faf7803f14b26b65014f74b54ffa7beb3ecfae2fbde"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/relay_fixture/quick_pairing.py",
+      "bytes": 6811,
+      "sha256": "587950cff60742f4fe29c845aa9b995d0c601ccb9fdd26ee394c1bc8fa5a4aa1"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/relay_fixture/recent_learning.py",
+      "bytes": 8984,
+      "sha256": "c98b6914fd3aac6ee2929cc7888b0fdde107f7731de6d2e182db9aea54b67177"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/membership-reference-main.swift",
+      "bytes": 2055,
+      "sha256": "ed0d4c311a4bc1ccc4a0b607d33bc425abd64c2fcc11a2bd1662e160d193d144"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/membership-reference-stubs.swift",
+      "bytes": 855,
+      "sha256": "1d2d07a597d900ee9172aa9a6aa9c160bb24b2e204f8f4accff5885346539335"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/membership-wire-main.swift",
+      "bytes": 1805,
+      "sha256": "b3db12d0dabd8dda951b0e2b9d4295c641a862734b5788fe226c2b90ce851171"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-reference.json",
+      "bytes": 1953,
+      "sha256": "f71e390b596348d4ad0705a1d5919bef9aaa4181387a0112408b69eae609a63f"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-v1.json",
+      "bytes": 1574,
+      "sha256": "1e60ee75656f39f88a07341214f7bf2b227116393a9f4637901284f39bd6ba17"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-vectors.h",
+      "bytes": 2248,
+      "sha256": "c3ac86b506ed3f17dc78041e060ceab5fd05e07dd77c4846bcce542022592143"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-all-optionals-null.json",
+      "bytes": 544,
+      "sha256": "a79bf3d1febf78791e1b870b1af7b18c6dd6bec91025367062d4df655d16d7c1"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-decoded31.json",
+      "bytes": 501,
+      "sha256": "086632655e942fe237679ddf99f5809a67fca2c5d765a07a125cccb3ff7d1d68"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-decoded33.json",
+      "bytes": 501,
+      "sha256": "49690ac4fe98ac8d0acf8e71227157a91d3e5b438f577c360abe8fbabe575bd7"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-invalid.json",
+      "bytes": 501,
+      "sha256": "561c4d198fe64cf1dbfb23e98a7fe994155fc2e1c5cd64d0ee4354f1af253424"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-nonzero-pad-bits.json",
+      "bytes": 501,
+      "sha256": "a19dd4682cb55094dbc1e970b95094aaeb1613ab048d1096b3a66839af2ba8a5"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-short.json",
+      "bytes": 500,
+      "sha256": "df4f6164292798c36e0fa3338fe4b4881e236112c3ad33225622705a5bfdf341"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-space.json",
+      "bytes": 501,
+      "sha256": "9547964fedace95e548842627811d7db8837ca9ad5f1c142455f8435a9b530cb"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-trailing.json",
+      "bytes": 505,
+      "sha256": "47a7d36edc7bdc0c47a86d1b98325b09d594839ab2992f05160b31dbb00ef24c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-base64-url.json",
+      "bytes": 501,
+      "sha256": "256eb37f50d7c7ba2460c2266167cded3de74125186ae611544ccdfd08abebba"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-duplicate-member.json",
+      "bytes": 517,
+      "sha256": "a3923e30d4f8e69e9f4c8f5814ec4eabe0a84983e406830af863b0617fa32e64"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-duplicate-version.json",
+      "bytes": 513,
+      "sha256": "e1f84e265ae0f516b77b59f2f25c2438263cdc2850023097405c7690fe02a5db"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-epoch-mismatch.json",
+      "bytes": 501,
+      "sha256": "cc53ffeaa34e187bd4e838dca761dbcb5ae084d5f5a3e30045399e01a0d45ec1"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-escaped-duplicate.json",
+      "bytes": 518,
+      "sha256": "44070302e23a85d075084b7ba7b8b157f259bd5f00bb4756f720dea3574bffbe"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-escaped-keys-uuid-base64.json",
+      "bytes": 527,
+      "sha256": "ddc56eaf8fb77eb9673c67040fbb5b24f9bd62192e62d360e3cf1cff0df6e4d5"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-history-1025.json",
+      "bytes": 515360,
+      "sha256": "167b29ba13aed8b44a3a45e567c9bf048f57a2a549d3ae8e9673261e668be014"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-history-unknown.json",
+      "bytes": 1324,
+      "sha256": "6494f261400fee96a898fd7858e9812d8b42a0350a4b3c8b2fc6547eddeb5a42"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-bool.json",
+      "bytes": 504,
+      "sha256": "922f9da8f6e679881d638005ffb20349d523030f93dc2de36d62d38d916c8c75"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-exponent.json",
+      "bytes": 503,
+      "sha256": "bb58cef8db68811a0b1dedaa9c077e3e421e16a1b2d16e5bed168b1eb86fa48d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-float.json",
+      "bytes": 503,
+      "sha256": "d81966a5920610184422a50e500eaaf8fec6eab25d28d77847bd9f3c39bc78c3"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-huge.json",
+      "bytes": 10500,
+      "sha256": "3c50d3dde2ade96470bf2fd9d1ba30a80144a92d95b7ef0167c804dfefeb86e9"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-infinity.json",
+      "bytes": 508,
+      "sha256": "6967e77b662f340cc698edc23643270bfc2314399a6f0372a074522a4a25ed42"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-leading-zero.json",
+      "bytes": 502,
+      "sha256": "6eba976282616950c2a4d2ffc3175b16c3ddc75850401f178be0747ed7064eb6"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-nan.json",
+      "bytes": 503,
+      "sha256": "ce05ad12f404436d6248137137340999639f4b467664785a50c4b297b2dae6d8"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-negative-zero.json",
+      "bytes": 502,
+      "sha256": "7d011f178216710f0027ca28be82e5208e0f22cc277c546f4c0576be20fbd12b"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-negative.json",
+      "bytes": 502,
+      "sha256": "0451b8233e5c76e4f26d65dd70563f28123e92f245e59e4e008c82b4b49beadc"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-overflow.json",
+      "bytes": 520,
+      "sha256": "1df542c0c006f4134a0ccd220327a0451a7354c576bc0069291512d0e63d650f"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-plus.json",
+      "bytes": 502,
+      "sha256": "f4777a075a4b7f5174e176f2e2e6b5a9bf3eb22f7a1296806fe454ca73138fdb"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-integer-quoted.json",
+      "bytes": 503,
+      "sha256": "f8c28f75d32471f7881a1fd8b3727c7d65ea30b7c9fc53a2cd0f6c3cb72a5fee"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-array.json",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-bom.json",
+      "bytes": 504,
+      "sha256": "ef8fe7f2718e201bd7456884f219490da81e6ed8a81a40336617a84bbeb254af"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-comment.json",
+      "bytes": 506,
+      "sha256": "5e2b7c0779723d292d390c270245a6f3ce69279cf723a47f9c822d01fe489fcd"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-deep.json",
+      "bytes": 20000,
+      "sha256": "88b516df742a232dad9132d8e5173704287f890c30624fd29fb22abfe7b58e37"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-empty.json",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-formfeed.json",
+      "bytes": 502,
+      "sha256": "2c8e85c52c733a9b307597223027717707fcc9ccbe96a1df4c38bb675dbf0b07"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-nul.json",
+      "bytes": 502,
+      "sha256": "d7ddd8d32dac192ae5cab67bd3277430fbd6936009df110ed16ec18f4241980c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-null.json",
+      "bytes": 4,
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-over2mib.json",
+      "bytes": 2097153,
+      "sha256": "e7d99e4db1392275f200e288c860f9780a935c945e2d55f98c1b68a1f9f3fb5c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-trailing-comma.json",
+      "bytes": 502,
+      "sha256": "b63c0c6b88dc1e5d7f9e60dd458ba71d9a9cab2ee782532bf89adb895517166f"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-trailing.json",
+      "bytes": 503,
+      "sha256": "1f64f6827eb10666668e5d11732e02cddc02280a7cd48bc5caac354e849ece0b"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-truncated.json",
+      "bytes": 500,
+      "sha256": "88f2a2cbac14e0615a02203aa3f730fa9dfb56a35cd9dbb3f6403262604e3f5d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-json-vertical-tab.json",
+      "bytes": 502,
+      "sha256": "d2a5259f15c51ef8b4440ca3b12bc98efa3e644df94e89ecb00f891a757c9afd"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-lowercase-uuid-valid.json",
+      "bytes": 501,
+      "sha256": "5d4ec7c3e59cc269cdd8f1623a65f72ce5125a5ea1f0420dae72a0caec4211ec"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-lowercase-uuid.json",
+      "bytes": 501,
+      "sha256": "b07f6f05bfbf5419b77692673aaee9ddd63c5c2d256f015e836048ae5eca6ef4"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-member-missing-device.json",
+      "bytes": 453,
+      "sha256": "979b5d7d77e24da88a1f3c49a7daaedb389656bfd7480bdc36eba708d029ee1f"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-member-missing-exchangePublic.json",
+      "bytes": 437,
+      "sha256": "4a973307aa71c721a12fef50480985a1010ea4c038ff6be804f8d5e02176bc7d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-member-missing-permissions.json",
+      "bytes": 485,
+      "sha256": "2eaec6da1c083cebf93097c529d17074e41cb4142a30bb62f8720125bb37c1dd"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-member-missing-signingPublic.json",
+      "bytes": 438,
+      "sha256": "7c00ad336b47430de34f29163ae7be134de29485333c18852e08360d89db4af6"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-members-65.json",
+      "bytes": 12853,
+      "sha256": "7a61ebf9143f656e043981632fce6f12117c8ad939526243f5b088bdc1e73b19"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-members-duplicate.json",
+      "bytes": 694,
+      "sha256": "1a2399b81a4a94e062dfa829fdb842ad7f36a998a8dded58a39970a808bbd702"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-members-empty.json",
+      "bytes": 309,
+      "sha256": "7c70fb509b71da3b75c3569cc574537890462958ce5c5606a61336ddcd7b6110"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-members-null.json",
+      "bytes": 311,
+      "sha256": "36dfacab1921e9c2d872b759c7a80a4bf532fe3a6789c4219c43f15d523f02df"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-members-object.json",
+      "bytes": 309,
+      "sha256": "7593af45073e3674990b5f7695fc0efbfd6dfbc01269b25623e461260165a5e9"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-epoch.json",
+      "bytes": 491,
+      "sha256": "1109de8d41b762306d53808ef2a794aaa51d52bed889532c3b252c55caeab0dc"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-group.json",
+      "bytes": 454,
+      "sha256": "84d26d18619e65c3c05173b3f9845823aa520d63a3577e9f3e2b042b88f7d859"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-members.json",
+      "bytes": 296,
+      "sha256": "99867e34cab2ec2a48124a1a529d38661debdd7d238b1775eb2f0c687c0ee83d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-ownerID.json",
+      "bytes": 452,
+      "sha256": "d981e51aadb553c240073bd89e6a0a85e10e44071dbc0b74d9067a98c88a4762"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-ownerPublic.json",
+      "bytes": 440,
+      "sha256": "40e07be80bb42ca3b62d062de8977cdca20145c497a4d6f40ef9096f4a92d68c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-revision.json",
+      "bytes": 488,
+      "sha256": "227acc041b63819d548103328630bb136f4fc5477e2d06eb3ab6937c9c664a36"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-signature.json",
+      "bytes": 398,
+      "sha256": "01638711dd491c22028f1cdc46bc01b212b66e22bd6110e2ba2809e5a3cfdca7"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-missing-version.json",
+      "bytes": 489,
+      "sha256": "3c979e0bc406eeaf9faa3c518d31b7509cdf0370fdda1271d53d84f4e1e410b3"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-nested-history-0.json",
+      "bytes": 1325,
+      "sha256": "e92c4ad9fed3ad3b924bc9a53c1c03cc8edb2aeb3e6ea66937d490c3a66700a8"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-nested-history-1.json",
+      "bytes": 1826,
+      "sha256": "a42c1d73c474e0d8a3ccb74bd081d84911b0957fc8d7978c5144519d88f7772e"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-nested-history-null.json",
+      "bytes": 1327,
+      "sha256": "4b66e874d02931f074c57f8efc27bf33a757d61d4d527437ed722de32070c9f3"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-history.json",
+      "bytes": 516,
+      "sha256": "74409ccab4fd34740822ce3e2e18cdb81e00a14cfeaca0a6381dba03edba8c07"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-issuer.json",
+      "bytes": 515,
+      "sha256": "602bac99fbbc6ccc85c6d692ce6d7843dc2be26e7a8228b94cc4100970612b32"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-parent.json",
+      "bytes": 515,
+      "sha256": "2a048fb797cd62c2be75cddf199d2cf03d46e993dc552f458b7beacd6e6a8476"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-epoch.json",
+      "bytes": 504,
+      "sha256": "ea92ab77a8e81f1ae48e87b66e360ba84652d2f14db923f92cd52279c041c308"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-group.json",
+      "bytes": 467,
+      "sha256": "3aef854510ee68713d17c9c839cc532d6c83bf668a01e0f4d09094d6bce6b79f"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-members.json",
+      "bytes": 311,
+      "sha256": "36dfacab1921e9c2d872b759c7a80a4bf532fe3a6789c4219c43f15d523f02df"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-ownerID.json",
+      "bytes": 467,
+      "sha256": "92bb777b3a8a6260f51e89a2500a26c54607627a600cf773a1fa157d8b049529"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-ownerPublic.json",
+      "bytes": 459,
+      "sha256": "76b9765e3d7395864cde844a923682ecb265ba6e40fd9ee505433eecf277ef47"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-revision.json",
+      "bytes": 504,
+      "sha256": "13d54e0f3c0ca2230ebd1cea2755d8ae36377bc096dd7f52233da88795f8a888"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-signature.json",
+      "bytes": 415,
+      "sha256": "ccab6e6de4dd277cd08b0b78a68424f8dc661b98ebbf1abbbda7c51fed28117c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-null-required-version.json",
+      "bytes": 504,
+      "sha256": "dd939c1c6d12e2685552101fe452d6d9c14d8932937e5a9842424eb5a167e844"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-permissions--1.json",
+      "bytes": 502,
+      "sha256": "739d6c4e3ffa2f8468b6e1f6fb2f2c2f0fd733eed8d7bd5ea29a8aca62cf521c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-permissions-0.json",
+      "bytes": 501,
+      "sha256": "5d4411a0f992bcff02bb98fac0f3bb176fc6c29266d408d3820891164476a0d6"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-permissions-256.json",
+      "bytes": 503,
+      "sha256": "d7baed9bea2487cdad97022c4f42b12ae080596be4839cb45e9bd65012929aba"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-permissions-4.json",
+      "bytes": 501,
+      "sha256": "2365b28ed70add315c375b687c6cd57c605833cf1c4b81bc5fd08376c072280c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-permissions-None.json",
+      "bytes": 504,
+      "sha256": "4566089f29a2557244102d506007491f2cb195bd833e40e2ef1766a97ebdcd28"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-permissions-True.json",
+      "bytes": 504,
+      "sha256": "f9f17ba979b7f02bc2b1ce55bda6492909ea38e625cf4df14de41f62363e581a"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-permissions-{}.json",
+      "bytes": 502,
+      "sha256": "b7c10ffd0cd4b39a45cf54c8bc2aa9e4b20178ed7b7cd365c5dc9e8a1b46a8e8"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-predecessor-nulls.json",
+      "bytes": 1355,
+      "sha256": "abc4a4d671bac208824a6d60a203ecbe5020ff399f47387063359b7131d4b92e"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-signature-1.json",
+      "bytes": 417,
+      "sha256": "d85c5d0b58154262952e5af07638a6306a2d635258ec610af4c295fe6bdee92d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-signature-63.json",
+      "bytes": 497,
+      "sha256": "9a59917c5fc24f50f1259edefad7232b867aca84423286cde44f1f1bc456b9c9"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-signature-65.json",
+      "bytes": 501,
+      "sha256": "94449205530ab6700ad1f001d95bc504e2c4f76af48cc291bee11f8a39980843"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-standard-whitespace.json",
+      "bytes": 587,
+      "sha256": "7ba4fba97dcc2a9c9f6585213ddb1d513233786095f1b0a2a1ed88d6f0b3cbd0"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-swift-roundtrip-paired.json",
+      "bytes": 699,
+      "sha256": "7de6fedb3d41433d746e0b55f01e64a13dc6a8b2aff275a683aac7435d1d26e0"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-swift-roundtrip-v1.json",
+      "bytes": 507,
+      "sha256": "b7fc1cd54b483c71b88381c6dbc6a0d5e981ff107824dc5000d26b4c362769fd"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-swift-roundtrip-v2.json",
+      "bytes": 1324,
+      "sha256": "b5c542b6e5bbe5205d37a1dca0611e713e7c94999db4862755526c06c60f5451"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-bad-escape.json",
+      "bytes": 505,
+      "sha256": "d048ffe46a556a7acc1102c5393acf2516a84f628c37d95a7823a2ae8babbd20"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-bad-pair.json",
+      "bytes": 513,
+      "sha256": "7d85c70188cb9b29973dcb9e2eb6699565bb6440cbc4dff035bc2ea8399bec26"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-badhex.json",
+      "bytes": 507,
+      "sha256": "cd314f11657b97d41dca061f517259820370ef524aea42cc42187549cf4e4cb3"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-high.json",
+      "bytes": 507,
+      "sha256": "2d31dd285570fafdfd4f8a1a542281d0be2e41694b0e25cd20f0d77ba4d5215d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-low.json",
+      "bytes": 507,
+      "sha256": "8bfbcd7d27a166bab68f07c61b25e3700ee214627f09c3e9916f8972ec6408be"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-raw-control.json",
+      "bytes": 502,
+      "sha256": "ac9229eaad2d2e7f09606efc0c687d4b96d6a087d17b22e15172c2571d2ac523"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-truncated.json",
+      "bytes": 505,
+      "sha256": "a2cba27820df03e5056335df99c70d0edf4eb341d5a18f7967ad0c2c1582cc11"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unicode-valid-pair-wrong-uuid.json",
+      "bytes": 513,
+      "sha256": "638df78cc78ee72219f8ac5b3854bd3a9ff2ab8112e414e16f62a4bff91c5e51"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unknown-member.json",
+      "bytes": 513,
+      "sha256": "362bc7bb7707c2cc4d32f00bc2c283da6e2eac3c4b55edba54317dc49ff234cf"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unknown-top.json",
+      "bytes": 516,
+      "sha256": "315b08bdebea0a2711abf27a4950c959fdf9903c35d1d6a474b904851245f07c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-unsigned-template.json",
+      "bytes": 413,
+      "sha256": "859ca8540e5fc7835582745b854f98133a5325bdc7d0e832f04e565387595b98"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-uppercase-uuid.json",
+      "bytes": 501,
+      "sha256": "6e0d552a94c5d957e5ab0a45d50520c3a7a1ff85a2e286e51d5d5e9e9c74119f"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-continuation.json",
+      "bytes": 502,
+      "sha256": "157fe0f167c85a382805cd0dfcc026be70258eb23f2478484d49477740ccd5d4"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-five-byte.json",
+      "bytes": 506,
+      "sha256": "2a3e35808304b3b2b539e9207cb69e7469b5fad6da72ca527f960daf9051aa19"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-out-of-range.json",
+      "bytes": 505,
+      "sha256": "c2f9f0ee6778cebdc95744823231d8d6b265779522004812d4e157117c99dfc8"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-overlong.json",
+      "bytes": 503,
+      "sha256": "d73abeafdde7ea0af4472e6c8dbff32c20c25859c4f285b3c586339e10532caf"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-surrogate.json",
+      "bytes": 504,
+      "sha256": "f0c857bb0677323ca44bdd8ae383efd86dd3abaceff0d48d61b7a1d5fe1ce6d2"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-utf8-truncated.json",
+      "bytes": 503,
+      "sha256": "803599bd1bc881500ad8ae48ec1fe64733f8148a642e0c8daf64a0a7bc130cdc"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-uuid-bad-digit.json",
+      "bytes": 501,
+      "sha256": "b8bccd1ed14d75ec1ddbf7fbe55618a877222069db9873fb2710489fff97a2d3"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-uuid-bad-separator.json",
+      "bytes": 501,
+      "sha256": "ff9603dba607dfcd4b8be98a98d49e8c58b9396ad6e172b018a50d9de2d8539f"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-uuid-braces.json",
+      "bytes": 503,
+      "sha256": "50e94b428b729202cbc29a9f264df619b7c7fccba3be07b89cab501f82147f88"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-uuid-no-hyphens.json",
+      "bytes": 497,
+      "sha256": "ed96ddcd4a3cb0314fc635f4cfb19c8d931cdebfbd69617163f211ea83ca262a"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-uuid-short.json",
+      "bytes": 473,
+      "sha256": "7716b7470a2bcb9c094e203cf63c4ea5be4a5febd852b6b8e36c5074b7196ea2"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-uuid-unicode.json",
+      "bytes": 573,
+      "sha256": "5ea0b02add788040d83272f3b806c19927a06e658e0dc2a23f39693f3f012a35"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v1-empty-history.json",
+      "bytes": 514,
+      "sha256": "2956ee107fe9e4cc975b1ed81a34c2a8db12e047f3f21b646c768081216eea0d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v1-nonnull-issuer.json",
+      "bytes": 549,
+      "sha256": "1bf9f5bdc1a8b1d40171f3e2c92a2a83efa4e7abd3b11306d7386f4e14436f71"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v1-nonnull-parent.json",
+      "bytes": 557,
+      "sha256": "7203742ef58a80c9bb6b393440b49f60aa4f8622f0772a7fa0e76e55b16d8783"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v2-absent-history.json",
+      "bytes": 798,
+      "sha256": "71a2fdc7f6316350210af093032141753f0ef885a879caef3e921acf93c09bf1"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v2-empty-history.json",
+      "bytes": 811,
+      "sha256": "8e2536b1cde952cce2868cde2f30ce0ca03e39b801349119461444b1a1b84d00"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v2-null-history.json",
+      "bytes": 813,
+      "sha256": "d2e213d3431197f51698eeda255dabeb77991d15e975f21d66d6246c4145b0b8"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v2-null-issuer.json",
+      "bytes": 1278,
+      "sha256": "c8436d53a82271290d6a54ec162612c24c3f79a39e1047058bd223a0b4164ee7"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-v2-null-parent.json",
+      "bytes": 1270,
+      "sha256": "67ee84a5733fe72f9ebaaaa064174723f19fe638944b9c2f76ad02ec31a22b9d"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-version-256.json",
+      "bytes": 503,
+      "sha256": "289495e7be2315068e37381a0ceedeb64a35a28f3533a3fe7fe94de2882a042a"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-version-3.json",
+      "bytes": 501,
+      "sha256": "aa3437979655723e2294b207b442d6a3f6de1faa0cfd24cbff7e5ce90fa459b6"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-zero-revision.json",
+      "bytes": 501,
+      "sha256": "0ac09b1c0a8e618be2e7632cacdc5751d23f27928e3cbaf4bb667de05520ea58"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/case-zero.json",
+      "bytes": 501,
+      "sha256": "acfa6fac9e0046ded387acb0c5390d22fc64ce7db528c9224f7ff4a504ad2dfb"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/cpp-swift-paired.json",
+      "bytes": 694,
+      "sha256": "166f60251eeff6f45d939a58541e1541419c3f3fb6a0970682eb1bae4d7855fb"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/cpp-swift-v1.json",
+      "bytes": 501,
+      "sha256": "334a3581333b165ab79ae74a7dc1ee854f142d335a820dcd95c51e202d68f64c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/cpp-swift-v2.json",
+      "bytes": 1312,
+      "sha256": "c6e382887d46a12566320f3d0da915549b0881e2490b63b7664d178fd48c6ff3"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/manifest.txt",
+      "bytes": 4284,
+      "sha256": "1e3b9fdfd6ec8aac95f7b812f4d651d8008114ef8e9234a31cd18d7cf065f561"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/server-cpp-swift-paired.json",
+      "bytes": 694,
+      "sha256": "166f60251eeff6f45d939a58541e1541419c3f3fb6a0970682eb1bae4d7855fb"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/server-cpp-swift-v1.json",
+      "bytes": 501,
+      "sha256": "334a3581333b165ab79ae74a7dc1ee854f142d335a820dcd95c51e202d68f64c"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/server-cpp-swift-v2.json",
+      "bytes": 1312,
+      "sha256": "c6e382887d46a12566320f3d0da915549b0881e2490b63b7664d178fd48c6ff3"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/swift-paired.json",
+      "bytes": 699,
+      "sha256": "7de6fedb3d41433d746e0b55f01e64a13dc6a8b2aff275a683aac7435d1d26e0"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/swift-roundtrip-swift-paired.json",
+      "bytes": 699,
+      "sha256": "7de6fedb3d41433d746e0b55f01e64a13dc6a8b2aff275a683aac7435d1d26e0"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/swift-roundtrip-swift-v1.json",
+      "bytes": 507,
+      "sha256": "b7fc1cd54b483c71b88381c6dbc6a0d5e981ff107824dc5000d26b4c362769fd"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/swift-roundtrip-swift-v2.json",
+      "bytes": 1324,
+      "sha256": "b5c542b6e5bbe5205d37a1dca0611e713e7c94999db4862755526c06c60f5451"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/swift-v1.json",
+      "bytes": 507,
+      "sha256": "b7fc1cd54b483c71b88381c6dbc6a0d5e981ff107824dc5000d26b4c362769fd"
+    },
+    {
+      "path": "windows-source/windows/tests/fixtures/public-membership-wire/swift-v2.json",
+      "bytes": 1324,
+      "sha256": "b5c542b6e5bbe5205d37a1dca0611e713e7c94999db4862755526c06c60f5451"
+    },
+    {
+      "path": "windows-source/windows/tools/preflight.ps1",
+      "bytes": 3211,
+      "sha256": "21c409664e1adf8e3fd74d57224082f786dfa7b6778d2c2cf6cfb5bcba7ae814"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2022,
+      "sha256": "2eb43d50a247acf7a16985c37fb9a3406c3f992873b8337be405be7a72de4976"
+    },
+    {
+      "path": "LICENSE-NOTICE.md",
+      "bytes": 1678,
+      "sha256": "a9655504774a564e5ee047e568a3dc8381369ffc3577dc7903d75b933817072b"
+    },
+    {
+      "path": "BUILDING.md",
+      "bytes": 7150,
+      "sha256": "7c77259da8c98d9fb5d954e4d10eb82741953317772d0cfaf4a561d98b7801c8"
+    },
+    {
+      "path": "SELF-HOSTING.md",
+      "bytes": 3502,
+      "sha256": "52cc68b588b79caf19547c8925c4d7b1bf9cc98922aecdc6e0aef508e8e9d727"
+    },
+    {
+      "path": "MODELS.md",
+      "bytes": 2454,
+      "sha256": "192fb6c7a4d75b8c11d8c5c38b2ff6d6bed3751463db7e413b27a77bb3e0f3e7"
+    },
+    {
+      "path": "scripts/fetch_public_dependencies.py",
+      "bytes": 3234,
+      "sha256": "b9cda5463f297280c742385376644193fb10e0811f6c306b6dede9a2883505c1"
+    },
+    {
+      "path": "windows-source/SHARED-VERSIONS.json",
+      "bytes": 29906,
+      "sha256": "9001ac89f875996d1c9a912df3eb2a58808451800b1d86c58f75a15e68541561"
+    },
+    {
+      "path": "windows-source/docs/stages/P1/dependencies.lock.json",
+      "bytes": 2307,
+      "sha256": "0ebb682e5953215590230639a62b019cf9058cf3fdd9724ea170ae0b708b2213"
+    },
+    {
+      "path": "windows-source/docs/stages/P2/dictionary/grammar.lock.json",
+      "bytes": 2734,
+      "sha256": "b235a35ca6f0b929c5d7e218afdd0bac795b8c746b5c223e10d0beab6428b9d8"
+    },
+    {
+      "path": "windows-source/docs/stages/P2/dictionary/macbert.lock.json",
+      "bytes": 1258,
+      "sha256": "12b6c2149a15cbc6536423450401cd4d8fbede23e39c31ec8b39b002a4c6b6ce"
+    },
+    {
+      "path": "windows-source/docs/stages/P2/dictionary/semantic.lock.json",
+      "bytes": 1883,
+      "sha256": "11f4490737587da983dfe2063b626f2c823c14f6144598fcbb56b70e08b403d1"
+    },
+    {
+      "path": "windows-source/docs/stages/P2/dictionary/upstream.lock.json",
+      "bytes": 2857,
+      "sha256": "f6ce380246dcaf175ab5c5331b4af0ca4b2b7092c3df8852a0ea9fae9e11c5a1"
+    },
+    {
+      "path": "windows-source/docs/stages/P3/test-dependencies.lock.json",
+      "bytes": 1056,
+      "sha256": "611a7df26ebc9d8b6bdc6d74715bc79f95a9a21dd3b24f667a763e020aa805cf"
+    },
+    {
+      "path": "windows-source/docs/stages/P3/windows-crypto.lock.json",
+      "bytes": 501,
+      "sha256": "35e341c62a7c160d1c7ba6afdcd252b0fc70b048ed8d3fa348b0f1d95ac49157"
+    },
+    {
+      "path": "windows-source/docs/stages/P1/licenses/boost-LICENSE_1_0.txt",
+      "bytes": 1338,
+      "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+    },
+    {
+      "path": "windows-source/docs/stages/P1/licenses/leveldb-LICENSE",
+      "bytes": 1484,
+      "sha256": "ccc19f1da0798ed666609b65a5b44dd8b3abe6fc08b9c0592eb76e82e174db19"
+    },
+    {
+      "path": "windows-source/docs/stages/P1/licenses/librime-LICENSE",
+      "bytes": 1513,
+      "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+    },
+    {
+      "path": "windows-source/docs/stages/P1/licenses/marisa-trie-COPYING.md",
+      "bytes": 2275,
+      "sha256": "edf58dab34c3dc239ba4ba2d5d3d844d8c5b442aa4dd1149fac81b2d8c6cb8d1"
+    },
+    {
+      "path": "windows-source/docs/stages/P1/licenses/opencc-LICENSE",
+      "bytes": 9165,
+      "sha256": "b534e465949558eec2597b04f5092b5e161236a68dfbfd04d547592ac3964308"
+    },
+    {
+      "path": "windows-source/docs/stages/P1/licenses/yaml-cpp-LICENSE",
+      "bytes": 1061,
+      "sha256": "aa6fcc27be034e41e21dd832f9175bfe694a48491d9e14ff0fa278e19ad14f1b"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 100,
+      "sha256": "4891b51e58a6b42215b0c7aaccadab5da9ee4fdfaa71052ebbcf5923bf80bdc7"
+    }
+  ]
+}

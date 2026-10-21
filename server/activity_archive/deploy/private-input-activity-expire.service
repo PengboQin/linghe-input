@@ -1,0 +1,19 @@
+[Unit]
+Description=PrivateInput activity retention (independent archive only)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=private-input-activity
+Group=private-input-activity
+WorkingDirectory=/opt/private-input-activity/current/server
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/private-input-activity/venv/bin/python -m activity_archive.admin expire --database /var/lib/private-input-activity/activity.sqlite
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/private-input-activity
+MemoryMax=256M
+TimeoutStartSec=120

@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-10",
+  "purpose": "public offline dictionary candidate; no upstream installer execution",
+  "repositories": [
+    {
+      "repository": "https://github.com/rime/rime-luna-pinyin",
+      "revision": "56b934b099dfbeab842320f13aa8b461a6ab3e42",
+      "commitDate": "2026-07-12T05:01:55Z",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/LICENSE",
+          "bytes": 7651,
+          "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+        },
+        {
+          "path": "AUTHORS",
+          "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/AUTHORS",
+          "bytes": 273,
+          "sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8"
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/README.md",
+          "bytes": 460,
+          "sha256": "536daa306647bd9b4ef736d264fc36c9d77e30a123cebe56469a0ab5f27d9597"
+        },
+        {
+          "path": "luna_pinyin.dict.yaml",
+          "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/luna_pinyin.dict.yaml",
+          "bytes": 889896,
+          "sha256": "75bcf6eb3ff62b129882ed89cc22b2d80a5347aa72bcfa2ccc839bac298e7314"
+        }
+      ]
+    },
+    {
+      "repository": "https://github.com/rime/rime-essay",
+      "revision": "054920de4f54c9e5994276a96a4fc2a35cb51aa3",
+      "commitDate": "2026-09-23T10:50:23Z",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/LICENSE",
+          "bytes": 7651,
+          "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+        },
+        {
+          "path": "AUTHORS",
+          "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/AUTHORS",
+          "bytes": 393,
+          "sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75"
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/README.md",
+          "bytes": 228,
+          "sha256": "e34e69e56829dc3eb9236bd750e982bb0849be635756e26cde196c62b9409342"
+        },
+        {
+          "path": "essay.txt",
+          "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/essay.txt",
+          "bytes": 5887319,
+          "sha256": "3e8512ebaa6657e35961b1f5762060717c647e3bf471d5e3b86e783b4e934ffb"
+        }
+      ]
+    }
+  ]
+}

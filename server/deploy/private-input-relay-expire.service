@@ -1,0 +1,18 @@
+[Unit]
+Description=Expire PrivateInput relay ciphertext
+After=private-input-relay.service
+
+[Service]
+Type=oneshot
+User=private-input-relay
+Group=private-input-relay
+WorkingDirectory=/opt/private-input-relay/current
+ExecStart=/opt/private-input-relay/venv/bin/python /opt/private-input-relay/current/expire_relay.py --database /var/lib/private-input-relay/relay.sqlite
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/private-input-relay
+MemoryMax=96M
+CPUQuota=20%

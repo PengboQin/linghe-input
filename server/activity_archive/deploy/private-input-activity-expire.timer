@@ -1,0 +1,12 @@
+[Unit]
+Description=Expire inactive PrivateInput activity archives hourly
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+RandomizedDelaySec=2min
+Persistent=true
+Unit=private-input-activity-expire.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,20 @@
+sync.example.invalid {
+    request_body {
+        # The dedicated recency route wraps a 2MiB encrypted snapshot in JSON.
+        # All legacy routes still enforce their existing 3MiB application cap.
+        max_size 5MB
+    }
+    header {
+        Cache-Control no-store
+        X-Content-Type-Options nosniff
+    }
+    reverse_proxy 127.0.0.1:8028 {
+        header_up X-PrivateInput-Peer {remote_host}
+        transport http {
+            dial_timeout 2s
+            response_header_timeout 15s
+            read_timeout 20s
+            write_timeout 20s
+        }
+    }
+}

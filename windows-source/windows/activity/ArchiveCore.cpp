@@ -1,0 +1,27 @@
+#include "ArchiveCore.h"
+#include <sodium.h>
+#include <algorithm>
+#include <chrono>
+#include <ctime>
+#include <cstdio>
+namespace private_input::activity {
+Data bytes(std::string_view s){return Data(s.begin(),s.end());}void append(Data&a,const Data&b){a.insert(a.end(),b.begin(),b.end());}void be64(Data&v,uint64_t n){for(int shift=56;shift>=0;shift-=8)v.push_back(uint8_t(n>>shift));}
+std::string uuidText(const Id&id){const char*d="0123456789ABCDEF";std::string out;for(size_t i=0;i<16;++i){if(i==4||i==6||i==8||i==10)out+='-';out+=d[id[i]>>4];out+=d[id[i]&15];}return out;}
+Id parseId(std::string_view s){require(s.size()==36,"UUID length");Id id{};size_t j=0;auto h=[](char c){return c>='0'&&c<='9'?c-'0':c>='A'&&c<='F'?c-'A'+10:c>='a'&&c<='f'?c-'a'+10:-1;};for(size_t i=0;i<s.size();){if(i==8||i==13||i==18||i==23){require(s[i++]=='-',"UUID separator");continue;}int a=h(s[i++]),b=h(s[i++]);require(a>=0&&b>=0,"UUID digit");id[j++]=uint8_t(a*16+b);}return id;}
+Id newId(){require(sodium_init()>=0,"crypto unavailable");Id id;randombytes_buf(id.data(),id.size());id[6]=(id[6]&15)|64;id[8]=(id[8]&63)|128;return id;}
+std::string base64(const Data&v){std::string s(sodium_base64_ENCODED_LEN(v.size(),sodium_base64_VARIANT_ORIGINAL),'\0');sodium_bin2base64(s.data(),s.size(),v.data(),v.size(),sodium_base64_VARIANT_ORIGINAL);s.pop_back();return s;}
+Data unbase64(const std::string&s,size_t exact){require(s.size()<=4*1024*1024,"base64 size");Data v(s.size()*3/4+3);size_t n=0;const char*end=nullptr;require(sodium_base642bin(v.data(),v.size(),s.data(),s.size(),nullptr,&n,&end,sodium_base64_VARIANT_ORIGINAL)==0&&end==s.data()+s.size(),"base64 encoding");v.resize(n);require((!exact||n==exact)&&base64(v)==s,"base64 canonical");return v;}
+Key sha256(const Data&v){Key k{};crypto_hash_sha256(k.data(),v.data(),v.size());return k;}
+Key publicKey(const Key&s){Key pub{};std::array<unsigned char,64>secret{};crypto_sign_seed_keypair(pub.data(),secret.data(),s.data());sodium_memzero(secret.data(),secret.size());return pub;}
+Data sign(const Data&v,const Key&s){Key pub{};std::array<unsigned char,64>secret{};crypto_sign_seed_keypair(pub.data(),secret.data(),s.data());Data sig(64);crypto_sign_detached(sig.data(),nullptr,v.data(),v.size(),secret.data());sodium_memzero(secret.data(),secret.size());return sig;}
+Json signedEnvelope(const Id&group,const Id&device,const Key&seed,uint8_t op,const Json&body,uint64_t now,bool archive){auto payload=body.kind==Json::Kind::null?Data{}:bytes(body.dump());require(op&&payload.size()<=(archive?524288:65536),"request body size");auto nonce=newId();Data canonical=bytes(archive?std::string_view("PrivateInput/activity-request/v1\0",33):std::string_view("PrivateInput/relay-request/v1\0",30));canonical.push_back(1);append(canonical,Data(group.begin(),group.end()));append(canonical,Data(device.begin(),device.end()));append(canonical,Data(nonce.begin(),nonce.end()));be64(canonical,now);canonical.push_back(op);auto hash=sha256(payload);append(canonical,Data(hash.begin(),hash.end()));return Json::object({{"version",1},{"group",uuidText(group)},{"sender",uuidText(device)},{"nonce",uuidText(nonce)},{"issuedAt",now},{"operation",int(op)},{"body",base64(payload)},{"signature",base64(sign(canonical,seed))}});}
+uint64_t unixTime(){return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();}
+std::string timestamp(uint64_t n){time_t t=time_t(n);tm utc{};
+#ifdef _WIN32
+ gmtime_s(&utc,&t);
+#else
+ gmtime_r(&t,&utc);
+#endif
+ char b[32];require(strftime(b,sizeof(b),"%Y-%m-%dT%H:%M:%SZ",&utc)>0,"timestamp");return b;}
+Json makeEvent(const EventContext&c,uint64_t seq,std::string provider,std::string type,std::string text,uint64_t now,const std::string&source){require(seq>0&&c.consent>0&&text.size()<=245760,"event limit");validateUtf8(text);auto event=Json::object({{"schema_version",1},{"event_id",uuidText(newId())},{"device_group",uuidText(c.group)},{"device_id",uuidText(c.device)},{"installation_id",uuidText(c.installation)},{"device_seq",seq},{"provider_id",std::move(provider)},{"event_type",std::move(type)},{"observed_at",timestamp(now)},{"content",Json::object({{"text",std::move(text)}})},{"consent_version",c.consent},{"source_kind",source},{"input_session",c.session},{"editor_epoch",c.editor},{"delivery_state","draft_unknown"},{"commit_confirmation","editor_acknowledged"},{"sensitivity","personal"},{"source_app",Json()},{"links",Json::array()},{"time_quality","device_clock_unverified"},{"timezone_id","UTC"},{"utc_offset_minutes",0},{"extensions",Json::object({{"org.linghe.time.v1",Json::object({{"local_timezone_unknown",true},{"rendered_timezone","UTC"}})}})}});if(safeSourceLabel(c.source.identifier,191))event["source_app"]=c.source.identifier;event["extensions"]["org.linghe.context.v1"]=sourceContextJSON(c.source);if(event.at("event_type").str()=="coverage_gap"){event["commit_confirmation"]="not_applicable";event["extensions"]["org.linghe.coverage.v1"]=Json::object({{"reason","capture_unavailable_or_limit"}});}return event;}
+}

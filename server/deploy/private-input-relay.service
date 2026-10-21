@@ -1,0 +1,32 @@
+[Unit]
+Description=PrivateInput encrypted relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=private-input-relay
+Group=private-input-relay
+WorkingDirectory=/opt/private-input-relay/current
+Environment=PRIVATE_INPUT_RELAY_DATABASE=/var/lib/private-input-relay/relay.sqlite
+ExecStart=/opt/private-input-relay/venv/bin/gunicorn --config /opt/private-input-relay/current/gunicorn.conf.py production_wsgi:create_app()
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/private-input-relay
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=192M
+CPUQuota=40%
+TasksMax=32
+LimitNOFILE=512
+
+[Install]
+WantedBy=multi-user.target

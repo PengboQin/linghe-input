@@ -1,0 +1,13 @@
+{
+  "ciphertext": "A7XdOJEGmV8MRnnYxk/7NAMbomfQgY6XRinDTgmkgQBo155dpEw4sJym6Pxa18zKzKm4MFZ7LcYSDZzgeA==",
+  "domain": 2,
+  "epoch": 2,
+  "event": "00000000-0000-4000-8000-000000000003",
+  "expiresAt": 1600,
+  "group": "00000000-0000-4000-8000-000000000001",
+  "issuedAt": 1000,
+  "sender": "00000000-0000-4000-8000-000000000002",
+  "sequence": 7,
+  "signature": "6CTaHSl/S/Z5vuj0iLFBBNTKmMsbkxbGYLuEwS1f9/HuuSeTAdIa5gtHcNfksZZ5Q9xwDKLe0kwXyRtbs+LkBQ==",
+  "version": 1
+}

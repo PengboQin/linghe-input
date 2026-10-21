@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "source": "User-provided regression phrase, 2026-10-18",
+  "platformsImplemented": [
+    "macOS",
+    "iOS source/candidate 61; not installed"
+  ],
+  "cases": [
+    {
+      "id": "natural-whole-survives-repair-dedupe",
+      "input": "wokankanzhegedaoshihounengyouduochang",
+      "expectedFirst": "我看看这个到时候能有多长",
+      "expectedIdentity": "native, not same-text repair"
+    },
+    {
+      "id": "confirmed-prefix-uses-active-tail",
+      "input": "wokankanzhegedaoshihounengyouduochang",
+      "select": [
+        "我看看",
+        "这个"
+      ],
+      "expectedMarked": "我看看这个dao shi hou neng you duo chang",
+      "expectedFirst": "到时候能有多长"
+    },
+    {
+      "id": "unfinished-tail-not-deleted",
+      "input": "wokankanzheged",
+      "select": [
+        "我看看",
+        "这个"
+      ],
+      "remainingInput": "d",
+      "mustRemainComposing": true
+    },
+    {
+      "id": "arrows-and-multiple-partial-choices",
+      "input": "wokankanzhegedaoshihounengyouduochang",
+      "select": [
+        "我看看",
+        "这个",
+        "到时候",
+        "能",
+        "有",
+        "多长"
+      ],
+      "arrows": [
+        "up",
+        "down"
+      ],
+      "expectedCommit": "我看看这个到时候能有多长",
+      "mustRemainEditableUntilFinalChoice": true
+    }
+  ],
+  "verification": "MacLongCommitTests: 12 passed, including 6 user-specific tests; IMK host acceptance separate"
+}

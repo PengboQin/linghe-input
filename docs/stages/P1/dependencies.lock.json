@@ -1,0 +1,75 @@
+[
+  {
+    "name": "librime",
+    "commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4",
+    "source_url": "https://github.com/rime/librime.git",
+    "license_evidence": [
+      {
+        "path": "docs/stages/P1/licenses/librime-LICENSE",
+        "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+      }
+    ],
+    "input_logging": false
+  },
+  {
+    "name": "yaml-cpp",
+    "commit": "2f86d13775d119edbb69af52e5f566fd65c6953b",
+    "source_url": "https://github.com/jbeder/yaml-cpp.git",
+    "license_evidence": [
+      {
+        "path": "docs/stages/P1/licenses/yaml-cpp-LICENSE",
+        "sha256": "aa6fcc27be034e41e21dd832f9175bfe694a48491d9e14ff0fa278e19ad14f1b"
+      }
+    ],
+    "input_logging": null
+  },
+  {
+    "name": "leveldb",
+    "commit": "99b3c03b3284f5886f9ef9a4ef703d57373e61be",
+    "source_url": "https://github.com/google/leveldb.git",
+    "license_evidence": [
+      {
+        "path": "docs/stages/P1/licenses/leveldb-LICENSE",
+        "sha256": "ccc19f1da0798ed666609b65a5b44dd8b3abe6fc08b9c0592eb76e82e174db19"
+      }
+    ],
+    "input_logging": null
+  },
+  {
+    "name": "marisa-trie",
+    "commit": "3e87d53b78e15f2f43783d5e376561a8c9722051",
+    "source_url": "https://github.com/s-yata/marisa-trie.git",
+    "license_evidence": [
+      {
+        "path": "docs/stages/P1/licenses/marisa-trie-COPYING.md",
+        "sha256": "edf58dab34c3dc239ba4ba2d5d3d844d8c5b442aa4dd1149fac81b2d8c6cb8d1"
+      }
+    ],
+    "input_logging": null
+  },
+  {
+    "name": "opencc",
+    "commit": "556ed22496d650bd0b13b6c163be9814637970ae",
+    "source_url": "https://github.com/BYVoid/OpenCC.git",
+    "license_evidence": [
+      {
+        "path": "docs/stages/P1/licenses/opencc-LICENSE",
+        "sha256": "b534e465949558eec2597b04f5092b5e161236a68dfbfd04d547592ac3964308"
+      }
+    ],
+    "input_logging": null
+  },
+  {
+    "name": "boost",
+    "version": "1.85.0",
+    "source_url": "https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.bz2",
+    "license": "BSL-1.0",
+    "source_digest_evidence": "evidence/development-20261010/boost-source.json",
+    "license_evidence": [
+      {
+        "path": "docs/stages/P1/licenses/boost-LICENSE_1_0.txt",
+        "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+      }
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "upstream": "shibing624/macbert4csc-base-chinese",
+  "revision": "615e6e09ef9a69ec487bc7c641ec3a311e2c11b9",
+  "license": "Apache-2.0",
+  "sourceModelCard": "https://huggingface.co/shibing624/macbert4csc-base-chinese/blob/615e6e09ef9a69ec487bc7c641ec3a311e2c11b9/README.md",
+  "conversion": "experiments/macbert/convert.py; finite attention mask; FP32 layer normalization; int8 weights; observed-token log probabilities",
+  "format": "MLProgram macOS13, batch4, sequence48, output token_log_probs[4,48]",
+  "purpose": "Bounded full-pinyin repair candidate reranking; no document rewriting or generation",
+  "files": {
+    "MODEL-LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "vocab.txt": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c",
+    "MODEL-README.md": "3e977aef5f9c5b69d1c8f7710283b0323f7869571f7f3d23588f3f6d14adc389",
+    "MacBERT.mlmodelc/metadata.json": "7d9eb591e08a2a4fceac4e86a24a7641142b2d9a2ea849cab01626f896964475",
+    "MacBERT.mlmodelc/model.mil": "37e74a59cc5dc21696f01c31107dfa7bba15385d4da2c816baa6568c5ae59f21",
+    "MacBERT.mlmodelc/coremldata.bin": "6eb6631e9ded1e3be81efe24b1787772a01537dbb5a2ed6fe9d9d280cb3e8b73",
+    "MacBERT.mlmodelc/weights/weight.bin": "a8d27fef81fd204bde0e1c6c2939773eb1f23d0a6c53172045c628b86b3ea1f5",
+    "MacBERT.mlmodelc/analytics/coremldata.bin": "2f5bf1b99eb22f33d7ceb9207c5ae4f7332321e87cdcd94019abc763ccd2bbb1"
+  }
+}

@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput.tests" android:versionCode="35" android:versionName="0.1.34">
+ <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36"/>
+ <instrumentation android:name="live.linghe.privateinput.ActivityArchiveHttpInstrumentation" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.ActivityArchiveInstrumentation" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.SelectionCheck" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.EngineCheck" android:targetPackage="live.linghe.privateinput.tests" android:functionalTest="true"/>
+ <instrumentation android:name="live.linghe.privateinput.PersonalDataCheck" android:targetPackage="live.linghe.privateinput.tests" android:functionalTest="true"/>
+ <instrumentation android:name="live.linghe.privateinput.DocumentHarnessProbe" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.InputInteractionCheck" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.LearningProof" android:targetPackage="live.linghe.privateinput.tests"/>
+ <uses-permission android:name="android.permission.INTERNET"/>
+ <instrumentation android:name="live.linghe.privateinput.SyncBacklogRecoveryCheck" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.SyncCheck" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.SyncOwnerCheck" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.IndependentSyncCheck" android:targetPackage="live.linghe.privateinput.tests"/>
+ <application android:label="灵鹤内核验证" android:theme="@style/AppTheme">
+  <activity android:name="live.linghe.privateinput.SyncAcceptanceActivity" android:exported="true" android:label="灵鹤同步隔离验证"/>
+  <service android:name="live.linghe.privateinput.LearningAcceptanceService" android:label="灵鹤合成验收（仅测试框）" android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true"><intent-filter><action android:name="android.view.InputMethod"/></intent-filter><meta-data android:name="android.view.im" android:resource="@xml/acceptance_input_method"/></service>
+  <activity android:name="live.linghe.privateinput.TypingAcceptanceActivity" android:exported="true" android:label="灵鹤合成触控验收"/>
+  <activity android:name="live.linghe.privateinput.LexiconAcceptanceActivity" android:exported="true" android:label="灵鹤词库验收"/>
+  <provider android:name="live.linghe.privateinput.FixtureDocuments" android:authorities="live.linghe.privateinput.tests.documents" android:permission="android.permission.MANAGE_DOCUMENTS" android:exported="true" android:grantUriPermissions="true">
+   <intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER"/></intent-filter>
+  </provider>
+ </application>
+</manifest>

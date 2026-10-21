@@ -1,0 +1,41 @@
+[
+  {
+    "name": "cryptography",
+    "version": "46.0.3",
+    "scope": "development-test-only",
+    "source": "https://pypi.org/project/cryptography/46.0.3/",
+    "licenses": [
+      {
+        "name": "LICENSE",
+        "sha256": "3e0c7c091a948b82533ba98fd7cbb40432d6f1a9acbf85f5922d2f99a93ae6bb"
+      },
+      {
+        "name": "LICENSE.APACHE",
+        "sha256": "aac73b3148f6d1d7111dbca32099f68d26c644c6813ae1e4f05f6579aa2663fe"
+      },
+      {
+        "name": "LICENSE.BSD",
+        "sha256": "602c4c7482de6479dd2e9793cda275e5e63d773dacd1eca689232ab7008fb4fb"
+      }
+    ]
+  },
+  {
+    "name": "cffi",
+    "version": "2.0.0",
+    "scope": "development-test-only",
+    "source": "https://pypi.org/project/cffi/2.0.0/",
+    "licenses": [
+      {
+        "name": "LICENSE",
+        "sha256": "5ba24ddc57067f9249add644c3afc41a5d6dc37e23433ef759d95df370b0af63"
+      }
+    ]
+  },
+  {
+    "name": "pycparser",
+    "version": "2.23",
+    "scope": "development-test-only",
+    "source": "https://pypi.org/project/pycparser/2.23/",
+    "licenses": []
+  }
+]

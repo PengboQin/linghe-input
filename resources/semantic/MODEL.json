@@ -1,0 +1,24 @@
+{
+  "upstream": "hfl/chinese-electra-180g-small-discriminator",
+  "revision": "826a243f3f387450ef8d70de9c3d0706d8d8e924",
+  "license": "Apache-2.0",
+  "sourceModelCard": "https://huggingface.co/hfl/chinese-electra-180g-small-discriminator/blob/826a243f3f387450ef8d70de9c3d0706d8d8e924/README.md",
+  "conversion": "experiments/semantic/convert_electra.py; finite attention bias; fp32 normalization; int8 per-channel weights",
+  "format": "MLProgram iOS16/macOS13, batch4, sequence48, raw token replacement logits",
+  "files": {
+    "nine-lexicon.bin": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+    "LEXICON.json": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341",
+    "MODEL-LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "vocab.txt": "45bbac6b341c319adc98a532532882e91a9cefc0329aa57bac9ae761c27b291c",
+    "SemanticDiscriminator.mlmodelc/metadata.json": "b55b63c15fe186a588ccdde40d1601e8134cec7a13566eab01929c0a5be5a514",
+    "SemanticDiscriminator.mlmodelc/model.mil": "15f609f9aa7d17835557eba1be6823288b5046a04ab2bd0299f6b3cdc7de4894",
+    "SemanticDiscriminator.mlmodelc/coremldata.bin": "58a9f8e1e117e071b82269835cf50752cb74dbae1f3e913ea8c9d00cb9a5edd6",
+    "SemanticDiscriminator.mlmodelc/weights/weight.bin": "814859fcd61a7359e120781e5cee5e2f37d8e3ee9ffee9559928f890c646328c",
+    "SemanticDiscriminator.mlmodelc/analytics/coremldata.bin": "0744d9aa08192707f982b14ebdd12b2d97b9a5e9bfb7b92de0d985ec0254273a",
+    "MODEL-README.md": "4bd3261422223db28accfc6dae42e80282471923846d0d1e75087c229aba343f",
+    "continuation.bin": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+    "CONTINUATION.json": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa",
+    "pinyin-syllables.txt": "ddd9b253b4f3412d17ed1c119d9d3b36f1153e7c3ff7f62e20e59cdfd1856689",
+    "PINYIN.json": "8b434be5e270b5df44d8b0f4ef0876202af4eeb9b33d86c9379b8eefe951f7ab"
+  }
+}

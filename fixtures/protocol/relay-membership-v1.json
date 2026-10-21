@@ -1,0 +1,56 @@
+{
+  "initial" : {
+    "epoch" : 1,
+    "group" : "00000000-0000-4000-8000-000000000001",
+    "members" : [
+      {
+        "device" : "00000000-0000-4000-8000-000000000002",
+        "exchangePublic" : "ST6C\/HRGSlkmiBdiPSBTxeuOLMSpiLT+4XnsawENUx0=",
+        "permissions" : 3,
+        "signingPublic" : "A6EHv\/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg="
+      }
+    ],
+    "ownerID" : "00000000-0000-4000-8000-000000000006",
+    "ownerPublic" : "JUO5L\/EJVRFHatyDadtt3JM2ZaEZeN2hQE7hBmypVZ0=",
+    "revision" : 1,
+    "signature" : "+5VIkxbWWI5wUJZN9TwRy5jKjVfXFBkdjGbF\/\/eqpptXf1obPDurrPdP5O04LtEiX6VwUIKiO\/FX+xxEftdRCg==",
+    "version" : 1
+  },
+  "ownerSeed" : "QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=",
+  "paired" : {
+    "epoch" : 2,
+    "group" : "00000000-0000-4000-8000-000000000001",
+    "members" : [
+      {
+        "device" : "00000000-0000-4000-8000-000000000002",
+        "exchangePublic" : "ST6C\/HRGSlkmiBdiPSBTxeuOLMSpiLT+4XnsawENUx0=",
+        "permissions" : 3,
+        "signingPublic" : "A6EHv\/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg="
+      },
+      {
+        "device" : "00000000-0000-4000-8000-000000000004",
+        "exchangePublic" : "YFpyXSpK3+6xop4X7dYhwbdZPujNvESsbEq24vgF0jw=",
+        "permissions" : 3,
+        "signingPublic" : "F0VTtFbd38aQjsqxwQH+arIeK6oGF3lbfUOmNIKZP9U="
+      }
+    ],
+    "ownerID" : "00000000-0000-4000-8000-000000000006",
+    "ownerPublic" : "JUO5L\/EJVRFHatyDadtt3JM2ZaEZeN2hQE7hBmypVZ0=",
+    "revision" : 2,
+    "signature" : "VLA2xz3EZDWt5yv\/dINDtASvqr7KLe2jOIwBfEFv7vxyXjHg4nToTJYHuRHW2lqqVYDpJV\/uNNoOi6FynFflBA==",
+    "version" : 1
+  },
+  "pullRequest" : {
+    "body" : "eyJsaW1pdCI6Mn0=",
+    "group" : "00000000-0000-4000-8000-000000000001",
+    "issuedAt" : 1000,
+    "nonce" : "1E0FE5B5-EB1D-490F-9DD9-F22A69BFFA01",
+    "operation" : 2,
+    "sender" : "00000000-0000-4000-8000-000000000004",
+    "signature" : "9i\/XXIDZkX4dcjQn9fPA1SD+sUyL7UC6qw0g6uiSFRjq2cQc8gRzCzC6nwCoRc1i2F+GW4V\/USU5rqXqZMiiBA==",
+    "version" : 1
+  },
+  "recipientSeed" : "YGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+  "senderSeed" : "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "warning" : "PUBLIC SYNTHETIC KEYS - test only"
+}

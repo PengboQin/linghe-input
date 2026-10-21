@@ -1,0 +1,216 @@
+name: PrivateInput
+options:
+  deploymentTarget:
+    iOS: "16.0"
+    macOS: "13.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) PRIVATE_INPUT_DEVELOPMENT_DIAGNOSTICS"
+    CLANG_CXX_LANGUAGE_STANDARD: c++17
+    SWIFT_OBJC_BRIDGING_HEADER: Shared/Bridge.h
+    HEADER_SEARCH_PATHS: ["$(SRCROOT)/../core/include", "$(SRCROOT)/../vendor/librime/src", "$(SRCROOT)/../vendor/librime/include", "$(SRCROOT)/../vendor/boost_1_85_0"]
+    "HEADER_SEARCH_PATHS[sdk=macosx*]": ["$(SRCROOT)/../core/include", "$(SRCROOT)/../vendor/librime/src", "$(SRCROOT)/../vendor/librime/include", "$(SRCROOT)/../vendor/boost_1_85_0", "$(SRCROOT)/../build/rime/macos-arm64/include", "$(SRCROOT)/../build/librime/macos-arm64/src"]
+    "HEADER_SEARCH_PATHS[sdk=iphonesimulator*]": ["$(SRCROOT)/../core/include", "$(SRCROOT)/../vendor/librime/src", "$(SRCROOT)/../vendor/librime/include", "$(SRCROOT)/../vendor/boost_1_85_0", "$(SRCROOT)/../build/rime/ios-sim-arm64/include", "$(SRCROOT)/../build/librime/ios-sim-arm64/src"]
+    "HEADER_SEARCH_PATHS[sdk=iphoneos*]": ["$(SRCROOT)/../core/include", "$(SRCROOT)/../vendor/librime/src", "$(SRCROOT)/../vendor/librime/include", "$(SRCROOT)/../vendor/boost_1_85_0", "$(SRCROOT)/../build/rime/ios-arm64/include", "$(SRCROOT)/../build/librime/ios-arm64/src"]
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    CURRENT_PROJECT_VERSION: "71"
+    MARKETING_VERSION: "1.0.0"
+    PRIVATE_INPUT_RELAY_HOST: ""
+    GENERATE_INFOPLIST_FILE: NO
+    "LIBRARY_SEARCH_PATHS[sdk=macosx*]": "$(SRCROOT)/../build/rime/macos-arm64/lib"
+    "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": "$(SRCROOT)/../build/rime/ios-sim-arm64/lib"
+    "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": "$(SRCROOT)/../build/rime/ios-arm64/lib"
+    "OTHER_LDFLAGS[sdk=macosx*]": "-Wl,-force_load,$(SRCROOT)/../build/rime/macos-arm64/lib/librime.a -lyaml-cpp -lleveldb -lmarisa -lopencc -lc++"
+    "OTHER_LDFLAGS[sdk=iphonesimulator*]": "-Wl,-force_load,$(SRCROOT)/../build/rime/ios-sim-arm64/lib/librime.a -lyaml-cpp -lleveldb -lmarisa -lopencc -lc++"
+    "OTHER_LDFLAGS[sdk=iphoneos*]": "-Wl,-force_load,$(SRCROOT)/../build/rime/ios-arm64/lib/librime.a -lyaml-cpp -lleveldb -lmarisa -lopencc -lc++"
+packages:
+  PrivateInputKit:
+    path: ../shared/PrivateInputKit
+targets:
+  PrivateInput-iOS:
+    type: application
+    platform: iOS
+    sources: [iOS/App, iOS/AppTheme.swift, Shared, ../core/src, ../vendor/librime-octagram/src, {path: ../resources/rime, type: folder, buildPhase: resources}, {path: ../resources/semantic, type: folder, buildPhase: resources}]
+    settings:
+      base:
+        DEVELOPMENT_LANGUAGE: zh-Hans
+        PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: iOS/App/App.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+    info:
+      path: iOS/App/Info.plist
+      properties:
+        CFBundleDisplayName: 灵鹤输入法
+        CFBundleURLTypes:
+          - CFBundleURLName: live.linghe.privateinput.join
+            CFBundleURLSchemes: [privateinput]
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        PrivateInputRelayHost: "$(PRIVATE_INPUT_RELAY_HOST)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: 扫描另一台设备的接入二维码，以连接你的设备。
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        PrivateInputSharedKeychainGroup: "$(AppIdentifierPrefix)live.linghe.privateinput.shared"
+        PrivateInputIdentityKeychainGroup: "$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)"
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+    dependencies:
+      - package: PrivateInputKit
+      - target: PrivateInput-Keyboard
+        embed: true
+  PrivateInput-Keyboard:
+    type: app-extension
+    platform: iOS
+    sources: [iOS/Keyboard, iOS/AppTheme.swift, Shared, ../core/src, ../vendor/librime-octagram/src, {path: ../resources/rime, type: folder, buildPhase: resources}, {path: ../resources/semantic, type: folder, buildPhase: resources}]
+    settings:
+      base:
+        DEVELOPMENT_LANGUAGE: zh-Hans
+        PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.keyboard
+        CODE_SIGN_ENTITLEMENTS: iOS/Keyboard/Keyboard.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+    info:
+      path: iOS/Keyboard/Info.plist
+      properties:
+        CFBundleDisplayName: 灵鹤输入法
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        PrivateInputSharedKeychainGroup: "$(AppIdentifierPrefix)live.linghe.privateinput.shared"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.keyboard-service
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).KeyboardViewController"
+          NSExtensionAttributes:
+            IsASCIICapable: true
+            PrimaryLanguage: zh-Hans
+            PrefersRightToLeft: false
+            RequestsOpenAccess: true
+    dependencies:
+      - package: PrivateInputKit
+  PrivateInput-MacIME:
+    type: application
+    platform: macOS
+    sources: [macOS/InputMethod, Shared, ../core/src, ../vendor/librime-octagram/src, {path: ../resources/rime, type: folder, buildPhase: resources}, {path: ../resources/semantic, type: folder, buildPhase: resources}, {path: ../resources/semantic-mac, type: folder, buildPhase: resources}]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.inputmethod.PrivateInput
+        PRODUCT_NAME: PrivateInput
+        CURRENT_PROJECT_VERSION: "67"
+        MARKETING_VERSION: "0.32.4"
+        ARCHS: arm64
+        ENABLE_DEBUG_DYLIB: NO
+      configs:
+        Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+    info:
+      path: macOS/InputMethod/Info.plist
+      properties:
+        CFBundleIconFile: PrivateInput.icns
+        CFBundleDisplayName: 灵鹤输入法
+        CFBundleName: 灵鹤输入法
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        PrivateInputRelayHost: "$(PRIVATE_INPUT_RELAY_HOST)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSBackgroundOnly: true
+        LSUIElement: true
+        InputMethodConnectionName: PrivateInput_1_Connection
+        InputMethodServerControllerClass: PrivateInputController
+        InputMethodServerDelegateClass: PrivateInputController
+        InputMethodServerDataSourceClass: PrivateInputController
+        CFBundleSignature: "????"
+        TISInputSourceID: live.linghe.privateinput.inputmethod.PrivateInput
+        TISIntendedLanguage: zh-Hans
+        TICapsLockLanguageSwitchCapable: true
+        tsInputMethodCharacterRepertoireKey: [Hans]
+        tsInputMethodIconFileKey: LingheCraneMenuTemplate.tiff
+        TISIconIsTemplate: true
+        NSPrincipalClass: NSApplication
+        tsInputMethodPrimaryInScriptKey: true
+        tsInputMethodLanguages: [zh-Hans]
+        ComponentInputModeDict:
+          tsInputModeListKey:
+            live.linghe.privateinput.inputmethod.PrivateInput.Hans:
+              TISInputSourceID: live.linghe.privateinput.inputmethod.PrivateInput.Hans
+              TISIntendedLanguage: zh-Hans
+              tsInputModeCharacterRepertoireKey: [Hans]
+              tsInputModeMenuIconFileKey: LingheCraneMenuTemplate.tiff
+              tsInputModePaletteIconFileKey: LingheCraneMenuTemplate.tiff
+              tsInputModePaletteItemTitleKey: LingheInputModeName
+              tsInputModeDefaultStateKey: true
+              tsInputModeIsVisibleKey: true
+              tsInputModePrimaryInScriptKey: true
+              tsInputModeScriptKey: smUnicodeScript
+          tsVisibleInputModeOrderedArrayKey: [live.linghe.privateinput.inputmethod.PrivateInput.Hans]
+    dependencies:
+      - package: PrivateInputKit
+      - sdk: InputMethodKit.framework
+  PrivateInput-MacInputTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [Tests/macOS, macOS/InputMethod/MacClipboardSuggestion.swift, Shared/SharedTextCopy.swift, Shared/ClipboardReadPausePolicy.swift, Shared/ClipboardLiveCoordinator.swift, Shared/AppleClipboardLiveStorage.swift, macOS/InputMethod/MacArchiveEnglishInsertion.swift, Shared/ActivityArchiveController.swift, Shared/ActivityArchiveView.swift, Shared/PersonalDataReset.swift, Shared/DeviceSyncModel.swift, Shared/AutomaticClipboardBridge.swift, Shared/DeviceSyncSession.swift, Shared/KeyboardPreferences.swift, Shared/InputTheme.swift, Shared/KeyboardHeight.swift, Shared/InlineComposition.swift, Shared/NativeEngine.swift, Shared/LearningCheckpointGate.swift, Shared/LearningRefreshPreparation.swift, Shared/CandidateGlyphSupport.swift, Shared/SymbolPairing.swift, macOS/InputMethod/MacSymbolInsertion.swift, Shared/SemanticRanker.swift, Shared/LocalLearningCoordinator.swift, Shared/RecencyCoordinator.swift, macOS/InputMethod/MacInputSession.swift, macOS/InputMethod/MacEnglishDictionary.swift, macOS/InputMethod/MacSemanticRanker.swift, macOS/InputMethod/MacCandidatePanel.swift, macOS/InputMethod/MacCandidatePlacement.swift, macOS/InputMethod/MacSettingsLayout.swift, macOS/InputMethod/MacTheme.swift, macOS/InputMethod/IMKClientGeometry.m, ../core/src, ../vendor/librime-octagram/src, {path: ../resources/rime, type: folder, buildPhase: resources}, {path: ../resources/semantic, type: folder, buildPhase: resources}, {path: ../resources/semantic-mac, type: folder, buildPhase: resources}]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.mac-input-tests
+        GENERATE_INFOPLIST_FILE: YES
+        ARCHS: arm64
+    dependencies:
+      - package: PrivateInputKit
+      - sdk: AppKit.framework
+  PrivateInput-SharedTextTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests/iOSUnit, Shared/SymbolPairing.swift, Shared/CandidateGlyphSupport.swift, Shared/InputTheme.swift, iOS/AppTheme.swift, iOS/Keyboard/KeyboardHeightAdjustmentView.swift, iOS/Keyboard/SharedTextPanel.swift, iOS/Keyboard/KeyboardAppearanceSync.swift, iOS/Keyboard/CandidateListLayout.swift, iOS/Keyboard/CandidateExpansionButton.swift, iOS/Keyboard/StableCandidatePublication.swift, iOS/Keyboard/CandidateCell.swift, iOS/Keyboard/GlyphCenteredLabel.swift, iOS/Keyboard/KeyboardRailView.swift, iOS/Keyboard/KeyboardCellTouchButton.swift]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.sharedtext-tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: ""
+        "OTHER_LDFLAGS[sdk=iphonesimulator*]": ""
+        "OTHER_LDFLAGS[sdk=iphoneos*]": ""
+    dependencies:
+      - package: PrivateInputKit
+  PrivateInput-UITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests/iOS]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: ""
+        "OTHER_LDFLAGS[sdk=iphonesimulator*]": ""
+        "OTHER_LDFLAGS[sdk=iphoneos*]": ""
+        TEST_TARGET_NAME: PrivateInput-iOS
+    dependencies:
+      - target: PrivateInput-iOS
+schemes:
+  PrivateInput-iOS:
+    build:
+      targets:
+        PrivateInput-iOS: all
+    test:
+      targets: [PrivateInput-UITests]
+  PrivateInput-MacIME:
+    build:
+      targets:
+        PrivateInput-MacIME: all
+    test:
+      targets: [PrivateInput-MacInputTests]
+
+  PrivateInput-SharedText:
+    build:
+      targets:
+        PrivateInput-SharedTextTests: all
+    test:
+      targets: [PrivateInput-SharedTextTests]

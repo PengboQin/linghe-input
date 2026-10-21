@@ -1,0 +1,12 @@
+package live.linghe.privateinput;
+import android.app.Instrumentation;import android.os.Bundle;import android.content.Context;import java.io.*;import java.nio.file.Files;import java.nio.charset.StandardCharsets;import java.util.*;import org.json.*;
+
+public final class LearningProof extends Instrumentation {
+ private Bundle args;public void onCreate(Bundle data){super.onCreate(data);args=data;start();}
+ private void remove(File file)throws IOException{if(Files.isSymbolicLink(file.toPath()))throw new IOException("Unexpected fixture symlink");if(file.isDirectory()){File[] children=file.listFiles();if(children!=null)for(File child:children)remove(child);}if(file.exists()&&!file.delete())throw new IOException("Fixture cleanup failed");}
+ public void onStart(){Bundle result=new Bundle();try{Context c=getTargetContext();String nonce=UUID.fromString(args.getString("fixture")).toString();File root=new File(c.getCacheDir(),"ime-acceptance-"+nonce),marker=new File(root,"owned-v1");if(!marker.isFile()||!new String(Files.readAllBytes(marker.toPath()),StandardCharsets.UTF_8).equals(nonce))throw new IOException("Unowned fixture");File files=new File(root,"files");ChoiceMemory memory=new ChoiceMemory.Store(files).load();int old=0,preferred=0;for(ChoiceMemory.Entry e:memory.entries){if(e.text.equals("你好"))old+=e.count;if(e.text.equals("拟好"))preferred+=e.count;}result.putInt("choiceEntries",memory.entries.size());result.putInt("oldCount",old);result.putInt("preferredCount",preferred);result.putBoolean("preferredExceedsOld",preferred>old);result.putBoolean("realMainAppDataTouched",false);
+  String action=args.getString("action","inspect");if(action.equals("trace")){result.putString("events",AppFiles.read(new File(root,"lifecycle.jsonl"),128*1024));}if(action.equals("fresh-engine")){if(memory.entries.isEmpty())throw new IOException("No confirmed preference to retain");for(File file:Objects.requireNonNull(files.listFiles()))if(!file.getName().equals("nine-choice-memory-v3.json"))remove(file);result.putBoolean("onlyChoiceMemoryRetained",true);}
+  else if(action.equals("cleanup")){remove(root);result.putBoolean("ownedFixtureRemoved",!root.exists());c.getSharedPreferences("typing-host",0).edit().remove("fixture").apply();}
+  result.putString("result","Passed");
+ }catch(Exception error){result.putString("result","Failed");result.putString("error",error.toString());}finish("Passed".equals(result.getString("result"))?-1:0,result);}
+}

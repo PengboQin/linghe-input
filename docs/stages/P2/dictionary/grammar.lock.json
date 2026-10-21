@@ -1,0 +1,52 @@
+{
+  "sourceCommit": "57d18b9f58e5284bd891d559f6bdd16cf60341e9",
+  "sourceLicense": "BSD-3-Clause",
+  "sourceFiles": [
+    {
+      "path": "vendor/librime-octagram/LICENSE",
+      "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/LICENSE",
+      "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_db.cc",
+      "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_db.cc",
+      "sha256": "b3109361c079bba25f58cc85a78f72ab9e3ad43260bd6e3d7389bd0020a5d596"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_db.h",
+      "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_db.h",
+      "sha256": "57f32ab7c722b93d68637b9906eb2205b95664200c3dd70628e0529fb0c706c7"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_encoding.cc",
+      "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_encoding.cc",
+      "sha256": "b1e5d0162e5b06dda87fd7d63d91697ada812bd5b8f94af820c5174903c7e789"
+    },
+    {
+      "path": "vendor/librime-octagram/src/gram_encoding.h",
+      "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_encoding.h",
+      "sha256": "f74738734980136322f99d542d50e3b7c684468229c876f9ff8f517a8e39099c"
+    },
+    {
+      "path": "vendor/librime-octagram/src/octagram.cc",
+      "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/octagram.cc",
+      "sha256": "0dfe54e4fab36b733699b334f96801f6872a47f63cb1be68f5c256a6e256e11d"
+    },
+    {
+      "path": "vendor/librime-octagram/src/octagram.h",
+      "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/octagram.h",
+      "sha256": "018772555e6574120814585f9757b3377e1a0712535ff1c5be3936b24e9087d6"
+    }
+  ],
+  "model": {
+    "url": "https://github.com/lotem/rime-octagram-data/releases/download/20260712/zh-hans-t-essay-bgw-compact.gram",
+    "release": "20260712",
+    "path": "resources/rime/private_zh_hans_compact.gram",
+    "bytes": 40925228,
+    "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+    "licenseCommit": "8ceef1b42eb77e86501382a52e85c309c0f2f04c",
+    "licenseURL": "https://raw.githubusercontent.com/lotem/rime-octagram-data/8ceef1b42eb77e86501382a52e85c309c0f2f04c/LICENSE",
+    "licenseSHA256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+    "license": "LGPL-3.0"
+  }
+}

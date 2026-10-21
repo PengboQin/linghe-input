@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "modifiedDate": "2026-10-16",
+  "license": "LGPL-3.0; preserve pinned upstream notices and corresponding source",
+  "upstream": {
+    "date": "2026-10-10",
+    "purpose": "public offline dictionary candidate; no upstream installer execution",
+    "repositories": [
+      {
+        "repository": "https://github.com/rime/rime-luna-pinyin",
+        "revision": "56b934b099dfbeab842320f13aa8b461a6ab3e42",
+        "commitDate": "2026-07-12T05:01:55Z",
+        "files": [
+          {
+            "path": "LICENSE",
+            "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/LICENSE",
+            "bytes": 7651,
+            "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+          },
+          {
+            "path": "AUTHORS",
+            "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/AUTHORS",
+            "bytes": 273,
+            "sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8"
+          },
+          {
+            "path": "README.md",
+            "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/README.md",
+            "bytes": 460,
+            "sha256": "536daa306647bd9b4ef736d264fc36c9d77e30a123cebe56469a0ab5f27d9597"
+          },
+          {
+            "path": "luna_pinyin.dict.yaml",
+            "url": "https://raw.githubusercontent.com/rime/rime-luna-pinyin/56b934b099dfbeab842320f13aa8b461a6ab3e42/luna_pinyin.dict.yaml",
+            "bytes": 889896,
+            "sha256": "75bcf6eb3ff62b129882ed89cc22b2d80a5347aa72bcfa2ccc839bac298e7314"
+          }
+        ]
+      },
+      {
+        "repository": "https://github.com/rime/rime-essay",
+        "revision": "054920de4f54c9e5994276a96a4fc2a35cb51aa3",
+        "commitDate": "2026-09-23T10:50:23Z",
+        "files": [
+          {
+            "path": "LICENSE",
+            "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/LICENSE",
+            "bytes": 7651,
+            "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+          },
+          {
+            "path": "AUTHORS",
+            "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/AUTHORS",
+            "bytes": 393,
+            "sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75"
+          },
+          {
+            "path": "README.md",
+            "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/README.md",
+            "bytes": 228,
+            "sha256": "e34e69e56829dc3eb9236bd750e982bb0849be635756e26cde196c62b9409342"
+          },
+          {
+            "path": "essay.txt",
+            "url": "https://raw.githubusercontent.com/rime/rime-essay/054920de4f54c9e5994276a96a4fc2a35cb51aa3/essay.txt",
+            "bytes": 5846161,
+            "sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2"
+          }
+        ]
+      }
+    ]
+  },
+  "openccCommit": "556ed22496d650bd0b13b6c163be9814637970ae",
+  "conversionFiles": [
+    {
+      "source": "vendor/librime/deps/opencc/data/dictionary/TSCharacters.txt",
+      "sha256": "6b5a0a799bea2bb22c001f635eaa3fc2904310f0c08addbff275477a80ecf09a",
+      "compiledSHA256": "85291e0173e972bbca58c848fb90b3bb41c79674cb61a75645e01bd884ad5927"
+    },
+    {
+      "source": "vendor/librime/deps/opencc/data/dictionary/TSPhrases.txt",
+      "sha256": "504169029c43f7f234b8e2ae470720af3657675c5574ff8aa0feb257e1dc5ce2",
+      "compiledSHA256": "eea69e525e01b8475a1b1ad45f78f25e5aa78986305f185ef6f85e11f5325387"
+    }
+  ],
+  "dictionaryRows": 67251,
+  "dictionaryDuplicatesCollapsed": 3501,
+  "vocabularyWords": 437796,
+  "vocabularyDuplicatesCollapsed": 4892,
+  "policy": "t2s before compilation; retain default dictionary weights or same-type maximum; vocabulary maximum for collapsed variants; no network/compilation in typing path",
+  "generated": [
+    {
+      "path": "default.yaml",
+      "bytes": 293,
+      "sha256": "09b5e5b3b238d81383f07cb1895cf0cc60434d9e0b27a186f84f619460ed0054"
+    },
+    {
+      "path": "essay.txt",
+      "bytes": 5846161,
+      "sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2"
+    },
+    {
+      "path": "licenses/GPL-3.0.txt",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "licenses/rime-essay-AUTHORS",
+      "bytes": 393,
+      "sha256": "4ab2f81451ff4819f2b0e346583b49cee37aec72a01f8ecd96be1711c4204b75"
+    },
+    {
+      "path": "licenses/rime-essay-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "licenses/rime-luna-pinyin-AUTHORS",
+      "bytes": 273,
+      "sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8"
+    },
+    {
+      "path": "licenses/rime-luna-pinyin-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "private_nine.schema.yaml",
+      "bytes": 1205,
+      "sha256": "dd652657fea2b8f127fcc5a7085a243959117a73ea55d5fab13ea827d26886da"
+    },
+    {
+      "path": "private_nine_private.schema.yaml",
+      "bytes": 1214,
+      "sha256": "a7d52c9fce16ba3e381ab195973b20deac674672afaca3f39810ee05e940e7f4"
+    },
+    {
+      "path": "private_pinyin.dict.yaml",
+      "bytes": 859873,
+      "sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93"
+    },
+    {
+      "path": "private_pinyin.schema.yaml",
+      "bytes": 1053,
+      "sha256": "df35b4027ae681041237b9e3c582da5caaac336e145575f6369bfbfc10d6c513"
+    },
+    {
+      "path": "private_pinyin_private.schema.yaml",
+      "bytes": 912,
+      "sha256": "5e87533cc44938048dbb305fa5a937fca9127655e2681afe9888315fde6e6749"
+    },
+    {
+      "path": "private_zh_hans_compact.gram",
+      "bytes": 40925228,
+      "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e"
+    },
+    {
+      "path": "licenses/rime-octagram-data-LICENSE",
+      "bytes": 7651,
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+    },
+    {
+      "path": "licenses/librime-octagram-LICENSE",
+      "bytes": 1513,
+      "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+    },
+    {
+      "path": "private_pinyin_exact.schema.yaml",
+      "bytes": 881,
+      "sha256": "1f8f8ff29c4c8c873709434e5745d11689ccbad4433ca3d61d97ecf00ba6c417"
+    },
+    {
+      "path": "build/private_pinyin_exact.schema.yaml",
+      "bytes": 1020,
+      "sha256": "ee898551b1e712c23ab60f84f7245bb0bf31de96925c3202fdd4951f7862fd26"
+    },
+    {
+      "path": "build/private_nine_private.schema.yaml",
+      "bytes": 1347,
+      "sha256": "3103de61b7028c818a07af90cc15b49af78499b7366bf47dd5cfc97289be861e"
+    },
+    {
+      "path": "build/private_pinyin.schema.yaml",
+      "bytes": 1196,
+      "sha256": "c59efb7c4996388a084df02f424c8c603feab7dab286ade287f55481badc689f"
+    },
+    {
+      "path": "build/private_pinyin_private.schema.yaml",
+      "bytes": 1055,
+      "sha256": "eee93ff50002f089a6ac13d0fb1f777db01badf697d9a7560c282873cec74e50"
+    },
+    {
+      "path": "build/private_pinyin.reverse.bin",
+      "bytes": 234564,
+      "sha256": "456214e6a6f0355a38ff26d538863463286b97f52a245803c20968c62afbcbfa"
+    },
+    {
+      "path": "build/private_nine.prism.bin",
+      "bytes": 25208,
+      "sha256": "94457b39a0610ee9683e76ebf6bedd68283b6a5868dd7f153ff25a93809e7ffe"
+    },
+    {
+      "path": "build/private_nine.schema.yaml",
+      "bytes": 1338,
+      "sha256": "60ac42ed2d2dc65550810caad67f9785cccce04d6102dc858ebfaa5555de8cc4"
+    },
+    {
+      "path": "build/private_pinyin_exact.prism.bin",
+      "bytes": 14640,
+      "sha256": "1733dcdbdfb0431b43c4b603a5ee24b9cbede7a8d0269b9da087a6dfa3d71cda"
+    },
+    {
+      "path": "build/private_pinyin.table.bin",
+      "bytes": 14823880,
+      "sha256": "021d5593c6b8b1c80dd0016c2cf079cee28aca93acb62a4d8738e2a9bfa7ab3d"
+    },
+    {
+      "path": "build/private_pinyin.prism.bin",
+      "bytes": 22488,
+      "sha256": "13d974875eb4de9145ad11e9d9c529ffdd0c83debaeffde821da08224a634f49"
+    },
+    {
+      "path": "build/default.yaml",
+      "bytes": 333,
+      "sha256": "75b5c5bada91b85d282d6862b0e89dda78d51a85f2e0ed4abb1ef49499cb39d0"
+    },
+    {
+      "path": "private_nine_initials.schema.yaml",
+      "bytes": 1253,
+      "sha256": "fd9c0ca212755e42c26dbfedb9e77a0867cff3d08d80b5e38a6a2579688ffe42"
+    },
+    {
+      "path": "build/private_nine_initials.schema.yaml",
+      "bytes": 1388,
+      "sha256": "c0071c42406006b9db4453f8e7a08a22b63119a001558607e35fd6b558415363"
+    },
+    {
+      "path": "build/private_nine_initials.prism.bin",
+      "bytes": 38880,
+      "sha256": "f0c3eae7434f83d4e176eda2cce684b1b6bb02e97bb6321babb1b2831cfabe21"
+    }
+  ],
+  "compiledFormat": "Rime::Table/4.0",
+  "compiledEntries": 570229,
+  "compiledFiles": [
+    {
+      "path": "build/default.yaml",
+      "bytes": 333,
+      "sha256": "75b5c5bada91b85d282d6862b0e89dda78d51a85f2e0ed4abb1ef49499cb39d0"
+    },
+    {
+      "path": "build/private_nine.prism.bin",
+      "bytes": 25208,
+      "sha256": "94457b39a0610ee9683e76ebf6bedd68283b6a5868dd7f153ff25a93809e7ffe"
+    },
+    {
+      "path": "build/private_nine.schema.yaml",
+      "bytes": 1338,
+      "sha256": "60ac42ed2d2dc65550810caad67f9785cccce04d6102dc858ebfaa5555de8cc4"
+    },
+    {
+      "path": "build/private_nine_private.schema.yaml",
+      "bytes": 1347,
+      "sha256": "3103de61b7028c818a07af90cc15b49af78499b7366bf47dd5cfc97289be861e"
+    },
+    {
+      "path": "build/private_pinyin.prism.bin",
+      "bytes": 22488,
+      "sha256": "13d974875eb4de9145ad11e9d9c529ffdd0c83debaeffde821da08224a634f49"
+    },
+    {
+      "path": "build/private_pinyin.reverse.bin",
+      "bytes": 234564,
+      "sha256": "456214e6a6f0355a38ff26d538863463286b97f52a245803c20968c62afbcbfa"
+    },
+    {
+      "path": "build/private_pinyin.schema.yaml",
+      "bytes": 1196,
+      "sha256": "c59efb7c4996388a084df02f424c8c603feab7dab286ade287f55481badc689f"
+    },
+    {
+      "path": "build/private_pinyin.table.bin",
+      "bytes": 14823880,
+      "sha256": "021d5593c6b8b1c80dd0016c2cf079cee28aca93acb62a4d8738e2a9bfa7ab3d"
+    },
+    {
+      "path": "build/private_pinyin_private.schema.yaml",
+      "bytes": 1055,
+      "sha256": "eee93ff50002f089a6ac13d0fb1f777db01badf697d9a7560c282873cec74e50"
+    },
+    {
+      "path": "build/private_pinyin_exact.schema.yaml",
+      "bytes": 1020,
+      "sha256": "ee898551b1e712c23ab60f84f7245bb0bf31de96925c3202fdd4951f7862fd26"
+    },
+    {
+      "path": "build/private_pinyin_exact.prism.bin",
+      "bytes": 14640,
+      "sha256": "1733dcdbdfb0431b43c4b603a5ee24b9cbede7a8d0269b9da087a6dfa3d71cda"
+    },
+    {
+      "path": "build/private_nine_initials.schema.yaml",
+      "bytes": 1388,
+      "sha256": "c0071c42406006b9db4453f8e7a08a22b63119a001558607e35fd6b558415363"
+    },
+    {
+      "path": "build/private_nine_initials.prism.bin",
+      "bytes": 38880,
+      "sha256": "f0c3eae7434f83d4e176eda2cce684b1b6bb02e97bb6321babb1b2831cfabe21"
+    }
+  ],
+  "nineKeyModification": "Hybrid exact syllable plus numeric prism; independently implemented public-API syllable disambiguation; no dictionary word changes",
+  "grammar": {
+    "sourceCommit": "57d18b9f58e5284bd891d559f6bdd16cf60341e9",
+    "sourceLicense": "BSD-3-Clause",
+    "sourceFiles": [
+      {
+        "path": "vendor/librime-octagram/LICENSE",
+        "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/LICENSE",
+        "sha256": "f67d27a6d2d586fcfed4b4c886a83747095396a39b6641e18e855086be2ec400"
+      },
+      {
+        "path": "vendor/librime-octagram/src/gram_db.cc",
+        "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_db.cc",
+        "sha256": "b3109361c079bba25f58cc85a78f72ab9e3ad43260bd6e3d7389bd0020a5d596"
+      },
+      {
+        "path": "vendor/librime-octagram/src/gram_db.h",
+        "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_db.h",
+        "sha256": "57f32ab7c722b93d68637b9906eb2205b95664200c3dd70628e0529fb0c706c7"
+      },
+      {
+        "path": "vendor/librime-octagram/src/gram_encoding.cc",
+        "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_encoding.cc",
+        "sha256": "b1e5d0162e5b06dda87fd7d63d91697ada812bd5b8f94af820c5174903c7e789"
+      },
+      {
+        "path": "vendor/librime-octagram/src/gram_encoding.h",
+        "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/gram_encoding.h",
+        "sha256": "f74738734980136322f99d542d50e3b7c684468229c876f9ff8f517a8e39099c"
+      },
+      {
+        "path": "vendor/librime-octagram/src/octagram.cc",
+        "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/octagram.cc",
+        "sha256": "0dfe54e4fab36b733699b334f96801f6872a47f63cb1be68f5c256a6e256e11d"
+      },
+      {
+        "path": "vendor/librime-octagram/src/octagram.h",
+        "url": "https://raw.githubusercontent.com/lotem/librime-octagram/57d18b9f58e5284bd891d559f6bdd16cf60341e9/src/octagram.h",
+        "sha256": "018772555e6574120814585f9757b3377e1a0712535ff1c5be3936b24e9087d6"
+      }
+    ],
+    "model": {
+      "url": "https://github.com/lotem/rime-octagram-data/releases/download/20260712/zh-hans-t-essay-bgw-compact.gram",
+      "release": "20260712",
+      "path": "resources/rime/private_zh_hans_compact.gram",
+      "bytes": 40925228,
+      "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "licenseCommit": "8ceef1b42eb77e86501382a52e85c309c0f2f04c",
+      "licenseURL": "https://raw.githubusercontent.com/lotem/rime-octagram-data/8ceef1b42eb77e86501382a52e85c309c0f2f04c/LICENSE",
+      "licenseSHA256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "license": "LGPL-3.0"
+    }
+  },
+  "pinyinAbbreviation": "Initial and zh/ch/sh abbreviation; full pinyin prism only; table and nine-key unchanged",
+  "displayBrand": "\u7075\u9e64\u8f93\u5165\u6cd5; internal schema IDs unchanged",
+  "nineKeyAbbreviation": {
+    "date": "2026-10-17",
+    "change": "Independent private abbreviation query only when live full-code candidates are absent; original live prism, dictionary and prediction probes unchanged.",
+    "example": "4444 -> \u54c8\u54c8\u54c8\u54c8 (ha ha ha ha)"
+  }
+}

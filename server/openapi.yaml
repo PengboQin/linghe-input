@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: Private Input ciphertext relay
+  version: 0.1.0-development
+  description: Implemented message API only. TLS, deployment, key-package transport and recovery remain separate gates. Requests authenticate themselves with signatures; there is no product user account.
+paths:
+  /v1/groups:
+    post:
+      summary: Create an owner-signed initial device group
+      requestBody: {$ref: '#/components/requestBodies/Membership'}
+      responses: {'200': {$ref: '#/components/responses/Accepted'}, default: {$ref: '#/components/responses/Error'}}
+  /v1/groups/{group}/membership:
+    parameters: [{$ref: '#/components/parameters/Group'}]
+    put:
+      summary: Publish a non-rollback owner-authorized epoch
+      requestBody: {$ref: '#/components/requestBodies/Membership'}
+      responses: {'200': {$ref: '#/components/responses/Accepted'}, default: {$ref: '#/components/responses/Error'}}
+  /v1/groups/{group}/events:
+    parameters: [{$ref: '#/components/parameters/Group'}]
+    post:
+      summary: Queue a signed encrypted message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '../fixtures/protocol/secure-envelope-v1.schema.json'}
+      responses: {'200': {$ref: '#/components/responses/Accepted'}, default: {$ref: '#/components/responses/Error'}}
+  /v1/groups/{group}/rpc:
+    parameters: [{$ref: '#/components/parameters/Group'}]
+    post:
+      summary: Signed membership read, pull or receiver acknowledgment
+      description: 1 reads membership; 2 pulls with limit 1–2 and optional domains mask 1–3; 3 acknowledges events; 4 fetches own wrapped key; 5 lists pending requests using owner-authority signature; 6 fetches own session challenge using request-device signature; 7 submits a self-signed request using request-device signature. A nonce cannot be reused.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, group, sender, nonce, issuedAt, operation, body, signature]
+              properties:
+                version: {const: 1}
+                group: {type: string, format: uuid}
+                sender: {type: string, format: uuid}
+                nonce: {type: string, format: uuid}
+                issuedAt: {type: integer, minimum: 0, maximum: 18446744073709551615}
+                operation: {enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+                body: {type: string, contentEncoding: base64, maxLength: 87384}
+                signature: {type: string, contentEncoding: base64, pattern: '^[A-Za-z0-9+/]{86}==$'}
+      responses:
+        '200':
+          description: Authenticated operation completed; accepted is not proof of recipient reading or insertion
+          content:
+            application/json:
+              schema: {type: object}
+        default: {$ref: '#/components/responses/Error'}
+  /v1/pairing/claim:
+    post:
+      summary: Claim one five-minute invitation using a six-digit code or QR credential
+      description: Body is code + self-signed request, or ticket UUID + 32-byte base64 secret + self-signed request. A ticket binds one signed request; its identical retries are accepted. Five claims per peer per minute and ten globally. Operator is trusted for admission; content keys are not sent to this endpoint. RPC 8 creates a ticket using an authorized member signature, 9 reads claims using the owner-root signature, 10 cancels a ticket using its sponsor signature. See deploy/README.md.
+      requestBody: {required: true, content: {application/json: {schema: {type: object}}}}
+      responses: {'200': {description: Invitation anchor for the claimed ticket}, default: {$ref: '#/components/responses/Error'}}
+  /v1/groups/{group}/keys:
+    parameters: [{$ref: '#/components/parameters/Group'}]
+    post:
+      summary: Publish recipient-specific owner-signed encrypted group key
+      description: Signed membership must match the current registered statement. Pairing packages last at most 600 seconds; existing-member rotation packages at most 30 days. Schema and canonical bytes are implemented in Pairing.swift.
+      requestBody: {required: true, content: {application/json: {schema: {type: object}}}}
+      responses: {'200': {$ref: '#/components/responses/Accepted'}, default: {$ref: '#/components/responses/Error'}}
+  /v1/groups/{group}/pair-challenge:
+    parameters: [{$ref: '#/components/parameters/Group'}]
+    post:
+      summary: Publish challenge without key or membership authorization
+      description: Body has session UUID and challenge object. Verify owner-domain signature, request digest, both public keys, expiry, and proposed next revision. Inner membership authorization signature and sealed key must be empty.
+      requestBody: {required: true, content: {application/json: {schema: {type: object}}}}
+      responses: {'200': {$ref: '#/components/responses/Accepted'}, default: {$ref: '#/components/responses/Error'}}
+components:
+  parameters:
+    Group: {name: group, in: path, required: true, schema: {type: string, format: uuid}}
+  requestBodies:
+    Membership:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [version, group, ownerID, ownerPublic, revision, epoch, members, signature]
+            properties:
+              version: {const: 1}
+              group: {type: string, format: uuid}
+              ownerID: {type: string, format: uuid}
+              ownerPublic: {type: string, contentEncoding: base64}
+              revision: {type: integer, minimum: 1, maximum: 18446744073709551615}
+              epoch: {type: integer, minimum: 1, maximum: 18446744073709551615}
+              signature: {type: string, contentEncoding: base64}
+              members:
+                type: array
+                minItems: 1
+                maxItems: 64
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [device, signingPublic, exchangePublic, permissions]
+                  properties:
+                    device: {type: string, format: uuid}
+                    signingPublic: {type: string, contentEncoding: base64}
+                    exchangePublic: {type: string, contentEncoding: base64}
+                    permissions: {type: integer, minimum: 1, maximum: 3}
+  responses:
+    Accepted:
+      description: Accepted by relay; not recipient-delivery proof
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [accepted]
+            properties: {accepted: {const: true}, event: {type: string, format: uuid}}
+    Error:
+      description: 400 malformed, 401 signature, 403 permission/epoch, 404 group, 409 replay/conflict, 410 expired, 413 size, 429 quota, 503 unavailable. Body contains an error code only.
+      content:
+        application/json:
+          schema: {type: object, required: [error], properties: {error: {type: string}}}

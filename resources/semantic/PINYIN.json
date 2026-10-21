@@ -1,0 +1,7 @@
+{
+  "count": 424,
+  "sha256": "ddd9b253b4f3412d17ed1c119d9d3b36f1153e7c3ff7f62e20e59cdfd1856689",
+  "sourceSHA256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+  "license": "LGPL-3.0, derived from bundled pinned Rime dictionaries; original notices preserved",
+  "purpose": "Distinguish full syllables from initials such as b; no input history"
+}

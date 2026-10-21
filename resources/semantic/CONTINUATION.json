@@ -1,0 +1,10 @@
+{
+  "format": "PINEXT01",
+  "records": 41528,
+  "prefixes": 23727,
+  "bytes": 985151,
+  "sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+  "sourceSHA256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+  "license": "LGPL-3.0, derived from bundled pinned rime-essay; original license remains bundled",
+  "method": "Public word prefix continuation; not a generated sentence or conversational training corpus"
+}

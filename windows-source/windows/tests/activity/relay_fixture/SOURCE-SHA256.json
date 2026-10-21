@@ -1,0 +1,9 @@
+{
+  "scope": "existing isolated protocol fixture copy; no deployed code changed",
+  "files": {
+    "private_input_relay.py": "c3958c5d3521b26ad9074faf7803f14b26b65014f74b54ffa7beb3ecfae2fbde",
+    "quick_pairing.py": "587950cff60742f4fe29c845aa9b995d0c601ccb9fdd26ee394c1bc8fa5a4aa1",
+    "device_administration.py": "df937e175d92fdb42af69a0795869d20a05356c1c65705b6fe9f423fa3a3467b",
+    "recent_learning.py": "c98b6914fd3aac6ee2929cc7888b0fdde107f7731de6d2e182db9aea54b67177"
+  }
+}

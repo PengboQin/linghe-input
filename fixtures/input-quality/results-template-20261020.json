@@ -1,0 +1,1089 @@
+{
+  "schema_version": 1,
+  "suite_id": "linghe-input-quality-20261020",
+  "results": [
+    {
+      "case_id": "douxian-common-before-rare",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nine-968-exact-you",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nine-you-prefix-survives-tail",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nine-3-unfinished-initials",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nine-quan-next-fou-not-pruned",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nine-longer-syllable-before-short",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nine-repeat-four-nonempty",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nine-repeat-with-real-tail",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "latin-repeat-with-haode-tail",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "repeat-tail-unfinished-d",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "missing-i-shshenme",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "initials-csm",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "unfinished-shih",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "transposition-linaxaing",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "umlaut-v",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "umlaut-u",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "umlaut-u-diaeresis",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "english-apple-neighbor-errors",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "english-apple-prefix",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "english-marked-no-letter-spaces",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "english-long-word-display",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "chinese-context-lim",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "numeric-decimal-no-swallow",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "numeric-email-symbol-does-not-block",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "punctuation-keeps-context",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "long-sentence-expanded-space",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "long-sentence-expanded-click",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "partial-prefix-tail-retained",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "repair-clean-control",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "repair-extra-key",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "repair-transposed-key",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "no-forced-correction-custom-name",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "no-forced-correction-source-code",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "no-forced-correction-invented-word",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "no-forced-correction-english-acronym",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "no-forced-correction-version-number",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "dynamic-learning-direction",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "explicit-pin-wins",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "frequency-reset-restores-scope",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "offline-max-idempotent",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "legacy-import-no-double-count",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "recent-new-habit-no-hard-threshold",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "context-focus-boundary",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "candidate-expanded-touch-freeze",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "symbol-scroll-starts-on-glyph",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nas-pattern-english-letter-order",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nas-pattern-english-backspace-retype",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nas-pattern-mixed-term-boundary",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nas-pattern-number-unit-model",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nas-pattern-fragment-commit-order",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nas-pattern-clipboard-not-personal-training",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "nas-pattern-test-markers-excluded-from-habits",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "archive-unknown-edit-not-invented",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "archive-request-is-not-sent",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "archive-missing-version-alert",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "archive-fragment-session-isolation",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    },
+    {
+      "case_id": "platform-missing-glyph-filter",
+      "run": {
+        "platform": null,
+        "build_or_commit": null,
+        "engine_lexicon_model": null,
+        "state_fixture": null,
+        "capture_layer": null
+      },
+      "status": "not_run",
+      "candidates": null,
+      "capture": {
+        "complete": null,
+        "ordered_from_start": null,
+        "visible_count": null
+      },
+      "observations": {},
+      "evidence": null
+    }
+  ]
+}

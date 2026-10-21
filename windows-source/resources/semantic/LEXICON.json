@@ -1,0 +1,12 @@
+{
+  "format": "PI9LEX01",
+  "words": 60000,
+  "codeCount": 79758,
+  "bytes": 957112,
+  "sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+  "sourceFiles": {
+    "private_pinyin.dict.yaml": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+    "essay.txt": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2"
+  },
+  "license": "LGPL-3.0, derived from bundled pinned Rime dictionaries; original notices preserved"
+}

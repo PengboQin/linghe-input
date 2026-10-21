@@ -1,0 +1,3 @@
+# Matches the independently verified protocol test environment. Production
+# dependency/security review and supported Python runtime remain P5/P7 gates.
+cryptography==46.0.3

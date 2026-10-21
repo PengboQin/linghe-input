@@ -1,0 +1,86 @@
+{
+  "cases": [
+    {
+      "id": "din-default-common-prefix-before-rare-exact",
+      "input": {
+        "raw": "din",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": "isolated no learning or pins",
+      "judgments": [
+        {
+          "text": "𨈖",
+          "class": "valid rare exact reading; absent bundled public frequency corpus",
+          "source": "Unicode Unihan kMandarin=dìn; bundled essay.txt"
+        },
+        {
+          "text": "定",
+          "class": "common prefix completion",
+          "source": "bundled essay.txt frequency15769; completion is implementation inference"
+        }
+      ],
+      "assertions": {
+        "required": [
+          "𨈖",
+          "定",
+          "顶",
+          "丁"
+        ],
+        "before": [
+          [
+            "定",
+            "𨈖"
+          ],
+          [
+            "顶",
+            "𨈖"
+          ],
+          [
+            "丁",
+            "𨈖"
+          ]
+        ]
+      },
+      "provenance": "User reports din prioritizes U+28216 and appears like missing glyph. User did not specify a full ordering. Completion alternatives are supplemental engineering cases."
+    },
+    {
+      "id": "din-explicit-pin-preserved",
+      "input": {
+        "raw": "din",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": "isolated explicit pin for 𨈖/din",
+      "assertions": {
+        "rank_range": {
+          "𨈖": [
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": "din-explicit-learning-preserved",
+      "input": {
+        "raw": "din",
+        "mode": "full-pinyin",
+        "context": null
+      },
+      "state": "isolated explicit selection of 𨈖/din",
+      "assertions": {
+        "rank_range": {
+          "𨈖": [
+            1,
+            1
+          ]
+        }
+      }
+    }
+  ],
+  "boundaries": [
+    "Supplemental common spelling regression: di,ding,dian,die,diu,dia,den,dei,kei,nun; compare to captured baseline rather than invent order.",
+    "No real-host acceptance represented by kernel/pure tests."
+  ]
+}
