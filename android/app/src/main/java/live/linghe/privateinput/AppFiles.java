@@ -5,7 +5,7 @@ import android.util.AtomicFile;import java.io.*;import java.nio.*;import java.ni
 final class AppFiles {
  interface Work<T>{T run()throws Exception;}
  static <T>T locked(File directory,String name,Work<T> work)throws Exception {
-  synchronized(AppFiles.class){if(!directory.isDirectory()&&!directory.mkdirs())throw new IOException("无法打开输入记忆目录");File path=new File(directory,name);if(Files.isSymbolicLink(path.toPath()))throw new IOException("Invalid lock file");try(RandomAccessFile lock=new RandomAccessFile(path,"rw");FileLock held=lock.getChannel().lock()){return work.run();}}
+  return ScopedFileLocks.run(directory,name,work::run);
  }
  static String read(File file,int maximum)throws IOException {
   if(Files.isSymbolicLink(file.toPath()))throw new IOException("Invalid app file");try(InputStream input=new FileInputStream(file)){return read(input,maximum);}

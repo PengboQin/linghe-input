@@ -37,7 +37,7 @@ final class ClipboardCandidateReader {
   if(data==null||data.getItemCount()!=1)return null;ClipDescription description=data.getDescription();if(description==null||!description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN))return null;
   PersistableBundle extras=description.getExtras();if(extras!=null&&extras.getBoolean("android.content.extra.IS_SENSITIVE",false))return null;
   ClipData.Item item=data.getItemAt(0);if(item.getUri()!=null||item.getIntent()!=null||item.getText()==null)return null;
-  return ClipboardCandidateState.Value.create(item.getText().toString(),description.getTimestamp());
+  return ClipboardCandidateState.Value.create(item.getText().toString(),description.getTimestamp(),extras!=null&&extras.getBoolean("live.linghe.clipboard.auto.incoming",false));
  }
  private ClipboardCandidateReader(){}
 }

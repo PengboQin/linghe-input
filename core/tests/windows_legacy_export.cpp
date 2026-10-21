@@ -1,0 +1,13 @@
+#include "private_input.h"
+#include <leveldb/db.h>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <thread>
+#include <chrono>
+void check(bool b,const char*m){if(!b)throw std::runtime_error(m);}
+int main(int argc,char**argv){if(argc==5&&std::string(argv[1])=="--hold-lock"){leveldb::DB*db=nullptr;leveldb::Options options;options.create_if_missing=false;check(leveldb::DB::Open(options,argv[2],&db).ok(),"child lock");std::unique_ptr<leveldb::DB>held(db);{std::ofstream ready(argv[3]);ready<<"ready";}while(!std::filesystem::exists(argv[4]))std::this_thread::sleep_for(std::chrono::milliseconds(10));return 0;}check(argc==3,"fixture args");std::filesystem::path shared=argv[1],root=argv[2],user=root/"旧词库",busy=root/"占用时.tsv",ready=root/"迁移结果.tsv";std::filesystem::create_directories(user);check(pi_initialize(shared.c_str(),user.c_str(),0),"init seed");auto s=pi_create_session();check(s!=0,"seed session");for(char c:std::string("nihao"))pi_process_key(s,c,0);check(pi_select_candidate_absolute(s,0),"seed word");std::string selected=pi_take_commit(s);check(!selected.empty(),"seed commit");pi_destroy_session(s);pi_finalize();auto marker=root/"writer-ready",release=root/"writer-release";pid_t child=fork();check(child>=0,"fork synthetic native writer");if(child==0){auto database=(user/"private_pinyin.userdb").string(),readyPath=marker.string(),releasePath=release.string();execl(argv[0],argv[0],"--hold-lock",database.c_str(),readyPath.c_str(),releasePath.c_str(),static_cast<char*>(nullptr));_exit(99);}try{for(unsigned i=0;i<500&&!std::filesystem::exists(marker);++i)std::this_thread::sleep_for(std::chrono::milliseconds(10));check(std::filesystem::exists(marker),"separate native writer owns lock");check(pi_initialize(shared.c_str(),user.c_str(),0),"export helper init");check(pi_active_session_count()==0,"no new input session during migration");int blocked=pi_export_learning(busy.c_str());check(blocked<0,"busy separate-process source must defer");{std::ofstream unlock(release);unlock<<"release";}int status=0;waitpid(child,&status,0);child=0;}catch(...){if(child>0){kill(child,SIGTERM);waitpid(child,nullptr,0);}pi_finalize();throw;}int exported=pi_export_learning(ready.c_str());check(exported>=0,"normal readonly exclusive export after writer exits");std::ifstream input(ready);std::string text((std::istreambuf_iterator<char>(input)),{});check(text.find(selected)!=std::string::npos,"old learned word preserved");pi_finalize();std::cout<<"legacy native export: occupied source deferred, unlock successful, no session/import, UTF-8 paths and word preserved\n";}

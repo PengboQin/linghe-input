@@ -46,6 +46,105 @@ private struct IMKClient: MacInputClient {
     func mark(_ text:String,cursor:Int) {client.setMarkedText(text,selectionRange:NSRange(location:max(0,min(cursor,text.utf16.count)),length:0),replacementRange:NSRange(location:NSNotFound,length:0))}
 }
 
+/// Process-wide maintenance owns no IMK client or host text. Native work remains
+/// serialized on main and starts only after all controllers stay hidden.
+private final class MacHiddenCheckpointCoordinator {
+    static let shared=MacHiddenCheckpointCoordinator()
+    private var gate=MacHiddenCheckpointGate()
+    private var scheduled:DispatchWorkItem?
+    private var engine:NativeEngine?
+    private let sourceReader=DispatchQueue(label:"live.linghe.privateinput.mac-focus-preflight",qos:.utility)
+    private var completedRequest:LearningRefreshRequest?
+    private var completedPolicy:Policy?
+    private struct Policy:Equatable {
+        let epoch:String,remember:Bool,sharing:Bool,day:Int
+        var publisher:SnapshotPublisher? {remember && sharing ? .containingApp:nil}
+    }
+    private var policy:Policy {
+        Policy(epoch:PersonalDataReset.generation,remember:KeyboardPreferences.rememberWords,
+               sharing:UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.bool(forKey:"learning-sharing-enabled")==true,
+               day:Int(Date().timeIntervalSince1970/86400))
+    }
+    func activate(_ owner:UUID) {
+        gate.activate(owner);scheduled?.cancel();scheduled=nil
+        // Only invalidate queued work in the focus callback. A preflight's
+        // temporary native session is retired after this callback returns.
+        DispatchQueue.main.async { [weak self] in self?.retirePreparation() }
+    }
+    func changed() {gate.changed()}
+    func deactivate(_ owner:UUID) {
+        gate.deactivate(owner,now:ProcessInfo.processInfo.systemUptime)
+        scheduled?.cancel();scheduled=nil
+        guard gate.activeOwners.isEmpty else{return}
+        let token=gate.ticket
+        let work=DispatchWorkItem { [weak self] in self?.prepare(token) }
+        scheduled=work;DispatchQueue.main.asyncAfter(deadline:.now()+gate.cooldown,execute:work)
+    }
+    func beforeRealInput() {
+        scheduled?.cancel();scheduled=nil
+        retirePreparation()
+    }
+    private func retirePreparation(_ expected:NativeEngine?=nil) {
+        guard !gate.nativeRunning,let engine,expected==nil || expected === engine else{return}
+        engine.finish();self.engine=nil
+    }
+    private func prepare(_ token:MacHiddenCheckpointGate.Ticket) {
+        guard gate.canPrepare(token,now:ProcessInfo.processInfo.systemUptime,nativeSessions:Int(pi_active_session_count())),
+              !IsSecureEventInputEnabled() else{return}
+        scheduled=nil
+        let context=policy
+        if gate.dirty==gate.completedDirty,completedPolicy==context,let request=completedRequest {
+            // Repeated empty focus must not construct/destroy a native engine
+            // merely to discover that the external learning files are unchanged.
+            sourceReader.async { [weak self] in
+                let preparation=LearningRefreshReader.evaluate(request)
+                DispatchQueue.main.async { [weak self] in
+                    guard let self,self.gate.canPrepare(token,now:ProcessInfo.processInfo.systemUptime,nativeSessions:Int(pi_active_session_count())),
+                          self.policy==context,!IsSecureEventInputEnabled(),
+                          self.gate.needsCheckpoint(token,fingerprint:preparation.externalFingerprint,pending:preparation.pending) else{return}
+                    self.startMaintenance(token,context:context)
+                }
+            }
+        } else {startMaintenance(token,context:context)}
+    }
+    private func startMaintenance(_ token:MacHiddenCheckpointGate.Ticket,context:Policy) {
+        guard gate.canPrepare(token,now:ProcessInfo.processInfo.systemUptime,nativeSessions:Int(pi_active_session_count())),policy==context else{return}
+        // No original document/session/ranker survives deactivation. This
+        // isolated maintenance engine is created outside either focus reply.
+        let worker=NativeEngine(useSemantic:false,useLexicon:false)
+        engine=worker
+        guard worker.ready,pi_active_session_count()==1 else{retirePreparation(worker);return}
+        _ = worker.privacy(!context.remember)
+        worker.prepareLearningRefresh(publish:context.publisher) { [weak self,weak worker] preparation in
+            guard let self,let worker else{return}
+            guard self.engine === worker,self.gate.current(token),self.policy==context,
+                  !IsSecureEventInputEnabled(),worker.isCurrentLearningRefreshPreparation(preparation,publish:context.publisher) else {
+                self.retirePreparation(worker);return
+            }
+            guard self.gate.needsCheckpoint(token,fingerprint:preparation.externalFingerprint,pending:preparation.pending) else {
+                self.retirePreparation(worker);return
+            }
+            guard self.gate.beginNative(token,nativeSessions:Int(pi_active_session_count())) else {
+                self.retirePreparation(worker);return
+            }
+            do {try worker.synchronizeLearning(publish:context.publisher,preparation:preparation)}
+            catch {self.gate.endedNative();self.retirePreparation(worker);return}
+            self.gate.endedNative()
+            // Publication can change external files. Record a postflight token,
+            // never certify the pre-checkpoint fingerprint as already current.
+            worker.prepareLearningRefresh(publish:context.publisher) { [weak self,weak worker] after in
+                guard let self,let worker else{return}
+                if self.engine === worker,self.gate.current(token),self.policy==context,
+                   worker.isCurrentLearningRefreshPreparation(after,publish:context.publisher),!after.pending {
+                    self.gate.completed(token,fingerprint:after.externalFingerprint)
+                    self.completedRequest=after.request;self.completedPolicy=context
+                }
+                self.retirePreparation(worker)
+            }
+        }
+    }
+}
+
 @objc(PrivateInputController) final class PrivateInputController: IMKInputController {
     private static let acceptanceStorage: URL? = {
         #if PRIVATE_INPUT_DEVELOPMENT_DIAGNOSTICS
@@ -67,8 +166,12 @@ private struct IMKClient: MacInputClient {
     private var geometryTimer:Timer?
     private var clipboardTimer:Timer?
     private var clipboardItem:MacClipboardSuggestion.Item?
+    private var clipboardPresentationSerial=0
     private var archiveSession: String? = CommandLine.arguments.contains("--imk-acceptance") ? nil : UUID().uuidString
     private var archiveReportedPassthrough = false
+    private let focusOwner=UUID()
+    private var focusGeneration:UInt64=0
+    private var activated=false
     override init!(server:IMKServer!,delegate:Any!,client inputClient:Any!) {
         super.init(server:server,delegate:delegate,client:inputClient);trace("controller-init")
         activeClient=inputClient as? IMKTextInput
@@ -79,9 +182,11 @@ private struct IMKClient: MacInputClient {
             input.applyCandidateLayout(KeyboardPreferences.desktopCandidateLayout);self.updateCandidates()
         }
         candidatePanel.choose={ [weak self] row in
-            guard let self,let input=self.input,let client=self.liveClient() else{return}
-            if row.index == -2 {guard row.generation==self.clipboardItem?.version else{return};self.pasteClipboard(client:client);return}
+            guard let self,self.activated,let client=self.liveClient() else{return}
+            if row.index == -2 {guard row.generation==self.clipboardPresentationSerial else{return};self.pasteClipboard(client:client);return}
+            guard let input=self.input else{return}
             input.chooseCandidate(row,client:IMKClient(client:client,archiveSession:self.archiveSession));self.updateCandidates()
+            if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.changed()}
         }
         candidatePanel.managementMenu={ [weak self] row in
             guard let self,let input=self.input else{return nil}
@@ -97,12 +202,16 @@ private struct IMKClient: MacInputClient {
     private func liveClient()->IMKTextInput? {(client() as? IMKTextInput) ?? activeClient}
     private func activeInput() -> MacInputSession {
         if let input { return input }
+        if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.beforeRealInput()}
         let value=MacInputSession(engine:NativeEngine(storageBase:Self.acceptanceStorage,mixedEnglishProvider:MacEnglishDictionary.completions));input=value
-        value.candidatesChanged={ [weak self] in self?.updateCandidates() }
+        let generation=focusGeneration
+        value.candidatesChanged={ [weak self,weak value] in
+            guard let self,let value,self.activated,self.focusGeneration==generation,self.input === value else{return}
+            self.updateCandidates()
+        }
         _ = value.engine.privacy(Self.acceptanceStorage != nil || !KeyboardPreferences.rememberWords)
         _ = value.engine.setMixedEnglishEnabled(KeyboardPreferences.mixedEnglish)
         if KeyboardPreferences.startInEnglish,let client=liveClient() { value.toggleEnglish(client:IMKClient(client:client,archiveSession:archiveSession)) }
-        checkpoint(value)
         return value
     }
     private func checkpoint(_ input:MacInputSession) {
@@ -118,8 +227,8 @@ private struct IMKClient: MacInputClient {
     override func inputText(_ string:String!,key keyCode:Int,modifiers flags:Int,client sender:Any!) -> Bool {
         guard let client=sender as? IMKTextInput else { return false }
         activeClient=client
-        let input=activeInput()
-        if input.engine.preedit.isEmpty,clipboardItem != nil {
+        if !activated {activated=true;focusGeneration &+= 1;if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.activate(focusOwner)}}
+        if self.input?.engine.preedit.isEmpty != false,clipboardItem != nil {
             if keyCode==51,candidatePanel.isVisible,flags & Int(NSEvent.ModifierFlags([.command,.control,.option]).rawValue)==0 {
                 dismissClipboard();updateCandidates();return true
             }
@@ -127,11 +236,23 @@ private struct IMKClient: MacInputClient {
             // navigation and new typing must retain their normal meanings.
             dismissClipboard()
         }
+        // An empty session must not initialize Rime just for a host shortcut.
+        if self.input==nil,flags & Int(NSEvent.ModifierFlags([.command,.control,.option]).rawValue) != 0 {return false}
+        let input=activeInput()
         if input.engine.preedit.isEmpty { _ = input.engine.privacy(Self.acceptanceStorage != nil || !KeyboardPreferences.rememberWords);_ = input.engine.setMixedEnglishEnabled(KeyboardPreferences.mixedEnglish) }
         let archiveEnabled = archiveSession != nil && ActivityArchiveCapture.shared.permits("ime.commit.v1")
         let preeditBeforeEmpty = input.engine.preedit.isEmpty
         let hostMarkedBefore = archiveEnabled && client.markedRange().location != NSNotFound
         let output = MacArchiveMutationTrackingClient(base: IMKClient(client:client,archiveSession:archiveSession))
+        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? input.engine.rawInput : ""
+        defer {
+            if let archiveSession, !IsSecureEventInputEnabled(),
+               flags & Int(NSEvent.ModifierFlags([.command,.control,.option]).rawValue)==0 {
+                ActivityArchiveCapture.shared.recordDiagnostic(action:keyCode==51 ? "delete":"key",key:string ?? "keycode:\(keyCode)",
+                    before:diagnosticBefore,after:input.engine.rawInput,sourceApp:client.bundleIdentifier(),document:nil,
+                    session:archiveSession,epoch:archiveSession,safety:.safe)
+            }
+        }
         var handled=input.input(string,keyCode:keyCode,flags:flags,client:output)
         let state = MacArchiveEnglishInsertion.State(archiveEnabled: archiveEnabled,
             secureInput: IsSecureEventInputEnabled(), english: input.english, sessionHandled: handled,
@@ -149,17 +270,20 @@ private struct IMKClient: MacInputClient {
             archiveReportedPassthrough = true
             ActivityArchiveCapture.shared.recordHostPassthroughGap(sourceApp: client.bundleIdentifier(), session: archiveSession)
         }
-        if handled { trace("handled") };updateCandidates();return handled
+        if handled { trace("handled");if Self.acceptanceStorage==nil,KeyboardPreferences.rememberWords,!IsSecureEventInputEnabled() {MacHiddenCheckpointCoordinator.shared.changed()} };updateCandidates();return handled
     }
     private func updateCandidates() {
-        guard let input else {geometryTimer?.invalidate();geometryTimer=nil;candidateWindow?.hide();candidatePanel.hide();return}
-        if input.engine.preedit.isEmpty,input.engine.managementPending {checkpoint(input)}
-        input.applyCandidateLayout(KeyboardPreferences.desktopCandidateLayout)
-        presented=input.allCandidateRows
-        if input.engine.preedit.isEmpty,let item=MacClipboardSuggestion.shared.current() {
+        guard activated else {geometryTimer?.invalidate();geometryTimer=nil;candidateWindow?.hide();candidatePanel.hide();return}
+        if let input {
+            if input.engine.preedit.isEmpty,input.engine.managementPending {checkpoint(input)}
+            input.applyCandidateLayout(KeyboardPreferences.desktopCandidateLayout)
+            presented=input.allCandidateRows
+        } else {presented=[]}
+        if input?.engine.preedit.isEmpty != false,let item=MacClipboardSuggestion.shared.current() {
+            if clipboardItem != item {clipboardPresentationSerial &+= 1}
             clipboardItem=item
-            presented=[InputCandidate(text:item.preview,comment:"",index:-2,generation:item.version)]
-        } else {clipboardItem=nil}
+            presented=[InputCandidate(text:item.preview,comment:"",index:-2,generation:clipboardPresentationSerial)]
+        } else {if clipboardItem != nil {clipboardPresentationSerial &+= 1};clipboardItem=nil}
         guard !presented.isEmpty else {geometryTimer?.invalidate();geometryTimer=nil;candidateWindow?.hide();candidatePanel.hide();return}
         refreshCandidatePosition(reload:true)
         if geometryTimer==nil {
@@ -168,20 +292,20 @@ private struct IMKClient: MacInputClient {
         }
     }
     private func refreshCandidatePosition(reload:Bool) {
-        guard let input,!input.engine.preedit.isEmpty || clipboardItem != nil else {geometryTimer?.invalidate();geometryTimer=nil;candidatePanel.hide();candidateWindow?.hide();return}
+        guard activated,input?.engine.preedit.isEmpty == false || clipboardItem != nil else {geometryTimer?.invalidate();geometryTimer=nil;candidatePanel.hide();candidateWindow?.hide();return}
         if let item=clipboardItem, NSPasteboard.general.changeCount != item.version || !MacClipboardSuggestion.permitted || IsSecureEventInputEnabled() {
-            clipboardItem=nil;presented=[];candidatePanel.hide();candidateWindow?.hide();return
+            clipboardPresentationSerial &+= 1;clipboardItem=nil;presented=[];candidatePanel.hide();candidateWindow?.hide();return
         }
         var caret=NSRect.zero
         let located=liveClient().map{PIReadIMKCaret($0,&caret)} ?? false
         if located {
             if reload || !candidatePanel.isVisible {
-                candidatePanel.show(items:presented,selected:clipboardItem == nil ? input.selectedIndex:-1,offset:clipboardItem == nil ? input.candidateOffset:0,expanded:clipboardItem == nil && input.expanded,caret:caret,layout:input.candidateLayout,clipboard:clipboardItem != nil)
+                candidatePanel.show(items:presented,selected:clipboardItem == nil ? (input?.selectedIndex ?? 0):-1,offset:clipboardItem == nil ? (input?.candidateOffset ?? 0):0,expanded:clipboardItem == nil && input?.expanded == true,caret:caret,layout:input?.candidateLayout ?? KeyboardPreferences.desktopCandidateLayout,clipboard:clipboardItem != nil)
             } else {candidatePanel.reposition(caret:caret)}
         } else {candidatePanel.hide()}
         if candidatePanel.isVisible {candidateWindow?.hide()}
         else if clipboardItem != nil {candidateWindow?.hide()}
-        else if clipboardItem == nil {
+        else if clipboardItem == nil,let input {
             // The OS can place its own candidates even when a client omits
             // optional geometry. Never strand a custom panel at an old point.
             candidateWindow?.setSelectionKeys(Array([18,19,20,21,23,22,26,28,25].prefix(input.candidateLayout.collapsedCount)))
@@ -193,13 +317,14 @@ private struct IMKClient: MacInputClient {
     }
     private func dismissClipboard() {
         if let item=clipboardItem {MacClipboardSuggestion.shared.dismiss(version:item.version)}
-        clipboardItem=nil
+        clipboardPresentationSerial &+= 1;clipboardItem=nil
     }
     private func pasteClipboard(client:IMKTextInput) {
-        let originalSession=archiveSession,selection=client.selectedRange()
-        guard let item=clipboardItem,let originalInput=input,originalInput.engine.preedit.isEmpty,
+        guard activated,clipboardItem != nil,input?.engine.preedit.isEmpty != false else{return}
+        let originalSession=archiveSession,originalGeneration=focusGeneration,selection=client.selectedRange(),originalInput=input
+        guard activated,let item=clipboardItem,originalInput?.engine.preedit.isEmpty != false,
               let text=MacClipboardSuggestion.shared.paste(item),clipboardItem==item,input === originalInput,
-              archiveSession==originalSession,client.selectedRange()==selection,
+              activated,focusGeneration==originalGeneration,archiveSession==originalSession,client.selectedRange()==selection,
               liveClient().map({ObjectIdentifier($0 as AnyObject)==ObjectIdentifier(client as AnyObject)}) == true else {updateCandidates();return}
         input?.invalidateCorrection();clipboardItem=nil
         let app=client.bundleIdentifier()
@@ -207,23 +332,33 @@ private struct IMKClient: MacInputClient {
         if let archiveSession {ActivityArchiveCapture.shared.recordSystemPaste(text,sourceApp:app,document:nil,session:archiveSession,epoch:UUID().uuidString,safety:.safe)}
         updateCandidates()
     }
-    deinit {geometryTimer?.invalidate();clipboardTimer?.invalidate();if let preferenceObserver {NotificationCenter.default.removeObserver(preferenceObserver)}}
+    deinit {geometryTimer?.invalidate();clipboardTimer?.invalidate();if let preferenceObserver {NotificationCenter.default.removeObserver(preferenceObserver)};if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.deactivate(focusOwner)}}
     override func candidateSelectionChanged(_ candidateString:NSAttributedString!) {
         // The session owns arrow/number selection. Native panel refreshes can
         // publish an old first-row highlight asynchronously; never let that
         // overwrite the user's current index. Mouse clicks commit by identity
         // through candidateSelected instead.
     }
-    override func activateServer(_ sender:Any!) { super.activateServer(sender); archiveSession = Self.acceptanceStorage == nil ? UUID().uuidString : nil; archiveReportedPassthrough = false; ActivityArchiveCapture.shared.refresh(permitted:Self.acceptanceStorage == nil); _ = activeInput();trace("activate")
+    override func activateServer(_ sender:Any!) { super.activateServer(sender);activated=true;focusGeneration &+= 1
+        clipboardPresentationSerial &+= 1
+        if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.activate(focusOwner)}
+        archiveSession = Self.acceptanceStorage == nil ? UUID().uuidString : nil; archiveReportedPassthrough = false;trace("activate")
         clipboardTimer?.invalidate()
-        if Self.acceptanceStorage == nil {
+        let generation=focusGeneration
+        // Never query the host's caret or initialize the engine while that host
+        // is synchronously waiting for this activation callback to return.
+        DispatchQueue.main.async { [weak self] in
+            guard let self,self.activated,self.focusGeneration==generation else{return}
+            ActivityArchiveCapture.shared.refresh(permitted:Self.acceptanceStorage == nil)
+            guard Self.acceptanceStorage==nil,!IsSecureEventInputEnabled() else{return}
             let timer=Timer(timeInterval:1,repeats:true) { [weak self] _ in
-                guard let self,self.input?.engine.preedit.isEmpty == true else{return}
+                guard let self,self.activated,self.focusGeneration==generation,
+                      self.input?.engine.preedit.isEmpty != false,!IsSecureEventInputEnabled() else{return}
                 let previous=self.clipboardItem
                 let next=MacClipboardSuggestion.shared.current()
                 if previous != next {self.updateCandidates()}
             }
-            clipboardTimer=timer;RunLoop.main.add(timer,forMode:.common);updateCandidates()
+            self.clipboardTimer=timer;RunLoop.main.add(timer,forMode:.common);self.updateCandidates()
         }
     }
     override func candidates(_ sender:Any!) -> [Any]! { presented.map(\.text) }
@@ -266,16 +401,20 @@ private struct IMKClient: MacInputClient {
     }
     @objc private func refreshLearning(_ sender:Any?) { if let input { checkpoint(input) } }
     override func candidateSelected(_ candidateString:NSAttributedString!) {
-        guard let candidateString,let row=presented.first(where:{$0.text==candidateString.string}),let input,let client=liveClient() else { return }
-        if row.index == -2 {guard row.generation==clipboardItem?.version else{return};pasteClipboard(client:client);return}
+        guard activated,let candidateString,let row=presented.first(where:{$0.text==candidateString.string}),let client=liveClient() else { return }
+        if row.index == -2 {guard row.generation==clipboardPresentationSerial else{return};pasteClipboard(client:client);return}
+        guard let input else{return}
         input.chooseCandidate(row,client:IMKClient(client:client,archiveSession:archiveSession));updateCandidates()
+        if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.changed()}
     }
     override func deactivateServer(_ sender:Any!) {
+        activated=false;focusGeneration &+= 1;clipboardPresentationSerial &+= 1
         clipboardTimer?.invalidate();clipboardTimer=nil;clipboardItem=nil
         commitComposition(sender)
-        if let input { checkpoint(input);input.engine.finish() }
+        if let input {input.engine.finish()}
         // Inactive IMK controllers must not keep Rime sessions alive and block
         // the quiescent checkpoint required for cross-device learning imports.
         input=nil;activeClient=nil;presented=[];geometryTimer?.invalidate();geometryTimer=nil;candidateWindow?.hide();candidatePanel.hide();trace("deactivate");super.deactivateServer(sender)
+        if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.deactivate(focusOwner)}
     }
 }

@@ -5,7 +5,8 @@ import android.util.AtomicFile;import java.io.*;
 final class LearningSnapshotFile {
  private final File directory;private final AtomicFile file;private final String epoch;
  LearningSnapshotFile(File directory){this.directory=directory;this.epoch=PersonalReset.fileGeneration(directory);file=new AtomicFile(new File(directory,"learning-v1.json"));}
- String read()throws Exception{String text=AppFiles.readOptional(file,LearningModel.MAX_BYTES);if(text!=null){LearningModel validation=new LearningModel();validation.merge(text);}return text;}
+ String read()throws Exception{return AppFiles.locked(directory,"learning-publication.lock",this::readLocked);}
+ private String readLocked()throws Exception{String text=AppFiles.readOptional(file,LearningModel.MAX_BYTES);if(text!=null){LearningModel validation=new LearningModel();validation.merge(text);}return text;}
  void publish(String incoming)throws Exception {
   if(!epoch.equals(PersonalReset.fileGeneration(directory)))throw new IOException("个人资料已重置");
   LearningModel validation=new LearningModel();validation.merge(incoming);

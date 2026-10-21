@@ -15,7 +15,7 @@ def main(argv=None):
     backup = commands.add_parser('backup', help='Consistent database snapshot; keep latest deletion ledger separately')
     backup.add_argument('--database', required=True)
     backup.add_argument('--destination', required=True)
-    restore = commands.add_parser('restore', help='SERVICE MUST BE STOPPED; replay latest erasure ledger before serving')
+    restore = commands.add_parser('restore', help='SERVICE MUST BE STOPPED; replay latest ledger and rotate source identity')
     restore.add_argument('--database', required=True)
     restore.add_argument('--snapshot', required=True)
     restore.add_argument('--ledger', required=True, help='Latest independently preserved ledger, not snapshot-era copy')
@@ -34,8 +34,11 @@ def main(argv=None):
         # Constructor validates/replays the ledger before readiness. Any corrupt
         # ledger aborts; deployer must not switch service to an unverified path.
         store = ArchiveStore(path)
-        store.close()
-        print('Restore verified; newest tombstones replayed. Switch service path only after offline review.')
+        try:
+            store.rotate_recovery_identity()
+        finally:
+            store.close()
+        print('Restore verified; newest tombstones replayed and source identity rotated. Switch service path only after offline review.')
         return
     if not path.is_file():
         parser.error('existing activity database required')

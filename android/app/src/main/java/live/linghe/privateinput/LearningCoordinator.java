@@ -6,7 +6,7 @@ import android.util.AtomicFile;import java.io.*;import java.nio.charset.Standard
 final class LearningCoordinator {
  interface Engine {int exportTo(File file)throws Exception;int importFrom(File file)throws Exception;int reset(LearningModel.Entry entry)throws Exception;}
  interface StepObserver {void reached(String phase)throws Exception;}
- private final File directory;private final AtomicFile stateFile,pending,replicaFile;private final LearningSnapshotFile shared;private final PersonalLexicon personal;private final StepObserver observer;private String completedArchive;
+ private final File directory;private final AtomicFile stateFile,pending,replicaFile;private final LearningSnapshotFile shared;private final PersonalLexicon personal;private final StepObserver observer;private volatile String completedArchive;
  String completedArchive(){return completedArchive;}
  LearningCoordinator(File directory,File shared)throws Exception{this(directory,shared,phase->{});}
  LearningCoordinator(File directory,File shared,StepObserver observer)throws Exception {

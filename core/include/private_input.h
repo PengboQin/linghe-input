@@ -67,6 +67,8 @@ const char *pi_candidate_text(PI_Session session, size_t index);
 const char *pi_take_commit(PI_Session session);
 /* Bounded spelling repairs for the unselected suffix of a Latin composition.
    Proposals are validated against this same dictionary; never commits. */
+/* Pure immutable public-data preparation; never calls Rime or reads user data. */
+int pi_prepare_repair_resources(const char *signed_resource_directory);
 size_t pi_load_repair_candidates(PI_Session session, size_t limit);
 const char *pi_repair_candidate_text(PI_Session session, size_t index);
 const char *pi_repair_candidate_reading(PI_Session session, size_t index);

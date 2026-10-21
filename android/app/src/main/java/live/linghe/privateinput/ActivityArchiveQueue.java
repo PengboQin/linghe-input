@@ -31,6 +31,7 @@ final class ActivityArchiveQueue extends SQLiteOpenHelper {
       String payload=LosslessJson.canonical(event);int bytes=ActivityArchiveRules.bytes(payload).length;
       long size=0,count=0;try(Cursor c=db.rawQuery("SELECT COUNT(*),COALESCE(SUM(bytes),0) FROM queue",null)){c.moveToFirst();count=c.getLong(0);size=c.getLong(1);}
       if(bytes>262144||count>=MAX_EVENTS||size+bytes>MAX_BYTES)return false;
+      if("ime.diagnostic.v1".equals(event.optString("provider_id"))&&(count>=MAX_EVENTS*3/4||size+bytes>MAX_BYTES*3/4))return false;
       ContentValues values=new ContentValues();values.put("event_id",event.getString("event_id"));values.put("seq",sequence);values.put("generation",generation);values.put("payload",payload);values.put("bytes",bytes);
       db.insertOrThrow("queue",null,values);ContentValues seq=new ContentValues();seq.put("v",Long.toString(sequence));db.update("meta",seq,"k='seq'",null);
       db.setTransactionSuccessful();return true;

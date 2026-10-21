@@ -78,14 +78,19 @@ final class AutoClipboardBridge {
  private static final class JSONObjectBox{final org.json.JSONObject credential;JSONObjectBox(org.json.JSONObject s){credential=s.optJSONObject("credential");}}
  AutoClipboardState.Pass beginPass(String scope,boolean outgoing){return state.begin(scope,outgoing);}
  void completedPass(AutoClipboardState.Pass pass,List<Incoming> incoming,boolean drained,long consent,long automatic,String privacy){
+  // Reserve even a discarded observation once. Main-thread safety/permission
+  // failure must not cause a later retry to overwrite the user's clipboard.
+  if(!allowed()||prefs.getLong("generation",0)!=consent||prefs.getLong(GENERATION,0)!=automatic||!privacy.equals(PersonalReset.generation(context)))return;
+  ArrayList<Incoming> once=new ArrayList<>();
+  for(Incoming item:incoming)if(!item.ownSender&&AutoClipboardState.eligible(item.text))try{if(ClipboardOnceReceipts.claim(context,ClipboardOnceReceipts.DELIVERY,item.text,privacy))once.add(item);}catch(Exception unavailable){/* Skip auto-delivery; explicit shared text is retained. */}
   main.post(()->{
    if(!allowed()||prefs.getLong("generation",0)!=consent||prefs.getLong(GENERATION,0)!=automatic||!privacy.equals(PersonalReset.generation(context))||!state.current(pass))return;
    // Re-read now: a clipboard listener may be delayed while the network waits.
    boolean safeNow=observe(false);Incoming newest=null;
-   for(Incoming item:incoming)if(state.accept(pass,item.identity,item.expires<=System.currentTimeMillis()/1000,item.ownSender)&&AutoClipboardState.eligible(item.text)&&active()&&safeNow)newest=item;
+   for(Incoming item:once)if(state.accept(pass,item.identity,item.expires<=System.currentTimeMillis()/1000,item.ownSender)&&active()&&safeNow)newest=item;
    if(drained)state.drained(pass);
    if(newest!=null&&clipboard!=null){
-    ClipData data=ClipData.newPlainText("灵鹤共享文本",newest.text);markOwn(data,newest.event);ActivityArchiveManager.get(context).ownClipboard(data,newest.event);
+    ClipData data=ClipData.newPlainText("灵鹤共享文本",newest.text);markOwn(data,newest.event);data.getDescription().getExtras().putBoolean("live.linghe.clipboard.auto.incoming",true);ActivityArchiveManager.get(context).ownClipboard(data,newest.event);
     try{clipboard.setPrimaryClip(data);}catch(RuntimeException unavailable){/* Manual shared text remains readable. */}
    }
   });

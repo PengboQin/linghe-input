@@ -31,6 +31,12 @@ Device signs own consent; readers must CURRENT members, explicit list, default `
 Providers 1..32 distinct namespace IDs (ASCII a-zA-Z0-9._- up to 96).
 Result `{consent_version,consent:{version,enabled,providers,readers}}`.
 Consent CAS; changes invalidate all previously issued cursors. Disabling forbids queued old events.
+Pausing capture does not erase the owner's historical read access. Membership is
+checked on every request. A membership revision invalidates old cursors, but archive
+v1 does not introduce a separate admission generation for an authority that admits
+the exact same device ID/key again: its old consent can remain enabled. A new
+installation/consent or an explicit revocation is required when fresh opt-in is
+needed; do not describe same-identity readmission as automatically resetting consent.
 
 4 **ingest** body `{batch_id:UUID,events:[event_v1]}`. Atomic <=128 events.
 Event required fields `{schema_version:1,event_id:UUID,device_group:UUID,device_id:UUID,installation_id:UUID,device_seq:positive int,provider_id:string,event_type:string,observed_at:RFC3339,content:{text:string},consent_version:positive int}`.
@@ -49,6 +55,11 @@ Stored event retains original fields, adding `server_received_at,change_seq,cont
 6 **changes** body `{cursor:null,limit:50}`. Result `{changes:[{change_seq,kind:"upsert"|"erase",event_id,device_id,event?:stored_event,erase_reason?:"user_erase"|"retention_expire"|"unknown"}],next_cursor:string,high_watermark:int,has_more:bool}`.
 Null starts history from 0. Receipt order never uses client clocks. Cursor binds group,reader,live membership+consent+policy ACL version; revoked cursor 409 `cursor_stale`, expires after 24h `cursor_expired`. Erase contains no plaintext. Unauthorized device's changes not exposed.
 Every emitted erase includes `erase_reason`; absent historical metadata is `unknown`.
+An authenticated cursor above the current group watermark fails with HTTP409
+`cursor_source_rewound`. Official offline database restore rotates existing
+`metadata.cursor_key`; all earlier cursors then fail HTTP403 `cursor`, even if
+replacement history has caught up. Downstream source identities must incorporate
+the rotated metadata and require reviewed recovery. No raw key is added to RPCs.
 Reasons describe the current strongest known deletion intent, including an old upsert
 whose body has disappeared. `user_erase` is explicit owner deletion;
 `retention_expire` is cloud retention cleanup and may preserve an independently

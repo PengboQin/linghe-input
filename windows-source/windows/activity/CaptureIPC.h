@@ -21,7 +21,8 @@ class CaptureEmitter {
  void run()noexcept;
 public:
  explicit CaptureEmitter(std::wstring name={}):suffix(std::move(name)){}~CaptureEmitter();void start();
+ bool diagnosticsEnabled()const noexcept;
  void emitLearning(std::wstring_view reading,std::wstring_view text,HWND foreground,uint32_t kind=3)noexcept;
- void emit(std::wstring_view text,HWND foreground,const std::array<unsigned char,16>&session,const std::array<unsigned char,16>&editor,bool normal,uint32_t layout=0,uint32_t field=0,bool paste=false)noexcept;
+ void emit(std::wstring_view text,HWND foreground,const std::array<unsigned char,16>&session,const std::array<unsigned char,16>&editor,bool normal,uint32_t layout=0,uint32_t field=0,bool paste=false,bool diagnostic=false)noexcept;
 };
 }

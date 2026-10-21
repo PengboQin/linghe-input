@@ -35,7 +35,8 @@ Preferences preferences;
 std::set<std::pair<std::string, std::string>> pinned_words;
 /* Public syllables for the bounded repair lattice; empty when resources are
    absent, in which case no repair rows are offered (never guessed). */
-private_input::pinyin::Corrector repair_corrector;
+struct RepairResources{std::string path;private_input::pinyin::Corrector corrector;std::unordered_map<std::string,unsigned long long> weights;};
+std::shared_ptr<const RepairResources> repair_resources;std::mutex repair_resource_gate;
 /* Repair validation joins syllables: the dictionary reading must equal the
    proposed spelling exactly, so a prefix word never masquerades as a repair. */
 std::string joined_repair_reading(const std::string &reading) {
@@ -45,11 +46,11 @@ std::string joined_repair_reading(const std::string &reading) {
 }
 /* Word weights from the pinned Rime essay.txt, used only to keep a common
    word above an obscure homophone in repair ranking. Bounded at load time. */
-std::unordered_map<std::string, unsigned long long> word_weights;
-/* Repair resources are loaded on first use only. Apple front ends never call
-   the repair API, so they pay no startup cost or extra memory for it. */
-bool repair_resources_loaded = false;
-void load_word_weights(const std::string &shared) {
+
+/* Public repair data is prepared independently of engine state. Windows
+   preloads it off the input thread; other consumers retain lazy first use. */
+
+void load_word_weights(const std::string &shared,RepairResources&resources) {
   std::ifstream stream(shared + "/essay.txt");
   if (!stream) return;
   std::string line; size_t loaded = 0;
@@ -62,12 +63,12 @@ void load_word_weights(const std::string &shared) {
     if (weight < 500) continue;
     const auto text = line.substr(0, tab);
     if (text.empty() || text.size() > 64) continue;
-    auto found = word_weights.find(text);
-    if (found == word_weights.end()) { word_weights.emplace(text, weight); ++loaded; }
+    auto found = resources.weights.find(text);
+    if (found == resources.weights.end()) { resources.weights.emplace(text, weight); ++loaded; }
     else if (weight > found->second) found->second = weight;
   }
 }
-void load_repair_syllables(const std::string &shared) {
+void load_repair_syllables(const std::string &shared,RepairResources&resources) {
   std::set<std::string> syllables;
   for (const auto &candidate : {shared + "/../semantic/pinyin-syllables.txt", shared + "/semantic/pinyin-syllables.txt"}) {
     std::ifstream stream(candidate);
@@ -81,7 +82,7 @@ void load_repair_syllables(const std::string &shared) {
     }
     if (valid && next.size() >= 300 && next.size() <= 600) { syllables = std::move(next); break; }
   }
-  repair_corrector = private_input::pinyin::Corrector(syllables);
+  resources.corrector = private_input::pinyin::Corrector(syllables);
 }
 std::string normalized_reading(const std::string &value) {
   std::string result, token;
@@ -213,7 +214,7 @@ int pi_initialize(const char *shared_dir, const char *user_dir, int deploy) {
 void pi_finalize() {
   std::lock_guard<std::recursive_mutex> lock(gate);
   if (api) api->finalize();
-  sessions.clear(); preferences.clear(); pinned_words.clear(); word_weights.clear(); repair_corrector = private_input::pinyin::Corrector(); repair_resources_loaded = false; api = nullptr; shared_path.clear(); user_path.clear();
+  sessions.clear(); preferences.clear(); pinned_words.clear(); std::atomic_store(&repair_resources,std::shared_ptr<const RepairResources>{}); api = nullptr; shared_path.clear(); user_path.clear();
 }
 PI_Session pi_create_session() {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -731,30 +732,60 @@ const char *pi_take_commit(PI_Session id) {
   }
   return it->second.commit.c_str();
 }
+int pi_prepare_repair_resources(const char *directory) {
+  if (!directory || !*directory || std::string(directory).size() > 32768) return 0;
+  std::lock_guard<std::mutex> lock(repair_resource_gate);
+  const auto old = std::atomic_load(&repair_resources);
+  if (old && old->path == directory) return old->corrector.ready();
+  auto resources = std::make_shared<RepairResources>();
+  resources->path = directory;
+  load_repair_syllables(directory, *resources);
+  load_word_weights(directory, *resources);
+  std::shared_ptr<const RepairResources> frozen = resources;
+  std::atomic_store(&repair_resources, std::move(frozen));
+  return resources->corrector.ready();
+}
 size_t pi_load_repair_candidates(PI_Session id, size_t limit) {
   std::lock_guard<std::recursive_mutex> lock(gate);
   if (!api || !sessions.count(id) || limit == 0 || limit > 32) return 0;
   auto &s = sessions.at(id);
   s.repairs.clear();
   if (s.nine_key) return 0;
-  if (!repair_resources_loaded) {
-    repair_resources_loaded = true;
-    load_repair_syllables(shared_path);
-    load_word_weights(shared_path);
-  }
-  if (!repair_corrector.ready()) return 0;
+  auto resources=std::atomic_load(&repair_resources);
+#ifndef _WIN32
+  // Native host fixtures retain a synchronous fallback. Shipping Windows TIP
+  // prepares only immutable public resources on its background reader.
+  if(!resources||resources->path!=shared_path){pi_prepare_repair_resources(shared_path.c_str());resources=std::atomic_load(&repair_resources);}
+#endif
+  if(!resources||resources->path!=shared_path||!resources->corrector.ready())return 0;
   const size_t start = pi_unselected_input_start(id);
   if (start == SIZE_MAX || start > s.input.size()) return 0;
   const auto tail = s.input.substr(start);
   if (tail.size() < 4 || tail.size() > 96) return 0;
+  // Match the editable ASCII tail, never the entire raw input across already
+  // selected Chinese. Keep the native choice and its exact consumption range
+  // when a repaired spelling would show the same text but drop pending keys.
+  // Read independently of the caller's last streamed batch: a deep candidate
+  // scroll must not change which ordinary rows are protected.
+  std::set<std::string> protected_native_texts;
+  bool exact_native_spelling = false;
+  RimeCandidateListIterator ordinary{};
+  if (api->candidate_list_begin(id, &ordinary)) {
+    for (size_t i = 0; i < 32 && api->candidate_list_next(&ordinary); ++i) {
+      if (ordinary.candidate.comment && private_input::pinyin::is_full_spelling(tail, ordinary.candidate.comment))
+        exact_native_spelling = true;
+      if (ordinary.candidate.text && ordinary.candidate.comment &&
+          private_input::pinyin::preserves_native_consumption(tail, ordinary.candidate.comment, resources->corrector.syllables()))
+        protected_native_texts.insert(ordinary.candidate.text);
+    }
+    api->candidate_list_end(&ordinary);
+  }
   bool duplicate = false;
   for (size_t i = 1; i < tail.size(); ++i) if (tail[i] == tail[i - 1]) duplicate = true;
   // An exact full spelling keeps the native word-frequency order; repeated
   // keys still need repair because the tail may hide an extra letter.
-  if (tail.size() < 10 && !duplicate)
-    for (const auto &row : s.batch)
-      if (private_input::pinyin::is_full_spelling(tail, row.comment)) return 0;
-  const auto proposals = repair_corrector.proposals(tail, 64);
+  if (tail.size() < 10 && !duplicate && exact_native_spelling) return 0;
+  const auto proposals = resources->corrector.proposals(tail, 64);
   if (proposals.empty()) return 0;
   const auto probe = pi_create_session();
   if (!probe) return 0;
@@ -766,9 +797,9 @@ size_t pi_load_repair_candidates(PI_Session id, size_t limit) {
       for (size_t i = 0; i < count; ++i) {
         const std::string text = pi_batch_candidate_text(probe, i);
         const std::string reading = pi_batch_candidate_comment(probe, i);
-        if (text.empty() || joined_repair_reading(reading) != proposal.spelling) continue;
+        if (text.empty() || protected_native_texts.count(text) || joined_repair_reading(reading) != proposal.spelling) continue;
         double score = -proposal.cost * 3.0 - double(i) * 0.8;
-        if (const auto weight = word_weights.find(text); weight != word_weights.end())
+        if (const auto weight = resources->weights.find(text); weight != resources->weights.end())
           score += std::min(4.0, std::log1p(double(weight->second)) * 0.5);
         // Private fields never read the user's preference or pinned words.
         if (!s.private_mode) {
@@ -817,19 +848,23 @@ const char *pi_commit_repair_candidate(PI_Session id, size_t index) {
   if (!api || !sessions.count(id)) return empty;
   if (index >= sessions.at(id).repairs.size()) return empty;
   const auto row = sessions.at(id).repairs[index];
+  const std::string selected_prefix = sessions.at(id).selected_prefix;
   const auto probe = pi_create_session();
   if (!probe) return empty;
   std::string committed;
   if (pi_set_private(probe, 1) && pi_set_nine_key(probe, 0) && pi_set_ascii_mode(probe, 0) &&
       pi_set_pinyin_probe_input(probe, row.spelling.c_str()) &&
+      pi_load_candidate_batch(probe, row.absolute, 1) == 1 &&
+      row.text == pi_batch_candidate_text(probe, 0) &&
+      normalized_reading(row.reading) == normalized_reading(pi_batch_candidate_comment(probe, 0)) &&
       pi_select_candidate_absolute(probe, row.absolute))
     committed = pi_take_commit(probe);
   pi_destroy_session(probe);
-  if (committed.empty()) return empty;
+  if (committed != row.text) return empty;
   // The typed suffix is replaced, not appended: drop the live composition.
   api->clear_composition(id);
   refresh(id);
-  sessions.at(id).commit = committed;
+  sessions.at(id).commit = selected_prefix + committed;
   return sessions.at(id).commit.c_str();
 }
 int pi_export_learning(const char *file) {

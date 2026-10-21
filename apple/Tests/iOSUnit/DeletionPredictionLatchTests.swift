@@ -3,6 +3,29 @@ import XCTest
 
 final class DeletionPredictionLatchTests:XCTestCase {
     let document=UUID(uuidString:"00000000-0000-0000-0000-000000000011")!
+    func testClearCancelsLatePredictionAndStaysSuppressedThroughIdleAndDeletion() {
+        var state=DeletionPredictionLatch();state.observeDocument(document);let pending=state.generation
+        state.beginClear()
+        XCTAssertFalse(state.acceptsPrediction(generation:pending))
+        for _ in 0..<10 {state.observeDocument(document);XCTAssertEqual(state.source(hasComposition:false),.none)}
+        state.beginDeletion();state.observeDocument(nil)
+        XCTAssertTrue(state.suppressed);XCTAssertEqual(state.source(hasComposition:false),.none)
+    }
+    func testClearThenRealInputResumesWithoutAcceptingAnOldCompletion() {
+        var state=DeletionPredictionLatch();state.beginClear();let clearGeneration=state.generation
+        state.beginUserInput()
+        XCTAssertEqual(state.source(hasComposition:true),.primary)
+        XCTAssertEqual(state.source(hasComposition:false),.continuation)
+        XCTAssertFalse(state.acceptsPrediction(generation:clearGeneration))
+        XCTAssertTrue(state.acceptsPrediction(generation:state.generation))
+    }
+    func testClearDoesNotReviveDismissedClipboardWhenTypingResumes() {
+        var state=DeletionPredictionLatch(),clipboard=ClipboardCandidateState()
+        clipboard.observe(version:4);clipboard.dismiss();state.beginClear();state.beginUserInput()
+        XCTAssertFalse(clipboard.available(version:4,allowed:true,hasPrimary:false,deleting:state.suppressed))
+        clipboard.observe(version:5)
+        XCTAssertTrue(clipboard.available(version:5,allowed:true,hasPrimary:false,deleting:state.suppressed))
+    }
     func testDeletingContinuesAcrossHostAndEngineRevisionChanges() {
         var state=DeletionPredictionLatch();state.observeDocument(document)
         state.beginDeletion()

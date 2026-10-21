@@ -175,12 +175,26 @@ final class ActivityArchiveCapture: @unchecked Sendable {
     func capture(_ draft: ActivityEventDraft, safety: ActivityFieldSafety) {
         lock.lock(); let snapshot = permission ? context : nil; let generation = permissionGeneration; lock.unlock()
         guard let snapshot, snapshot.lease.configuration.providers.contains(draft.providerID) else { return }
+        var draft = draft
+        if draft.extensions == nil { draft.extensions = [:] }
+        draft.extensions?[ActivityDeviceDescription.extensionKey] = .object(ActivityDeviceDescription.fields)
         io.async { [weak self] in
             guard let self, self.isPermitted(generation), snapshot.connection.personalEpoch == PersonalDataReset.generation else { return }
             do { _ = try snapshot.queue.capture(draft, safety: safety, lease: snapshot.lease); self.scheduleUpload() }
             catch ActivityError.alreadyObserved { }
             catch { self.report(error) }
         }
+    }
+    func recordDiagnostic(action: String, key: String, before: String, after: String, candidates: [String] = [],
+                          sourceApp: String?, document: String?, session: String, epoch: String,
+                          safety: ActivityFieldSafety) {
+        guard permits(ActivityInputDiagnostic.provider), safety == .safe,
+              let diagnostic = ActivityInputDiagnostic(action: action, key: key, before: before, after: after, candidates: candidates) else { return }
+        var extras = sourceContextExtensions(sourceApp: sourceApp)
+        extras[ActivityInputDiagnostic.extensionKey] = .object(diagnostic.fields)
+        capture(ActivityEventDraft(providerID: ActivityInputDiagnostic.provider, eventType: .sourceImport, text: diagnostic.text,
+            inputSession: session, editorEpoch: epoch, sourceKind: "ime_diagnostic", sourceApp: sourceApp,
+            documentID: document, commitConfirmation: .notApplicable, extensions: extras), safety: safety)
     }
     func recordInput(_ text: String, sourceApp: String?, document: String?, session: String, epoch: String,
                      safety: ActivityFieldSafety, pasteEvent: UUID? = nil, pasteSender: UUID? = nil,
@@ -226,7 +240,8 @@ final class ActivityArchiveCapture: @unchecked Sendable {
                 inputMethodBuild: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
                 captureComponent: component)
         }
-        return [ActivitySourceContext.extensionKey: .object(context.fields.mapValues(ActivityJSONValue.string))]
+        return [ActivitySourceContext.extensionKey: .object(context.fields.mapValues(ActivityJSONValue.string)),
+                ActivityDeviceDescription.extensionKey: .object(ActivityDeviceDescription.fields)]
     }
     #if os(macOS)
     private func sourceDisplayName(_ identifier: String) -> String? {

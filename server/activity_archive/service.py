@@ -299,6 +299,19 @@ class ArchiveStore:
             self.db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
             self.db.close()
 
+    def rotate_recovery_identity(self):
+        """Offline restore only: invalidate all cursors and downstream source IDs.
+
+        A database restore affects every tenant in this store. Do not rotate on
+        ordinary startup, backup, or one tenant's privacy erase.
+        """
+        import secrets
+        with self.lock:
+            key = secrets.token_bytes(32)
+            with self.transaction():
+                self.db.execute("UPDATE metadata SET value=? WHERE key='cursor_key'", (key,))
+            self.cursor_key = key
+
     def group(self, group):
         self.db.execute('INSERT OR IGNORE INTO archive_groups(group_id) VALUES(?)', (group,))
         return self.db.execute('SELECT * FROM archive_groups WHERE group_id=?', (group,)).fetchone()
@@ -350,6 +363,9 @@ class ArchiveStore:
             fail('cursor_expired', 409)
         if value['acl'] != self.stamp(who):
             fail('cursor_stale', 409)
+        current_high = self.high(who.group)
+        if value['position'] > current_high or (mode == 'query' and value['high'] > current_high):
+            fail('cursor_source_rewound', 409)
         return value
 
     def audit(self, who, operation, details=None):
@@ -390,7 +406,28 @@ class ArchiveStore:
     def status(self, who, value):
         shape(value)
         p = self.group(who.group)
-        return {'group': who.group, 'device': who.sender, 'enabled': bool(p['enabled']), 'policy_version': p['policy_version'], 'membership_revision': who.revision, 'consent': self.consent(who.group, who.sender), 'limits': {'max_batch_events': MAX_BATCH, 'max_event_bytes': EVENT_LIMIT, 'max_body_bytes': BODY_LIMIT, 'retention_days': p['retention_days'], 'max_group_bytes': p['max_group_bytes']}}
+        return {'group': who.group, 'device': who.sender, 'enabled': bool(p['enabled']), 'policy_version': p['policy_version'], 'membership_revision': who.revision, 'consent': self.consent(who.group, who.sender), 'devices': self.device_inventory(who), 'limits': {'max_batch_events': MAX_BATCH, 'max_event_bytes': EVENT_LIMIT, 'max_body_bytes': BODY_LIMIT, 'retention_days': p['retention_days'], 'max_group_bytes': p['max_group_bytes']}}
+
+    def device_inventory(self, who):
+        """Current group only. Hardware is self-reported, never inferred from IDs.
+
+        A member list does not grant access to another member's archive metadata.
+        No event text, serials, hostnames, or departed-device history is returned.
+        """
+        readable = self.scopes(who)
+        devices = []
+        for device in sorted(who.members):
+            item = {'device_id': device, 'archive_readable': device in readable, 'metadata': None}
+            if device in readable:
+                row = self.db.execute('SELECT event_json FROM events WHERE group_id=? AND device_id=? ORDER BY change_seq DESC LIMIT 1', (who.group, device)).fetchone()
+                if row:
+                    event = decode(row['event_json'])
+                    metadata = (event.get('extensions') or {}).get('org.linghe.device.v1')
+                    if isinstance(metadata, dict):
+                        item['metadata'] = {k: v for k, v in metadata.items() if k in {'platform', 'brand', 'manufacturer', 'model', 'os_version', 'architecture', 'device_type'} and type(v) is str and 0 < len(v.encode('utf-8')) <= 128 and not any(ord(c) < 32 for c in v)}
+                        item['metadata_provenance'] = 'device_self_reported'
+            devices.append(item)
+        return devices
 
     def set_policy(self, who, value):
         shape(value, ['expected_version', 'enabled', 'retention_days', 'max_group_bytes'])
@@ -867,11 +904,13 @@ class ArchiveApplication:
         body = unb64(envelope['body'])
         signature = unb64(envelope['signature'], 64, 64)
         who = self.authority.resolve(group, sender, self.clock())
+        capture_delegate = False
         try:
             Ed25519PublicKey.from_public_bytes(who.public).verify(signature, request_canonical(envelope, body))
         except (InvalidSignature, ValueError):
             if not self.store.verify_capture_signature(who, operation, signature, request_canonical(envelope, body)):
                 fail('signature', 401)
+            capture_delegate = True
         with self.rate_lock:
             now = self.clock()
             self.rates = {k: v for k, v in self.rates.items() if v[0] > now - 60}
@@ -881,6 +920,8 @@ class ArchiveApplication:
                 fail('rate_limit', 429)
             self.rates[key] = (start, count + 1)
         result = self.store.process(who, operation, decode(body), nonce)
+        if capture_delegate and operation == 1:
+            result.pop("devices", None)
         return {'version': 1, 'operation': operation, 'result': result}
 
     def __call__(self, environ, start_response):

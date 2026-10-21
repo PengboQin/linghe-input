@@ -43,6 +43,7 @@ final class ActivityArchiveManager {
   }
   boolean enabled(){return prefs.getBoolean("enabled",false);}
   boolean inputEnabled(){return enabled()&&!prefs.getBoolean("capturePaused",false)&&prefs.getBoolean("input",false);}
+  boolean diagnosticEnabled(){return enabled()&&!prefs.getBoolean("capturePaused",false)&&prefs.getBoolean("diagnostic",false);}
   boolean clipboardEnabled(){return enabled()&&!prefs.getBoolean("capturePaused",false)&&prefs.getBoolean("clipboard",false);}
   String endpoint(){return prefs.getString("endpoint","");}
   String health(){return status+"\n待上传 "+pending+" 条 · 旧授权暂存 "+held+" 条"+(prefs.getLong("gapCount",0)>0?" · 未归档 "+prefs.getLong("gapCount",0)+" 次":"");}
@@ -55,13 +56,20 @@ final class ActivityArchiveManager {
   void foreground(boolean on){foreground=Math.max(0,foreground+(on?1:-1));if(on){if(prefs.getBoolean("wipePending",false))storage.execute(this::pauseForDeparture);observeClipboard(false);if(enabled())flush();}}
   InputProvider inputProvider(){return new InputProvider();}
   final class InputProvider implements ActivityArchiveProvider {
-    private String source,session,epoch;private boolean safe;private String fieldType,returnKey,layout;
-    public String[] capabilities(){return new String[]{"ime.commit.v1"};}
-    public void start(String sourceApp,boolean safeField){source=sourceApp;safe=safeField;fieldType=null;returnKey=null;layout=null;session=ActivityArchiveRules.id();epoch=ActivityArchiveRules.id();imeSafe=safeField;if(!safeField&&inputEnabled())status="安全或未知输入框已停记；输入不受影响";}
+    private String source,session,epoch;private boolean safe;private long diagnosticGeneration=1;private String fieldType,returnKey,layout;
+    public String[] capabilities(){return new String[]{"ime.commit.v1","ime.diagnostic.v1","app.paste.v1"};}
+    public synchronized void start(String sourceApp,boolean safeField){diagnosticGeneration++;source=sourceApp;safe=safeField;fieldType=null;returnKey=null;layout=null;session=ActivityArchiveRules.id();epoch=ActivityArchiveRules.id();imeSafe=safeField;if(!safeField&&inputEnabled())status="安全或未知输入框已停记；输入不受影响";}
     void start(EditorInfo info){start(info==null?null:info.packageName,info!=null&&ActivityArchiveRules.safeInput(info.inputType,info.imeOptions,true));if(info!=null){fieldType="android_input_type_"+info.inputType;returnKey="ime_action_"+(info.imeOptions&EditorInfo.IME_MASK_ACTION);}}
-    public void pause(){safe=false;imeSafe=false;session=null;epoch=null;}
+    public synchronized void pause(){diagnosticGeneration++;safe=false;imeSafe=false;session=null;epoch=null;}
     void uncertainEdit(){epoch=ActivityArchiveRules.id();}
     void layout(String value){layout=value;}
+    synchronized long diagnosticsToken(){return safe&&diagnosticEnabled()?diagnosticGeneration:0;}
+    synchronized void diagnostic(long expected,String key,String before,String after){
+      if(expected==0||expected!=diagnosticGeneration||!safe||!diagnosticEnabled()||key==null||before==null||after==null||key.length()>128||before.length()>2048||after.length()>2048)return;
+      try{JSONObject detail=new JSONObject().put("action",key.equals("backspace")?"delete":key.startsWith("literal:")?"literal":key.equals("edit")?"edit":"key").put("key",key).put("raw_before",before).put("raw_after",after).put("committed",false);
+        emit("ime.diagnostic.v1","source_import",after,"ime_diagnostic",source,session,epoch,"not_applicable",null,null,fieldType,returnKey,layout,detail);
+      }catch(Exception ignored){}
+    }
     public void committed(String text,boolean acknowledged){if(safe&&inputEnabled())emit("ime.commit.v1","input_commit",text,"ime",source,session,epoch,acknowledged?"editor_acknowledged":"insert_requested",null,null,fieldType,returnKey,layout);}
     void systemClipboardCommitted(String text,boolean acknowledged){if(safe&&clipboardEnabled()&&pasteAllowed())emit("app.paste.v1","paste_action",text,"system_clipboard",source,session,epoch,acknowledged?"editor_acknowledged":"insert_requested","system_clipboard",null,fieldType,returnKey,layout);}
     void revised(String text){if(safe&&inputEnabled()){uncertainEdit();emit("ime.commit.v1","text_revise",text,"ime",source,session,epoch,"editor_acknowledged",null,null,fieldType,returnKey,layout);}}
@@ -79,8 +87,11 @@ final class ActivityArchiveManager {
     return new JSONObject(ActivitySourceContext.fields("android",source,name,version,build,fieldType,returnKey,layout,source==null?"archive_provider":"default_ime"));
   }
   private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout){
+    emit(provider,type,text,sourceKind,source,session,epoch,confirmation,origin,reference,fieldType,returnKey,layout,null);
+  }
+  private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout,JSONObject diagnostic){
     if(!enabled()||!privacyCurrent())return;
-    if(!type.equals("coverage_gap")&&!ActivityArchiveRules.acceptedText(text)){gap("正文过大或Unicode无效");return;}
+    if(!type.equals("coverage_gap")&&!(diagnostic!=null&&text!=null&&text.isEmpty())&&!ActivityArchiveRules.acceptedText(text)){gap("正文过大或Unicode无效");return;}
     if(captureInFlight.incrementAndGet()>64){captureInFlight.decrementAndGet();gap("归档写入暂时繁忙，存在覆盖缺口");return;}
     final long token=generation(),observed=System.currentTimeMillis();final String event=ActivityArchiveRules.id();
     storage.execute(()->{
@@ -97,6 +108,8 @@ final class ActivityArchiveManager {
           .put("document_id",JSONObject.NULL).put("delivery_state","draft_unknown").put("commit_confirmation",confirmation).put("consent_version",prefs.getLong("consentVersion",0))
           .put("sensitivity","personal").put("time_quality","device_clock_unverified").put("links",new JSONArray());
         JSONObject extensions=new JSONObject().put(ActivitySourceContext.KEY,sourceContext(source,fieldType,returnKey,layout));
+        extensions.put("org.linghe.device.v1",new JSONObject().put("platform","android").put("device_type","mobile_device").put("brand",Build.BRAND).put("manufacturer",Build.MANUFACTURER).put("model",Build.MODEL).put("os_version",Build.VERSION.RELEASE));
+        if(diagnostic!=null)extensions.put("org.linghe.input.v1",diagnostic);
         if(origin!=null){JSONObject extra=new JSONObject().put("origin",origin);if(reference!=null&&!reference.isEmpty())extra.put("origin_event_reference",reference);extensions.put("org.linghe.provenance.v1",extra);}
         row.put("extensions",extensions);
         if(!active(token))return;
@@ -177,7 +190,10 @@ final class ActivityArchiveManager {
     }
   }
   void configure(String supplied,boolean relay,boolean input,boolean clips,boolean readers,Completion completion){
-    if(!input&&!clips){pause();main.post(()->completion.complete(null));return;}
+    configure(supplied,relay,input,clips,false,readers,completion);
+  }
+  void configure(String supplied,boolean relay,boolean input,boolean clips,boolean diagnostic,boolean readers,Completion completion){
+    if(!input&&!clips&&!diagnostic){pause();main.post(()->completion.complete(null));return;}
     pause();final long token=generation();
     network.execute(()->{String error=null;try{
       if(!privacyCurrent())throw new IOException("本机归档清理尚未完成，请稍后重试");
@@ -185,11 +201,11 @@ final class ActivityArchiveManager {
       String address=SyncClient.endpoint(relay?state.getString("endpoint"):supplied);
       JSONObject remote=request(identity,address,1,new JSONObject(),token,false);
       if(!remote.optBoolean("enabled"))throw new IOException("设备组尚未开启归档，请先明确开启组归档");
-      JSONObject old=remote.optJSONObject("consent");JSONArray providers=new JSONArray();if(input)providers.put("ime.commit.v1");if(clips){providers.put("clipboard.observed.v1");providers.put("app.paste.v1");}
+      JSONObject old=remote.optJSONObject("consent");JSONArray providers=new JSONArray();if(diagnostic)providers.put("ime.diagnostic.v1");if(input)providers.put("ime.commit.v1");if(clips){providers.put("clipboard.observed.v1");providers.put("app.paste.v1");}
       JSONArray scopes=new JSONArray();if(readers){JSONArray members=identity.membership.getJSONArray("members");for(int i=0;i<members.length();i++)scopes.put(ActivityArchiveRules.id(members.getJSONObject(i).getString("device")));}else scopes.put(identity.device);
       JSONObject result=request(identity,address,3,new JSONObject().put("expected_version",old==null?0:old.getLong("version")).put("enabled",true).put("providers",providers).put("readers",scopes),token,false);
       if(generation()!=token||!privacyCurrent())throw new IOException("归档设置已改变，请重新开启");
-      synchronized(prefs){if(generation()!=token)throw new IOException("归档设置已改变");prefs.edit().putString("endpoint",address).putBoolean("useRelay",relay).putBoolean("input",input).putBoolean("clipboard",clips).putBoolean("shareReaders",readers).putString("group",identity.group).putString("device",identity.device).putString("privacyGeneration",PersonalReset.generation(context)).putLong("consentVersion",result.getLong("consent_version")).putBoolean("revokePending",false).putBoolean("capturePaused",false).putBoolean("transportBlocked",false).putBoolean("enabled",true).commit();}
+      synchronized(prefs){if(generation()!=token)throw new IOException("归档设置已改变");prefs.edit().putString("endpoint",address).putBoolean("useRelay",relay).putBoolean("input",input).putBoolean("clipboard",clips).putBoolean("diagnostic",diagnostic).putBoolean("shareReaders",readers).putString("group",identity.group).putString("device",identity.device).putString("privacyGeneration",PersonalReset.generation(context)).putLong("consentVersion",result.getLong("consent_version")).putBoolean("revokePending",false).putBoolean("capturePaused",false).putBoolean("transportBlocked",false).putBoolean("enabled",true).commit();}
       status="已开启，等待新的输出";scheduleJob();schedule(0);
     }catch(Exception failure){error=failure.getMessage();if(error==null)error="归档配置失败";status="未开启归档";}
       final String result=error;main.post(()->completion.complete(result));

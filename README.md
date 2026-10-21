@@ -1,3 +1,5 @@
+2026-10-21 预发布更新：统一四端输入核心；可选记录未选中拼音与输入过程；补设备组/型号元数据；续写态退格同时删除正文；Windows Shift单击切中英、桌面Enter上屏原文。Android 0.1.36(37)已原证书签包，Windows 0.4.8-win1已交叉构建并打包（未签名工程预览，未完成实体机验收）。Mac/iOS本批完成源码与编译检查，尚未交付新安装包；不把旧版下载当作这些新功能已经上线。
+
 # 灵鹤输入法 · Linghe Input
 
 面向 iOS、macOS、Android 和 Windows 的拼音输入法源码存档。支持九键/全键拼音、个人词库、候选学习、可选自建同步、持续可见时的快速剪贴板与输入归档。英文、纠错和候选行为按各平台实现逐步对齐。
@@ -7,10 +9,12 @@
 **此处是经过明确允许清单导出的源码快照，不是原开发工作区，也不是已验证的完全可复现发行版。** 对应源码散列见 `PUBLIC-SOURCE-MANIFEST.json`。安装包与验证状态由具体发行说明分别列出；源码存在不代表该平台已安装、签名、公证或通过体验验收。
 
 - Apple/Android 与主内核：`apple/`、`android/`、`core/`、`shared/`。
-- Windows 独立源码：`windows-source/`，保留其自己的内核和共享实现；不要自动覆盖主线。差异见 `windows-source/SHARED-VERSIONS.json`。
+- Windows 原生前端与独立构建：`windows-source/`。四端唯一输入内核在根目录 `core/`；Windows 的 `core/` 仅为兼容转发文件，不维护第二份算法。协议的原生适配仍有平台差异，见 `windows-source/SHARED-VERSIONS.json`。
 - 自建服务：`server/`，请先读 [SELF-HOSTING.md](SELF-HOSTING.md)。发行源码默认没有运营服务器地址；由用户设置或设备邀请取得。
 - 构建与缺口：[BUILDING.md](BUILDING.md)；离线模型：[MODELS.md](MODELS.md)。
 
 本项目原创代码采用 [GPL-3.0-only](LICENSE)。对外分发修改版时按许可证提供对应源码；第三方组件和数据保留各自许可证，详见 [LICENSE-NOTICE.md](LICENSE-NOTICE.md)。
 
 本存档不含个人输入记录、剪贴板、设备身份、设备组、证书、开发签名文件或模型大权重。可选归档服务会按授权保存明文，不能将其称为端到端加密；词库/共享文本同步的密文通道与归档服务是不同功能。
+
+输入过程诊断为独立、默认关闭的可选归档来源，开启后也会保存未选中、未发送的输入。仅观察本输入法处理的事件；不安装全局键盘钩子。服务器保存所选来源的明文，权限与事件格式见 [诊断与设备元数据](docs/INPUT-DIAGNOSTICS-V1-20261021.md)。

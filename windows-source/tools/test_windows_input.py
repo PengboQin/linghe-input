@@ -42,7 +42,7 @@ def main():
                    '-DPRIVATE_INPUT_TSF_TEST_HOOKS', '-D_WIN32_WINNT=0x0A00', '-DWINVER=0x0A00', '-DNTDDI_VERSION=0x0A000003', '-DRIME_IMPORTS',
                    '-Iwindows/src', '-Icore/include', '-I' + str(prefix / 'include'),
                    'windows/tests/tsf_input_regression.cpp', 'windows/src/TextService.cpp', 'windows/activity/CaptureIPC.cpp', 'windows/activity/LearningIPC.cpp',
-                   'windows/src/CandidateWindow.cpp', 'core/src/private_input.cpp',
+                   'windows/src/CandidateWindow.cpp', 'windows/activity/Json.cpp', 'core/src/private_input.cpp',
                    prefix / 'lib/librime.dll.a', prefix / 'lib/libleveldb.a',
                    '-lole32', '-loleaut32', '-lshell32', '-ladvapi32', '-luser32', '-lgdi32', '-luuid', '-o', fixture]
         run(command, 'tsf-input-fixture-cross-build')

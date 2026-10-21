@@ -174,6 +174,20 @@ inline bool is_nine_code(const std::string &input) {
   if (input.empty()) return false;
   return std::all_of(input.begin(), input.end(), [](char c) { return c >= '2' && c <= '9'; });
 }
+/* A native choice owns its consumption range. A same-text corrected choice
+   must not replace a complete native reading or discard a valid unfinished
+   next syllable (zheged -> 这个 + d). A complete extra vowel or transposed
+   letters remain repairable (haoo / shijei). */
+inline bool preserves_native_consumption(const std::string &input, const std::string &reading,
+                                         const std::set<std::string> &syllables) {
+  if (covers(input, reading)) return true;
+  const int consumed = consumed_prefix(input, reading, false);
+  if (consumed <= 0 || static_cast<size_t>(consumed) >= input.size()) return false;
+  const auto pending = canonical_syllable(input.substr(static_cast<size_t>(consumed)));
+  if (syllables.count(pending)) return false;
+  const auto next = syllables.lower_bound(pending);
+  return next != syllables.end() && next->compare(0, pending.size(), pending) == 0;
+}
 }  // namespace pinyin
 }  // namespace private_input
 #endif

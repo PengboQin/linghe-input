@@ -10,6 +10,7 @@ import PrivateInputKit
     @Published var server = ""
     @Published var inputEnabled = true
     @Published var clipboardEnabled = false
+    @Published var diagnosticEnabled = false
     @Published var allowGroupReaders = false
     @Published var retentionDays = 30
     @Published var groupMegabytes = 100
@@ -29,6 +30,7 @@ import PrivateInputKit
             guard let q = queue else { return }
             configuration = try q.configuration(); queueStatus = try q.status()
             if server.isEmpty { server = configuration.endpoint?.absoluteString ?? connection?.publicConnection.relayEndpoint.absoluteString ?? "" }
+            diagnosticEnabled = configuration.providers.contains(ActivityInputDiagnostic.provider)
             if !configuration.providers.isEmpty {
                 inputEnabled = configuration.providers.contains("ime.commit.v1")
                 clipboardEnabled = configuration.providers.contains("clipboard.observed.v1")
@@ -140,6 +142,7 @@ import PrivateInputKit
         var values: Set<String> = []
         if inputEnabled { values.formUnion(["ime.commit.v1", "ime.paste.v1"]) }
         if clipboardEnabled { values.insert("clipboard.observed.v1") }
+        if diagnosticEnabled { values.insert(ActivityInputDiagnostic.provider) }
         return values
     }
     private func loadContext(refresh: Bool) async throws {
@@ -222,6 +225,9 @@ struct ActivityArchiveView: View {
                     })).accessibilityIdentifier("archive-enabled").disabled(model.busy)
                     Toggle("输入法输出与明确粘贴", isOn: $model.inputEnabled)
                     Toggle("实际可读的剪贴板文字", isOn: $model.clipboardEnabled)
+                    Toggle("输入过程与未选中拼音", isOn: $model.diagnosticEnabled)
+                    Text("仅记录本输入法处理的按键和候选过程；包含未发送内容。密码与未知安全字段不记录。")
+                        .font(.footnote).foregroundStyle(.secondary)
                     Picker("档案读取范围", selection: $model.allowGroupReaders) {
                         Text("仅此设备").tag(false)
                         Text("允许当前本组设备").tag(true)

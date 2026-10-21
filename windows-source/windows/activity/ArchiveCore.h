@@ -13,7 +13,7 @@ Key sha256(const Data&);Key publicKey(const Key& seed);Data sign(const Data&,con
 void append(Data&,const Data&);void be64(Data&,uint64_t);Data bytes(std::string_view);
 Json signedEnvelope(const Id&group,const Id&device,const Key&seed,uint8_t op,const Json&body,uint64_t now,bool archive=true);
 std::string timestamp(uint64_t unixSeconds);uint64_t unixTime();
-struct EventContext {Id group{},device{},installation{};uint64_t consent=0;std::string session,editor;SourceContext source;};
+struct EventContext {Id group{},device{},installation{};uint64_t consent=0;std::string session,editor;SourceContext source;Json deviceDescription;};
 Json makeEvent(const EventContext&,uint64_t seq,std::string provider,std::string type,std::string text,uint64_t now,const std::string&source="ime_output");
 struct QueuedEvent {std::string id,encoded;uint64_t generation=0,sequence=0;Json event;};
 class Queue {

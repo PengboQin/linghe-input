@@ -26,14 +26,16 @@ struct StableCandidatePublication<Row, Identity: Hashable> {
     }
 }
 
-/// Deleting is an editing mode, not a single engine revision. A release, idle
-/// render or changed context cannot re-enable suggestions behind the finger.
+/// Explicit deletion or clear is an editing mode, not one engine revision.
+/// Idle renders and cache updates cannot undo the user's cancellation.
 struct DeletionPredictionLatch {
     enum CandidateSource: Equatable {case primary,continuation,none}
     private(set) var suppressed=false
     private(set) var generation:UInt64=0
     private var lastKnownDocument:UUID?
-    mutating func beginDeletion() {suppressed=true;generation &+= 1}
+    private mutating func interrupt() {suppressed=true;generation &+= 1}
+    mutating func beginDeletion() {interrupt()}
+    mutating func beginClear() {interrupt()}
     mutating func beginUserInput() {suppressed=false;generation &+= 1}
     mutating func observeDocument(_ document:UUID?) {
         guard let document else{return}

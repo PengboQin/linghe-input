@@ -81,6 +81,31 @@ class ArchiveTests(unittest.TestCase):
     def ingest(self, *events, actor=None, group=None, batch=None):
         return self.call(4, {'batch_id': batch or identifier(), 'events': list(events)}, actor=actor, group=group)
 
+    def test_device_inventory_is_current_group_and_reader_scoped(self):
+        self.enable(actor=self.b)
+        metadata={'platform':'android','brand':'vivo','model':'synthetic-model','serial':'MUST_NOT_LEAK'}
+        self.ingest(self.event(actor=self.b,extensions={'org.linghe.device.v1':metadata}),actor=self.b)
+        inventory=self.call(1,{})['devices']
+        self.assertEqual({d['device_id'] for d in inventory},{self.a,self.b,self.c})
+        self.assertIsNone(next(d for d in inventory if d['device_id']==self.b)['metadata'])
+        self.call(3,{'expected_version':1,'enabled':True,'providers':['ime.commit.v1'],'readers':[self.a,self.b]},actor=self.b)
+        device=next(d for d in self.call(1,{})['devices'] if d['device_id']==self.b)
+        self.assertEqual(device['metadata']['model'],'synthetic-model')
+        self.assertNotIn('serial',device['metadata'])
+        self.authority.put(self.group,{self.a:self.members[self.a],self.c:self.members[self.c]},revision=2)
+        self.assertNotIn(self.b,{d['device_id'] for d in self.call(1,{})['devices']})
+
+    def test_unselected_diagnostics_need_distinct_provider_consent(self):
+        self.enable()
+        detail={'action':'key','key':'4','raw_before':'44','raw_after':'444','committed':False}
+        event=self.event('444',provider_id='ime.diagnostic.v1',event_type='source_import',source_kind='ime_diagnostic',commit_confirmation='not_applicable',extensions={'org.linghe.input.v1':detail})
+        self.assert_error('provider_not_allowed',4,{'batch_id':identifier(),'events':[event]})
+        self.call(3,{'expected_version':1,'enabled':True,'providers':['ime.commit.v1','ime.diagnostic.v1']})
+        event['consent_version']=2
+        self.ingest(event)
+        row=self.store.db.execute('SELECT event_json FROM events WHERE event_id=?',(event['event_id'],)).fetchone()
+        self.assertEqual(decode(row[0])['extensions']['org.linghe.input.v1'],detail)
+
     def test_default_disabled_and_policy_does_not_enable_other_device(self):
         self.assertFalse(self.call(1, {})['enabled'])
         self.assert_error('archive_disabled', 4, {'batch_id': identifier(), 'events': [self.event()]})
@@ -119,7 +144,9 @@ class ArchiveTests(unittest.TestCase):
         body = {'expected_consent_version': 1, 'public_key': base64.b64encode(key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)).decode()}
         result = self.call(11, body)
         self.assertEqual(result, {'registered': True, 'consent_version': 1})
-        self.assertEqual(self.delegate_request(1, {}, key)['device'], self.a)
+        delegate_status = self.delegate_request(1, {}, key)
+        self.assertEqual(delegate_status['device'], self.a)
+        self.assertNotIn('devices', delegate_status)
         event = self.event()
         accepted = self.delegate_request(4, {'batch_id': identifier(), 'events': [event]}, key)
         self.assertEqual(accepted['accepted_event_ids'], [event['event_id']])

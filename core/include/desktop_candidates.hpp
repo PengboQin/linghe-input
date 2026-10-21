@@ -13,5 +13,6 @@ struct DesktopCandidates {
  void vertical(int delta){if(!expanded){expanded=true;return;}horizontal(delta*columns);}
  void page(int delta){horizontal(delta*int(pageSize()));}
  std::size_t digit(unsigned d)const{auto index=selected/std::size_t(width())*std::size_t(width())+d-1;return d>=1&&d<=unsigned(width())&&index<count?index:count;}
+ unsigned shortcut(std::size_t index)const{return index<count&&index/std::size_t(width())==selected/std::size_t(width())?unsigned(index%std::size_t(width()))+1:0;}
 };
 }

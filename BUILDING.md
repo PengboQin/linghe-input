@@ -26,7 +26,7 @@ Only the currently targeted arm64 device path has physical acceptance evidence i
 
 ## Isolated Windows
 
-The current Windows implementation is under `windows-source/windows/`, with its own `core/` and `shared/`. `windows-source/SHARED-VERSIONS.json` identifies matching and differing copied source hashes; a matching file hash is not a claim of full feature parity. Do not replace one platform's copy with another without regression review.
+The current Windows native implementation is under `windows-source/windows/`. All platforms use the one authoritative root `core/`; `windows-source/core/` contains compatibility includes only. CMake resolves the root core directly (or accepts `PRIVATE_INPUT_CORE_ROOT`). Run `python3 scripts/verify_shared_core.py --consumer windows-source` before building. Swift protocol sources live only under root shared/. Windows retains native protocol adapters and interoperability vectors; sharing engine bytes does not establish complete feature parity.
 
 Entry points: `windows-source/scripts/build_windows_cross.py`, `windows-source/tools/build_preview.py`, `windows-source/tools/build_offline_installer.py`, plus `windows-source/windows/CMakeLists.txt`. The historical cross-builder expects project-local LLVM-MinGW `20261006-ucrt-macos-universal` and local Rime/Boost prefixes. Windows source uses libsodium 1.0.22; refer to `windows-source/docs/stages/P3/windows-crypto.lock.json` for its fixed source and digest. Native Windows build-tool bootstrap and all libraries are not bundled or clean-room tested here. Supply those public dependencies yourself, preserve notices and adapt the documented local prefix paths; source presence alone is not a complete reproducible build claim.
 
@@ -45,3 +45,9 @@ The official Java source JARs are source attachments, not substitutes for runtim
 ## Server
 
 See `SELF-HOSTING.md` and `server/deploy/README.md`. Run the isolated server unit tests using the pinned production/test requirements before deployment. The templates use reserved example hosts and loopback listeners, not a live operator address.
+
+## 2026-10-21 process archive preview
+
+Optional input-process diagnostics use separate default-off consent. See `docs/INPUT-DIAGNOSTICS-V1-20261021.md`; output, copy observations, explicit paste and unselected composition are distinct records. Public hardware descriptions contain no serials or hostnames. New Windows code supports solitary Shift toggles and literal Return; native TSF acceptance remains separate from cross-compilation.
+
+`package_android_incremental.py` is an optional bounded packaging recipe using an existing reviewed APK for unchanged public resources; supply `--base-apk`, a new `--output` and optional `--unsigned`. It does not distribute signing keys. The standard `build_android.py` remains the from-source entry point. Install/real-device and clean-room reproducibility are not established by source presence.

@@ -186,12 +186,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private let clipboardCandidate=ClipboardPasteCandidateView()
     private var clipboardState=ClipboardCandidateState()
     private var clipboardKnown:ClipboardCandidatePresentation.Snapshot?
-    private var clipboardCacheRequest:ClipboardCandidateState.Request?
-    private var clipboardCacheAttempts=0
-    private var clipboardCacheVersion:Int?
-    private var clipboardCacheScope:String?
-    private var clipboardCacheGeneration:String?
-    private var clipboardCacheToken:UUID?
+    private var clipboardLoad=ClipboardCandidateLoadState()
 
     private let expand = CandidateExpansionButton(type: .custom)
     private let toolbar = UIStackView()
@@ -395,8 +390,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         toolbar.translatesAutoresizingMaskIntoConstraints=false;header.addSubview(toolbar)
         NSLayoutConstraint.activate([toolbar.leadingAnchor.constraint(equalTo:header.leadingAnchor),toolbar.trailingAnchor.constraint(equalTo:header.trailingAnchor),toolbar.topAnchor.constraint(equalTo:header.topAnchor),toolbar.bottomAnchor.constraint(equalTo:header.bottomAnchor)])
         toolbar.alignment = .center
-        clipboardCandidate.translatesAutoresizingMaskIntoConstraints=false;header.addSubview(clipboardCandidate)
-        NSLayoutConstraint.activate([clipboardCandidate.leadingAnchor.constraint(equalTo:header.leadingAnchor),clipboardCandidate.trailingAnchor.constraint(equalTo:header.trailingAnchor),clipboardCandidate.topAnchor.constraint(equalTo:header.topAnchor),clipboardCandidate.bottomAnchor.constraint(equalTo:header.bottomAnchor)])
+        clipboardCandidate.translatesAutoresizingMaskIntoConstraints=false;candidateBar.insertArrangedSubview(clipboardCandidate,at:0)
         clipboardCandidate.isHidden=true
         clipboardCandidate.interactionBegan = { [weak self] in self?.cancelLearningForInteraction() }
         clipboardCandidate.requestForNativePress = { [weak self] in self?.clipboardRequest() }
@@ -621,7 +615,11 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
                     hasPrimary:clipboardHasPrimary,deleting:deletionPrediction.suppressed)
         if let known=clipboardKnown,!acceptsClipboard(known.request) {clipboardKnown=nil}
         let wasVisible = !clipboardCandidate.isHidden
+        // A sync arrival may wait one idle tick; it must not remove the
+        // continuation cell or control currently held by the user.
+        if visible,!wasVisible,(!pressedKeyboardControls.isEmpty || strip.isTracking || grid.isTracking || expand.isTracking) {return}
         clipboardCandidate.isHidden = !visible
+        strip.isHidden=visible
         guard visible else {
             if wasVisible {
                 let pending = !engine.preedit.isEmpty || !choices.isEmpty
@@ -633,46 +631,27 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             return
         }
         clipboardCandidate.show(snapshot:clipboardKnown,request:clipboardRequest())
-        preeditRow.isHidden=true;candidateBar.isHidden=true;toolbar.isHidden=true;expand.isHidden=true
-        header.bringSubviewToFront(clipboardCandidate)
+        preeditRow.isHidden=true;candidateBar.isHidden=false;toolbar.isHidden=true;expand.isHidden=true
     }
     private func refreshClipboardCandidateCache() {
         let version=UIPasteboard.general.changeCount
         clipboardState.observe(version:version)
-        let scopeFingerprint=clipboardScope,cacheFingerprint=clipboardCacheFingerprint
-        if clipboardCacheVersion != version || clipboardCacheScope != scopeFingerprint {
-            clipboardCacheVersion=version;clipboardCacheScope=scopeFingerprint;clipboardCacheAttempts=0
-            clipboardKnown=nil;clipboardCacheRequest=nil;clipboardCacheToken=nil
-        }
-        if clipboardCacheGeneration != cacheFingerprint {
-            clipboardCacheGeneration=cacheFingerprint;clipboardCacheAttempts=0;clipboardCacheRequest=nil;clipboardCacheToken=nil
+        if clipboardLoad.observe(version:version,scope:clipboardScope,generation:clipboardCacheFingerprint) {
+            clipboardKnown=nil
         }
         updateClipboardCandidateVisibility()
         guard let request=clipboardRequest(),acceptsClipboard(request),clipboardKnown==nil,
-              clipboardCacheRequest==nil,clipboardCacheAttempts<3,
               ClipboardCacheCoordinator.permitted(fullAccess:hasFullAccess) else{return}
-        let prefs=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
-        guard prefs?.bool(forKey:"automatic-clipboard-enabled")==true,
-              prefs?.bool(forKey:"automatic-clipboard-read-paused") != true,
-              let scope=prefs?.string(forKey:"automatic-clipboard-scope"),!scope.isEmpty else{return}
-        let cacheToken=UUID();clipboardCacheToken=cacheToken;clipboardCacheRequest=request;clipboardCacheAttempts+=1
+        let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+        guard p?.bool(forKey:"automatic-clipboard-enabled")==true,
+              p?.bool(forKey:"automatic-clipboard-read-paused") != true,
+              let scope=p?.string(forKey:"automatic-clipboard-scope"),!scope.isEmpty,
+              let ticket=clipboardLoad.begin(request:request,eligible:true) else{return}
         DispatchQueue.global(qos:.utility).async { [weak self] in
-            let now=UInt64(Date().timeIntervalSince1970)
-            let preferences=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
-            let consent=ClipboardCacheCoordinator.permitted(fullAccess:true) && preferences?.bool(forKey:"automatic-clipboard-enabled")==true &&
-                preferences?.bool(forKey:"automatic-clipboard-read-paused") != true && preferences?.string(forKey:"automatic-clipboard-scope")==scope
-            var text:String?
-            if consent {text=(try? ClipboardCacheCoordinator.pendingAutomatic(scope:scope,version:version,now:now))?.text}
-            if consent,text==nil,let clips=try? ClipboardCacheCoordinator.read(fullAccess:true,now:now) {
-                text=clips.first(where:{clip in
-                    guard let origin=AutomaticClipboardOrigin.receivedOrigin(version:version,text:clip.text) else{return false}
-                    return origin.event==clip.eventID && origin.sender==clip.sender
-                })?.text
-            }
+            let text=SharedClipboardCandidateReader.read(scope:scope,version:version,now:UInt64(Date().timeIntervalSince1970))
             DispatchQueue.main.async { [weak self] in
-                guard let self,self.clipboardCacheRequest==request,self.clipboardCacheToken==cacheToken else{return}
-                self.clipboardCacheRequest=nil
-                guard self.acceptsClipboard(request),let text,ClipboardCandidateState.validText(text) else{return}
+                guard let self,self.clipboardLoad.finish(ticket),self.acceptsClipboard(request),
+                      let text,ClipboardCandidateState.validText(text) else{return}
                 self.clipboardKnown = .init(request:request,text:text);self.updateClipboardCandidateVisibility()
             }
         }
@@ -693,7 +672,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func insertClipboardText(_ text:String,request:ClipboardCandidateState.Request) {
         guard acceptsClipboard(request),ClipboardCandidateState.validText(text) else{return}
-        clipboardState.dismiss();clipboardKnown=nil;clipboardCacheRequest=nil
+        clipboardState.dismiss();clipboardKnown=nil;clipboardLoad.cancel()
         resumeAutomaticPredictionForUserInput();cancelPrediction();cancelCandidatePage()
         ownCommitTracker.invalidate();engine.resetPredictionContext()
         // Preview compaction never changes the exact inserted text.
@@ -794,7 +773,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         for observer in clipboardObservers {NotificationCenter.default.removeObserver(observer)};clipboardObservers=[]
         ActivityArchiveCapture.shared.suspendNetwork()
         keyboardPresentation &+= 1;keyboardAppeared=false;deferredLearningRefresh?.cancel();deferredLearningRefresh=nil
-        clipboardCacheRequest=nil;clipboardCacheToken=nil;clipboardKnown=nil;clipboardCandidate.isHidden=true
+        clipboardLoad.leavePresentation();clipboardKnown=nil;clipboardCandidate.isHidden=true
         ClipboardCacheCoordinator.automaticKeyboardPass(fullAccess:false,sensitive:true,validating:{false})
         #if targetEnvironment(simulator)
         if inlineComposition.active { NSLog("INLINE_END disappearing draft=%d",inlineComposition.draft.utf16.count) }
@@ -1011,8 +990,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
         if layout == .letters {
             let action=button("清空") { [weak self] in
-                guard let self else { return };self.stopDeletion()
-                self.engine.clear();self.render()
+                self?.clearCurrentSuggestions()
             }
             action.titleLabel?.font = .systemFont(ofSize:15)
             action.menu=UIMenu(children:[UIAction(title:"收起键盘",image:UIImage(systemName:"keyboard.chevron.compact.down")) { [weak self] _ in self?.dismissKeyboard() }])
@@ -1025,7 +1003,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         delete.addAction(UIAction { [weak self] _ in self?.startDeletion() }, for: .touchDown)
         delete.addAction(UIAction { [weak self] _ in self?.stopDeletion() }, for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
         actions.addArrangedSubview(delete)
-        let clear = button("清空") { [weak self] in self?.stopDeletion(); self?.engine.clear(); self?.render() }; clear.titleLabel?.font = .systemFont(ofSize: 15); clear.accessibilityIdentifier = "clear-composition"; clear.accessibilityHint = "仅清除待选拼音，不删除正文"; clearButton = clear; actions.addArrangedSubview(clear)
+        let clear = button("清空") { [weak self] in self?.clearCurrentSuggestions() }; clear.titleLabel?.font = .systemFont(ofSize: 15); clear.accessibilityIdentifier = "clear-composition"; clear.accessibilityHint = "清除待选拼音并暂停联想，不删除正文"; clearButton = clear; actions.addArrangedSubview(clear)
         let hide = button("⌄") { [weak self] in self?.stopDeletion(); self?.dismissKeyboard() }; hide.setTitle(nil, for: .normal); hide.setImage(UIImage(systemName: "keyboard.chevron.compact.down"), for: .normal); hide.accessibilityLabel = "收起键盘"; hide.accessibilityIdentifier = "hide-keyboard"; actions.addArrangedSubview(hide)
         right.addArrangedSubview(actions)
             keys.addArrangedSubview(right)
@@ -1250,7 +1228,16 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private func resumeAutomaticPredictionForUserInput() {
         deletionPrediction.beginUserInput();predictionPausedRevision = -1;lastRevision = -1
     }
+    private func archiveDiagnostic(_ action:String,key:String,before:String) {
+        guard hasFullAccess, ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider),
+              textDocumentProxy.isSecureTextEntry == false else { return }
+        ActivityArchiveCapture.shared.recordDiagnostic(action:action,key:key,before:before,after:engine.rawInput,
+            candidates:Array(choices.prefix(5)).map(\.text),sourceApp:nil,document:documentID?.uuidString,
+            session:archiveSession,epoch:archiveEpoch,safety:.safe)
+    }
     private func type(_ text: String) {
+        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        defer { archiveDiagnostic("key",key:text,before:diagnosticBefore) }
         if !text.isEmpty {resumeAutomaticPredictionForUserInput()}
         cancelLearningForInteraction();validateInlineContext()
         validateOwnContext()
@@ -1277,6 +1264,8 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
     }
     private func insertLiteral(_ text: String, caretBack: Int = 0) {
+        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        defer { archiveDiagnostic("literal",key:text,before:diagnosticBefore) }
         if !text.isEmpty {resumeAutomaticPredictionForUserInput()}
         cancelPrediction()
         validateInlineContext()
@@ -1304,17 +1293,39 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             cancelPrediction();engine.resetPredictionContext(preservingReplacement:true)
         }
     }
+    /// One explicit cancellation for every layout. Only the next real input
+    /// (or a confirmed new field) can re-enable automatic suggestions.
+    private func clearCurrentSuggestions() {
+        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        defer { archiveDiagnostic("clear",key:"clear",before:diagnosticBefore) }
+        let hadComposition = !engine.preedit.isEmpty || !engine.rawInput.isEmpty
+        stopDeletion();deletionPrediction.observeDocument(documentID);deletionPrediction.beginClear()
+        cancelCandidatePage();cancelPrediction();cancelLearningForInteraction()
+        clipboardState.observe(version:UIPasteboard.general.changeCount);clipboardState.dismiss()
+        clipboardKnown=nil;clipboardLoad.cancel()
+        // Dismissing suggestions alone must keep the own-commit token: the
+        // next Backspace may be correcting the word just committed.
+        if hadComposition {ownCommitTracker.invalidate()}
+        engine.resetPredictionContext(preservingReplacement:!hadComposition)
+        if hadComposition {engine.clear()}
+        publishedCandidates.reset();candidateSourceOffset=0;hasMore=false;expanded=false;lastRevision = -1
+        render()
+    }
     private func backspace() {
+        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        defer { archiveDiagnostic("delete",key:"backspace",before:diagnosticBefore) }
         let dismissClipboard = !clipboardCandidate.isHidden
         clipboardState.observe(version:UIPasteboard.general.changeCount);clipboardState.dismiss()
-        clipboardKnown=nil;clipboardCacheRequest=nil
+        clipboardKnown=nil;clipboardLoad.cancel()
         deletionPrediction.observeDocument(documentID);deletionPrediction.beginDeletion();cancelCandidatePage();cancelPrediction()
         cancelLearningForInteraction();validateInlineContext()
         if dismissClipboard,engine.preedit.isEmpty {publishedCandidates.reset();lastRevision = -1;expanded=false;render();return}
         if !engine.preedit.isEmpty { ownCommitTracker.invalidate();_ = engine.key(0xff08);render();return }
         if !english,choices.contains(where:{$0.continuationContext != nil}) {
             cancelPrediction()
-            publishedCandidates.reset();lastRevision = -1;expanded=false;render();return
+            // A continuation is only a suggestion. Backspace must also edit
+            // the host text in this same press, with prediction suppressed.
+            publishedCandidates.reset();lastRevision = -1;expanded=false
         }
         let document=documentID?.uuidString ?? "",time=Date.timeIntervalSinceReferenceDate
         var replacement:OwnCommitCorrectionTracker.Replacement?
@@ -1344,6 +1355,8 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func stopDeletion() { deletionGeneration &+= 1; deleteDelay?.invalidate(); deleteRepeat?.invalidate(); deleteDelay = nil; deleteRepeat = nil }
     private func choose(_ candidate: InputCandidate) {
+        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        defer { archiveDiagnostic("choose",key:candidate.text,before:diagnosticBefore) }
         if validateInlineContext() { render();return }
         if english {
             guard englishDocument == documentID, candidate.comment == englishWord(), !candidate.comment.isEmpty else { render(); return }
@@ -1554,7 +1567,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         if engine.preedit.isEmpty && engine.managementPending {
             do { try engine.synchronizeLearning(publish: learningPublisher) } catch { learningStatus = "词频更新失败，可重试" }
         }
-        if engine.preedit.isEmpty {captureHostContext()}
+        if engine.preedit.isEmpty,!deletionPrediction.suppressed {captureHostContext()}
         if layout == .numbers {
             publishedCandidates.reset(); candidateSourceOffset=0
             if !choices.isEmpty {choices=[];strip.reloadData();grid.reloadData()}
@@ -1628,11 +1641,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
         updateClipboardCandidateVisibility()
         letterActionButton?.setTitle("清空",for:.normal)
-        letterActionButton?.alpha=chinesePending ? 1:0.45
+        let clearable=chinesePending || !choices.isEmpty || !clipboardCandidate.isHidden
+        letterActionButton?.alpha=clearable ? 1:0.45
         letterActionButton?.accessibilityIdentifier="clear-composition"
-        letterActionButton?.accessibilityLabel="清空待选拼音"
+        letterActionButton?.accessibilityLabel="清空候选并暂停联想"
         letterActionButton?.accessibilityHint="长按可收起键盘"
-        clearButton?.alpha = chinesePending ? 1 : 0.45
+        clearButton?.alpha = clearable ? 1 : 0.45
         expand.isEnabled = !choices.isEmpty; returnButton?.setTitle(returnTitle, for: .normal)
         refreshSettingsMenus()
         if let status = toolbar.arrangedSubviews.last as? UILabel { status.text = !engine.ready ? "中文词库暂不可用" : (learningStatus ?? "") }

@@ -2,13 +2,12 @@
   "schema_version": 1,
   "policy": "Lightweight browsing tree; no binary blobs; no size-based original-source exclusion.",
   "full_source_zip": {
-    "asset_name": "LingheInput-Source-20261020-preview1.zip",
-    "sha256": "87f4f25c701acb283d325f613d6189ba04efa39effad219f84d4d63b596e19c1",
-    "tag": "v0.2026.10.20-preview.1",
-    "only_complete_build_entrypoint": true,
-    "download_url": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.20-preview.1/LingheInput-Source-20261020-preview1.zip"
+    "asset_name": "LingheInput-Source-20261021-preview2.zip",
+    "sha256": "01cc27a5e027c1dd58705922bbbd3e91d7eafc00ce1d67e359a5361b6a477363",
+    "tag": "v0.2026.10.21-preview.2",
+    "only_complete_build_entrypoint": true
   },
-  "audited_plan_sha256": "406b88b81f4f13c42fc51f81515ac7e84563a79cd2afc8ada55e39b33c9e6529",
+  "audited_plan_sha256": "97389c4cce214f4eb576f5b88399b59654d499766b73fd7e966d35d92d0f95eb",
   "full_archive_manifest": "PUBLIC-SOURCE-MANIFEST.json",
   "excluded_files": [
     {

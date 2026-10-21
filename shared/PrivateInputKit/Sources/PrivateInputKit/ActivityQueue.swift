@@ -140,6 +140,12 @@ public final class ActivityLocalEventQueue: @unchecked Sendable {
             let status = try self.status()
             guard status.pending + status.held + status.acknowledged < config.maxQueueEvents,
                   status.payloadBytes <= config.maxQueueBytes - bytes.count else { throw ActivityError.quotaExceeded }
+            // Optional process diagnostics must not exhaust the space needed
+            // for confirmed output and clipboard observations while offline.
+            if draft.providerID == ActivityInputDiagnostic.provider {
+                guard status.pending + status.held + status.acknowledged < config.maxQueueEvents * 3 / 4,
+                      status.payloadBytes <= config.maxQueueBytes * 3 / 4 - bytes.count else { throw ActivityError.quotaExceeded }
+            }
             try run("INSERT INTO activity_events(event_id,seq,provider,observation,generation,payload) VALUES(?,?,?,?,?,?)", [
                 .text(event.eventID.uuidString), .int(Int64(event.deviceSeq)), .text(event.providerID),
                 draft.observationID.map(Binding.text) ?? .null, .text(lease.generation.uuidString), .data(bytes)])

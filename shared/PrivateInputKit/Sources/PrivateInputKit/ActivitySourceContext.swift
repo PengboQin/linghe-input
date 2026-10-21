@@ -35,3 +35,4 @@ public struct ActivitySourceContext: Equatable {
         return text
     }
 }
+

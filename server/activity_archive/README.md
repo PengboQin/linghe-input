@@ -176,6 +176,22 @@ not an empty-success result; rebuild a permission-current snapshot. Snapshot rea
 pages retain a fixed ingest watermark, while privacy-deleted content disappears
 immediately even within an old snapshot.
 
+The offline `admin restore` also replaces `metadata.cursor_key` with a fresh 32-byte
+key after successful ledger replay. This is a **database-wide source incarnation**:
+all pre-restore query/change cursors fail authentication, including after replacement
+history reaches the old watermark. Downstream exporters that include this metadata
+in their source identity must report source-changed and require reviewed recovery;
+they must not relabel existing history or silently reset their cursor. Ordinary
+restart, backup and tenant erasure do not rotate the key. No new schema field is
+required. Restoring a whole multi-tenant database invalidates every tenant's cursors
+but never changes event group/device/installation IDs or a tenant's erasure scope.
+
+As a second guard, authenticated cursors whose position (or fixed query watermark)
+exceeds the current tenant watermark return HTTP409 `cursor_source_rewound`, never
+an empty success. This guard alone cannot detect replacement history that already
+caught up. Manually copying an old database and bypassing `admin restore` is not a
+supported recovery procedure and is not claimed to be detected in every case.
+
 Deletion metadata is an additive migration: `erasure_reasons(group_id,event_id,reason)`
 and `erasure_revision_links(group_id,base_event_id,revision_event_id)` leave the existing
 six-column tombstone/change tables unchanged. Legacy tombstones/ledger entries have

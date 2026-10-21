@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse,subprocess,json,zipfile,hashlib,shutil,re,os
 r=Path(__file__).resolve().parents[1]
+subprocess.run([os.sys.executable, str(r/'tools/check_shared_core.py')], check=True)
 p=argparse.ArgumentParser(description='Build a local unsigned Windows preview, without installation or publishing.');p.add_argument('--toolchain',type=Path,required=True);p.add_argument('--cmake',type=Path,required=True);p.add_argument('--version',default='0.4.4-win1');p.add_argument('--no-zip',action='store_true',help='Prepare payload without a duplicate zip before offline EXE packaging');a=p.parse_args()
 if not re.fullmatch(r'0\.\d{1,3}\.\d{1,3}-win[1-9]\d{0,2}',a.version):p.error('Expected a version such as 0.2.3-win1')
 version=a.version.split('-win')[0]

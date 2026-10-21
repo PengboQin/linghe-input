@@ -23,6 +23,8 @@
 #include <functional>
 #include <string>
 #include <optional>
+#include "ShiftTapMode.h"
+#include "../activity/Json.h"
 using Microsoft::WRL::ComPtr;
 HINSTANCE g_instance=nullptr;
 std::atomic<long> g_objects{0},g_serverLocks{0};
@@ -71,6 +73,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   ComPtr<ITfContext> compositionContext,pendingContext;ComPtr<ITfComposition> composition;
   TfClientId client=PrivateInputClientNull;PI_Session session=0;
   bool secure=false,english=false,privateSchema=false,degraded=false,finishPending=false,keySinkAdvised=false;
+  private_input::ShiftTapMode shiftTap;
   std::shared_ptr<const CachedDesktopPreferences>desktopCache=std::make_shared<CachedDesktopPreferences>();
   unsigned ownEndDepth=0;std::string contextBefore,contextAfter;std::filesystem::path publicContextPath;
   private_input::activity::CaptureEmitter archiveEmitter;
@@ -119,7 +122,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   IUnknown *identity(){return static_cast<ITfTextInputProcessorEx*>(this);}
   bool composing()const{return !englishInput.empty()||(session&&*pi_preedit(session));}
   std::wstring markedText()const{return english?wide(englishInput.c_str()):wide(pi_preedit(session));}
-  bool modeKey(WPARAM key)const{return key==VK_SPACE&&GetKeyState(VK_CONTROL)<0&&GetKeyState(VK_SHIFT)<0&&GetKeyState(VK_MENU)>=0;}
+  bool modeKey(WPARAM key)const{return (key==VK_SHIFT&&shiftTap.down&&!shiftTap.used)||(key==VK_SPACE&&GetKeyState(VK_CONTROL)<0&&GetKeyState(VK_SHIFT)<0&&GetKeyState(VK_MENU)>=0);}
   // Literal keys never block typing: they end the composition with the readable
   // raw spelling and are then handled by the host exactly as without this IME.
   std::wstring literalSymbol(WPARAM key)const{if(key<VK_SPACE||key>VK_OEM_102)return {};BYTE state[256]{};if(!GetKeyboardState(state))return {};wchar_t text[8]{};auto result=ToUnicodeEx(UINT(key),MapVirtualKeyW(UINT(key),MAPVK_VK_TO_VSC),state,text,8,4,GetKeyboardLayout(0));return result==1?std::wstring(text,1):std::wstring{};}
@@ -294,6 +297,16 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     // Let the host handle literals and navigation once that work has finished.
     if(!composing()){auto cached=std::atomic_load(&desktopCache);inputPreferences=cached->input;panel.setTheme(inputPreferences.theme);navigation.configure(cached->layout.collapsed,cached->layout.columns,cached->layout.rows);}
     if(!accepts(ctx,key))return S_OK;
+    // Return explicitly commits the typed spelling, never the highlighted
+    // completion. Space and digits remain candidate-selection actions.
+    if(key==VK_RETURN&&composing()){
+      const std::string raw=pi_raw_input(session),prefix=pi_selected_prefix(session);
+      const auto start=pi_unselected_input_start(session);
+      const auto typed=english?englishInput:(prefix.empty()?raw:prefix+(start<=raw.size()?raw.substr(start):raw));
+      HRESULT hr=setOwnText(ctx,cookie,wide(typed.c_str()),true);
+      if(SUCCEEDED(hr)){pi_clear(session);englishInput.clear();++revision;panel.hide();*eaten=true;}
+      return hr;
+    }
     if(!composing()&&pairKey(key)){auto plan=private_input::symbolPlan(literalSymbol(key),inputPreferences.pairSymbols,inputPreferences.caretInside);auto hr=setOwnText(ctx,cookie,plan.text,true);if(FAILED(hr))return hr;if(plan.caretBack){TF_SELECTION selected{};ULONG count=0;if(SUCCEEDED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))&&count==1&&selected.range){ComPtr<ITfRange>caret;caret.Attach(selected.range);LONG moved=0;if(SUCCEEDED(caret->ShiftStart(cookie,-plan.caretBack,&moved,nullptr))&&moved== -plan.caretBack&&SUCCEEDED(caret->Collapse(cookie,TF_ANCHOR_START))){TF_SELECTION inside{caret.Get(),{TF_AE_NONE,FALSE}};ctx->SetSelection(cookie,1,&inside);}}}*eaten=true;return S_OK;}
     if(!composing()&&printable(key)&&!(key>='A'&&key<='Z')){if(scope==FieldScope::normal&&focusedContext(ctx)){auto text=literalSymbol(key);auto hr=setOwnText(ctx,cookie,text,true);if(SUCCEEDED(hr))*eaten=true;return hr;}return S_OK;}
     if(composing()&&endingLiteral(key)){
@@ -355,6 +368,19 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     else switch(key){case VK_BACK:code=0xff08;break;case VK_RETURN:code=0xff0d;break;case VK_ESCAPE:code=0xff1b;break;case VK_LEFT:code=0xff51;break;case VK_RIGHT:code=0xff53;break;case VK_UP:code=0xff52;break;case VK_DOWN:code=0xff54;break;case VK_PRIOR:code=0xff55;break;case VK_NEXT:code=0xff56;break;}
     *eaten=pi_process_key(session,code,0)!=0;++revision;return flushResult(ctx,cookie);
   }
+  HRESULT handleArchivedKey(ITfContext*ctx,TfEditCookie cookie,WPARAM key,bool*handled){
+    const bool diagnostic=!secure&&scopeOf(ctx,cookie)==FieldScope::normal&&archiveEmitter.diagnosticsEnabled();
+    const std::string before=diagnostic?(english?englishInput:std::string(pi_raw_input(session))):"";
+    const auto result=handleKey(ctx,cookie,key,handled);
+    if(diagnostic&&*handled&&scopeOf(ctx,cookie)==FieldScope::normal){try{
+      using private_input::activity::Json;
+      const auto after=english?englishInput:std::string(pi_raw_input(session));
+      auto payload=Json::object({{"action","key"},{"key",std::to_string(key)},{"raw_before",before},{"raw_after",after},{"committed",false}}).dump();
+      if(payload.size()<=16384){ComPtr<ITfContextView>view;HWND host=nullptr;if(SUCCEEDED(ctx->GetActiveView(&view)))view->GetWnd(&host);
+        archiveEmitter.emit(wide(payload.c_str()),host,archiveSession,archiveEditor,true,english?2:1,archiveFieldType(ctx,cookie),false,true);}
+    }catch(...) {}}
+    return result;
+  }
   void choose(size_t index,unsigned long long version){
     if(clipboardVisible){auto ctx=clipboardContext;if(!ctx||index!=0||version!=revision)return;HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,[this,ctx,version](TfEditCookie cookie){return pasteClipboardCandidate(ctx.Get(),cookie,version);},&result);return;}
     auto ctx=compositionContext;if(!focusedContext(ctx.Get())){panel.hide();return;}if(!ctx||version!=revision||index>=candidates.rows.size())return;HRESULT result=E_FAIL;
@@ -401,15 +427,27 @@ public:
     if(ownEndDepth)return S_OK;
     if(composition.Get()==ended){contextBefore.clear();contextAfter.clear();composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();if(session)pi_clear(session);englishInput.clear();panel.hide();++revision;}return S_OK;}
   STDMETHODIMP OnEndEdit(ITfContext*,TfEditCookie,ITfEditRecord*)override{if(clipboardVisible)retireClipboard();return S_OK;}
-  STDMETHODIMP OnSetFocus(BOOL foreground)override{if(!foreground){retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
-  STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(!eaten)return E_POINTER;if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}*eaten=accepts(ctx,key);return S_OK;}
-  STDMETHODIMP OnTestKeyUp(ITfContext *,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();if(!eaten)return E_POINTER;*eaten=FALSE;return S_OK;}
+  STDMETHODIMP OnSetFocus(BOOL foreground)override{if(!foreground){shiftTap.reset();retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
+  STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(!eaten)return E_POINTER;if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
+  STDMETHODIMP OnTestKeyUp(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();if(!eaten)return E_POINTER;const bool toggle=key==VK_SHIFT&&shiftTap.ready(reinterpret_cast<uintptr_t>(ctx))&&!secure;if(key==VK_SHIFT&&!toggle)shiftTap.reset();*eaten=toggle;return S_OK;}
   STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{
-    if(!eaten)return E_POINTER;*eaten=FALSE;if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld){clipboardPolicy.hideForDelete(clipboardOffer.sequence);retireClipboard();*eaten=TRUE;return S_OK;}if(key!=VK_DELETE&&key!=VK_BACK){retireClipboard(GetClipboardSequenceNumber());}if(!accepts(ctx,key))return S_OK;ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
-    HRESULT hr=request(ctx,TF_ES_SYNC|TF_ES_READWRITE,[this,retained,key,&handled](TfEditCookie cookie){return handleKey(retained.Get(),cookie,key,&handled);},&result);
+    if(!eaten)return E_POINTER;*eaten=FALSE;if(key==VK_SHIFT){shiftTap.press(reinterpret_cast<uintptr_t>(ctx),secure||GetKeyState(VK_CONTROL)<0||GetKeyState(VK_MENU)<0||GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0);return S_OK;}shiftTap.otherKey();if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld){clipboardPolicy.hideForDelete(clipboardOffer.sequence);retireClipboard();*eaten=TRUE;return S_OK;}if(key!=VK_DELETE&&key!=VK_BACK){retireClipboard(GetClipboardSequenceNumber());}if(!accepts(ctx,key))return S_OK;ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
+    HRESULT hr=request(ctx,TF_ES_SYNC|TF_ES_READWRITE,[this,retained,key,&handled](TfEditCookie cookie){return handleArchivedKey(retained.Get(),cookie,key,&handled);},&result);
     if(FAILED(hr)||FAILED(result)){degraded=true;*eaten=handled?TRUE:FALSE;return S_OK;}*eaten=handled?TRUE:FALSE;return S_OK;
   }
-  STDMETHODIMP OnKeyUp(ITfContext *,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();if(!eaten)return E_POINTER;*eaten=FALSE;return S_OK;}
+  STDMETHODIMP OnKeyUp(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{
+    if(!eaten)return E_POINTER;*eaten=FALSE;
+    if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();
+    if(key==VK_SHIFT){
+      const bool toggle=shiftTap.ready(reinterpret_cast<uintptr_t>(ctx))&&!secure&&session&&ctx&&!disabled(ctx);
+      if(toggle){ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
+        const auto hr=request(ctx,TF_ES_SYNC|TF_ES_READWRITE,[this,retained,&handled](TfEditCookie cookie){return handleArchivedKey(retained.Get(),cookie,VK_SHIFT,&handled);},&result);
+        if(SUCCEEDED(hr)&&SUCCEEDED(result))*eaten=handled;
+      }
+      shiftTap.reset();
+    }
+    return S_OK;
+  }
   STDMETHODIMP OnPreservedKey(ITfContext *,REFGUID,BOOL *eaten)override{if(!eaten)return E_POINTER;*eaten=FALSE;return S_OK;}
 };
 }

@@ -2,6 +2,46 @@ import AppKit
 import CryptoKit
 import PrivateInputKit
 
+// BEGIN MacHiddenCheckpointGate -- metadata only, independently host-testable.
+// No clients, text, native sessions or files are retained by this policy.
+struct MacHiddenCheckpointGate {
+    struct Ticket:Equatable {let generation:UInt64,dirty:UInt64}
+    private(set) var activeOwners=Set<UUID>()
+    private(set) var generation:UInt64=0
+    private(set) var dirty:UInt64=1 // A process restart must inspect persisted native learning once.
+    private(set) var completedDirty:UInt64=0
+    private(set) var externalFingerprint:String?
+    private(set) var hiddenSince:TimeInterval?
+    private(set) var nativeRunning=false
+    let cooldown:TimeInterval
+    init(cooldown:TimeInterval=15.0) {self.cooldown=max(0,cooldown)}
+    mutating func activate(_ owner:UUID) {activeOwners.insert(owner);generation &+= 1;hiddenSince=nil}
+    mutating func deactivate(_ owner:UUID,now:TimeInterval) {
+        activeOwners.remove(owner);generation &+= 1
+        if activeOwners.isEmpty {hiddenSince=now}
+    }
+    mutating func changed() {dirty &+= 1}
+    var ticket:Ticket {Ticket(generation:generation,dirty:dirty)}
+    func current(_ token:Ticket)->Bool {activeOwners.isEmpty && generation==token.generation}
+    func canPrepare(_ token:Ticket,now:TimeInterval,nativeSessions:Int)->Bool {
+        guard current(token),!nativeRunning,nativeSessions==0,let hiddenSince else{return false}
+        return now>=hiddenSince && now-hiddenSince>=cooldown
+    }
+    func needsCheckpoint(_ token:Ticket,fingerprint:String?,pending:Bool)->Bool {
+        pending || fingerprint==nil || dirty>completedDirty || externalFingerprint != fingerprint
+    }
+    mutating func beginNative(_ token:Ticket,nativeSessions:Int)->Bool {
+        guard current(token),!nativeRunning,nativeSessions==1 else{return false}
+        nativeRunning=true;return true
+    }
+    mutating func endedNative() {nativeRunning=false}
+    mutating func completed(_ token:Ticket,fingerprint:String?) {
+        guard current(token),!nativeRunning,let fingerprint else{return}
+        completedDirty=max(completedDirty,token.dirty);externalFingerprint=fingerprint
+    }
+}
+// END MacHiddenCheckpointGate
+
 // Bounded, read-only host evidence. Raw nearby text never leaves capture().
 struct MacInputAnchor:Equatable {
     let document:String,position:Int,prefix:String,suffix:String,marked:Bool
@@ -273,6 +313,14 @@ final class MacInputSession {
             code = Int32(scalar.value)
         }
         let previous = engine.preedit
+        if code == 0xff0d, !previous.isEmpty, !english {
+            // Physical Return commits typed Latin spelling, preserving an
+            // already selected Chinese prefix. Space still selects a word.
+            forgetCorrection();navigationLocked=true;rankWork?.cancel();ranker?.cancel()
+            let typed=engine.takePendingInput()
+            candidateOffset=0;expanded=false;refreshRows();deliver(typed,client:client)
+            return true
+        }
         if ownCommit != nil {
             if validateCorrection(client:client),var c=ownCommit {
                 if code==0xff08,previous.isEmpty,!c.remaining.isEmpty,!c.retyping,
