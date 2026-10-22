@@ -80,6 +80,14 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
   bool profileBefore=found==S_OK;
   bool ownDescription=!profileBefore||(description&&(std::wstring(description)==L"灵鹤输入法"||std::wstring(description)==L"私享输入"));if(description)SysFreeString(description);
   if(!ownDescription)return E_ACCESSDENIED;
+  // Preserve the calling original user's enabled choice before any mutation.
+  // Installer orchestration must bind this context to the captured user SID;
+  // an alternate administrator's preferences are not the installing user's.
+  BOOL profileEnabledBefore=TRUE;
+  if(profileBefore){
+    hr=profiles->IsEnabledLanguageProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,&profileEnabledBefore);
+    if(FAILED(hr))return hr;
+  }
   ComPtr<ITfCategoryMgr> categories;
   registrationStage=6;
   hr = CoCreateInstance(CLSID_TF_CategoryMgr, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&categories));
@@ -96,10 +104,35 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
   registrationStage=10;
   if(!categoryBefore){addedCategory=true;hr=categories->RegisterCategory(CLSID_PrivateInput,GUID_TFCAT_TIP_KEYBOARD,CLSID_PrivateInput);if(FAILED(hr)){rollback();return hr;}}
   registrationStage=11;
-  if(!profileBefore){ComPtr<ITfInputProcessorProfileMgr> mgr;hr=profiles.As(&mgr);const wchar_t name[]=L"灵鹤输入法";
-    if(SUCCEEDED(hr)){addedProfile=true;hr=mgr->RegisterProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,name,UINT(std::size(name)-1),path,length,0,nullptr,0,TRUE,0);}
+  {
+    // An owned existing profile also needs refreshed description/icon metadata.
+    // Skipping it forever left IconFile pointing at a historical version.
+    ComPtr<ITfInputProcessorProfileMgr> mgr;hr=profiles.As(&mgr);const wchar_t name[]=L"灵鹤输入法";
+    if(SUCCEEDED(hr)){
+      addedProfile=!profileBefore;
+      hr=mgr->RegisterProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,
+                             name,UINT(std::size(name)-1),path,length,0,nullptr,0,
+                             profileEnabledBefore,0);
+    }
+    // Only a newly created profile is removed by local rollback. The installer's
+    // full owned snapshot remains responsible for existing-metadata rollback.
     if(FAILED(hr)){rollback();return hr;}
   }
+  // Treat COM success as provisional until the profile is readable through
+  // the same public TSF APIs used by the system language configuration.
+  registrationStage=12;
+  BSTR verifiedDescription=nullptr;
+  hr=profiles->GetLanguageProfileDescription(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,&verifiedDescription);
+  const bool exactDescription=SUCCEEDED(hr)&&verifiedDescription&&std::wstring(verifiedDescription)==L"灵鹤输入法";
+  if(verifiedDescription)SysFreeString(verifiedDescription);
+  if(!exactDescription){rollback();return FAILED(hr)?hr:E_FAIL;}
+  BOOL verifiedEnabled=FALSE;
+  hr=profiles->IsEnabledLanguageProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,&verifiedEnabled);
+  if(FAILED(hr)||verifiedEnabled!=profileEnabledBefore){rollback();return FAILED(hr)?hr:E_FAIL;}
+  ComPtr<ITfInputProcessorProfileMgr> verifiedManager;hr=profiles.As(&verifiedManager);
+  TF_INPUTPROCESSORPROFILE verifiedProfile{};
+  if(SUCCEEDED(hr))hr=verifiedManager->GetProfile(TF_PROFILETYPE_INPUTPROCESSOR,Language,CLSID_PrivateInput,GUID_PrivateInputProfile,nullptr,&verifiedProfile);
+  if(FAILED(hr)||verifiedProfile.clsid!=CLSID_PrivateInput||verifiedProfile.guidProfile!=GUID_PrivateInputProfile||verifiedProfile.langid!=Language){rollback();return FAILED(hr)?hr:E_FAIL;}
   registrationStage=0;
   return S_OK; // User chooses this keyboard. Do not set the default input source.
 }

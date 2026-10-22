@@ -174,6 +174,25 @@ inline bool is_nine_code(const std::string &input) {
   if (input.empty()) return false;
   return std::all_of(input.begin(), input.end(), [](char c) { return c >= '2' && c <= '9'; });
 }
+/* Alphabetic typing preserves the supplied spelling before edit proposals.
+   Scores (context, personal frequency) only compare within one tier. Initials
+   and an unfinished final are valid unedited paths, not misspellings. Nine-key
+   digit codes deliberately have no alphabetic tier: their multi-path ranking
+   is a different policy. These numbers are ordering classes, not word ranks. */
+inline int alphabetic_candidate_priority(const std::string &input,
+                                        const std::string &reading,
+                                        bool corrected = false) {
+  const auto raw = detail::cleaned(canonical_syllable(input));
+  if (raw.empty() || !detail::latin_text(raw)) return 0;
+  if (corrected) return 1;
+  if (is_full_spelling(raw, reading)) return 3;
+  // Long vowel-bearing drafts are mostly full pinyin. An arbitrary sentence
+  // assembled from many initials is not stronger evidence than a real typo
+  // correction (linaxaing must not be locked to li na xi ai neng gou).
+  const bool mostly_full = raw.size() >= 7 && raw.find_first_of("aeiouv") != std::string::npos;
+  if (covers(raw, reading, mostly_full ? 1 : 1000000)) return 2;
+  return 0;
+}
 /* A native choice owns its consumption range. A same-text corrected choice
    must not replace a complete native reading or discard a valid unfinished
    next syllable (zheged -> 这个 + d). A complete extra vowel or transposed

@@ -21,6 +21,7 @@ struct CaptureFrame {CaptureHeader header;CaptureContextWire context;bool hasCon
 inline bool decodeCaptureFrame(const char*data,size_t size,CaptureFrame&frame){
  if(!data||size<sizeof(CaptureHeader)||size>262144)return false;CaptureHeader header;std::memcpy(&header,data,sizeof(header));if(header.magic!=CaptureMagic||header.utf16Count>120000)return false;
  const auto end=sizeof(header)+uint64_t(header.utf16Count)*2;CaptureFrame next;next.header=header;next.textBytes=size_t(header.utf16Count)*2;
- if(header.version==1){if(end!=size)return false;}else if(header.version==2&&(header.kind==1||header.kind==2||header.kind==8||header.kind==9)){if(end+sizeof(CaptureContextWire)!=size)return false;std::memcpy(&next.context,data+end,sizeof(next.context));if(!validCaptureContextWire(next.context))return false;next.hasContext=true;}else return false;frame=next;return true;
+ if(header.kind==11&&header.version!=2)return false;
+ if(header.version==1){if(end!=size)return false;}else if(header.version==2&&(header.kind==1||header.kind==2||header.kind==8||header.kind==9||header.kind==11)){if(end+sizeof(CaptureContextWire)!=size)return false;std::memcpy(&next.context,data+end,sizeof(next.context));if(!validCaptureContextWire(next.context))return false;next.hasContext=true;}else return false;frame=next;return true;
 }
 }

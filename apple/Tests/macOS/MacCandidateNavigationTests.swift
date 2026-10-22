@@ -37,6 +37,13 @@ final class MacCandidateNavigationTests:XCTestCase {
   let result=MacInputSession.mergingSemanticRanking(base:[exact,homophone,repair],ranked:[repair,homophone,exact])
   XCTAssertEqual(result.map(\.text),["同音","正常","改拼"])
  }
+ func testSemanticScoringCannotExchangeExactAndUnfinishedSpellingSlots() {
+  let exact=InputCandidate(text:"适合",comment:"shi he",index:0)
+  let incomplete=InputCandidate(text:"失衡",comment:"shi heng",index:1)
+  let repair=InputCandidate(text:"时候",comment:"shi hou",index:-50000,pinyinRepair:"shihou")
+  let result=MacInputSession.mergingSemanticRanking(base:[exact,incomplete,repair],ranked:[repair,incomplete,exact],input:"shihe")
+  XCTAssertEqual(result.map(\.index),[exact.index,incomplete.index,repair.index])
+ }
  func testMacBERTCancelledRequestNeverPublishes() throws {
   let model=MacSemanticRanker(directory:try XCTUnwrap(Bundle(for:Self.self).url(forResource:"semantic-mac",withExtension:nil)))
   let stale=expectation(description:"cancelled scoring");stale.isInverted=true

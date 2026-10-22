@@ -11,6 +11,9 @@ struct CandidateChoice {
  std::string reading;bool custom=false;int rankingClass=0;double rankingScore=0;
  CandidateChoice(std::string value={},std::size_t native=SIZE_MAX,std::size_t corrected=SIZE_MAX,std::string code={},bool personal=false):text(std::move(value)),absolute(native),repair(corrected),reading(std::move(code)),custom(personal){}
 };
+inline bool candidateRankingBefore(const CandidateChoice &a,const CandidateChoice &b){
+ return a.rankingClass==b.rankingClass ? a.rankingScore>b.rankingScore : a.rankingClass>b.rankingClass;
+}
 // 128 is a native API batch size, never a total candidate limit. Append-only
 // rows keep already visible repair and native selections at stable positions.
 struct CandidateStream {

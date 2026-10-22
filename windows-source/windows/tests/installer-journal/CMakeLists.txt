@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.16)
+project(LingheInstallerJournalCompile LANGUAGES CXX)
+if(NOT WIN32)
+ message(FATAL_ERROR "This draft needs an existing Windows SDK/toolchain; no fallback download")
+endif()
+add_library(installer_journal_compile OBJECT ../installer_journal_compile.cpp)
+target_compile_features(installer_journal_compile PRIVATE cxx_std_17)
+target_compile_definitions(installer_journal_compile PRIVATE UNICODE _UNICODE NOMINMAX _WIN32_WINNT=0x0A00)

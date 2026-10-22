@@ -4,6 +4,7 @@
 #include "../sync/DeviceIdentity.h"
 #include "ContentStore.h"
 #include "RecentProtocol.h"
+#include "RecentSyncPolicy.h"
 #include <optional>
 #include <memory>
 namespace private_input::activity {
@@ -11,6 +12,12 @@ struct ContentSyncObservation {size_t received=0;bool drained=false;std::vector<
 class GroupClient {
  std::filesystem::path root;GroupIdentity identity;Json state,personalReset;void completePersonalReset();
  Json recentState;bool recentLoaded=false,recentReady=false;uint64_t recentAnchorTime=0,recentAnchorTick=0,recentLastTick=0;
+ RecentSyncBudget recentSyncBudget,cloudSyncBudget;
+ Json cloudControlCache,cloudShadowCache;bool cloudCacheLoaded=false,cloudShadowLoaded=false;
+ std::optional<std::filesystem::file_time_type>cloudPermissionStamp;uint64_t cloudAuthorizationSerial=0;
+ std::vector<std::string>cloudProducerCache;
+ std::vector<std::string> cloudOwnProducers();Json cloudRankingView();
+ void invalidateCloudRank();std::string cloudScope()const;Json cloudRPC(uint8_t,const Json&);
  Id activeContentGroup()const{return connected()?group():identity.device;}
  void loadRecent();void saveRecent(const Json&);std::optional<uint64_t> recentDay();Json recentRPC(uint8_t,const Json&,const protocol::VerifiedMembership&);void syncRecent(const protocol::VerifiedMembership&,const Key&);
  std::unique_ptr<ContentStore> content;ContentStore& contentStore();protocol::VerifiedMembership verified()const;Key master()const;
@@ -29,6 +36,9 @@ public:
  bool clipboardLiveAuthorityMatches(const Json&);Json clipboardLiveAuthority(const std::string&scope,uint64_t issuedAt);Json clipboardLiveRevocation(const Json&certificate,uint64_t now);void sendClipboardCompatibility(const std::string&text,const Id&event,uint64_t expiresAt);
  void consentContent(bool learning,bool clipboard);void syncContent(std::function<void()> transportComplete={});void changeCandidate(const std::string&reading,const std::string&text,unsigned action);void recordContent(const std::string&reading,const std::string&text);void sendSharedText(const std::string&,bool automatic=false);void cancelAutomaticSharedText(){contentStore().cancelAutomaticText();}Json contentSnapshot();
  Json makeTicket();void cancelTicket();bool pollAdmissions();
+ // Explicit opt-in; shadow only until validated platform cutover. Other groups default off.
+ bool refreshCloudRanking();void authorizeCloudRanking(bool enabled);
+ void consentCloudLearning(bool enabled,bool configureGroup=false);void syncCloudShadow();Json cloudLearningStatus();
  Json archive(uint8_t op,const Json&body=Json::object());void setArchiveEndpoint(const std::string&server);
 };
 }

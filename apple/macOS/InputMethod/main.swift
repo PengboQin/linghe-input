@@ -29,6 +29,24 @@ if CommandLine.arguments.contains("--register-own-input-source") {
     exit(status == noErr ? 0 : 1)
 }
 
+// This explicit local deployment action reuses the existing user's verified
+// group/Keychain identity. It does not start IMK or replace the daily service.
+if CommandLine.arguments.contains("--migrate-cloud-learning") {
+    Task {
+        do {
+            let session = try DeviceSyncSession()
+            try await session.enableCloudLearningMigration()
+            _ = try await session.synchronize()
+            let info = try await session.info()
+            let proof: [String: Any] = ["enabled": info.cloudLearning, "phase": info.cloudPhase]
+            print(String(data: try JSONSerialization.data(withJSONObject: proof, options: [.sortedKeys]), encoding: .utf8)!)
+            exit(0)
+        } catch { fputs("Cloud migration failed; existing learning remains available\n", stderr); exit(3) }
+    }
+    RunLoop.main.run()
+    exit(3)
+}
+
 let application = NSApplication.shared
 application.setActivationPolicy(.accessory)
 let connection = Bundle.main.object(forInfoDictionaryKey: "InputMethodConnectionName") as? String ?? "PrivateInput_1_Connection"

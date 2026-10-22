@@ -1,12 +1,13 @@
 {
+  "characterPolicy": "mainland-simplified-v1",
   "format": "PI9LEX01",
   "words": 60000,
-  "codeCount": 79758,
-  "bytes": 957112,
-  "sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+  "codeCount": 79761,
+  "bytes": 957148,
+  "sha256": "a7f59e8e90ffc57f3ed9616634643884fd3bc116c1c7ae19ed337e49d8576353",
   "sourceFiles": {
-    "private_pinyin.dict.yaml": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
-    "essay.txt": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2"
+    "private_pinyin.dict.yaml": "5d22821f4b637ad831edd65e24f85d6253a3d1969731f1166a9da3ff611fd916",
+    "essay.txt": "380fa3ac9aad36b2b02971fdd77dc4fc3cd47d91b079a2facf06d101e4e7129a"
   },
   "license": "LGPL-3.0, derived from bundled pinned Rime dictionaries; original notices preserved"
 }

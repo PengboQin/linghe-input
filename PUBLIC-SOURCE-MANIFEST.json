@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1792574970,
-  "member_count": 869,
-  "uncompressed_bytes": 116918384,
+  "created_at_unix": 1792696663,
+  "member_count": 1051,
+  "uncompressed_bytes": 147508489,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -37,6 +37,11 @@
       "count": 1
     },
     {
+      "file": "docs/DIAGNOSTIC-CHAIN-PLAN-20261022.md",
+      "kind": "private_diagnostic_report_reference",
+      "count": 1
+    },
+    {
       "file": "server/deploy/README.md",
       "kind": "reserved_host_for_documentation_placeholder",
       "count": 1
@@ -57,6 +62,11 @@
       "count": 1
     },
     {
+      "file": "windows-source/core/include/mainland_candidate_policy.h",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
       "file": "windows-source/core/include/pinyin_repair.h",
       "kind": "canonical_core_forwarding_include",
       "count": 1
@@ -73,6 +83,11 @@
     },
     {
       "file": "windows-source/core/include/private_pinyin_syllables.h",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
+      "file": "windows-source/core/include/private_standard_characters.h",
       "kind": "canonical_core_forwarding_include",
       "count": 1
     },
@@ -112,6 +127,11 @@
       "count": 1
     },
     {
+      "file": "windows-source/core/tests/mainland_candidate_policy.cpp",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
       "file": "windows-source/core/tests/nine_filter_smoke.cpp",
       "kind": "canonical_core_forwarding_include",
       "count": 1
@@ -123,6 +143,11 @@
     },
     {
       "file": "windows-source/core/tests/nine_prefix_smoke.cpp",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
+      "file": "windows-source/core/tests/packaged_prebuilt_selection.cpp",
       "kind": "canonical_core_forwarding_include",
       "count": 1
     },
@@ -171,8 +196,8 @@
     },
     {
       "path": "android/app/src/main/AndroidManifest.xml",
-      "bytes": 1881,
-      "sha256": "698aee47504ee94966403c0e4b5814fb709c4f2e23af63d96f557120857ab7de"
+      "bytes": 1946,
+      "sha256": "220be05de9a202fa60757063edabd2e6d89379f7af7316946c1cc1fca3b995ad"
     },
     {
       "path": "android/app/src/main/cpp/CMakeLists.txt",
@@ -181,8 +206,8 @@
     },
     {
       "path": "android/app/src/main/cpp/jni.cpp",
-      "bytes": 14233,
-      "sha256": "348b3ca58a32e28cb361b0efe09a9e02c4c6fac22e860f2793a6b416e2b09608"
+      "bytes": 14659,
+      "sha256": "3f9c4ff146b78f686ec0fc30e3f114bdc7d70561886c315be11231f749982152"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -201,8 +226,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveManager.java",
-      "bytes": 29797,
-      "sha256": "c7207091a5660940e3448d9ee27b0fd1f68481d1faadf0cb75efc606dcde697e"
+      "bytes": 37203,
+      "sha256": "f60249c8483da8815fd94753edca4cee1c80e3a5677f027afb45e5b6264a7b9f"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveProvider.java",
@@ -236,8 +261,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardBridge.java",
-      "bytes": 10723,
-      "sha256": "cf70d1546386f9e03af12a32b0db5e7e0ca43362a395d44641a2dbb724befd74"
+      "bytes": 10884,
+      "sha256": "219d4d1b8a9fa1a3b0448f75170365bd762e3044b31424a986ade2e98c0fcebc"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardObservation.java",
@@ -251,13 +276,18 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutomaticSyncCadence.java",
-      "bytes": 792,
-      "sha256": "e73ab745115cdca3859dc81e3bb6a93fb16682d2ae95b81bb42d5fb3c5ae16a0"
+      "bytes": 793,
+      "sha256": "67ef566266aa2b702526de4bbfb728b408aff520cde2b16a2b09b81b77f49f91"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CandidateExpansionGesture.java",
+      "bytes": 1524,
+      "sha256": "2012663e937b287a2d658dd4fcd90993951b4dd4a95d908280aa23693fb50a06"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CandidateViews.java",
-      "bytes": 10613,
-      "sha256": "5a0034c5d1bb6f684191c93b4614ceccc680b56d3c74190e2373914571769d4e"
+      "bytes": 11612,
+      "sha256": "c3bdb4a9bb69d137848d9e178f5a3fd38bc2b28fd78329f0af4648a2c6305531"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ChoiceMemory.java",
@@ -276,8 +306,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardCandidateState.java",
-      "bytes": 2193,
-      "sha256": "13f514f20082472f899ad7c8092a2ff5f9d903c543477ce0f875fd4015753628"
+      "bytes": 2272,
+      "sha256": "519530aae6dc6a64859f0b64e154f52d9f80ed2b870c62b6e6d9a715d2a07937"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardLiveAuthority.java",
@@ -305,9 +335,49 @@
       "sha256": "e91aeb3158009218782178d7e088134715940f71d8df05f4904eb7be437fed3e"
     },
     {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardPresentationPolicy.java",
+      "bytes": 783,
+      "sha256": "0d923752fdb0ae71fbb930381e72c5f6126cc2bd175fde8e03b888fbaa39299d"
+    },
+    {
       "path": "android/app/src/main/java/live/linghe/privateinput/ClipboardRefreshPolicy.java",
       "bytes": 405,
       "sha256": "f0f2f44277a787d68a877d37df639f335208348a99385376329b4eab77ce8105"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningCanonical.java",
+      "bytes": 2326,
+      "sha256": "58cb8a3c3682d32598f43b430ad40898bde54044800941f71f3b01d3e024f1f6"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningDiagnostics.java",
+      "bytes": 15606,
+      "sha256": "95bbccba43fd3d1df686d21e289358a482ab950be422de5281dbcbeb37bc8ba3"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningPolicy.java",
+      "bytes": 2112,
+      "sha256": "0dfd77c996385ac8acfbf9338a58614b3cc60bfc15aa89d4aa039ea3c35cced1"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningRankSnapshot.java",
+      "bytes": 5897,
+      "sha256": "c4184b809040992cc2ed080c677c43d0ed2a9a9ea2d58e55c8cbc1b086002a70"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningState.java",
+      "bytes": 16960,
+      "sha256": "927ac4e18a16cecfa38170b265e8a80c472ef95448a9804189a6440175429ea0"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningStore.java",
+      "bytes": 7157,
+      "sha256": "e5202d58d5bdfe10bc74eb8eabc04664fcff498a26693ac80d8092af66832ee3"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningSync.java",
+      "bytes": 11842,
+      "sha256": "e018102e585f7df3446b3c2f1f650660ced78d481aed977c61b98f7956734b5e"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CoalescedWork.java",
@@ -320,19 +390,34 @@
       "sha256": "35a08e52ffba9ad2e45a9221b6c7e3027a215bc59f66121eceba83a7f03f3732"
     },
     {
+      "path": "android/app/src/main/java/live/linghe/privateinput/CompositionCancellation.java",
+      "bytes": 476,
+      "sha256": "23de809202e2550617ab9bf29190924dda08384a273e7fcf2af694d7b7c91d1a"
+    },
+    {
       "path": "android/app/src/main/java/live/linghe/privateinput/ContextWindow.java",
       "bytes": 1163,
       "sha256": "8b57d8d3d5394edb339a2c2bd01867208edb0b0ca41205777be6c9e89813e1ab"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/DeviceSyncActivity.java",
-      "bytes": 16162,
-      "sha256": "36dfee32c83da9811efcb5b107f7dd0a7e8f6a65748b150fd057387f9a8b291a"
+      "bytes": 15994,
+      "sha256": "ebe6e1dafbb5be57312a5831ed29e434da83786eb67efaf447b2e903956dab3a"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/EngineStartupState.java",
+      "bytes": 1762,
+      "sha256": "21e373c3ce52c31e56135648ab928e48a1939275e825fc2947f401c9ef80d72e"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/EnglishCompletion.java",
       "bytes": 2908,
       "sha256": "95fa80bf65d489c13ea1dca61496ad45d72264984e2dee845bfad649567023ce"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/EnglishKeyboardRows.java",
+      "bytes": 1921,
+      "sha256": "fc97396181efce51e9fd5c7a098d6d62bee4ee26fab36a71e083b678f5e4091b"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/EnglishSuggestions.java",
@@ -346,8 +431,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/GlyphAvailability.java",
-      "bytes": 717,
-      "sha256": "ea28a32fbcc909b18fd52ef07624a7cb1c7fe630cb548c773f3be99d77e12148"
+      "bytes": 1009,
+      "sha256": "1f650dca93728ef9b88b8d0b455e13ce6a94a6e368de9734392702508bef0568"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/InputActionDelivery.java",
@@ -355,9 +440,14 @@
       "sha256": "e67c9e68a47287c6787b218457a00863c6c7e0f61b6d72c3734fef3b5fac5eb6"
     },
     {
+      "path": "android/app/src/main/java/live/linghe/privateinput/InputDecisionEvidence.java",
+      "bytes": 7881,
+      "sha256": "b21cd2f89b801a84ae7e73ffa4e48109c78d83f66db92eb5888222fb2da23076"
+    },
+    {
       "path": "android/app/src/main/java/live/linghe/privateinput/InputQuality.java",
-      "bytes": 15739,
-      "sha256": "4c38d49bc052df4fce789f13a4b25527f25d1eb71f437722a79ca5344b265f3b"
+      "bytes": 17125,
+      "sha256": "17ad33558927d2e3b65725273b348f095427f3468770f65b4bafc5586948840d"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/InputTheme.java",
@@ -371,13 +461,28 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/KeyboardRenderGate.java",
-      "bytes": 542,
-      "sha256": "8361e80e8d22dbc729d7c2a81a5102b0197a590a36363668e2149a3614142d2a"
+      "bytes": 580,
+      "sha256": "f093f77b3512ed170b22baa2c9e06c95879ae3497ff1de01e60d4f7726b765d3"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningCoordinator.java",
       "bytes": 6117,
       "sha256": "05281d06fb8029b425c48b1583d8ac127ee3d378f0006146ce1cd3d7714ee254"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LearningDeltaDiagnostics.java",
+      "bytes": 9335,
+      "sha256": "a01597d35afff5c3ee140c81c60193881b9301068eebef5ac8e26bbb38403521"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LearningDeltaIndex.java",
+      "bytes": 3910,
+      "sha256": "51a5492355111a94828a33d398abebef0cd70cea24aa852d814aee768801f6ba"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LearningDeltaPublication.java",
+      "bytes": 6523,
+      "sha256": "a6da3feb8fd2c8bc8adb892c31e3fc1ebc0445be79ab226c13ac88e73525254b"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningMaintenanceState.java",
@@ -406,8 +511,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LingheInputService.java",
-      "bytes": 83386,
-      "sha256": "0307886aa6de78f51f2df06cc31319fa84599c5e8b37bc2a19ae47424da3687c"
+      "bytes": 95840,
+      "sha256": "6a35e210785d9de01f9032c70cd82c4bf574cfe2a1108b5ecc1df2020f27f8c9"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LosslessJson.java",
@@ -416,13 +521,13 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/MainActivity.java",
-      "bytes": 14556,
-      "sha256": "669fd999e865112bd770e63b59b55d63943b7e40aab33a7580b1037e9ceb468e"
+      "bytes": 14576,
+      "sha256": "93d2a60c7ae4ecad92b7671bd71e7da6b4b05b1586f4bd940d87cc43c8dabe96"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/NativeCore.java",
-      "bytes": 1857,
-      "sha256": "1c5a61902e9e59a35bd8400195319b5cf1048d9f332e95fa576059d1e30e38d6"
+      "bytes": 2084,
+      "sha256": "6e9663c8daa448a04c20ab0b31811574e65f60f840313fe3dd4b69a8cb356234"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/NineSpelling.java",
@@ -485,9 +590,19 @@
       "sha256": "fc3e03b104f504f1203c4056710c3e05c1b958433e0f55d23cf10856740f7c66"
     },
     {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentCompatibilityCadence.java",
+      "bytes": 928,
+      "sha256": "3c711951947b7434145d76aa2447b5c2ad14c60d864b98dddfcac4fbda0bd602"
+    },
+    {
       "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearning.java",
       "bytes": 13297,
       "sha256": "f1ea04586653889b99a31c033f58ff0d73fcb2532988ae2c0cb6895ce31a5e49"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningExchangeState.java",
+      "bytes": 2458,
+      "sha256": "1d62b22aace55e556189ef670d117045ea0dcd81856aef068937ed4b42e648ac"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningScope.java",
@@ -496,8 +611,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningSlot.java",
-      "bytes": 1455,
-      "sha256": "b82441600fb884c2e2f96b01b7281ed85439ac146a4b95dd200b39e24a412881"
+      "bytes": 1952,
+      "sha256": "6159eabfff13b29d4197788c240824133ebbcd376b154b199f8f04525f2ded0e"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningStore.java",
@@ -506,8 +621,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningSync.java",
-      "bytes": 10044,
-      "sha256": "ef2ebb1b3d76e248bfbc8f5b248fa28fc6e983e9fbfc35b166db4f1eb5aaf9f2"
+      "bytes": 15890,
+      "sha256": "d5d47d64ff8c76b8dc32cfd1f612eaf95f935173425d581eb96643cc96de7d61"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/RecentLearningWire.java",
@@ -523,6 +638,11 @@
       "path": "android/app/src/main/java/live/linghe/privateinput/RimeCheckpoint.java",
       "bytes": 6704,
       "sha256": "18a9ec974e0e7ce6f5fae6a7240654718a167f35d37ea16833eb0300c46e3b8e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/RimeResourceInstaller.java",
+      "bytes": 11887,
+      "sha256": "6edbc9e55b89d7e310a4bdec05966fb08aa565cf5e5d479754b33d469c9e75e8"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ScopedFileLocks.java",
@@ -556,8 +676,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/SyncClient.java",
-      "bytes": 50393,
-      "sha256": "42e589fff240b40efded348fedd84b251d86f7c27d181a2bb898429f390ae397"
+      "bytes": 52951,
+      "sha256": "517e27dda60158e868cbf40848756ef7314543aae9716ceab9f9261b4a64a248"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/SyncCrypto.java",
@@ -583,6 +703,16 @@
       "path": "android/app/src/main/java/live/linghe/privateinput/SyncTasks.java",
       "bytes": 166,
       "sha256": "71b496f19e7166f66a47f821da5cba107031af12d3d683d18ea901a5045ed259"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/SyncTransferMetrics.java",
+      "bytes": 1479,
+      "sha256": "d14a1f91bfcf4de7efd33e79d4cfb4308d16171f8c440215029e41d269d31c04"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/TapReleaseState.java",
+      "bytes": 533,
+      "sha256": "966518413aabeb372ae992c257c69e1fd0e6720922f27ffc9a3a72865b14c0a4"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/Ui.java",
@@ -616,8 +746,8 @@
     },
     {
       "path": "android/tests/AndroidManifest.xml",
-      "bytes": 3270,
-      "sha256": "eb0f8b5dce36e4f34e6379703aac65f1ab9de4c15323bda16776cbac7e89383e"
+      "bytes": 3499,
+      "sha256": "07c79f84d792671a5c6f9f7aa73b78967c2b1d83212d56ad0a9e4aa4597cfb18"
     },
     {
       "path": "android/tests/cli/CliAppleParity15.java",
@@ -640,6 +770,11 @@
       "sha256": "f9931e5e932cf635fce0547cdc12d38f23e4742a1eb287981ec41c6ed3687962"
     },
     {
+      "path": "android/tests/cli/CliDecisionContractCheck.java",
+      "bytes": 6511,
+      "sha256": "b66dc7c21ac9c81257430c7682d9e9d8e3ed41d8bfe996c6f741b1f19522e467"
+    },
+    {
       "path": "android/tests/cli/CliLanguageCheck.java",
       "bytes": 4462,
       "sha256": "fec99e3023dde535b9688cb392ce3142c3cf61f6eb69d3e630aa96cb6b085cf7"
@@ -648,6 +783,16 @@
       "path": "android/tests/cli/CliLearningCheck.java",
       "bytes": 7075,
       "sha256": "b071a238855b6c321d62e627b771276da1189854e2294bc127d13febb4bcb6ec"
+    },
+    {
+      "path": "android/tests/cli/CliLearningDeltaCleanup.java",
+      "bytes": 1440,
+      "sha256": "451aed43393a893f3cf9f682bb2f3bd36bf99835c84181d1e4c3973059d558a1"
+    },
+    {
+      "path": "android/tests/cli/CliLearningDeltaPublicationCheck.java",
+      "bytes": 9226,
+      "sha256": "d5e6497f87a114681d3cea8fb452e4e80796eb5d005cb634bd8e1d417676aad1"
     },
     {
       "path": "android/tests/cli/CliPersonalCheck.java",
@@ -660,6 +805,31 @@
       "sha256": "7c349efb88765ea18369bb2d8671c3e3f49faa75599c5020b9b751b91a102271"
     },
     {
+      "path": "android/tests/cli/CliRepeatedCheck.java",
+      "bytes": 4052,
+      "sha256": "3b6c843d34ff35e1635c50c6310c0b63e506592e5f334ffa48c52990932b7162"
+    },
+    {
+      "path": "android/tests/cli/CliRepeatedProbe.java",
+      "bytes": 1313,
+      "sha256": "97c3c682d3974b5b3cdb0ac37ebdece5bb175ee4a095f7a4477e32610c8a30b4"
+    },
+    {
+      "path": "android/tests/fixtures/clipboard-presentation-v1.json",
+      "bytes": 6261,
+      "sha256": "b4ed77f347fc515acaf87aff3f4c40d25e8441af5cef3efbd36183a50c2cd3e7"
+    },
+    {
+      "path": "android/tests/fixtures/cloud-component-v1.json",
+      "bytes": 6300,
+      "sha256": "0a8e071d3978437447b0bbb463c830448faa8cd991cd308b1d6805708d449d01"
+    },
+    {
+      "path": "android/tests/host/ClipboardPresentationPolicyTest.java",
+      "bytes": 4302,
+      "sha256": "6367c6b124981ff0eee2b6da23af0848313c362f1336f2de009bcea21614d36f"
+    },
+    {
       "path": "android/tests/host/InputAlgorithmsTest.java",
       "bytes": 1923,
       "sha256": "e75623ba7be097e8c2af14f5bcffde5943bd7b945fe8517db2468c338b643051"
@@ -670,9 +840,34 @@
       "sha256": "1c272f7f0353d50c891f2866b338972eddeb1ebeec2b58e16846cc1ce949d92e"
     },
     {
+      "path": "android/tests/host/LearningDeltaIndexTest.java",
+      "bytes": 4959,
+      "sha256": "09c5f22cf7cd8d71a94451b691d9765d4b49fc515e2d839578be8e32491a4ea8"
+    },
+    {
+      "path": "android/tests/host/MainlandCandidateAdmissionTest.java",
+      "bytes": 1726,
+      "sha256": "3145b73ad13b7905403df5708fd0fbc391093a325485ecb79ae833f3d93e69cd"
+    },
+    {
+      "path": "android/tests/host/MobileKeyboardLayoutTest.java",
+      "bytes": 2699,
+      "sha256": "04abcca79bed7dbf92e5e3517be4fc467ddac87c522e26d33e997404d44ae5da"
+    },
+    {
+      "path": "android/tests/host/RecentCompatibilityCadenceTest.java",
+      "bytes": 2310,
+      "sha256": "626e59435a92929eb309bdf767ec7f141ad96944e739ef286aeb70320fafee57"
+    },
+    {
       "path": "android/tests/host/RecentLearningCryptoVectorTest.java",
       "bytes": 3230,
       "sha256": "efb657cf543e2f8ea312d09a391ff66d57c878506157ab333693256e6d102f05"
+    },
+    {
+      "path": "android/tests/host/RecentLearningExchangeTest.java",
+      "bytes": 4086,
+      "sha256": "4b1a6fe89f5d2c370918784b6aa12eb5b37aaa9da450fd6d13115244ad577832"
     },
     {
       "path": "android/tests/host/RecentLearningOrderingTest.java",
@@ -688,6 +883,11 @@
       "path": "android/tests/host/RecentLearningSlotTest.java",
       "bytes": 1797,
       "sha256": "c3b49ebf38e129418ae81cb849e521231f6ea311c7ee311aefddecc7c74f848d"
+    },
+    {
+      "path": "android/tests/host/RimeResourceInstallerTest.java",
+      "bytes": 9054,
+      "sha256": "5d4376898b8d7a0f18180a09a9d071f7053e7547fb51108466e916170991b978"
     },
     {
       "path": "android/tests/host/SymbolGlyphParityTest.java",
@@ -761,8 +961,8 @@
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/LearningAcceptanceService.java",
-      "bytes": 3378,
-      "sha256": "d873dd601903a0cdf327ef1f7522c01612c3a58b48a0740b1975600d98431bc4"
+      "bytes": 4424,
+      "sha256": "95f4040a775c952b766f80968ba6c464fc5f0f657d381270a5affb3b01305677"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/LearningProof.java",
@@ -783,6 +983,11 @@
       "path": "android/tests/java/live/linghe/privateinput/SelectionCheck.java",
       "bytes": 12229,
       "sha256": "499f65ad8eea6be4f14d61a7fa71032e8ad263acdc148868974d738dc24fc17a"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/StartupLifecycleCheck.java",
+      "bytes": 5920,
+      "sha256": "07816a5131ebfb464430be5d33f2496b1305d6cd8f77deda9e530f057aa8d5e3"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/SyncAcceptanceActivity.java",
@@ -821,18 +1026,18 @@
     },
     {
       "path": "apple/project.yml",
-      "bytes": 12238,
-      "sha256": "2ed152a56e0041fbd71ba977d04e50f20fd57a026195f47110fcf36dd8376067"
+      "bytes": 12385,
+      "sha256": "33c66308ec4122b444d618e6987483785a21c1629ce873cab23de63a4596ee0c"
     },
     {
       "path": "apple/Shared/ActivityArchiveController.swift",
-      "bytes": 22257,
-      "sha256": "1014c278ce71146b74bbfa787f0c8833667d2c1b7c1bced1084fc4bf6efea258"
+      "bytes": 25916,
+      "sha256": "1afa7ce3072db701585d824a2a77ab187cb320c5b1dbb874f5814021919952e1"
     },
     {
       "path": "apple/Shared/ActivityArchiveView.swift",
-      "bytes": 18566,
-      "sha256": "f9c89789e6d860ece795934ddb6f96dea6a9ca37d42ad4b4cd516baed68b8c98"
+      "bytes": 18792,
+      "sha256": "4f257ea4a551cb8b9cd28fc0ea1c639c754bfe23bdd471124f900c2b8f8908c0"
     },
     {
       "path": "apple/Shared/AppleClipboardLiveStorage.swift",
@@ -840,9 +1045,19 @@
       "sha256": "d29766c47ce96dd3cf020897899f04271ebb841cbfaf4badf5d7d7ee2f0d805f"
     },
     {
+      "path": "apple/Shared/AppleCloudLearningBridge.swift",
+      "bytes": 8939,
+      "sha256": "27f17e966096ac362ef7b804637a719910dd43a9fec27837eabf860f12c6bbbe"
+    },
+    {
+      "path": "apple/Shared/AppleCloudMigrationSeed.swift",
+      "bytes": 3184,
+      "sha256": "bfb9ed962c5b5bfe9fa7cd6dbf6096605f1dc1f49fc16b64afa60916c3e76030"
+    },
+    {
       "path": "apple/Shared/AutomaticClipboardBridge.swift",
-      "bytes": 10986,
-      "sha256": "8e8ff67ac9901c34125e669913775360ed62929b8b82804f426d598c5209fb7c"
+      "bytes": 16856,
+      "sha256": "6e14a698adb54ac753800fe1ff7b68794df8d7055dbf362ec89b59cf2d4aee75"
     },
     {
       "path": "apple/Shared/Bridge.h",
@@ -851,18 +1066,18 @@
     },
     {
       "path": "apple/Shared/CandidateGlyphSupport.swift",
-      "bytes": 3619,
-      "sha256": "d443ed65d796581faba8cf335fcb3d35e773a4b54687eab8e165e1f9bb3f2e88"
+      "bytes": 3970,
+      "sha256": "8d26122870e3cb966481d729b7ab48d7c62e1ddb2e7056fe75fb20cb3424f468"
     },
     {
       "path": "apple/Shared/ClipboardCacheCoordinator.swift",
-      "bytes": 13142,
-      "sha256": "b915fe6939a5801ff875bbd5835dfdabfb784a7348afa9bdc1029f52ef34db3c"
+      "bytes": 22978,
+      "sha256": "3bbf1d3058f5c0411628866df784644461d68ed92f79ccf1ae7e6eaeeeecfe6b"
     },
     {
       "path": "apple/Shared/ClipboardLiveCoordinator.swift",
-      "bytes": 9028,
-      "sha256": "1c2a052afd730cf243f7bdb8de0f545dc31d2778917c68cad78dd9b330b718a2"
+      "bytes": 10574,
+      "sha256": "ac43617c291bb969852cb8739ee26d6d0bdb4347c00a217a3e4c626c60d7cc7f"
     },
     {
       "path": "apple/Shared/ClipboardReadPausePolicy.swift",
@@ -881,13 +1096,13 @@
     },
     {
       "path": "apple/Shared/DeviceSyncModel.swift",
-      "bytes": 12626,
-      "sha256": "dcd103a8f86abdc23a41efeb360e3bb235d4d8c5ec9e04d61e6ad795cff0f4bf"
+      "bytes": 13209,
+      "sha256": "fe279f29f4e7eb5d8ec12b43e160b569755a901c82610197b60541ad89a24522"
     },
     {
       "path": "apple/Shared/DeviceSyncSession.swift",
-      "bytes": 43831,
-      "sha256": "fd7667e30e318ebf1c02e4d8d23b0bb9cbb20c8515cc5819f7694ab380708f4d"
+      "bytes": 66490,
+      "sha256": "ee3a5927c3ddb58584626188c845d56b5284ab4ca67fa05e28c90bd8d59ad519"
     },
     {
       "path": "apple/Shared/InlineComposition.swift",
@@ -896,8 +1111,8 @@
     },
     {
       "path": "apple/Shared/InputSettingsView.swift",
-      "bytes": 14358,
-      "sha256": "c08811531eeca537f34db6f238a0a9d2adfe31327b00a6d17500ad3c0a63c5fa"
+      "bytes": 14325,
+      "sha256": "174849bf254d4b0b842924f43915106af8253f74a20195d18dcf2aac93ce9738"
     },
     {
       "path": "apple/Shared/InputTheme.swift",
@@ -915,9 +1130,14 @@
       "sha256": "437ad277b3d2b303b34e5bf1502594e4b82f9dcb9ddaa6d925b07b05dad516fb"
     },
     {
+      "path": "apple/Shared/KeyboardRuntimeDiagnostics.swift",
+      "bytes": 5150,
+      "sha256": "4c3ea1b21c5c032daec3d1fba77b7d936733bd65fc505326ab5b940d8231a807"
+    },
+    {
       "path": "apple/Shared/LearningCheckpointGate.swift",
-      "bytes": 1423,
-      "sha256": "94e885e86121e23628f4e936362a7e6fc535600fb6f0aa91a943a7ee50ba0ade"
+      "bytes": 2375,
+      "sha256": "163fb5bacedde622c159b0cbeb7eec41b26939d9ace22028b3367fcc172160a8"
     },
     {
       "path": "apple/Shared/LearningRefreshPreparation.swift",
@@ -926,18 +1146,18 @@
     },
     {
       "path": "apple/Shared/LocalLearningCoordinator.swift",
-      "bytes": 17072,
-      "sha256": "56a01f9bcbee32858b3f8da56dfc9aad77e29409eee2c81435d4af42b10d190f"
+      "bytes": 21639,
+      "sha256": "c8d7c9a32661e745686e8f9f65a7ab60e2e8ef87e28e65605b756634d9aabbb7"
     },
     {
       "path": "apple/Shared/NativeEngine.swift",
-      "bytes": 151898,
-      "sha256": "97b9719f331c39f7975fe47c1ad890c08165cd3945201321a948e8a02785978d"
+      "bytes": 159457,
+      "sha256": "697cc7fdce78c73a53fe1790b04c54e63cd4a77856d1aeaab40db79cc24b5176"
     },
     {
       "path": "apple/Shared/PersonalDataReset.swift",
-      "bytes": 5360,
-      "sha256": "d06e150d2ffac806e8a0ca7550dee9b8382cfb73c4812934a63a3ebf127fa43d"
+      "bytes": 5820,
+      "sha256": "4e311f3f5e5e537c2c9352af0df43583e40f32384a3b343d2d202d9b5541a811"
     },
     {
       "path": "apple/Shared/PersonalLexiconSettings.swift",
@@ -956,8 +1176,8 @@
     },
     {
       "path": "apple/Shared/SharedClipboardCandidateReader.swift",
-      "bytes": 1294,
-      "sha256": "445321ab9794a756a92a637b63249dadd304aa49e9afa17ef57c808bbaca202d"
+      "bytes": 2475,
+      "sha256": "103cb01c97251f5d3a97664be2f4d2ae0f08cf915e283ed3a1aaef15b59f862e"
     },
     {
       "path": "apple/Shared/SharedSnapshotProbe.swift",
@@ -1001,8 +1221,8 @@
     },
     {
       "path": "apple/Tests/iOSUnit/CandidateHighlightTests.swift",
-      "bytes": 8550,
-      "sha256": "1bf7be95d2eb0d89a881eaccb57075cbcc10cd77f494dc416a68f3530dfe40fe"
+      "bytes": 9265,
+      "sha256": "ab39f3c0826c9c35d735801c77eab3d68c9e05c5905bcf4c76f124b3022544ce"
     },
     {
       "path": "apple/Tests/iOSUnit/CandidatePresentationTests.swift",
@@ -1041,8 +1261,8 @@
     },
     {
       "path": "apple/Tests/iOSUnit/KeyboardHeightPreviewTests.swift",
-      "bytes": 2530,
-      "sha256": "05b59b6f68dba6c847c9147762291245435787a63b93fe9dc1ae9bfb468b6d10"
+      "bytes": 3198,
+      "sha256": "ce267f74482517cc9c851056ee360ee8b14e9bb718a4c5e3b741929e3eb3444d"
     },
     {
       "path": "apple/Tests/iOSUnit/KeyboardScrollSurfaceRoutingTests.swift",
@@ -1091,8 +1311,8 @@
     },
     {
       "path": "apple/Tests/macOS/MacCandidateNavigationTests.swift",
-      "bytes": 14995,
-      "sha256": "980c0aba2f8377c63a7657e4ded93c6c7e3b421c445918cc42cf17bc389b8c2d"
+      "bytes": 15523,
+      "sha256": "bc0e7ae2fa0d7b618bd77bba7ad62ef0a9999419bc3813cc6b6b245a654fc27f"
     },
     {
       "path": "apple/Tests/macOS/MacCandidateStableInteractionTests.swift",
@@ -1111,8 +1331,8 @@
     },
     {
       "path": "apple/Tests/macOS/MacInputSessionTests.swift",
-      "bytes": 150151,
-      "sha256": "e5ea4b6f0dcd780aaf9e7b2614d79eccdc3d95dd946b6af30b4170523d362dd5"
+      "bytes": 151827,
+      "sha256": "24e2f65c97d9b2b10b3a4efe83fc3a3804b3805a208ba0ec6acff012d516fa4a"
     },
     {
       "path": "apple/Tests/macOS/MacLongCommitTests.swift",
@@ -1161,13 +1381,13 @@
     },
     {
       "path": "apple/iOS/App/AppLegalView.swift",
-      "bytes": 2360,
-      "sha256": "c7ef6fd87cfd7c86a6a62e77e9e73c47fc07bbc4588c3bad93535092a549ba75"
+      "bytes": 2909,
+      "sha256": "df0ca4b032ebd685b64001495935b950f3328d072f53da34e288ae7b250cb699"
     },
     {
       "path": "apple/iOS/App/DeviceSyncView.swift",
-      "bytes": 9958,
-      "sha256": "f94715333da2566533b5876dbd1efadca28a620e15f7661387b8b059a446a81e"
+      "bytes": 10241,
+      "sha256": "89084831d0ca8b07dc05f5cec81b2a1233faa4d4904313f9a6cff6fa3a9e3f3b"
     },
     {
       "path": "apple/iOS/App/Info.plist",
@@ -1196,13 +1416,13 @@
     },
     {
       "path": "apple/iOS/App/PrivateInputApp.swift",
-      "bytes": 7419,
-      "sha256": "64b0654b47166a6047966a8e34639b958e375c2bae9e1405d0d8e2a208e38af4"
+      "bytes": 8228,
+      "sha256": "e9e4a3577fe54d2f7db15f096f0dde4bae156da24f37f0ac3bb32fded3125dc0"
     },
     {
       "path": "apple/iOS/App/SharedTextView.swift",
-      "bytes": 8639,
-      "sha256": "0497c294a1712c67cad67fc190062e4ae121ad59a9827f3834754ccecceaf91b"
+      "bytes": 3381,
+      "sha256": "f82621db6980cbf560bf62f6d08a596c4fbe44a3a53170e4822b9667a22de8e0"
     },
     {
       "path": "apple/iOS/App/ThirdPartyNotices.txt",
@@ -1226,8 +1446,8 @@
     },
     {
       "path": "apple/iOS/Keyboard/CandidateCell.swift",
-      "bytes": 6747,
-      "sha256": "e25d2207ee9f0812f516ba00b227ab3d602324c2a85c5f4ee6d4199545a4ae39"
+      "bytes": 7619,
+      "sha256": "eb79a99b5b1b455e89e3f82e5177163027fdf05b83c28506142d1ae0ca54ea26"
     },
     {
       "path": "apple/iOS/Keyboard/CandidateExpansionButton.swift",
@@ -1281,13 +1501,18 @@
     },
     {
       "path": "apple/iOS/Keyboard/KeyboardCellTouchButton.swift",
-      "bytes": 2876,
-      "sha256": "f88be5c4ec48135f8d8232fde3e844245d259aed113e75effd57df5074d167eb"
+      "bytes": 3313,
+      "sha256": "a3fc031071926c08358160f8214b7356c24d10b88bf1e8a895d2d6e94823dea5"
+    },
+    {
+      "path": "apple/iOS/Keyboard/KeyboardDecisionTrace.swift",
+      "bytes": 6727,
+      "sha256": "745554305e3c24eb2eb20aba0910256bd4e4988f9592da0b025194eb4cb16980"
     },
     {
       "path": "apple/iOS/Keyboard/KeyboardHeightAdjustmentView.swift",
-      "bytes": 7250,
-      "sha256": "ea4d337ef0d43f142f802ed22c85c3ddd3269e7c6b3f86bd640d52af5687b00f"
+      "bytes": 7779,
+      "sha256": "f7b1d0c3c4c4afa40421c5aca24ae20740f437fc060ce5468d073f0455ad8f70"
     },
     {
       "path": "apple/iOS/Keyboard/KeyboardRailView.swift",
@@ -1296,8 +1521,8 @@
     },
     {
       "path": "apple/iOS/Keyboard/KeyboardViewController.swift",
-      "bytes": 130130,
-      "sha256": "bf91c238add91051565d5c918fe2c33e48f86c68335ce0354622a81976686871"
+      "bytes": 134494,
+      "sha256": "d861ef1421d88713e837749d408299516ac2a6957fda719c4057b87814fa4892"
     },
     {
       "path": "apple/iOS/Keyboard/PrivacyInfo.xcprivacy",
@@ -1311,8 +1536,8 @@
     },
     {
       "path": "apple/iOS/Keyboard/StableCandidatePublication.swift",
-      "bytes": 4136,
-      "sha256": "79b4b3067ddaa42291035a66efdfceaed57fb764fe15de54ad2cb69ea11d6e51"
+      "bytes": 5216,
+      "sha256": "4dca1d63cf70b6c409045fbfdfb352bfe31ef8becec8ed7e09508a77809d3405"
     },
     {
       "path": "apple/iOS/Keyboard/SymbolCatalog.swift",
@@ -1326,8 +1551,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/DeviceSyncWindow.swift",
-      "bytes": 9141,
-      "sha256": "4fbec7e8e9f0def2266036fb590d5937e5d06de53f505e2591f3d3e1c744201c"
+      "bytes": 9647,
+      "sha256": "237b6dbc7380c2839c4b1970d983c90ce61cfba36d67ae6dd1903b330c1512b9"
     },
     {
       "path": "apple/macOS/InputMethod/IMKClientGeometry.h",
@@ -1346,8 +1571,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/InputController.swift",
-      "bytes": 29398,
-      "sha256": "06dfd8123daae625993e5163f10bdc199cef2747648c09e9a816aaf5f0b50b21"
+      "bytes": 25510,
+      "sha256": "8d2e5da6b39aa039fbb77c1e64d56c8a366fa951c1eb571660dd0f9640e4dcf0"
     },
     {
       "path": "apple/macOS/InputMethod/LingheCraneMenu.tiff",
@@ -1381,8 +1606,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/MacClipboardSuggestion.swift",
-      "bytes": 3650,
-      "sha256": "c699e3ef8193740abdddb00b15fd2f2921c866b028f5f12dac6b5dc5d8b0a6e1"
+      "bytes": 5083,
+      "sha256": "8e99770d0c456a340f083e0c81333aa5b000c7e704d6ed5bb7d8835106af1b13"
     },
     {
       "path": "apple/macOS/InputMethod/MacEnglishDictionary.swift",
@@ -1391,8 +1616,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/MacInputSession.swift",
-      "bytes": 26745,
-      "sha256": "05dba8cfb9f283a0e43b99be3ee29f3fed34a577855164756b67c84b798b59fe"
+      "bytes": 26816,
+      "sha256": "1d2ee8590b69c5ea113f26e9ce815f046546fba56786d2e7955b888203d74086"
     },
     {
       "path": "apple/macOS/InputMethod/MacSemanticRanker.swift",
@@ -1406,8 +1631,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/MacSharedTextView.swift",
-      "bytes": 6670,
-      "sha256": "d0ed8034e07a8a3696725bf117022b5d804ab7c3416a72a5a9ca020393730e1a"
+      "bytes": 2662,
+      "sha256": "92056e6b5c6209567c926af137b936f1fda26ebf7aa960d4a8ea561d1a4948f3"
     },
     {
       "path": "apple/macOS/InputMethod/MacSymbolInsertion.swift",
@@ -1436,13 +1661,18 @@
     },
     {
       "path": "apple/macOS/InputMethod/main.swift",
-      "bytes": 3711,
-      "sha256": "01ca6ec61b8458e689fd4f132cdd2530b517c197b7a17e50aa4d25299f79ef2a"
+      "bytes": 4557,
+      "sha256": "8db1174e28b45caab7595eb7c120ef6caf7c0c28c6fe886ea55a20e7767ce071"
     },
     {
       "path": "core/include/desktop_candidates.hpp",
       "bytes": 1222,
       "sha256": "c6bd08e45b7b57e50542991a3dd41d0eab6f5ec14116ff0814de50b260f7aa5f"
+    },
+    {
+      "path": "core/include/mainland_candidate_policy.h",
+      "bytes": 2346,
+      "sha256": "050d617ef603056d8fd844f90c3b4cc3754135e7284721bafd3dec87728fad65"
     },
     {
       "path": "core/include/pinyin_repair.h",
@@ -1451,18 +1681,23 @@
     },
     {
       "path": "core/include/pinyin_text.h",
-      "bytes": 8558,
-      "sha256": "803f4fb4a3e29afcd5287aa6f4b2f23867447c164da5e7da9cd8eb8f7b27534e"
+      "bytes": 9748,
+      "sha256": "3a13328518383e1687d0e0f3d7226e6e403241e3c0bd9b3301b518444401ceaa"
     },
     {
       "path": "core/include/private_input.h",
-      "bytes": 5513,
-      "sha256": "c02adb0810a6cc981eb187e9fa4dbac5b9154532df3783f0a2f3a5d397a864cd"
+      "bytes": 5645,
+      "sha256": "ff2e8556cef8602b6dd6f6566070b66f90f0ec15eb4cb3f370f39079ab96a984"
     },
     {
       "path": "core/include/private_pinyin_syllables.h",
       "bytes": 5023,
       "sha256": "edd79e9144170d11f42b0abe7b581469a4c916f278b857e0d909f0c55fd77774"
+    },
+    {
+      "path": "core/include/private_standard_characters.h",
+      "bytes": 100916,
+      "sha256": "0e491eafd0e35f1b576b0cff40cc4c4c2911842e0015106d36b36a20c6aa90d0"
     },
     {
       "path": "core/src/language_scoring.cpp",
@@ -1471,8 +1706,8 @@
     },
     {
       "path": "core/src/private_input.cpp",
-      "bytes": 51258,
-      "sha256": "855b0212d53ea4658542544829858774958823a400b5c0e592242a2c6b378197"
+      "bytes": 54136,
+      "sha256": "b3e0e32328e19d311046c27debc1d2b4c1f5e814e1712e1a0ece62034d0709d5"
     },
     {
       "path": "core/tests/candidate_management_smoke.cpp",
@@ -1500,9 +1735,14 @@
       "sha256": "fdc89d7edc13ef784e59da506dd011d8671d626fd4430f1b73acb8db2b11aecf"
     },
     {
+      "path": "core/tests/mainland_candidate_policy.cpp",
+      "bytes": 5871,
+      "sha256": "0a94cce952f6b5889f2826fd6f4331060f2badc3f7736d74c36b2a700b5c65b6"
+    },
+    {
       "path": "core/tests/nine_filter_smoke.cpp",
-      "bytes": 6105,
-      "sha256": "63b2b8357b69a7edc1375f080bca6fc6105b44e8c3ad9b174e5d4af90c951f51"
+      "bytes": 7635,
+      "sha256": "471349a796759f5ffa46ba447e8c4901cacbb82b2d35f73372c70a9f2fe5096c"
     },
     {
       "path": "core/tests/nine_key_smoke.cpp",
@@ -1515,14 +1755,19 @@
       "sha256": "7c4843ba0e7e964d8ca25b92d4eb781828825a67fcd3bf62393a4e3c5805ef78"
     },
     {
+      "path": "core/tests/packaged_prebuilt_selection.cpp",
+      "bytes": 4700,
+      "sha256": "6f0ec1d587e23971b7fcf8db6c168176e4034dc858eb39d0ead7872e99df784b"
+    },
+    {
       "path": "core/tests/pinyin_text_repair.cpp",
-      "bytes": 2870,
-      "sha256": "fa2bb61af8135736b3e1e12ea63229ccc5c686079836d49e62a3e2507c026c5f"
+      "bytes": 3875,
+      "sha256": "e1a7a4592dc5f8e4c2d39d47884e82823ea13208769b6c50badd2a96fea11138"
     },
     {
       "path": "core/tests/repair_smoke.cpp",
-      "bytes": 3157,
-      "sha256": "ca2fbada91cbdc792949c2df44ecb4d5f7a34dbe3b34966b40b3da56fa047b28"
+      "bytes": 4171,
+      "sha256": "bbd0839972965216d1be14d1687f86c0d5ce296bb0b412cd602d9721c8b0171f"
     },
     {
       "path": "core/tests/shared_core_contract.cpp",
@@ -1536,8 +1781,8 @@
     },
     {
       "path": "core/tests/windows_long_composition.cpp",
-      "bytes": 5581,
-      "sha256": "894cea986388ecbcb5904ab804caff2809b82b3933f22c813a5b4221cc962c92"
+      "bytes": 5651,
+      "sha256": "69c9b5a5fe94b21a4504bb2c5ac539a11b5f29925ab774c4610c1800d3786f4f"
     },
     {
       "path": "docs/CLIPBOARD-LIVE-WIRE-V1-20261020.md",
@@ -1545,9 +1790,24 @@
       "sha256": "c9aead4daeea2b37b6036566f92450ae300d3bebea943d7a03cd55512a33b5ff"
     },
     {
+      "path": "docs/CROSS-PLATFORM-ISSUES-20261022.md",
+      "bytes": 15932,
+      "sha256": "bb979b7ef616929c457c966bf90659f9a13d0c66f993d2f2cb35f71aad5e8280"
+    },
+    {
+      "path": "docs/DIAGNOSTIC-CHAIN-PLAN-20261022.md",
+      "bytes": 20397,
+      "sha256": "7bcf7b5772ddfec6654eade3a6064cc09bae3521d7dea37f7f6f0bc7f66bea8b"
+    },
+    {
+      "path": "docs/INPUT-DECISION-DIAGNOSTICS-V1-20261022.md",
+      "bytes": 7550,
+      "sha256": "d0ed6569c69754cd5b13128a4ff1be8084a8337fec23de4e4c469bb3d02e28d4"
+    },
+    {
       "path": "docs/INPUT-DIAGNOSTICS-V1-20261021.md",
-      "bytes": 4033,
-      "sha256": "f8233ea060ca97e4a631c806ef26b89231fe81da3a221f3a0595bd6f95bfb81c"
+      "bytes": 4336,
+      "sha256": "61a01cb3ffcf359321613b1609f22854af69b743d352e06bdb2cfeacefed7b92"
     },
     {
       "path": "docs/RECENCY-WIRE-V1-20261019.md",
@@ -1670,6 +1930,11 @@
       "sha256": "7f8a3b3709642656ec6bd6f9e685ef9466dd57519023bb0011fe3bf04709c612"
     },
     {
+      "path": "fixtures/input-quality/diagnostic-replay-20261022.json",
+      "bytes": 6060,
+      "sha256": "e2227986cbc27f813ab1cb4e6e470f820a808db6be3ef8455962058b1972b1f7"
+    },
+    {
       "path": "fixtures/input-quality/results-template-20261020.json",
       "bytes": 26585,
       "sha256": "5a5c2a4a0772a87c5ae64a8b67f07ee695231ae3c249b5bf71a4dc3db2956e4d"
@@ -1705,9 +1970,14 @@
       "sha256": "360ff17b979553a73f1ec1adebb56e9b64fb826c59c280f020c75922b01748fa"
     },
     {
+      "path": "resources/phrases/common-platforms.tsv",
+      "bytes": 1643,
+      "sha256": "fd4ee5f4e9db7a0634bda8ac72231c9669dad43a2e9f857afae6a3e92413c078"
+    },
+    {
       "path": "resources/rime/SOURCE.json",
-      "bytes": 14877,
-      "sha256": "32995822c707dc68817f293a49ed2cea71f0c9af06dacd988b790bee55b1f655"
+      "bytes": 13547,
+      "sha256": "14c2ef6bc50b30d4473ffefef68753785579f9e8dbf629d1a288f4f31caded2e"
     },
     {
       "path": "resources/rime/default.yaml",
@@ -1716,8 +1986,8 @@
     },
     {
       "path": "resources/rime/essay.txt",
-      "bytes": 5846161,
-      "sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2"
+      "bytes": 5729654,
+      "sha256": "380fa3ac9aad36b2b02971fdd77dc4fc3cd47d91b079a2facf06d101e4e7129a"
     },
     {
       "path": "resources/rime/private_nine.schema.yaml",
@@ -1736,8 +2006,8 @@
     },
     {
       "path": "resources/rime/private_pinyin.dict.yaml",
-      "bytes": 859873,
-      "sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93"
+      "bytes": 549682,
+      "sha256": "5d22821f4b637ad831edd65e24f85d6253a3d1969731f1166a9da3ff611fd916"
     },
     {
       "path": "resources/rime/private_pinyin.schema.yaml",
@@ -1758,6 +2028,86 @@
       "path": "resources/rime/private_zh_hans_compact.gram",
       "bytes": 40925228,
       "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e"
+    },
+    {
+      "path": "resources/rime/build/default.yaml",
+      "bytes": 333,
+      "sha256": "75b5c5bada91b85d282d6862b0e89dda78d51a85f2e0ed4abb1ef49499cb39d0"
+    },
+    {
+      "path": "resources/rime/build/private_nine.prism.bin",
+      "bytes": 53416,
+      "sha256": "a8bb04b75c7989e0e7dd39dd64cf704c387793116c3b340abd6fced186ae0b99"
+    },
+    {
+      "path": "resources/rime/build/private_nine.schema.yaml",
+      "bytes": 1575,
+      "sha256": "91a9db1a9f13745f65ed10c6fb72318cc1e1b73cc7c3f6488e8b3e605bfb62f0"
+    },
+    {
+      "path": "resources/rime/build/private_nine_initials.prism.bin",
+      "bytes": 66800,
+      "sha256": "1f020b9f61ea500a283515f106e6dfc02e70f3439c7c3af9cd016db068e9189a"
+    },
+    {
+      "path": "resources/rime/build/private_nine_initials.schema.yaml",
+      "bytes": 1625,
+      "sha256": "7d06c1351f71235178283bb7d5617cfdc5a7ded9a1cb07189867594a1785a42a"
+    },
+    {
+      "path": "resources/rime/build/private_nine_private.schema.yaml",
+      "bytes": 1584,
+      "sha256": "4e11be0f1eeb5a3fda327a2076b94ddffaee82aa6e026b70712019ff06e5d6f5"
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.prism.bin",
+      "bytes": 22128,
+      "sha256": "ab31558cfe18e97a2be6925cd6414ecb6bc08c4fdb03517dff7bd818ef465fa9"
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.reverse.bin",
+      "bytes": 59636,
+      "sha256": "21b3da8eeb0aef108f42904fbc59f41c2752bdbae8e5a69d7db8fbb08f56f477"
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.schema.yaml",
+      "bytes": 1196,
+      "sha256": "c59efb7c4996388a084df02f424c8c603feab7dab286ade287f55481badc689f"
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.table.bin",
+      "bytes": 14427060,
+      "sha256": "759f8e21d25b984f18e57f91ffc263ad6b1894d48fd503adf46adeb6966afa07"
+    },
+    {
+      "path": "resources/rime/build/private_pinyin_exact.prism.bin",
+      "bytes": 14424,
+      "sha256": "4c69166978301dfbdef4a52814a9328238857c36ce662d0040a868735253d6b7"
+    },
+    {
+      "path": "resources/rime/build/private_pinyin_exact.schema.yaml",
+      "bytes": 1020,
+      "sha256": "ee898551b1e712c23ab60f84f7245bb0bf31de96925c3202fdd4951f7862fd26"
+    },
+    {
+      "path": "resources/rime/build/private_pinyin_private.schema.yaml",
+      "bytes": 1055,
+      "sha256": "eee93ff50002f089a6ac13d0fb1f777db01badf697d9a7560c282873cec74e50"
+    },
+    {
+      "path": "resources/rime/charset/MIT-LICENSE.txt",
+      "bytes": 1069,
+      "sha256": "d65f906c8116c14921f841867969d6dc3f9dd7b99fca34071671ff5896a3fa94"
+    },
+    {
+      "path": "resources/rime/charset/SOURCE.json",
+      "bytes": 637,
+      "sha256": "b792afbb4a2cc6e886398aa9e03ff936862180cc96b9d485ec5fe5f76118b184"
+    },
+    {
+      "path": "resources/rime/charset/standard-8105.txt",
+      "bytes": 32615,
+      "sha256": "668f69e856c357157720ab5a6f8644dca8a253b439772f92cd762b186a53b421"
     },
     {
       "path": "resources/rime/licenses/GPL-3.0.txt",
@@ -1796,13 +2146,13 @@
     },
     {
       "path": "resources/semantic/CONTINUATION.json",
-      "bytes": 459,
-      "sha256": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa"
+      "bytes": 506,
+      "sha256": "e53053d29e46f3574bdfd15f035c3d91b47f30c19c922f4df0ea062921bad79f"
     },
     {
       "path": "resources/semantic/LEXICON.json",
-      "bytes": 474,
-      "sha256": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341"
+      "bytes": 521,
+      "sha256": "91d1dcaa12ec3190c3c1c20e9ccb3b0ee3512a0a0ee0459d47e1c15f72029b21"
     },
     {
       "path": "resources/semantic/MODEL-LICENSE.txt",
@@ -1821,13 +2171,13 @@
     },
     {
       "path": "resources/semantic/continuation.bin",
-      "bytes": 985151,
-      "sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4"
+      "bytes": 985215,
+      "sha256": "d95205316274ef1a4e0b36f1c0816ccab3e0f0c92d32ef05e7e9da39b440b6a7"
     },
     {
       "path": "resources/semantic/nine-lexicon.bin",
-      "bytes": 957112,
-      "sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281"
+      "bytes": 957148,
+      "sha256": "a7f59e8e90ffc57f3ed9616634643884fd3bc116c1c7ae19ed337e49d8576353"
     },
     {
       "path": "resources/semantic/pinyin-syllables.txt",
@@ -1866,8 +2216,8 @@
     },
     {
       "path": "scripts/build_android.py",
-      "bytes": 7686,
-      "sha256": "94ece3aad144a49b8dc542476b849656999563c2ec58b5cb29743d74ac09ac0c"
+      "bytes": 8630,
+      "sha256": "94cff922f608427c1f44d3af824a57a1f698798ca327cd74836f975757999215"
     },
     {
       "path": "scripts/build_android_rime.py",
@@ -1881,8 +2231,8 @@
     },
     {
       "path": "scripts/build_continuation_lexicon.py",
-      "bytes": 1776,
-      "sha256": "ec655f7f6788965b5b019524c40a7153c458ac04e5f9cfc81031657563599905"
+      "bytes": 1943,
+      "sha256": "abc3e5d867814d247733f5541e51b8b9769b7c73b83e535232fd59381ed40b3a"
     },
     {
       "path": "scripts/build_pinyin_syllables.py",
@@ -1896,8 +2246,8 @@
     },
     {
       "path": "scripts/build_semantic_lexicon.py",
-      "bytes": 2156,
-      "sha256": "0778e4df2347e739766746f44a92fca855c3f1b487593890afe759fbd14f7e5d"
+      "bytes": 2351,
+      "sha256": "9aa0d8eae6d781aaa03f730826f768ab83d73d6e8b5a91926db2a3518378454f"
     },
     {
       "path": "scripts/export_linghe_icons.swift",
@@ -1915,24 +2265,29 @@
       "sha256": "0650e8fa036e5e55e8064c5cebd71c318d4a819724a6f54a25af7e0b9c107452"
     },
     {
+      "path": "scripts/mainland_lexicon_policy.py",
+      "bytes": 2957,
+      "sha256": "475394f7c0582bc9dfde90c348bd2481eda2e6ee27d88c8854d35affa64d8610"
+    },
+    {
       "path": "scripts/make_input_source_icon.swift",
       "bytes": 534,
       "sha256": "b3b496da4e9bc7706e58a31425070b39f1a32690664f5ac76f8b45021996a384"
     },
     {
       "path": "scripts/package_android_incremental.py",
-      "bytes": 6420,
-      "sha256": "51204f1c77e914081e26f52a8b6ee0d517919e877f94dd21f60fd0856679b535"
+      "bytes": 8391,
+      "sha256": "98f321b43a423f4869ee2b46236421839b96f4121c342c9e658feeb7e26a9efc"
     },
     {
       "path": "scripts/prepare_dictionary.py",
-      "bytes": 7287,
-      "sha256": "bd64f9f908f0120329d7969c8dcb98b048a878936422a0046b62beb6c61070bc"
+      "bytes": 9233,
+      "sha256": "3949f0e1a1df9e5f4b777fb60948c93ca14efca6e2f3055c3f70f1b80cee630e"
     },
     {
       "path": "scripts/prepare_grammar.py",
-      "bytes": 1914,
-      "sha256": "0ba9d010af610604182836bd081ae3f54026be84e5d99b98e8656fd936bb480e"
+      "bytes": 2246,
+      "sha256": "619ab3eaa93e658fa183dc4fa9571ea9e2b1c0e897f03ffc35f521414d41bb9c"
     },
     {
       "path": "scripts/prepare_macbert_model.py",
@@ -1948,6 +2303,11 @@
       "path": "scripts/rebuild_dictionary.py",
       "bytes": 2763,
       "sha256": "9060e8f16f73c7bc41805cb61ffb8eb83e55b84c4f4993c34a4afdfe1cbc0e49"
+    },
+    {
+      "path": "scripts/replay_input_decisions.py",
+      "bytes": 3945,
+      "sha256": "67ae7ca1697a08f55a86d965870fb43adaf43b5a3ad138d9467eb9633725c856"
     },
     {
       "path": "scripts/test_candidate_management.sh",
@@ -1993,6 +2353,81 @@
       "path": "scripts/verify_shared_core.py",
       "bytes": 2314,
       "sha256": "9656a5d3a3a8a4dcd212ff048800a1685de472c82ea20cdb8f703873f0bee630"
+    },
+    {
+      "path": "scripts/tests/apple_cloud_permission_runtime.swift",
+      "bytes": 5709,
+      "sha256": "c8f2565525f74e3c7ea3d6404041d681a9d6da4dd7195320bb2fddb82e28b6f5"
+    },
+    {
+      "path": "scripts/tests/apple_cloud_seed_runtime.swift",
+      "bytes": 4453,
+      "sha256": "2f399996152691f7d138623f50d08914e79f5ec82dafee559f8628a806f41e33"
+    },
+    {
+      "path": "scripts/tests/apple_mainland_candidate_admission.swift",
+      "bytes": 1899,
+      "sha256": "9536cf89dc310000477634e5eea22cd6cab68c4d4dcb94a4f693eeee2bfcb420"
+    },
+    {
+      "path": "scripts/tests/clipboard_preview_cache.swift",
+      "bytes": 5164,
+      "sha256": "f8aeb985d18948d65300ab1aa3eb1c6b2faf7f2b6ccf1543fe1b711772f7d8cb"
+    },
+    {
+      "path": "scripts/tests/cloud_components_runtime.swift",
+      "bytes": 9960,
+      "sha256": "73b409a345026387bc39577d1504d177c1924794768b67b7514801d88a487c22"
+    },
+    {
+      "path": "scripts/tests/cloud_learning_runtime.swift",
+      "bytes": 15173,
+      "sha256": "c3b631ec25b792cbc46f5e1741cd64ac9d38c62411aa88aedca08562848a16d5"
+    },
+    {
+      "path": "scripts/tests/learning_maintenance_boundary.swift",
+      "bytes": 2520,
+      "sha256": "6f91e80b84a66278117f30f29887ec8561714b2cbb14382e12bc9e16515791ee"
+    },
+    {
+      "path": "scripts/tests/learning_transport_policy_runtime.swift",
+      "bytes": 1868,
+      "sha256": "d5a593206f8fbb1b730707c67f893dcf8633c0e21beebfe22bcbd5b5fe1f47f1"
+    },
+    {
+      "path": "scripts/tests/mobile_clipboard_presentation.swift",
+      "bytes": 2525,
+      "sha256": "c5b1b70947d2a8f7080d6f760f20be45eacb79937fbe863379a6c1c3bcf914ef"
+    },
+    {
+      "path": "scripts/tests/test_android_learning_delta.py",
+      "bytes": 6219,
+      "sha256": "332916ad635f9ec45a57bfdccd7a0d989f1a3f052604d4ed02697edfb1fb2246"
+    },
+    {
+      "path": "scripts/tests/test_android_mainland_admission.py",
+      "bytes": 4654,
+      "sha256": "adef61594a386616eaec9151ed811d40187e6ff5018de83bee46acc6e7045b78"
+    },
+    {
+      "path": "scripts/tests/test_android_recency_conditional.py",
+      "bytes": 3604,
+      "sha256": "73a3ef3df1cd07361761df530b9df8f3fa50078db70587787c7832a26de3c3c2"
+    },
+    {
+      "path": "scripts/tests/test_android_rime_installer.py",
+      "bytes": 3077,
+      "sha256": "06a0581a232a925a7ab6d49be1d75867981ffd1c71b64796819ede66890dde03"
+    },
+    {
+      "path": "scripts/tests/test_mainland_lexicon_policy.py",
+      "bytes": 4222,
+      "sha256": "a8389ac36ae039f4a6932057d78ce509eee2ffd2693adbb29ba6a7e0a30f2ddd"
+    },
+    {
+      "path": "scripts/tests/test_packaged_prebuilt_selection.py",
+      "bytes": 3503,
+      "sha256": "c16b2b4360888fe4967e518d79ad945356af6ac3b4f0b0448bdd2cd9d0b2f826"
     },
     {
       "path": "server/clipboard_live.py",
@@ -2041,8 +2476,8 @@
     },
     {
       "path": "server/recent_learning.py",
-      "bytes": 8984,
-      "sha256": "c98b6914fd3aac6ee2929cc7888b0fdde107f7731de6d2e182db9aea54b67177"
+      "bytes": 9986,
+      "sha256": "430fce567e289e7ddf91b45843ece0188f2ce96a4efbb4e07cfe2a0ca4a4d60c"
     },
     {
       "path": "server/requirements-production.txt",
@@ -2081,8 +2516,8 @@
     },
     {
       "path": "server/test_recent_learning.py",
-      "bytes": 9122,
-      "sha256": "5ff51cdccfc0c11f12437f5bc4efc6bd8afa3bff426039f22f96768bd3e8406d"
+      "bytes": 17067,
+      "sha256": "054c6c5943c59da29df4d0963eed393467e2de40564b1f6a69429d17e5a05a8c"
     },
     {
       "path": "server/test_relay.py",
@@ -2091,8 +2526,8 @@
     },
     {
       "path": "server/activity_archive/CONTRACT.md",
-      "bytes": 8967,
-      "sha256": "a1a66eeec6196f1d66cee41bb804d94e04e95742ead42af4b3fa575ddda29bad"
+      "bytes": 9577,
+      "sha256": "f51819e0273bc2327eb18ff57372487f13816720a197de27c85e1f57af8fd773"
     },
     {
       "path": "server/activity_archive/README.md",
@@ -2108,6 +2543,11 @@
       "path": "server/activity_archive/admin.py",
       "bytes": 3303,
       "sha256": "329c36ea912c828dc47f6908845aed2a009c22ee9e5c2beb3075451f1bd966e9"
+    },
+    {
+      "path": "server/activity_archive/diagnostics.py",
+      "bytes": 6869,
+      "sha256": "c724090e86321f84330fb47967f3dab01283842e46f98c14392cb7d73b6bf5f5"
     },
     {
       "path": "server/activity_archive/metadata.py",
@@ -2126,8 +2566,8 @@
     },
     {
       "path": "server/activity_archive/service.py",
-      "bytes": 56949,
-      "sha256": "73447d864b8a4e7b19bac3c834fc612d5d556cf9a6e801f866b51b946042886f"
+      "bytes": 57130,
+      "sha256": "863e4f739008f422cee558cf7effa8561f17f98fc8487ce08b0baeb6b056d78d"
     },
     {
       "path": "server/activity_archive/deploy/private-input-activity-expire.service",
@@ -2150,14 +2590,109 @@
       "sha256": "b96e99bdaf9f226ce83b9e475e175448c32a236e74442170ec9d7c9f9ab22485"
     },
     {
+      "path": "server/activity_archive/fixtures/decision-chain-v1.json",
+      "bytes": 68397,
+      "sha256": "f9f3c64361e1440c9640ad57918fadf71e61cff502d1055a6bdcf1675e95bf33"
+    },
+    {
       "path": "server/activity_archive/tests/test_archive.py",
       "bytes": 45480,
       "sha256": "05faaace53c6237abf385773326c226a96ffd17f6709c25886eb13dbee8bfade"
     },
     {
+      "path": "server/activity_archive/tests/test_diagnostics.py",
+      "bytes": 4126,
+      "sha256": "c3b42f9147983e232f8b86fb40eac0afca68a842a1d88e0246abf270bf6d4512"
+    },
+    {
       "path": "server/activity_archive/tests/test_group_recovery.py",
       "bytes": 11311,
       "sha256": "e12f25093a627da4637f6a4b2bb73d6ee46390fe98e40d9673b7b056157e148d"
+    },
+    {
+      "path": "server/cloud_learning/CONTRACT.md",
+      "bytes": 14039,
+      "sha256": "b4cbb9b5c0747b421210adf972bd1cba9d21e83728c9a8431d2223ac67a653d0"
+    },
+    {
+      "path": "server/cloud_learning/IMPLEMENTATION-RESULTS-20261021.md",
+      "bytes": 5028,
+      "sha256": "a7ff131f82abde65ecf28328c3524c9241440f4a43e6863190c37a05c3be9318"
+    },
+    {
+      "path": "server/cloud_learning/README.md",
+      "bytes": 4761,
+      "sha256": "242163e0834930c54139f9c3fe45a9a7dca02b601936dd2d19f5516550ea0b77"
+    },
+    {
+      "path": "server/cloud_learning/__init__.py",
+      "bytes": 82,
+      "sha256": "dc269f6f40c99d8440e8f0e871959c6a82a3b88cc2b6072ac4e7899ed434e5bc"
+    },
+    {
+      "path": "server/cloud_learning/authority.py",
+      "bytes": 2458,
+      "sha256": "eecf332892e80c8ac2e15dd3a8e4e06684ed59b9b8720eaa2890b0a2ba2e3146"
+    },
+    {
+      "path": "server/cloud_learning/components.py",
+      "bytes": 11791,
+      "sha256": "2590f86e696c3bd4f0beb5eeb29f20400c19be877c0ea85752b1a277a37309e0"
+    },
+    {
+      "path": "server/cloud_learning/generate_component_fixture.py",
+      "bytes": 3181,
+      "sha256": "123cbef36074132e0d25e3d1720b1fcd87af13bb95bf1e5094d2ea1d25bfe374"
+    },
+    {
+      "path": "server/cloud_learning/generate_fixture.py",
+      "bytes": 2739,
+      "sha256": "a725993f4d65cb3f9efffd7507f9a1903429b1e8a08e1dd210370a3433820a06"
+    },
+    {
+      "path": "server/cloud_learning/production.py",
+      "bytes": 990,
+      "sha256": "a1ca3891618c870f604194fa99b14da7fbbb4a02a5f133b3f92d4a724eff2915"
+    },
+    {
+      "path": "server/cloud_learning/service.py",
+      "bytes": 37706,
+      "sha256": "ea91f83803785ef42e7d7e90067ac8e519c1965f80e04744727661beb79ffcd2"
+    },
+    {
+      "path": "server/cloud_learning/worker.py",
+      "bytes": 1345,
+      "sha256": "175186f9bcbd21b0f9d226d858c966f528f7382a12e761e146ef422cdc3034e1"
+    },
+    {
+      "path": "server/cloud_learning/deploy/private-input-learning-worker.service",
+      "bytes": 687,
+      "sha256": "e44010f577ec499042feebed38cdaa54dce3141f861a7ee3b0bf2143633764b0"
+    },
+    {
+      "path": "server/cloud_learning/deploy/private-input-learning-worker.timer",
+      "bytes": 249,
+      "sha256": "f3e79224ccb17292ce7a45bbe01257274f63595b276fbdf80789755266f8785f"
+    },
+    {
+      "path": "server/cloud_learning/deploy/private-input-learning.service",
+      "bytes": 732,
+      "sha256": "79d2e9b7c46384ff5d43189251fe9a2c4e61bd020db28587c16035b7909bf0b6"
+    },
+    {
+      "path": "server/cloud_learning/fixtures/swift-status-request-v1.json",
+      "bytes": 413,
+      "sha256": "2e36214ab683d69ba5312d59fd3753f3a986c3a468fce2818cda64068172c424"
+    },
+    {
+      "path": "server/cloud_learning/tests/test_components.py",
+      "bytes": 13355,
+      "sha256": "914eb5b46b8e594475e0ec24bc8019ee9a4080af65739575ccc4e3848ec5cb80"
+    },
+    {
+      "path": "server/cloud_learning/tests/test_learning.py",
+      "bytes": 18270,
+      "sha256": "273524bdb0f5b5adc2ca7a01e1d5d43ffee10e414946368ba6a92dfbfbd80ebb"
     },
     {
       "path": "server/deploy/README.md",
@@ -2201,8 +2736,13 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityClient.swift",
-      "bytes": 17111,
-      "sha256": "c7386e3873c19e40cfc1a79b5ca9689fd37fd1e9fa2dd1d7ff9e8942fa40e691"
+      "bytes": 16477,
+      "sha256": "3f28dd51a975a4bd652d120d808ebee78d678fbd023f5499f7101b252492715d"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityInputDecisionDiagnostic.swift",
+      "bytes": 9514,
+      "sha256": "fb19b1076c31b4919d99a5c286969a394fd41805879b90098dc46f585ee0b060"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityInputDiagnostic.swift",
@@ -2211,8 +2751,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityModels.swift",
-      "bytes": 12996,
-      "sha256": "e7cef6d981e146942009d8abcbbe13e95d914d169e92d3e4c70be803b28d421b"
+      "bytes": 13213,
+      "sha256": "d51fa50ed05aa3f8ba1b6101004a1b66e6241c7679c703c7c619a152ba910c90"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityQueue.swift",
@@ -2226,13 +2766,13 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/AutomaticClipboardState.swift",
-      "bytes": 5148,
-      "sha256": "1940e5b60977f86a74d8dde1ef60f444f3a36267d01c681ade01aae0eeaa78aa"
+      "bytes": 6212,
+      "sha256": "edfb0d04dd586af0d9cfee8a4d16739a811fbb4cc7eb730c98e5bfb01f61b54a"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardLiveClient.swift",
-      "bytes": 4030,
-      "sha256": "2d2794312eb200ff34c4ee261f8b2a0fcf117eeb97c396abcfe8938cec931670"
+      "bytes": 3483,
+      "sha256": "cf0396c0e52db27174dcaa9d6bc617ebae89efe4c2a51f53fba87ab103747547"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardLiveProtocol.swift",
@@ -2243,6 +2783,41 @@
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardLiveStore.swift",
       "bytes": 13370,
       "sha256": "f44a0bb53badb87e4939a213e9a06cc60892d43005fa788396f551def803c3ca"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardOnceReceipts.swift",
+      "bytes": 5293,
+      "sha256": "df58da847a55143b153012182e41048f844dd4548467a3fddeaab476d3fc5029"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardPreviewCache.swift",
+      "bytes": 4695,
+      "sha256": "3c46ca44373a46758a6184848fe31a01444a9df2043516e120e9f518047de406"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningClient.swift",
+      "bytes": 14672,
+      "sha256": "65d66d66e839207f0acccebcb738c6cb2eef0f19161e3f49601f7c203dbe3cc7"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningComponents.swift",
+      "bytes": 16025,
+      "sha256": "f14555577c08dbb6d76d17b5a5322c101efdf80238d73cb723ef1f68310c5e7d"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningReplica.swift",
+      "bytes": 11613,
+      "sha256": "2bd12a43e9d89092e67e9de6c01f426e6b7f6ba0760588e34aeb8fa8f1f5e81d"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningReplicaStore.swift",
+      "bytes": 2866,
+      "sha256": "02c40c924ff600ed1ab2360d9ac7228453fc99f6cfbb9c621ac37dbe532acb08"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningSyncPass.swift",
+      "bytes": 2438,
+      "sha256": "c83b5e209467bc2f8a2d4d8b04334742cb36280e6779c1d1a461f9d41ec191c1"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ContinuationLexicon.swift",
@@ -2275,6 +2850,11 @@
       "sha256": "158003551129025af2cfa5270d62f04d70e9e3748116f4c1e0079aa8e99b2e6f"
     },
     {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningDeltaPublication.swift",
+      "bytes": 3957,
+      "sha256": "5579f7644e237d23a6f2161906502cd6fe0d7842217ddf9366576368954a63a9"
+    },
+    {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningImportJournal.swift",
       "bytes": 7865,
       "sha256": "916050f4f46bcb86f943cefd0a580671583d81851a05b6cdf26cbf88fd96a206"
@@ -2283,6 +2863,11 @@
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningPublication.swift",
       "bytes": 460,
       "sha256": "b72195dae39fc79cfba7ced663e171c8f479be987a499a498848a157e30e6674"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningTransportPolicy.swift",
+      "bytes": 931,
+      "sha256": "d966396d418a510341d8b1ef7734821076db1daec18f7a9085b9e0dade43cea7"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Membership.swift",
@@ -2316,8 +2901,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PersonalLexiconSync.swift",
-      "bytes": 4192,
-      "sha256": "b6d5a7b2ed66e3935730aff592056e4c67a8e7fefe60e9d653793f24ab929980"
+      "bytes": 4592,
+      "sha256": "6bfd5e515abd82fc48ebca4299b1689c30cc0baeca3f8b604aa894563d37c066"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PinyinCorrection.swift",
@@ -2326,8 +2911,13 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PinyinInputMatch.swift",
-      "bytes": 5651,
-      "sha256": "385a76f2aa38adc4e72ce8cd7388de71e9d92cea16d2781344be51c253920e97"
+      "bytes": 6486,
+      "sha256": "7bd5cb389ca0fb64c0b60e99d670c120c183bf62817bcab3cdece4d03748dae5"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/PrivateInputHTTP.swift",
+      "bytes": 3650,
+      "sha256": "79ad07699f93daaab975e89fd32760314a2ebf55719b77b16c119ace14f3e4ee"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/QuickPairing.swift",
@@ -2346,13 +2936,13 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RecentLearningSync.swift",
-      "bytes": 13461,
-      "sha256": "5db647c11f20e4c1f155089afc3b89ceb219fb8d9020163b2bd60d0b3a4bcd94"
+      "bytes": 13878,
+      "sha256": "221aabe0014b6be6819d30f528ba43da97bed2fc3e95527c2826afffcd6d47d7"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RelayClient.swift",
-      "bytes": 20352,
-      "sha256": "a2c825523608d769f87556ac1616da9bcc37b7977e52fb2c2a0bd551a096dee1"
+      "bytes": 19688,
+      "sha256": "9e8111d7b7c3752d13ceb65f860fb696bdb0fedf16a9d2b5f2120d24ad0aab73"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RelayRequest.swift",
@@ -2408,6 +2998,11 @@
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/ActivityArchiveTests.swift",
       "bytes": 23520,
       "sha256": "dd652f5bd13be343690c1a862369a3ecc05d91ee6da3d08249ca3a2b57de8d27"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/ActivityDecisionDiagnosticTests.swift",
+      "bytes": 5054,
+      "sha256": "2b394ad2171275bc0b6e89b4a948107f39261f4d56993cb2d6efef332a18b464"
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidChoiceParityTests.swift",
@@ -2470,6 +3065,11 @@
       "sha256": "a0ab177afa285d952357b696568a841f92fdc5dba9a9ac65be66b644d5013c48"
     },
     {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningDeltaPublicationTests.swift",
+      "bytes": 2753,
+      "sha256": "6ffc149848d9e55926f71446392e6625a965e9f0633b6037950f44ca4ff59c75"
+    },
+    {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningImportJournalTests.swift",
       "bytes": 10842,
       "sha256": "514a65e85e0b8f71fe4b45c45836836c40c6477d0416553548f5285ebb885f44"
@@ -2521,8 +3121,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PinyinInputMatchTests.swift",
-      "bytes": 1815,
-      "sha256": "dfa8be0d633870b60f1f1e05a7d0e0f830b0fc99d9b73acb2d379b0f55d1a00c"
+      "bytes": 2578,
+      "sha256": "a529ea64f36dd6569782820193c99791c0491808167709401711c35dcb1f92be"
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/QuickPairingTests.swift",
@@ -2593,6 +3193,21 @@
       "path": "shared/PrivateInputKit/Tools/PrivateInputVectors/main.swift",
       "bytes": 3808,
       "sha256": "9ec8ac3f89fee06f3d22844699b2b2fef60053b9ee08cc8959bae6fa4519ce9f"
+    },
+    {
+      "path": "shared/contracts/desktop-candidate-layout-v1.schema.json",
+      "bytes": 561,
+      "sha256": "c4c0d5811b464ec73868b976c1e0bd9f329cfc1fa9dccc7c2253a290188ef0c6"
+    },
+    {
+      "path": "shared/contracts/personal-lexicon-fixture-v1.json",
+      "bytes": 2518,
+      "sha256": "6368d42c03a50017109cfe39932841afae75c60ef958518d74933343ff13513b"
+    },
+    {
+      "path": "shared/contracts/symbol-catalog-v1.json",
+      "bytes": 12895,
+      "sha256": "b09a90ec78742769c6206c6809eae848d12447bcbec47ea87404ad00606102bf"
     },
     {
       "path": "vendor/bouncycastle/LICENSE.html",
@@ -2705,6 +3320,11 @@
       "sha256": "b136f760f3e15e806a2525ef5a11fc1b8128f23fb3266c6be6acc1d67f9c0e01"
     },
     {
+      "path": "windows-source/core/include/mainland_candidate_policy.h",
+      "bytes": 133,
+      "sha256": "1b215b00ecf5af4bf56cadd8944656134c803425490233d922f637b736acc977"
+    },
+    {
       "path": "windows-source/core/include/pinyin_repair.h",
       "bytes": 121,
       "sha256": "3065ac30013e3f8ba7c88c5fdb5cc6b48151db68c782f300882a1e5804e6d454"
@@ -2723,6 +3343,11 @@
       "path": "windows-source/core/include/private_pinyin_syllables.h",
       "bytes": 132,
       "sha256": "36ca224d24e5a1dbf3d404fe82fa5364745eb3347840ef636ad899b6bb29f47c"
+    },
+    {
+      "path": "windows-source/core/include/private_standard_characters.h",
+      "bytes": 135,
+      "sha256": "b20e5c7d6c19c86a21f6a49dbc1589b8e290bbda4c28ebeaff6bc4d01412bde3"
     },
     {
       "path": "windows-source/core/src/language_scoring.cpp",
@@ -2760,6 +3385,11 @@
       "sha256": "f98e916444d1d00565e701dd3b841615ca162f15aaeebf0ce1c30ffc6ba07314"
     },
     {
+      "path": "windows-source/core/tests/mainland_candidate_policy.cpp",
+      "bytes": 133,
+      "sha256": "2c98c55dd12db2334b34518700ba74c97528bc2497b7bab865041275c3b2e383"
+    },
+    {
       "path": "windows-source/core/tests/nine_filter_smoke.cpp",
       "bytes": 125,
       "sha256": "d5f7253c583101fcc468e49f9ff4cf9cebdeaf11bf73682c05e04e2af5e50408"
@@ -2773,6 +3403,11 @@
       "path": "windows-source/core/tests/nine_prefix_smoke.cpp",
       "bytes": 125,
       "sha256": "2909c597bd5ae6619164fb7fc824183404ba13f690555e71806326fd08890449"
+    },
+    {
+      "path": "windows-source/core/tests/packaged_prebuilt_selection.cpp",
+      "bytes": 135,
+      "sha256": "63caab029733894557f1e6afc14c39b428171336a1b08fd6903eec7bb11621e4"
     },
     {
       "path": "windows-source/core/tests/pinyin_text_repair.cpp",
@@ -2853,6 +3488,71 @@
       "path": "windows-source/resources/rime/private_zh_hans_compact.gram",
       "bytes": 40925228,
       "sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e"
+    },
+    {
+      "path": "windows-source/resources/rime/build/default.yaml",
+      "bytes": 333,
+      "sha256": "75b5c5bada91b85d282d6862b0e89dda78d51a85f2e0ed4abb1ef49499cb39d0"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_nine.prism.bin",
+      "bytes": 25208,
+      "sha256": "94457b39a0610ee9683e76ebf6bedd68283b6a5868dd7f153ff25a93809e7ffe"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_nine.schema.yaml",
+      "bytes": 1338,
+      "sha256": "60ac42ed2d2dc65550810caad67f9785cccce04d6102dc858ebfaa5555de8cc4"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_nine_initials.prism.bin",
+      "bytes": 38880,
+      "sha256": "f0c3eae7434f83d4e176eda2cce684b1b6bb02e97bb6321babb1b2831cfabe21"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_nine_initials.schema.yaml",
+      "bytes": 1388,
+      "sha256": "c0071c42406006b9db4453f8e7a08a22b63119a001558607e35fd6b558415363"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_nine_private.schema.yaml",
+      "bytes": 1347,
+      "sha256": "3103de61b7028c818a07af90cc15b49af78499b7366bf47dd5cfc97289be861e"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_pinyin.prism.bin",
+      "bytes": 22488,
+      "sha256": "13d974875eb4de9145ad11e9d9c529ffdd0c83debaeffde821da08224a634f49"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_pinyin.reverse.bin",
+      "bytes": 234564,
+      "sha256": "456214e6a6f0355a38ff26d538863463286b97f52a245803c20968c62afbcbfa"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_pinyin.schema.yaml",
+      "bytes": 1196,
+      "sha256": "c59efb7c4996388a084df02f424c8c603feab7dab286ade287f55481badc689f"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_pinyin.table.bin",
+      "bytes": 14823880,
+      "sha256": "021d5593c6b8b1c80dd0016c2cf079cee28aca93acb62a4d8738e2a9bfa7ab3d"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_pinyin_exact.prism.bin",
+      "bytes": 14640,
+      "sha256": "1733dcdbdfb0431b43c4b603a5ee24b9cbede7a8d0269b9da087a6dfa3d71cda"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_pinyin_exact.schema.yaml",
+      "bytes": 1020,
+      "sha256": "ee898551b1e712c23ab60f84f7245bb0bf31de96925c3202fdd4951f7862fd26"
+    },
+    {
+      "path": "windows-source/resources/rime/build/private_pinyin_private.schema.yaml",
+      "bytes": 1055,
+      "sha256": "eee93ff50002f089a6ac13d0fb1f777db01badf697d9a7560c282873cec74e50"
     },
     {
       "path": "windows-source/resources/rime/licenses/GPL-3.0.txt",
@@ -2956,13 +3656,13 @@
     },
     {
       "path": "windows-source/tools/build_offline_installer.py",
-      "bytes": 17839,
-      "sha256": "ac2e02880b71fabf560a8c52443993173c9fb72cd4b5cb861d6ffb8e60b9766e"
+      "bytes": 17852,
+      "sha256": "c06ebf0e4a3e9d92365e636e05a01c8a63a1252ac73734d17b612ed12e1f987f"
     },
     {
       "path": "windows-source/tools/build_preview.py",
-      "bytes": 6128,
-      "sha256": "1034f0f533b4764e44c802be6e47aa1e1744be11750d5fde95857bfc9e32c3a8"
+      "bytes": 6242,
+      "sha256": "9be8eb39a96ecaa1e1f81baa4434cc5e3edeaa1042a65bad1e8f9a0429fc8e55"
     },
     {
       "path": "windows-source/tools/check_clipboard_live_vectors047.py",
@@ -2980,9 +3680,19 @@
       "sha256": "c93611a59a65174aab90e63e7176263d2b338bab5c28cf55c2f652a9f8067e9c"
     },
     {
+      "path": "windows-source/tools/shared_resources.py",
+      "bytes": 652,
+      "sha256": "84eebaf7666fdc7781193f46f4fabf3d849f99b8488f3590b4fc38e001e320ab"
+    },
+    {
       "path": "windows-source/tools/test_offline_installer.py",
       "bytes": 3955,
       "sha256": "a6ff8b8365f20638f1fa2431b4d3e67d385838b721bafd4009872d72392253f4"
+    },
+    {
+      "path": "windows-source/tools/test_windows049_review.py",
+      "bytes": 3508,
+      "sha256": "9a5f2b560dde9edd7edc5d4f2ee17b6c10c62dd9e3f10b7f83200097ec2fe984"
     },
     {
       "path": "windows-source/tools/test_windows_clipboard_candidate.py",
@@ -3025,6 +3735,11 @@
       "sha256": "b9870830402c1da8787402424138c9f8c0c61c794fd917a8b796983965704b41"
     },
     {
+      "path": "windows-source/tools/test_windows_mainland_admission.py",
+      "bytes": 4213,
+      "sha256": "e08adff9fff2ce939c857da757d5959b202a5f828b3941b1da68f2e49dbf2eb5"
+    },
+    {
       "path": "windows-source/tools/test_windows_membership.py",
       "bytes": 6092,
       "sha256": "63a05b4dd7cc459f8a15995817d04646944f9eecbf5e21addbcb7ba0c049c548"
@@ -3041,8 +3756,8 @@
     },
     {
       "path": "windows-source/tools/windows_group_fixture_server.py",
-      "bytes": 1890,
-      "sha256": "530a8382de61300a6a7a18598e4262ef847570d3b0f2001bfd19a30f36007096"
+      "bytes": 3307,
+      "sha256": "559936218bc2c0f1f0b80da3773e602556c65ccdcf31c54e09cd84eb3263d972"
     },
     {
       "path": "windows-source/windows/CMakeLists.txt",
@@ -3061,13 +3776,13 @@
     },
     {
       "path": "windows-source/windows/activity/ArchiveCore.cpp",
-      "bytes": 5717,
-      "sha256": "ff0783ae56ce11a7348aeae8b8be9f4a5faaf301497366bf1c22ce8b43debbf2"
+      "bytes": 6466,
+      "sha256": "cec6a4cf758ae786397c7bdc961819d30373b491e7fd144681c3068d8bb2200f"
     },
     {
       "path": "windows-source/windows/activity/ArchiveCore.h",
-      "bytes": 1938,
-      "sha256": "f79cb80c732d3786075902d2c976ab8dc76bc000bcb6a2ecba0a2d19d18f038a"
+      "bytes": 1951,
+      "sha256": "b8598ed1de36f03a905bb023071b47143bba748e769a62ad99d720570cee6b05"
     },
     {
       "path": "windows-source/windows/activity/ArchiveQueue.cpp",
@@ -3085,24 +3800,29 @@
       "sha256": "cfd4b1b8cb38da604ccea6fb446ea72c1e99f3f5661dae99b69d8db537afc541"
     },
     {
+      "path": "windows-source/windows/activity/AutomaticClipboardWorker.inc",
+      "bytes": 16110,
+      "sha256": "e8226856fb20b9e5fb0021276ed2aa37f0bdd7656edac454b15d547feba604cb"
+    },
+    {
       "path": "windows-source/windows/activity/CMakeLists.txt",
-      "bytes": 5430,
-      "sha256": "480e7a80ecdd59ead8dd1fbb0055d1fd75f1fd8675bb7d86673c3afbefb4f117"
+      "bytes": 5513,
+      "sha256": "db839c3dbecee14f3b6953ea2efaa0bb64f9e8ffb96fbe353a64839acc6d4fc5"
     },
     {
       "path": "windows-source/windows/activity/CaptureIPC.cpp",
-      "bytes": 7660,
-      "sha256": "a0b5349817a4b07d9698aca1b4ebe3fefec09abcea155c200e8ca01bbde0b5da"
+      "bytes": 9799,
+      "sha256": "ee5c7e8188bdca606d54f9cb42638de68a88f702662b6570db291673cc134ce7"
     },
     {
       "path": "windows-source/windows/activity/CaptureIPC.h",
-      "bytes": 1533,
-      "sha256": "f9278507fe626e5b3d7553135b90026ea80f75728b5ae66dd488b020679a25c4"
+      "bytes": 1954,
+      "sha256": "0d159db4ab570bb93cd77805e5a23694a93a975d9f09da1fe2e5c3fd6f9fd569"
     },
     {
       "path": "windows-source/windows/activity/CaptureWire.h",
-      "bytes": 2442,
-      "sha256": "90888036009aa4626cc5d665f87649a81dbba9d278e4fb7eff217827cf3ff11f"
+      "bytes": 2512,
+      "sha256": "894a6186cc4d68044a045abfbddd8c87d88647d24ccb69bf2056e3bd8da16f46"
     },
     {
       "path": "windows-source/windows/activity/ClipboardCandidateIPC.h",
@@ -3140,6 +3860,11 @@
       "sha256": "f936965d43bd4ef30a69d75d48da615112e9ebcdba8b819d1883ce11a412f002"
     },
     {
+      "path": "windows-source/windows/activity/ClipboardLiveWorkerBridge.inc",
+      "bytes": 8275,
+      "sha256": "d64b99c18a8fa7e6e7526cacf26e70b8b2991abae8752cc469d7d4f6e0d8def1"
+    },
+    {
       "path": "windows-source/windows/activity/ClipboardPolicy.h",
       "bytes": 973,
       "sha256": "3d84e60c5078b1f6183253cfed5b72a842ce8c36f0e096aa4d53926519aaac4d"
@@ -3148,6 +3873,31 @@
       "path": "windows-source/windows/activity/ClipboardReadSafety.h",
       "bytes": 1999,
       "sha256": "3177ada4c14a6893270fb49042d0f773a0688675d112ca89f9bdb1a52cb7f403"
+    },
+    {
+      "path": "windows-source/windows/activity/CloudLearningRank.cpp",
+      "bytes": 5258,
+      "sha256": "7a696b374a57b86ba9178857e90224d6f1c0e00822473942f2eb0a9f9d730462"
+    },
+    {
+      "path": "windows-source/windows/activity/CloudLearningRank.h",
+      "bytes": 343,
+      "sha256": "32ae27b16ed983e1dfaae27db46e7f774418f78d31dc774c74119e28836c2698"
+    },
+    {
+      "path": "windows-source/windows/activity/CloudLearningShadow.cpp",
+      "bytes": 16048,
+      "sha256": "2e7d4d1b8e785155d462d8ee1a36055574cb0c6faad87e6c5059048b63b1f495"
+    },
+    {
+      "path": "windows-source/windows/activity/CloudLearningShadow.h",
+      "bytes": 1208,
+      "sha256": "3899ae8c2dd76fb36a2c81a69d64e164580904527ac222f7c6f2771c08afb1c3"
+    },
+    {
+      "path": "windows-source/windows/activity/CloudRankIPC.h",
+      "bytes": 2549,
+      "sha256": "e8974cbd93f31762d27424fc740f259ab353929b38321a717f643856971e8d48"
     },
     {
       "path": "windows-source/windows/activity/ContentModel.cpp",
@@ -3161,23 +3911,43 @@
     },
     {
       "path": "windows-source/windows/activity/ContentStore.cpp",
-      "bytes": 11773,
-      "sha256": "eabb6185c0b7af8ef81690968fa9f6f3e8734baa80a35c1c7859e4d55ff51b23"
+      "bytes": 12671,
+      "sha256": "2f8fe82a1d3ae942035c8b16685a1646d1ec15f252ba5b20f606aba4d00b6edd"
     },
     {
       "path": "windows-source/windows/activity/ContentStore.h",
-      "bytes": 1643,
-      "sha256": "16986c49da7a581462ca677235b3c3ec4858deda3e90fe19fb491867721c1276"
+      "bytes": 1682,
+      "sha256": "46eb9c245f2f7db22b3d088e2d5d524af987d5bc56086e9e08656df15ce872c7"
+    },
+    {
+      "path": "windows-source/windows/activity/DecisionCapture.h",
+      "bytes": 2564,
+      "sha256": "e577e6c1f89154b2079627ed2bf6f0b891efb6e681883097a665df34b9c8ed26"
+    },
+    {
+      "path": "windows-source/windows/activity/DecisionDiagnostic.h",
+      "bytes": 6821,
+      "sha256": "f2489637d5c43ee57066f248035b47d647d4476a4b2408b5a1aec9630a836159"
+    },
+    {
+      "path": "windows-source/windows/activity/DecisionOutput.h",
+      "bytes": 779,
+      "sha256": "d02c4f8ea50bb3c25e59c4de1a55c3c7bfd6ea28799bf9a8897e28b1617a72fa"
     },
     {
       "path": "windows-source/windows/activity/GroupClient.cpp",
-      "bytes": 32184,
-      "sha256": "610d85d158f72b11828dc95bb1e6b6b2a88b5ba7c5955af01a77b4c1c25c702e"
+      "bytes": 36744,
+      "sha256": "814b707524044939fe7697a57bfc9d4e0510639f078a246db3daaf0abac39396"
     },
     {
       "path": "windows-source/windows/activity/GroupClient.h",
-      "bytes": 2923,
-      "sha256": "2f28fa93089a108b67fbe6ac9dffc40ff0c452e7dd7e51e8c43c0f15c9e70c46"
+      "bytes": 3695,
+      "sha256": "1535f83bf9b8e2f79d405470a53e9c104eac4cefbed958a310d58af78379da0f"
+    },
+    {
+      "path": "windows-source/windows/activity/GroupClientCloud.inc",
+      "bytes": 12461,
+      "sha256": "574aae2278c60e02fe691ae93a8f81c63ec32232bb7c8713e68f86df22f68b4d"
     },
     {
       "path": "windows-source/windows/activity/GroupProtocol.cpp",
@@ -3200,14 +3970,19 @@
       "sha256": "73d451b3e054c1e15f450a60e27983d6b28511916ffe0e5d2c0704350aefc60b"
     },
     {
+      "path": "windows-source/windows/activity/LearningDeltaPublication.h",
+      "bytes": 3946,
+      "sha256": "6f56cb1448da546ecfc425a34b48557d189f8e93598227e29ee00a9e2a5950e1"
+    },
+    {
       "path": "windows-source/windows/activity/LearningIPC.cpp",
-      "bytes": 2864,
-      "sha256": "5dc40d62cbdda3f9195af4eb6ad378e4045e0cb42727125012cd1f48d7e88843"
+      "bytes": 4479,
+      "sha256": "3b6a68b0da4f671aed42027b434c387eab8d66911b633ba5e077889dccb70061"
     },
     {
       "path": "windows-source/windows/activity/LearningIPC.h",
-      "bytes": 2056,
-      "sha256": "c4ef7af451d19c111ee7156722bc3372ebe1bb48c4e3c86f942f1c57bede7d42"
+      "bytes": 2177,
+      "sha256": "6ff6676f445981eee8fc5e1ff115ffa8ec256c1cafebbe36551aac9f473bd1a7"
     },
     {
       "path": "windows-source/windows/activity/LegacyExport.cpp",
@@ -3270,6 +4045,11 @@
       "sha256": "7507aba76b61b30a0f95007d0e9d73e76d7dd01fc4731cf4102cbd13fb67d4e6"
     },
     {
+      "path": "windows-source/windows/activity/RecentSyncPolicy.h",
+      "bytes": 2655,
+      "sha256": "efd7ad78f5bb8684611c091f4928c8cd05791ce8c37db846a0d16d3eae6454e7"
+    },
+    {
       "path": "windows-source/windows/activity/SourceContext.h",
       "bytes": 2540,
       "sha256": "7e7c039da5be8cbc5543ce295c7959c5b953e510c9fbf3879779aabc09877a34"
@@ -3281,8 +4061,8 @@
     },
     {
       "path": "windows-source/windows/activity/Worker.cpp",
-      "bytes": 63605,
-      "sha256": "1f051097e0cabbd3b8a33d3049c8d699e5d4d4c487fd0556e8149482af0f23d4"
+      "bytes": 70071,
+      "sha256": "8bcd415942ec37c0fe56017b77fd6543c34e86e6314aeaede3fa143d1d3b26f9"
     },
     {
       "path": "windows-source/windows/cmake/SharedCore.cmake",
@@ -3290,9 +4070,49 @@
       "sha256": "e21d55617c91e39ce23ae7444c0e35c5cba3beb79bfe44def89c1a7c4496350d"
     },
     {
+      "path": "windows-source/windows/docs/DIAGNOSTICS055-SOURCE-20261022.md",
+      "bytes": 7948,
+      "sha256": "60c90fc00a5f75beb1e1b0c31d0406d42b60c91e7391008a5d9d740641601668"
+    },
+    {
+      "path": "windows-source/windows/installer/FailureFeedback.h",
+      "bytes": 2345,
+      "sha256": "4545d09769c659e053eb34adbc381b2bd1ed4ae0256c1e5d8ae7c4d2eecc1bb8"
+    },
+    {
+      "path": "windows-source/windows/installer/InstallReview.h",
+      "bytes": 1324,
+      "sha256": "5f08c828413859f2358ca73a26b2fece30898c2189b8bd8baae67cef4f2e14cf"
+    },
+    {
       "path": "windows-source/windows/installer/PayloadManifest.h",
-      "bytes": 6009,
-      "sha256": "19b9350682c117b777d22f585619b035eae929f2f0c6d0e840ef648b447c85fd"
+      "bytes": 7012,
+      "sha256": "d99bb4b28198c45120048701de5e50ce46cab32e97fe362c88632d0584457785"
+    },
+    {
+      "path": "windows-source/windows/installer/ProtectedJournalFile.h",
+      "bytes": 9500,
+      "sha256": "ed291b969ce43390b829afe8006d2fb4d4dab12cb54a68467c737cc2c861a563"
+    },
+    {
+      "path": "windows-source/windows/installer/RECOVERY-STORAGE-DRAFT.md",
+      "bytes": 2540,
+      "sha256": "4606e4828f5e5ca1538a33ad929cfbfc0edc68dbbbb464f03b115815eb309162"
+    },
+    {
+      "path": "windows-source/windows/installer/RecoveryJournalCodec.h",
+      "bytes": 2771,
+      "sha256": "0d9993276d64c38747c636ad04acdbef369bcf23a0d71583b2d8e0b091902662"
+    },
+    {
+      "path": "windows-source/windows/installer/RecoveryTransaction.h",
+      "bytes": 4220,
+      "sha256": "de914b3122327e2f80b49b01aa8e41d2d88a4d884b52d17324ea655c48ea497f"
+    },
+    {
+      "path": "windows-source/windows/installer/RepairExisting.inc",
+      "bytes": 25195,
+      "sha256": "a445c44848a44ef98086fcd0cfd59c0df814bafa65fd782664b993af4860095a"
     },
     {
       "path": "windows-source/windows/installer/Settings.cpp",
@@ -3301,8 +4121,13 @@
     },
     {
       "path": "windows-source/windows/installer/Setup.cpp",
-      "bytes": 38967,
-      "sha256": "5d0b5d4051b641c0b66b91bb4a32124af3f5b863c48b8f895ca860287f60e8d6"
+      "bytes": 47811,
+      "sha256": "b0b4d2112857fb74c4fc6a355f39b1d05ff72aaf3688f30af443e22020816bbc"
+    },
+    {
+      "path": "windows-source/windows/installer/UpgradeState.h",
+      "bytes": 817,
+      "sha256": "f6607c60955b889615902447f4a40a9ee4a9199faf704df7058dec0bb8cd4804"
     },
     {
       "path": "windows-source/windows/resources/AppIcon.ico",
@@ -3315,24 +4140,29 @@
       "sha256": "b11351c17852607346f64ede0f41c0fabdf933faf9cd68bcf9c1ddcc5bea7075"
     },
     {
+      "path": "windows-source/windows/src/CandidateAdmission.h",
+      "bytes": 437,
+      "sha256": "50f6ab7c052bfb8ca76c549a00723c390c8039d845e748eac2dec356bd51efcd"
+    },
+    {
       "path": "windows-source/windows/src/CandidateLayout.h",
       "bytes": 4126,
       "sha256": "095039b4be28333be73ba5195e81decceb0e58d18cf7683ec3bd25d7c9f0d366"
     },
     {
       "path": "windows-source/windows/src/CandidateStream.h",
-      "bytes": 1311,
-      "sha256": "a5f6145ec6b2144f583d78d520fab0c9b949ade088ffeeffb0adb40d5cfbeee9"
+      "bytes": 1504,
+      "sha256": "7765227fb7047731285ddc14380ad3167d15f9553ebae3251707ecd09bea6235"
     },
     {
       "path": "windows-source/windows/src/CandidateWindow.cpp",
-      "bytes": 6327,
-      "sha256": "40f6f1f51d8ad2868239ed9d0e47fce8bd4b172ec3f51f0b952b83761e2431b7"
+      "bytes": 6854,
+      "sha256": "7bf5d5490ef1cfc4d459ca4daede2e5b89ac0c1f85122ceb4b920318cd6bbc2f"
     },
     {
       "path": "windows-source/windows/src/CandidateWindow.h",
-      "bytes": 1486,
-      "sha256": "515b1da429f778c23fcfa0bd42537273bb8802b754794601c7b392c6a5d91570"
+      "bytes": 1663,
+      "sha256": "73890405f40f4e1c716477ce7901fb29a7039bf8e6c464d4818caac91263c77f"
     },
     {
       "path": "windows-source/windows/src/ClipboardCandidatePolicy.h",
@@ -3360,6 +4190,11 @@
       "sha256": "0d7d55a99c98e62c95374f88bb2237ea8036cc30fe4e31d2b5b9baa992b95ae9"
     },
     {
+      "path": "windows-source/windows/src/LearningSnapshotBoundary.h",
+      "bytes": 793,
+      "sha256": "7a29f7f5d5614d9c2ab2d326cbc949def0cea88dfc61502bd378dd4c39c50d5d"
+    },
+    {
       "path": "windows-source/windows/src/NativeWindowTheme.h",
       "bytes": 1492,
       "sha256": "cc161d0bfd6658a2821a971c6ac7b6d5493331b292fede600995badcdfa7ad1c"
@@ -3376,8 +4211,8 @@
     },
     {
       "path": "windows-source/windows/src/Registration.cpp",
-      "bytes": 8203,
-      "sha256": "f9a23c6ee358cf80937f6c7d8bf6e322d69d58a287bb9f4543053fac4626a489"
+      "bytes": 10352,
+      "sha256": "2bcf7f2dee713783a40f527b2321cf92ec4f24ec198da8099f674f208ba40799"
     },
     {
       "path": "windows-source/windows/src/ShiftTapMode.h",
@@ -3391,8 +4226,8 @@
     },
     {
       "path": "windows-source/windows/src/TextService.cpp",
-      "bytes": 55270,
-      "sha256": "273d5c9476cba311d91c0f91fc744a26c2f526ebde70aa1f774a77cc6207947f"
+      "bytes": 58337,
+      "sha256": "b553ec2db6ad37604bfbfe1f478ac6cbb5ecf6cd03ea0a302a36ef37cb75e8fc"
     },
     {
       "path": "windows-source/windows/sync/CMakeLists.txt",
@@ -3450,9 +4285,14 @@
       "sha256": "9936f3a1a7e9c86f52fb12640c24c0a59b2126b6956e8bf3fe6ec8292134b38a"
     },
     {
+      "path": "windows-source/windows/tests/candidate_mainland_admission.cpp",
+      "bytes": 2078,
+      "sha256": "35b286c9c0bc64f2af5e0341f1611ef83ca9681e3243fac7c358a6bbcc1fd87f"
+    },
+    {
       "path": "windows-source/windows/tests/candidate_navigation.cpp",
-      "bytes": 2476,
-      "sha256": "e65dec531cd12eed73ef9d4b61d4aac0cd78f202dd400869bb89f1b4f447b192"
+      "bytes": 3179,
+      "sha256": "ecda262de64aae534f4f3192b1484b290bd93d5e5458c20b227696f59a654a58"
     },
     {
       "path": "windows-source/windows/tests/category_setup.cpp",
@@ -3495,6 +4335,36 @@
       "sha256": "f1db3628075a7884584cb831990441fea7f8bb2b64dea65e4331d51dfdee4d17"
     },
     {
+      "path": "windows-source/windows/tests/installer_failure_feedback.cpp",
+      "bytes": 1405,
+      "sha256": "8a71995c44712c2e88a71dde3ddb52e393821c4c58a8d8875437fd8c45a6d413"
+    },
+    {
+      "path": "windows-source/windows/tests/installer_journal_compile.cpp",
+      "bytes": 246,
+      "sha256": "0a069868c9f2a03b954f0f16e677dc88741ae3716705996ae5eadbf50347f284"
+    },
+    {
+      "path": "windows-source/windows/tests/installer_recovery_transaction.cpp",
+      "bytes": 4510,
+      "sha256": "b6cfa96ffeb81285d0b7c181332b82962b6110bb1e8f641b9f7a8a29423853fd"
+    },
+    {
+      "path": "windows-source/windows/tests/installer_repair_codec.cpp",
+      "bytes": 1100,
+      "sha256": "7215e6e4964262d483269bb55548173881530c8d4f836b53e05866f958c3305b"
+    },
+    {
+      "path": "windows-source/windows/tests/installer_repair_native.cpp",
+      "bytes": 7998,
+      "sha256": "b5272292b4a11cff5782e799d37f954b957acb96876956891d99ce39428ff9fd"
+    },
+    {
+      "path": "windows-source/windows/tests/installer_review.cpp",
+      "bytes": 1231,
+      "sha256": "7569f773e4dc93302e1199bfa7af51db67f1ebe280c5ca4dd953cfd19fa6c280"
+    },
+    {
       "path": "windows-source/windows/tests/membership_typed.cpp",
       "bytes": 12639,
       "sha256": "9e2187a8e56dca8179cdeb0c59637ef1d269a874b99aeb1cde4fefab042a9de7"
@@ -3511,8 +4381,13 @@
     },
     {
       "path": "windows-source/windows/tests/payload_manifest.cpp",
-      "bytes": 1681,
-      "sha256": "03399c475333bf9ef16449f8610da29d92377381b0cf686a8b67e142595b5025"
+      "bytes": 2167,
+      "sha256": "6852d86ec7f37b2c3ee41afa46f7ea00920be492cf22966a6b2d932efb050d2d"
+    },
+    {
+      "path": "windows-source/windows/tests/physical_quality.cpp",
+      "bytes": 14984,
+      "sha256": "b8ee77a40a8c69f37b5d50e7fa058cfae55398cd7056ffbbd147109d7447dc06"
     },
     {
       "path": "windows-source/windows/tests/protocol_vector.cpp",
@@ -3555,14 +4430,19 @@
       "sha256": "8d80e8cd92cd1779917235d03f6e4c59b3792430c9e3b455d06f60234f32f187"
     },
     {
+      "path": "windows-source/windows/tests/tsf_registration_probe.cpp",
+      "bytes": 2278,
+      "sha256": "76b2df1402471679bc033b38eb2dc33b6cd40d90c53d935c9f4b926f927e0c8e"
+    },
+    {
       "path": "windows-source/windows/tests/uninstall_policy.cpp",
       "bytes": 4354,
       "sha256": "14a1d690481614ef28f079b6c4b69617c61a9cd7de26bfb1a3068a8f1ca55470"
     },
     {
       "path": "windows-source/windows/tests/activity/CMakeLists.txt",
-      "bytes": 4116,
-      "sha256": "952f4aacbc9114eb09d38b3efa6a8aed5ea2d1c3602df44f5856bf5b49db2b8d"
+      "bytes": 9014,
+      "sha256": "9aab83beda51a8815cec20894dd962f03b634b6529f54b7322afb4c54d08ef8b"
     },
     {
       "path": "windows-source/windows/tests/activity/admission.cpp",
@@ -3600,6 +4480,21 @@
       "sha256": "65bcbb83dad2c0fe454c502f1811b90b5dd0f908358b19e6d81184314d54296c"
     },
     {
+      "path": "windows-source/windows/tests/activity/cloud_learning_cases.inc",
+      "bytes": 6818,
+      "sha256": "e794a59de4e9bf2d42be426d6ac17f3d98fd457d7b3724afec7df0de64f3aa30"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/cloud_learning_rank.cpp",
+      "bytes": 7550,
+      "sha256": "2e642655486b274c34543769b1e60ef8eef0438e3b1f2842d373066d5940c209"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/cloud_learning_shadow.cpp",
+      "bytes": 12269,
+      "sha256": "e74d8eee62944919e1d41034a1ab5723b7febfb16400c472de36537c546d3f23"
+    },
+    {
       "path": "windows-source/windows/tests/activity/content.cpp",
       "bytes": 6248,
       "sha256": "1b6212c3bd7bda45eb5bd7604dee1d623fe8badc1d7c5bd33b3d08992030c744"
@@ -3610,9 +4505,14 @@
       "sha256": "5e77e521b21ab12622835396e2521dccf8aa3b802296fc2d70a80b83fa447ef2"
     },
     {
+      "path": "windows-source/windows/tests/activity/decision_diagnostic.cpp",
+      "bytes": 4036,
+      "sha256": "228891615ea6742719418eda8ac17f7e1dd359c51f05fb480a322bf9b3323558"
+    },
+    {
       "path": "windows-source/windows/tests/activity/group_client_host.cpp",
-      "bytes": 12899,
-      "sha256": "23a438a57c78001cabcdb0868da969c08d074a4d4018a742047fa70feef3c3a6"
+      "bytes": 14907,
+      "sha256": "7c67ecf63b7e5dc27fd8a47419bd35666d513d56f092c6e717d59ddb1431c2f8"
     },
     {
       "path": "windows-source/windows/tests/activity/input_diagnostics.cpp",
@@ -3625,9 +4525,34 @@
       "sha256": "5295056655242112d96e0945d68965f9bf91b821463cf5920a582bab7ad47e7f"
     },
     {
+      "path": "windows-source/windows/tests/activity/learning_delta_publication.cpp",
+      "bytes": 8642,
+      "sha256": "419d6daa76c009627a6cb5973b27804815502aea507409069f7d775fe60dc3fa"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/prepare_decision_golden.py",
+      "bytes": 970,
+      "sha256": "b43d5d145aa85195d959bc6af8b5421f345c095daa44b0d97db67001cc58aff7"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/queue_recovery_cases.inc",
+      "bytes": 13663,
+      "sha256": "045324a29137c636fafefcae6f484530b0427c9d4947ce60e8164326ddbf3401"
+    },
+    {
       "path": "windows-source/windows/tests/activity/recent.cpp",
       "bytes": 4896,
       "sha256": "33bdc104538fc959b92d8acfdbb8d11bf2000839c51cba0728cabdf3242bcecc"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/recent_conditional_cases.inc",
+      "bytes": 3627,
+      "sha256": "2a85fcc8617468d6809f0f86ee14f48e745c4533d413bf4ab89d0d0e793da529"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/recent_sync_policy.cpp",
+      "bytes": 2146,
+      "sha256": "2fed81712fa313e187add227cfd5326258a9cb7891b58264fb274165fc589e37"
     },
     {
       "path": "windows-source/windows/tests/activity/windows_probe.cpp",
@@ -4400,14 +5325,24 @@
       "sha256": "b5c542b6e5bbe5205d37a1dca0611e713e7c94999db4862755526c06c60f5451"
     },
     {
+      "path": "windows-source/windows/tests/installer-journal/CMakeLists.txt",
+      "bytes": 466,
+      "sha256": "7ad8c11c2a9f948743d19edbce6dbe51dfa579af4eb23283d0a49b60583ea691"
+    },
+    {
+      "path": "windows-source/windows/tests/installer-recovery/CMakeLists.txt",
+      "bytes": 354,
+      "sha256": "3fb54e47600ef028087e1a9bf8527a79ba0367468bb45ac64e0a658edbdcd150"
+    },
+    {
       "path": "windows-source/windows/tools/preflight.ps1",
       "bytes": 3211,
       "sha256": "21c409664e1adf8e3fd74d57224082f786dfa7b6778d2c2cf6cfb5bcba7ae814"
     },
     {
       "path": "README.md",
-      "bytes": 2937,
-      "sha256": "2435cd724b345d18e6d26e54c8e607dc780fcdde1af5f58bae117fe216889a1b"
+      "bytes": 2926,
+      "sha256": "1187300b76c37e6ecb3b4a968462374a02a1f3efd05259f4d8c12ea4bfdc2f5c"
     },
     {
       "path": "LICENSE-NOTICE.md",
@@ -4416,8 +5351,8 @@
     },
     {
       "path": "BUILDING.md",
-      "bytes": 8199,
-      "sha256": "58cfda58a662e09c458029d7ca1dafd38c10e4fc7c6a3a72a733011fe1650896"
+      "bytes": 10490,
+      "sha256": "565878533d303551b41a7f8035f4539d31ea86e6daa4901aeec5dfc4928f1129"
     },
     {
       "path": "SELF-HOSTING.md",
@@ -4436,8 +5371,8 @@
     },
     {
       "path": "windows-source/SHARED-VERSIONS.json",
-      "bytes": 13064,
-      "sha256": "940c85c91d9074b8ba9bdf33caaaed27c95400263387342b4fbdc4f618f70256"
+      "bytes": 17899,
+      "sha256": "26a75d82a57baf7ebdcb88c940ea17a0417c03088a6c5c2d87da03ff4cfa0af3"
     },
     {
       "path": "windows-source/docs/stages/P1/dependencies.lock.json",
@@ -4509,5 +5444,281 @@
       "bytes": 100,
       "sha256": "4891b51e58a6b42215b0c7aaccadab5da9ee4fdfaa71052ebbcf5923bf80bdc7"
     }
-  ]
+  ],
+  "build_materials": {
+    "checks": [
+      {
+        "consumer": "scripts/build_android_tests.py",
+        "dependency": "shared/contracts/personal-lexicon-fixture-v1.json",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/generate_android_shared_assets.py",
+        "dependency": "shared/contracts/symbol-catalog-v1.json",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/generate_android_shared_assets.py",
+        "dependency": "apple/iOS/Keyboard/SymbolCatalog.swift",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/generate_android_shared_assets.py",
+        "dependency": "shared/PrivateInputKit/Sources/PrivateInputKit/MixedEnglishLexicon.swift",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "android/app/src/main/AndroidManifest.xml",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "android/app/src/main/cpp/CMakeLists.txt",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "android/app/src/main/cpp/jni.cpp",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "apple/iOS/Keyboard/SymbolCatalog.swift",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "shared/PrivateInputKit/Sources/PrivateInputKit/MixedEnglishLexicon.swift",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "vendor/zxing/SOURCE.json",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "vendor/zxing/LICENSE",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "vendor/bouncycastle/SOURCE.json",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "vendor/bouncycastle/LICENSE.html",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "resources/semantic/pinyin-syllables.txt",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "resources/semantic/nine-lexicon.bin",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/build_android.py",
+        "dependency": "resources/semantic/continuation.bin",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "LICENSE",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "android/app/src/main/AndroidManifest.xml",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "android/app/src/main/cpp/CMakeLists.txt",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "core/src/private_input.cpp",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "vendor/zxing/SOURCE.json",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "vendor/bouncycastle/SOURCE.json",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "resources/rime/build/private_pinyin.table.bin",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "resources/rime/build/private_pinyin_exact.prism.bin",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "resources/rime/build/private_nine.prism.bin",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/package_android_incremental.py",
+        "dependency": "resources/rime/build/private_nine_initials.prism.bin",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/tests/mobile_clipboard_presentation.swift",
+        "dependency": "android/tests/fixtures/clipboard-presentation-v1.json",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/tests/mobile_clipboard_presentation.swift",
+        "dependency": "apple/iOS/Keyboard/StableCandidatePublication.swift",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "scripts/tests/clipboard_preview_cache.swift",
+        "dependency": "shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardPreviewCache.swift",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/tests/installer_recovery_transaction.cpp",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/tests/installer_journal_compile.cpp",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/tests/tsf_registration_probe.cpp",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/installer/ProtectedJournalFile.h",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/installer/RecoveryTransaction.h",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/src/Registration.cpp",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/activity/AutomaticClipboardWorker.inc",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/activity/ClipboardLiveWorkerBridge.inc",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/tools/test_windows049_review.py",
+        "dependency": "windows-source/windows/tests/activity/queue_recovery_cases.inc",
+        "kind": "reviewed-build-or-test-input",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/activity/GroupClient.cpp",
+        "dependency": "windows-source/windows/activity/GroupClientCloud.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/activity/Worker.cpp",
+        "dependency": "windows-source/windows/activity/AutomaticClipboardWorker.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/activity/Worker.cpp",
+        "dependency": "windows-source/windows/activity/ClipboardLiveWorkerBridge.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/installer/Setup.cpp",
+        "dependency": "windows-source/windows/installer/RepairExisting.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/tests/activity/group_client_host.cpp",
+        "dependency": "windows-source/windows/tests/activity/queue_recovery_cases.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/tests/activity/group_client_host.cpp",
+        "dependency": "windows-source/windows/tests/activity/recent_conditional_cases.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/tests/activity/group_client_host.cpp",
+        "dependency": "windows-source/windows/tests/activity/cloud_learning_cases.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      }
+    ],
+    "missing": 0,
+    "clean_build_claimed": false
+  }
 }

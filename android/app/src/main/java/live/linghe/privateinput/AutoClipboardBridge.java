@@ -19,15 +19,17 @@ final class AutoClipboardBridge {
  private final java.util.concurrent.ExecutorService liveWorker=java.util.concurrent.Executors.newSingleThreadExecutor();private boolean livePolling;private int liveFailures;private volatile boolean liveAvailable;
  private final AutomaticSyncCadence cadence=new AutomaticSyncCadence();
  private final String origin=UUID.randomUUID().toString();private int foreground;private long undatedVersion;private boolean imeSafe,sending,polling;
- private AutoClipboardBridge(Context c){context=c;clipboard=(ClipboardManager)c.getSystemService(Context.CLIPBOARD_SERVICE);prefs=c.getSharedPreferences("sync-consent",0);if(clipboard!=null)try{clipboard.addPrimaryClipChangedListener(()->observe(true));}catch(RuntimeException unavailable){/* Sharing remains available through the explicit text list. */}}
+ private AutoClipboardBridge(Context c){context=c;clipboard=(ClipboardManager)c.getSystemService(Context.CLIPBOARD_SERVICE);prefs=c.getSharedPreferences("sync-consent",0);if(clipboard!=null)try{clipboard.addPrimaryClipChangedListener(()->observe(true));}catch(RuntimeException unavailable){/* Explicit sending remains available in the app. */}}
  // All callers use SyncTasks.worker, including the foreground application.
- void synchronizeActive(SyncClient client)throws Exception{String scope=client.automaticClipboardScope();if(scope.isEmpty())client.synchronize();else client.synchronizeAutomatic(cadence.learningTurn(scope,SystemClock.elapsedRealtime()));}
+ void synchronizeActive(SyncClient client)throws Exception{String scope=client.automaticClipboardScope();if(scope.isEmpty())scope=client.automaticLearningScope();client.synchronizeAutomatic(cadence.learningTurn(scope,SystemClock.elapsedRealtime()));}
  long activePollDelay(boolean success){long delay=cadence.pollDelay(success);return success&&liveAvailable?15000:delay;}
  boolean enabled(){return prefs.getBoolean(ENABLED,false);}
  private boolean allowed(){return enabled()&&prefs.getBoolean("clipboard",false)&&!PersonalReset.expired(context)&&!context.getSharedPreferences("privacy-reset",0).getBoolean("pending",false);}
  void setEnabled(boolean on){synchronized(SyncClient.CONSENT_LOCK){prefs.edit().putBoolean(ENABLED,on).putLong(GENERATION,prefs.getLong(GENERATION,0)+1).commit();if(!on){liveAvailable=false;long disabled=prefs.getLong(GENERATION,0);liveWorker.execute(()->{try{if(prefs.getLong(GENERATION,0)==disabled&&!enabled())new ClipboardLiveStore(context).clearCredential();}catch(Exception unavailable){/* Preferences already fence every use. */}});}}state.reset("");observe(false);wake();}
  void foreground(boolean on){foreground=Math.max(0,foreground+(on?1:-1));if(on)observe(false);wake();}
  void imeActive(boolean safe){imeSafe=safe;if(safe)observe(false);wake();}
+ // Composition does not pause transport or writes. Only candidate presentation
+ // is suppressed while typing; OS access and secure-editor guards stay intact.
  private boolean active(){return foreground>0||imeSafe;}
  private void wake(){main.removeCallbacks(poll);if(imeSafe&&foreground==0&&allowed())main.post(poll);wakeLive();}
  private void wakeLive(){main.removeCallbacks(livePoll);if(active()&&allowed()&&!livePolling)main.post(livePoll);}

@@ -1,6 +1,8 @@
 #include "PrivateInputTSF.h"
 #include "CandidateWindow.h"
+#include "LearningSnapshotBoundary.h"
 #include "CandidateStream.h"
+#include "CandidateAdmission.h"
 #include "ClipboardCandidatePolicy.h"
 #include "../activity/ClipboardCandidateIPC.h"
 #include "DesktopPreferences.h"
@@ -77,13 +79,41 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   std::shared_ptr<const CachedDesktopPreferences>desktopCache=std::make_shared<CachedDesktopPreferences>();
   unsigned ownEndDepth=0;std::string contextBefore,contextAfter;std::filesystem::path publicContextPath;
   private_input::activity::CaptureEmitter archiveEmitter;
-  private_input::activity::LearningReader learningReader;std::vector<std::pair<std::wstring,std::wstring>>learningSelections;
+  std::optional<private_input::activity::DecisionCapture>activeDecision;
+  std::string decisionComposition,decisionClock,lastMarkedText,lastMarkedStatus,lastDecisionSnapshot;bool decisionCommitted=false,diagnosticSafe=false;HWND diagnosticHost=nullptr;uint32_t diagnosticField=0;
+  static std::string diagnosticID(){GUID id{};if(FAILED(CoCreateGuid(&id)))return {};wchar_t text[40]{};StringFromGUID2(id,text,40);return utf8(text);}
+  static uint64_t diagnosticUS(){return GetTickCount64()*1000;}
+  void startDecision(size_t index,const char*method,const char*key){
+    if(secure||!diagnosticSafe||!archiveEmitter.diagnosticsEnabled())return;
+    try{if(decisionComposition.empty())decisionComposition=diagnosticID();if(decisionClock.empty())decisionClock=diagnosticID();
+      private_input::activity::DecisionCapture d;d.link.composition=decisionComposition;d.link.state=decisionComposition+":"+std::to_string(revision);d.link.decision=diagnosticID();d.clock=decisionClock;d.revision=revision;d.monotonicUS=diagnosticUS();d.pressUS=d.monotonicUS;d.pressState=d.link.state;d.snapshot=d.link.state;d.method=method;d.key=key;d.before=english?englishInput:std::string(pi_raw_input(session));if(d.before.size()>4096)return;
+      auto item=[&](size_t i){const auto&r=candidates.rows[i];return private_input::activity::DecisionCandidate{d.snapshot+":"+std::to_string(i),r.text,r.reading,uint64_t(i)};};
+      for(size_t i=0;i<std::min(size_t(5),candidates.rows.size());++i){auto c=item(i);if(c.text.size()<=256&&c.reading.size()<=256)d.preview.push_back(std::move(c));}
+      if(index<candidates.rows.size()){auto selected=item(index);if(selected.text.size()<=256&&selected.reading.size()<=256)d.selected=std::move(selected);else{d.reason="selected_text_too_large";d.selectedID=selected.id;d.selectedRank=selected.rank;}}
+      d.truncated=candidates.hasMoreNative||d.preview.size()<candidates.rows.size();activeDecision=std::move(d);decisionCommitted=false;
+    }catch(...){activeDecision.reset();}
+  }
+  void endDecision(ITfContext*ctx,TfEditCookie cookie,HRESULT result,const char*reason=""){
+    if(!activeDecision)return;auto d=std::move(*activeDecision);activeDecision.reset();
+    if(secure||scopeOf(ctx,cookie)!=FieldScope::normal||!archiveEmitter.diagnosticsEnabled())return;
+    d.after=english?englishInput:std::string(pi_raw_input(session));if(d.after.size()>4096)return;
+    d.stage=decisionCommitted?"commit":FAILED(result)?"error":"selection";d.monotonicUS=diagnosticUS();if(*reason){d.reason=reason;if(!decisionCommitted)d.stage="cancel";}d.markedText=lastMarkedText;d.markedStatus=lastMarkedStatus;d.includePreview=d.snapshot!=lastDecisionSnapshot;lastDecisionSnapshot=d.snapshot;
+    archiveEmitter.emitDecision(d,diagnosticHost,archiveSession,archiveEditor,english?2:1,diagnosticField);
+  }
+  void observeCandidate(size_t index,unsigned long long version,bool released,bool valid){
+    if(!released){startDecision(index,"mouse","mouse");return;}
+    if(!activeDecision)return;activeDecision->releaseUS=diagnosticUS();activeDecision->releaseState=decisionComposition+":"+std::to_string(version);
+    if(valid)return;auto ctx=compositionContext;if(!ctx){activeDecision.reset();return;}auto id=activeDecision->link.decision;HRESULT result=E_FAIL;
+    request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READ,[this,ctx,id](TfEditCookie cookie){if(activeDecision&&activeDecision->link.decision==id)endDecision(ctx.Get(),cookie,S_FALSE,"pointer_cancelled");return S_OK;},&result);
+  }
+
+  private_input::activity::LearningReader learningReader;std::shared_ptr<const private_input::activity::LearningSnapshot>sessionLearning;std::vector<std::pair<std::wstring,std::wstring>>learningSelections;
   std::array<unsigned char,16> archiveSession{},archiveEditor{};
   ITfContext* archiveContext=nullptr;std::optional<LONG> archiveExpectedCaret;
   void renewArchiveEditor(ITfContext*ctx,bool force=false){if(!force&&archiveContext==ctx)return;archiveContext=ctx;archiveExpectedCaret.reset();GUID value{};if(SUCCEEDED(CoCreateGuid(&value)))memcpy(archiveEditor.data(),&value,sizeof(value));}
   std::optional<LONG> archiveCaret(ITfContext*ctx,TfEditCookie cookie){TF_SELECTION selection{};ULONG fetched=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selection,&fetched))||fetched!=1||!selection.range)return {};ComPtr<ITfRange>range;range.Attach(selection.range);ComPtr<ITfRangeACP>acp;LONG at=0,length=0;if(FAILED(range.As(&acp))||FAILED(acp->GetExtent(&at,&length))||at<0||length!=0)return {};return at;}
   void observeArchiveCaret(ITfContext*ctx,TfEditCookie cookie){auto caret=archiveCaret(ctx,cookie);if(ctx!=archiveContext||!caret||!archiveExpectedCaret||*caret!=*archiveExpectedCaret)renewArchiveEditor(ctx,true);}
-  void archiveCommit(ITfContext*ctx,TfEditCookie cookie,const std::wstring&text){if(secure||text.empty()||scopeOf(ctx,cookie)!=FieldScope::normal)return;ComPtr<ITfContextView> view;HWND hwnd=nullptr;if(FAILED(ctx->GetActiveView(&view))||FAILED(view->GetWnd(&hwnd))||!hwnd)return;renewArchiveEditor(ctx);archiveExpectedCaret=archiveCaret(ctx,cookie);archiveEmitter.emit(text,hwnd,archiveSession,archiveEditor,true,english?2:1,archiveFieldType(ctx,cookie));}
+  void archiveCommit(ITfContext*ctx,TfEditCookie cookie,const std::wstring&text){if(secure||text.empty()||scopeOf(ctx,cookie)!=FieldScope::normal)return;ComPtr<ITfContextView> view;HWND hwnd=nullptr;if(FAILED(ctx->GetActiveView(&view))||FAILED(view->GetWnd(&hwnd))||!hwnd)return;renewArchiveEditor(ctx);archiveExpectedCaret=archiveCaret(ctx,cookie);if(activeDecision)decisionCommitted=true;const auto*link=activeDecision?&activeDecision->link:nullptr;archiveEmitter.emit(text,hwnd,archiveSession,archiveEditor,true,english?2:1,archiveFieldType(ctx,cookie),false,false,nullptr,link);}
   private_input::ClipboardCandidatePolicy clipboardPolicy;private_input::activity::ClipboardCandidateReader clipboardReader;
   private_input::activity::ClipboardCandidateSnapshot clipboardOffer;ComPtr<ITfContext>clipboardContext;ComPtr<ITfRange>clipboardSelection;
   DWORD clipboardEditCookie=TF_INVALID_COOKIE;
@@ -93,21 +123,10 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   void retireClipboard(uint32_t sequence=0){clipboardPendingRequest=0;if(clipboardEditCookie!=TF_INVALID_COOKIE&&clipboardContext){ComPtr<ITfSource>source;if(SUCCEEDED(clipboardContext.As(&source)))source->UnadviseSink(clipboardEditCookie);}clipboardEditCookie=TF_INVALID_COOKIE;clipboardPolicy.dismiss(sequence?sequence:clipboardOffer.sequence);clipboardOffer={};clipboardContext.Reset();clipboardSelection.Reset();if(clipboardVisible){clipboardVisible=false;words.clear();panel.hide();++revision;}}
   bool sameClipboardSelection(ITfContext*ctx,TfEditCookie cookie){if(!clipboardSelection||clipboardContext.Get()!=ctx)return false;TF_SELECTION selected{};ULONG count=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))||count!=1||!selected.range)return false;ComPtr<ITfRange>current;current.Attach(selected.range);LONG start=1,end=1;return SUCCEEDED(current->CompareStart(cookie,clipboardSelection.Get(),TF_ANCHOR_START,&start))&&SUCCEEDED(current->CompareEnd(cookie,clipboardSelection.Get(),TF_ANCHOR_END,&end))&&start==0&&end==0;}
   void pollClipboardCandidate(){
-    if(secure||!session||!manager||clipboardInFlightRequest)return;auto snapshot=clipboardReader.read();
-    if(clipboardPolicy.deleteHeld&&!((GetAsyncKeyState(VK_DELETE)|GetAsyncKeyState(VK_BACK))&0x8000))clipboardPolicy.releaseDelete();if(clipboardPolicy.deleteHeld||((GetAsyncKeyState(VK_DELETE)|GetAsyncKeyState(VK_BACK))&0x8000)){if(clipboardVisible)retireClipboard();return;}
-    if(composing()||composition||finishPending||!pendingCommit.empty()){retireClipboard(snapshot.sequence);return;}
-    ComPtr<ITfDocumentMgr>document;ComPtr<ITfContext>ctx;if(FAILED(manager->GetFocus(&document))||!document||FAILED(document->GetTop(&ctx))||!ctx||!focusedContext(ctx.Get())||snapshot.text.empty()){retireClipboard();return;}
-    if(clipboardContext&&clipboardContext.Get()!=ctx.Get()){retireClipboard(snapshot.sequence);return;}
-    const auto version=revision,requestID=++clipboardRequestCounter;clipboardPendingRequest=requestID;clipboardInFlightRequest=requestID;HRESULT result=E_FAIL;
-    auto hr=request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READ,[this,ctx,snapshot=std::move(snapshot),version,requestID](TfEditCookie cookie){if(clipboardPendingRequest!=requestID)return S_FALSE;clipboardPendingRequest=0;auto current=clipboardReader.read();
-      if(version!=revision||!focusedContext(ctx.Get())||composing()||composition||clipboardPolicy.deleteHeld||disabled(ctx.Get())||scopeOf(ctx.Get(),cookie)!=FieldScope::normal||snapshot.sequence!=current.sequence||snapshot.generation!=current.generation){if(clipboardVisible||!focusedContext(ctx.Get())||scopeOf(ctx.Get(),cookie)!=FieldScope::normal)retireClipboard(snapshot.sequence);return S_FALSE;}
-      if(clipboardVisible&&clipboardOffer.sequence==snapshot.sequence&&!sameClipboardSelection(ctx.Get(),cookie)){retireClipboard(snapshot.sequence);return S_FALSE;}
-      if(!clipboardPolicy.offer(snapshot.sequence,true,true,true,true))return S_FALSE;
-      TF_SELECTION selected{};ULONG count=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))||count!=1||!selected.range){retireClipboard(snapshot.sequence);return S_FALSE;}
-      ComPtr<ITfRange>selection;selection.Attach(selected.range);bool changed=!clipboardVisible||clipboardOffer.sequence!=snapshot.sequence;
-      clipboardOffer=snapshot;clipboardContext=ctx;clipboardSelection=selection;if(clipboardEditCookie==TF_INVALID_COOKIE){ComPtr<ITfSource>source;if(SUCCEEDED(ctx.As(&source)))source->AdviseSink(IID_ITfTextEditSink,static_cast<ITfTextEditSink*>(this),&clipboardEditCookie);}clipboardVisible=true;panel.allowManagement(false);words={private_input::clipboardCandidatePreview(snapshot.text)};navigation.reset(1);if(changed)++revision;updatePanel(ctx.Get(),cookie);return S_OK;
-    },&result,[this,requestID]{if(clipboardPendingRequest==requestID)clipboardPendingRequest=0;if(clipboardInFlightRequest==requestID)clipboardInFlightRequest=0;});if((FAILED(hr)||FAILED(result))&&clipboardPendingRequest==requestID)clipboardPendingRequest=0;
-  }
+ // Desktop clipboard sync must not show a candidate or read/poll clipboard offers.
+ // This does not suppress ordinary pinyin/English conversion candidates.
+ if(clipboardVisible)retireClipboard();
+}
   HRESULT pasteClipboardCandidate(ITfContext*ctx,TfEditCookie cookie,unsigned long long version){auto current=clipboardReader.read();if(!clipboardVisible||version!=revision||current.sequence!=clipboardOffer.sequence||current.generation!=clipboardOffer.generation||!focusedContext(ctx)||disabled(ctx)||scopeOf(ctx,cookie)!=FieldScope::normal||composing()||composition||!sameClipboardSelection(ctx,cookie)){retireClipboard();return S_FALSE;}
     const auto text=clipboardOffer.text;ComPtr<ITfInsertAtSelection>insert;if(FAILED(ctx->QueryInterface(IID_ITfInsertAtSelection,reinterpret_cast<void**>(insert.GetAddressOf()))))return E_FAIL;ComPtr<ITfRange>range;
     auto hr=insert->InsertTextAtSelection(cookie,TF_IAS_QUERYONLY,nullptr,0,&range);if(FAILED(hr))return hr;
@@ -119,6 +138,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   unsigned long long revision=0;std::wstring pendingCommit;std::string englishInput;CandidateWindow panel;
   std::optional<PrivateInputEnginePaths> enginePaths;
   DesktopInputPreferences inputPreferences;CandidateGlyphFilter glyphFilter;private_input::DesktopCandidates navigation;private_input::CandidateStream candidates;std::vector<std::wstring> words;
+  bool candidateDisplayable(const std::string&text){return private_input::candidateAllowedForDisplay(text,[this](const auto&value){return glyphFilter.supports(wide(value.c_str()));});}
   IUnknown *identity(){return static_cast<ITfTextInputProcessorEx*>(this);}
   bool composing()const{return !englishInput.empty()||(session&&*pi_preedit(session));}
   std::wstring markedText()const{return english?wide(englishInput.c_str()):wide(pi_preedit(session));}
@@ -169,7 +189,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   HRESULT beginComposition(ITfContext *ctx,TfEditCookie cookie){
     if(finishPending)return E_PENDING; // Never reuse an already committed range.
     if(composition&&selectionInside(ctx,cookie))return S_OK;if(composition)detachComposition();
-    observeArchiveCaret(ctx,cookie);
+    observeArchiveCaret(ctx,cookie);if(!activeDecision||decisionComposition.empty())decisionComposition=diagnosticSafe?diagnosticID():"";lastMarkedText.clear();lastMarkedStatus="not_used";
     ComPtr<ITfInsertAtSelection> insert;HRESULT hr=ctx->QueryInterface(IID_ITfInsertAtSelection,reinterpret_cast<void**>(insert.GetAddressOf()));if(FAILED(hr))return hr;
     ComPtr<ITfRange> range;hr=insert->InsertTextAtSelection(cookie,TF_IAS_QUERYONLY,nullptr,0,&range);if(FAILED(hr))return hr;
     ComPtr<ITfContextComposition> comp;hr=ctx->QueryInterface(IID_ITfContextComposition,reinterpret_cast<void**>(comp.GetAddressOf()));if(FAILED(hr))return hr;
@@ -193,7 +213,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     ComPtr<ITfRange> range;HRESULT hr;
     if(composition&&compositionContext.Get()==ctx)hr=composition->GetRange(&range);
     else{ComPtr<ITfInsertAtSelection> insert;hr=ctx->QueryInterface(IID_ITfInsertAtSelection,reinterpret_cast<void**>(insert.GetAddressOf()));if(FAILED(hr))return hr;hr=insert->InsertTextAtSelection(cookie,TF_IAS_QUERYONLY,nullptr,0,&range);}
-    if(FAILED(hr))return hr;hr=range->SetText(cookie,0,text.data(),LONG(text.size()));if(FAILED(hr))return hr;
+    if(FAILED(hr))return hr;hr=range->SetText(cookie,0,text.data(),LONG(text.size()));if(!finish&&diagnosticSafe){lastMarkedText=utf8(text);if(lastMarkedText.size()>4096){lastMarkedText.clear();lastMarkedStatus="unknown";}else lastMarkedStatus=FAILED(hr)?"host_rejected":"host_acknowledged";}if(FAILED(hr))return hr;
     ComPtr<ITfRange> caret;if(SUCCEEDED(range->Clone(&caret))){caret->Collapse(cookie,TF_ANCHOR_END);TF_SELECTION selection{caret.Get(),{TF_AE_NONE,FALSE}};ctx->SetSelection(cookie,1,&selection);}
     // Once SetText succeeds, never queue the same text again. A host that
     // refuses EndComposition is retried separately without another insertion.
@@ -207,7 +227,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     panel.allowManagement(true);
     if(english){
       candidates.rows.clear();candidates.nativeOffset=0;candidates.hasMoreNative=false;
-      words.clear();for(const auto &value:private_input::englishCandidates(englishInput)){candidates.rows.push_back({value,SIZE_MAX,SIZE_MAX});words.push_back(wide(value.c_str()));}
+      words.clear();for(const auto &value:private_input::englishCandidates(englishInput))if(candidateDisplayable(value)){candidates.rows.push_back({value,SIZE_MAX,SIZE_MAX});words.push_back(wide(value.c_str()));}
       navigation.reset(words.size());return;
     }
     auto initial=readNative(0,128); // Also establishes the exact-spelling short circuit for repairs.
@@ -215,40 +235,43 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     const auto count=pi_load_repair_candidates(session,16);
     for(size_t i=0;i<count;++i)repairs.push_back({pi_repair_candidate_text(session,i),SIZE_MAX,i,pi_repair_candidate_reading(session,i),false});
     candidates.reset([&](size_t,size_t){return std::move(initial);},std::move(repairs));
-    candidates.rows.erase(std::remove_if(candidates.rows.begin(),candidates.rows.end(),[&](const auto&row){return !glyphFilter.supports(wide(row.text.c_str()));}),candidates.rows.end());
-    auto learned=learningReader.read();auto contextModel=learningReader.model();auto contextHints=contextModel?contextModel->hints(contextBefore):std::vector<private_input::PublicContextModel::Hint>{};auto normalized=[](std::string source){std::string result;for(unsigned char c:source){if(c>='A'&&c<='Z')c+=32;if(c!=' '&&c!='\'')result.push_back(char(c));}return result;};auto input=normalized(pi_raw_input(session));const std::string rawInput=pi_raw_input(session);auto unselected=pi_unselected_input_start(session);auto rawTail=unselected<=rawInput.size()?rawInput.substr(unselected):rawInput;
-    auto learnedWords=learned->spelling.find(normalized(rawTail));if(learnedWords!=learned->spelling.end()){size_t added=0;for(const auto&word:learnedWords->second){if(added>=64)break;bool duplicate=std::any_of(candidates.rows.begin(),candidates.rows.end(),[&](const auto&c){return c.text==word.text&&normalized(c.reading)==normalized(word.reading);});if(!duplicate&&glyphFilter.supports(wide(word.text.c_str()))){candidates.rows.push_back({word.text,SIZE_MAX,SIZE_MAX,word.reading,true});++added;}}}
-    for(const auto&row:learned->personal){if(normalized(row.reading)!=input)continue;bool duplicate=std::any_of(candidates.rows.begin(),candidates.rows.end(),[&](const auto&c){return c.text==row.text;});if(!duplicate&&glyphFilter.supports(wide(row.text)))candidates.rows.insert(candidates.rows.begin(),{row.text,SIZE_MAX,SIZE_MAX,row.reading,true});}
+    auto learned=sessionLearning?sessionLearning:learningReader.read();auto contextModel=learningReader.model();auto contextHints=contextModel?contextModel->hints(contextBefore):std::vector<private_input::PublicContextModel::Hint>{};auto normalized=[](std::string source){std::string result;for(unsigned char c:source){if(c>='A'&&c<='Z')c+=32;if(c!=' '&&c!='\'')result.push_back(char(c));}return result;};auto input=normalized(pi_raw_input(session));const std::string rawInput=pi_raw_input(session);auto unselected=pi_unselected_input_start(session);auto rawTail=unselected<=rawInput.size()?rawInput.substr(unselected):rawInput;
+    auto learnedWords=learned->spelling.find(normalized(rawTail));if(learnedWords!=learned->spelling.end()){size_t added=0;for(const auto&word:learnedWords->second){if(added>=64)break;bool duplicate=std::any_of(candidates.rows.begin(),candidates.rows.end(),[&](const auto&c){return c.text==word.text&&normalized(c.reading)==normalized(word.reading);});if(!duplicate&&candidateDisplayable(word.text)){candidates.rows.push_back({word.text,SIZE_MAX,SIZE_MAX,word.reading,true});++added;}}}
+    for(const auto&row:learned->personal){if(normalized(row.reading)!=input)continue;bool duplicate=std::any_of(candidates.rows.begin(),candidates.rows.end(),[&](const auto&c){return c.text==row.text;});if(!duplicate&&candidateDisplayable(row.text))candidates.rows.insert(candidates.rows.begin(),{row.text,SIZE_MAX,SIZE_MAX,row.reading,true});}
+    // All automatic sources, including custom learned/personal additions,
+    // pass the same final product and device-glyph policy before ranking.
+    candidates.rows.erase(std::remove_if(candidates.rows.begin(),candidates.rows.end(),[&](const auto&row){return !candidateDisplayable(row.text);}),candidates.rows.end());
     // Input-thread work is bounded in-memory lookups, never disk, crypto or HTTP.
     std::map<std::string,size_t>order;for(size_t i=0;i<candidates.rows.size();++i)order.emplace(private_input::activity::canonicalLearningReading(candidates.rows[i].reading)+char(31)+candidates.rows[i].text,i);
-    auto eligible=[&](const private_input::CandidateChoice&row){return row.custom||private_input::pinyin::is_full_spelling(rawTail,row.reading)?3:(row.repair!=SIZE_MAX?2:1);};
+    auto eligible=[&](const private_input::CandidateChoice&row){return row.custom?3:private_input::pinyin::alphabetic_candidate_priority(rawTail,row.reading,row.repair!=SIZE_MAX);};
     auto rank=[&](const private_input::CandidateChoice&row){auto key=private_input::activity::canonicalLearningReading(row.reading)+char(31)+row.text;bool explicitEntry=learned->explicitKeys.count(key)!=0;double base=explicitEntry?8000.0:4096.0/(1.0+double(order.at(key)));if(contextModel){base+=512.0*private_input::PublicContextModel::match(contextHints,row.text);if(!contextAfter.empty())base+=256.0*private_input::PublicContextModel::match(contextModel->hints(row.text),contextAfter);}auto found=learned->scores.find(key);if(found==learned->scores.end())return base;if(found->second.pinned)return 1e12;return base+(found->second.recent>=0?8192.0*found->second.recent:384.0*std::log2(1.0+double(found->second.frequency)));};
     for(auto&row:candidates.rows){row.rankingClass=eligible(row);row.rankingScore=rank(row);}
-    std::stable_sort(candidates.rows.begin(),candidates.rows.end(),[](const auto&a,const auto&b){return a.rankingClass==b.rankingClass?a.rankingScore>b.rankingScore:a.rankingClass>b.rankingClass;});
+    std::stable_sort(candidates.rows.begin(),candidates.rows.end(),private_input::candidateRankingBefore);
     words.clear();for(const auto &row:candidates.rows)words.push_back(wide(row.text.c_str()));navigation.reset(words.size());
   }
   void prepareForwardNavigation(int direction,size_t step){
     if(direction<=0||!candidates.hasMoreNative||navigation.selected+step+navigation.pageSize()<words.size())return;
     const auto old=candidates.rows.size();
     if(candidates.appendNative([&](size_t offset,size_t limit){return readNative(offset,limit);})){
-      candidates.rows.erase(std::remove_if(candidates.rows.begin()+old,candidates.rows.end(),[&](const auto&row){return !glyphFilter.supports(wide(row.text.c_str()));}),candidates.rows.end());
+      candidates.rows.erase(std::remove_if(candidates.rows.begin()+old,candidates.rows.end(),[&](const auto&row){return !candidateDisplayable(row.text);}),candidates.rows.end());
       for(size_t i=old;i<candidates.rows.size();++i)words.push_back(wide(candidates.rows[i].text.c_str()));
       navigation.count=words.size();++revision;
     }
   }
   void updatePanel(ITfContext *ctx,TfEditCookie cookie){
+    if(diagnosticSafe)diagnosticSafe=!secure&&scopeOf(ctx,cookie)==FieldScope::normal;diagnosticField=diagnosticSafe?archiveFieldType(ctx,cookie):0;
     if(words.empty()){panel.hide();return;}
     ComPtr<ITfContextView> view;RECT rect{};BOOL clipped=FALSE;ComPtr<ITfRange> range,caret;bool located=false;HWND host=nullptr;
     if(SUCCEEDED(ctx->GetActiveView(&view))){view->GetWnd(&host);if(clipboardVisible&&clipboardSelection&&SUCCEEDED(clipboardSelection->Clone(&caret))&&SUCCEEDED(caret->Collapse(cookie,TF_ANCHOR_END)))located=SUCCEEDED(view->GetTextExt(cookie,caret.Get(),&rect,&clipped))&&rect.bottom>rect.top;if(composition&&SUCCEEDED(composition->GetRange(&range))&&SUCCEEDED(range->Clone(&caret))&&SUCCEEDED(caret->Collapse(cookie,TF_ANCHOR_END))){located=SUCCEEDED(view->GetTextExt(cookie,caret.Get(),&rect,&clipped))&&rect.bottom>rect.top;}}
     // A host may temporarily deny layout during an edit. Keep a usable
     // candidate at that host's edge instead of making the whole input blind.
     if(!located){if(!host)host=GetForegroundWindow();if(!host||!GetWindowRect(host,&rect)){panel.hide();return;}rect.left+=16;rect.top+=40;rect.right=rect.left+1;rect.bottom=rect.top+20;}
-    panel.show(g_instance,rect,words,revision,host?GetDpiForWindow(host):96,navigation);
+    diagnosticHost=host;panel.show(g_instance,rect,words,revision,host?GetDpiForWindow(host):96,navigation);
   }
   // Native rows select their absolute engine index; repair rows replay their
   // spelling in a private probe and replace only the unselected suffix.
   HRESULT applyCandidate(ITfContext *ctx,TfEditCookie cookie,size_t index){
-    if(index>=words.size())return E_FAIL;readContext(ctx,cookie);
+    if(index>=words.size()||index>=candidates.rows.size()||!candidateDisplayable(candidates.rows[index].text))return E_FAIL;readContext(ctx,cookie);auto currentLearning=learningReader.read();if(sessionLearning&&currentLearning->scopeGeneration!=sessionLearning->scopeGeneration&&candidates.rows[index].custom){sessionLearning=currentLearning;reloadCandidates();updatePanel(ctx,cookie);return S_FALSE;}
     if(english){
       const auto committed=words[index];learningSelections.push_back({wide(englishInput.c_str()),committed});HRESULT hr=setOwnText(ctx,cookie,committed,true);
       if(FAILED(hr)){pendingCommit=committed;pendingContext=ctx;return hr;}
@@ -295,6 +318,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     if(!pendingCommit.empty()){HRESULT result=deliverPending(ctx,cookie);if(result!=S_OK)return result;degraded=false;if(finishPending)return S_OK;}
     // Draining a failed commit can be the only reason this key was routed.
     // Let the host handle literals and navigation once that work has finished.
+    sessionLearning=private_input::freezeLearningSnapshot(learningReader.read(),sessionLearning,!composing());
     if(!composing()){auto cached=std::atomic_load(&desktopCache);inputPreferences=cached->input;panel.setTheme(inputPreferences.theme);navigation.configure(cached->layout.collapsed,cached->layout.columns,cached->layout.rows);}
     if(!accepts(ctx,key))return S_OK;
     // Return explicitly commits the typed spelling, never the highlighted
@@ -369,30 +393,30 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     *eaten=pi_process_key(session,code,0)!=0;++revision;return flushResult(ctx,cookie);
   }
   HRESULT handleArchivedKey(ITfContext*ctx,TfEditCookie cookie,WPARAM key,bool*handled){
-    const bool diagnostic=!secure&&scopeOf(ctx,cookie)==FieldScope::normal&&archiveEmitter.diagnosticsEnabled();
-    const std::string before=diagnostic?(english?englishInput:std::string(pi_raw_input(session))):"";
+    const bool diagnostic=!secure&&scopeOf(ctx,cookie)==FieldScope::normal&&archiveEmitter.diagnosticsEnabled();diagnosticSafe=diagnostic;
+    const auto before=diagnostic?(english?englishInput:std::string(pi_raw_input(session))):std::string{};
+    if(activeDecision)endDecision(ctx,cookie,S_FALSE,"input_changed");
+    if(diagnostic&&!words.empty()&&(key==VK_SPACE||key==VK_RETURN||(key>='1'&&key<='9'))){const auto index=key>='1'&&key<='9'?navigation.digit(unsigned(key-'0')):navigation.selected;startDecision(index,key==VK_SPACE?"space":key==VK_RETURN?"enter":"number",key==VK_SPACE?"space":key==VK_RETURN?"enter":"number");if(key==VK_RETURN&&activeDecision){activeDecision->selected.reset();activeDecision->reason="literal_commit";}}
+    else if(diagnostic&&key==VK_ESCAPE&&!before.empty())startDecision(SIZE_MAX,"unknown","escape");
     const auto result=handleKey(ctx,cookie,key,handled);
-    if(diagnostic&&*handled&&scopeOf(ctx,cookie)==FieldScope::normal){try{
-      using private_input::activity::Json;
-      const auto after=english?englishInput:std::string(pi_raw_input(session));
-      auto payload=Json::object({{"action","key"},{"key",std::to_string(key)},{"raw_before",before},{"raw_after",after},{"committed",false}}).dump();
-      if(payload.size()<=16384){ComPtr<ITfContextView>view;HWND host=nullptr;if(SUCCEEDED(ctx->GetActiveView(&view)))view->GetWnd(&host);
-        archiveEmitter.emit(wide(payload.c_str()),host,archiveSession,archiveEditor,true,english?2:1,archiveFieldType(ctx,cookie),false,true);}
-    }catch(...) {}}
-    return result;
+    // Preserve the existing separately authorized raw v1 stream. JSON/SQLite
+    // remain on the archive worker; new v2 snapshots are terminal-only.
+    if(diagnostic&&*handled&&!secure&&scopeOf(ctx,cookie)==FieldScope::normal){private_input::activity::DecisionCapture raw;raw.legacyOnly=true;raw.before=before;raw.after=english?englishInput:std::string(pi_raw_input(session));raw.key=std::to_string(key);archiveEmitter.emitDecision(raw,diagnosticHost,archiveSession,archiveEditor,english?2:1,archiveFieldType(ctx,cookie));}
+    if(activeDecision)endDecision(ctx,cookie,result,!*handled?"not_handled":key==VK_ESCAPE?"explicit_cancel":"");return result;
   }
   void choose(size_t index,unsigned long long version){
     if(clipboardVisible){auto ctx=clipboardContext;if(!ctx||index!=0||version!=revision)return;HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,[this,ctx,version](TfEditCookie cookie){return pasteClipboardCandidate(ctx.Get(),cookie,version);},&result);return;}
-    auto ctx=compositionContext;if(!focusedContext(ctx.Get())){panel.hide();return;}if(!ctx||version!=revision||index>=candidates.rows.size())return;HRESULT result=E_FAIL;
-    request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,[this,ctx,index,version](TfEditCookie cookie){
-      if(!focusedContext(ctx.Get())){panel.hide();return S_FALSE;}
-      if(version!=revision||!selectionInside(ctx.Get(),cookie)||disabled(ctx.Get())||scopeOf(ctx.Get(),cookie)==FieldScope::password)return S_FALSE;
-      return applyCandidate(ctx.Get(),cookie,index);
+    auto ctx=compositionContext;if(!focusedContext(ctx.Get())){activeDecision.reset();panel.hide();return;}if(!ctx||version!=revision||index>=candidates.rows.size()){activeDecision.reset();return;}const auto decisionID=activeDecision?activeDecision->link.decision:std::string{};HRESULT result=E_FAIL;
+    request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,[this,ctx,index,version,decisionID](TfEditCookie cookie){
+      if(!focusedContext(ctx.Get())){activeDecision.reset();panel.hide();return S_FALSE;}
+      if(!decisionID.empty()&&(!activeDecision||activeDecision->link.decision!=decisionID))return S_FALSE;
+      if(version!=revision||!selectionInside(ctx.Get(),cookie)||disabled(ctx.Get())||scopeOf(ctx.Get(),cookie)==FieldScope::password){endDecision(ctx.Get(),cookie,S_FALSE,"stale_state");return S_FALSE;}
+      const auto result=applyCandidate(ctx.Get(),cookie,index);endDecision(ctx.Get(),cookie,result);return result;
     },&result);
   }
   void manageCandidate(size_t index,unsigned long long version,unsigned action){if(clipboardVisible)return;auto ctx=compositionContext;if(english||!ctx||!focusedContext(ctx.Get())||version!=revision||index>=candidates.rows.size())return;auto choice=candidates.rows[index];auto reading=private_input::activity::canonicalLearningReading(choice.reading);if(reading.empty())return;HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READ,[this,ctx,version,reading,word=choice.text,action](TfEditCookie cookie){if(!focusedContext(ctx.Get())||version!=revision||scopeOf(ctx.Get(),cookie)!=FieldScope::normal)return S_FALSE;ComPtr<ITfContextView>view;HWND hwnd=nullptr;if(SUCCEEDED(ctx->GetActiveView(&view)))view->GetWnd(&hwnd);archiveEmitter.emitLearning(wide(reading.c_str()),wide(word.c_str()),hwnd,action);return S_OK;},&result);}
 public:
-  TextService(const PrivateInputEnginePaths *paths):panel([this](size_t index,unsigned long long version){choose(index,version);},[this](int direction){auto ctx=compositionContext;const auto version=revision;if(!focusedContext(ctx.Get())){panel.hide();return;}HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READ,[this,ctx,direction,version](TfEditCookie cookie){if(!focusedContext(ctx.Get())){panel.hide();return S_FALSE;}if(version!=revision||!selectionInside(ctx.Get(),cookie)||disabled(ctx.Get())||scopeOf(ctx.Get(),cookie)==FieldScope::password)return S_FALSE;prepareForwardNavigation(direction,size_t(navigation.columns));navigation.vertical(direction);++revision;updatePanel(ctx.Get(),cookie);return S_OK;},&result);}){if(paths)enginePaths=*paths;panel.setManagement([this](size_t i,unsigned long long v,unsigned a){manageCandidate(i,v,a);},[this](size_t i){if(i>=candidates.rows.size())return false;auto snapshot=learningReader.read();auto&row=candidates.rows[i];auto key=private_input::activity::canonicalLearningReading(row.reading)+char(31)+row.text;auto found=snapshot->scores.find(key);return found!=snapshot->scores.end()&&found->second.pinned;});GUID archiveID{};if(SUCCEEDED(CoCreateGuid(&archiveID)))memcpy(archiveSession.data(),&archiveID,sizeof(archiveID));++g_objects;}
+  TextService(const PrivateInputEnginePaths *paths):panel([this](size_t index,unsigned long long version){choose(index,version);},[this](int direction){auto ctx=compositionContext;const auto version=revision;if(!focusedContext(ctx.Get())){panel.hide();return;}HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READ,[this,ctx,direction,version](TfEditCookie cookie){if(!focusedContext(ctx.Get())){panel.hide();return S_FALSE;}if(version!=revision||!selectionInside(ctx.Get(),cookie)||disabled(ctx.Get())||scopeOf(ctx.Get(),cookie)==FieldScope::password)return S_FALSE;prepareForwardNavigation(direction,size_t(navigation.columns));navigation.vertical(direction);++revision;updatePanel(ctx.Get(),cookie);return S_OK;},&result);}){panel.setObservation([this](size_t i,unsigned long long v,bool released,bool valid){observeCandidate(i,v,released,valid);});if(paths)enginePaths=*paths;panel.setManagement([this](size_t i,unsigned long long v,unsigned a){manageCandidate(i,v,a);},[this](size_t i){if(i>=candidates.rows.size())return false;auto snapshot=learningReader.read();auto&row=candidates.rows[i];auto key=private_input::activity::canonicalLearningReading(row.reading)+char(31)+row.text;auto found=snapshot->scores.find(key);return found!=snapshot->scores.end()&&found->second.pinned;});GUID archiveID{};if(SUCCEEDED(CoCreateGuid(&archiveID)))memcpy(archiveSession.data(),&archiveID,sizeof(archiveID));++g_objects;}
   ~TextService(){if(clipboardPollWindow)DestroyWindow(clipboardPollWindow);learningReader.stop();if(session)pi_destroy_session(session);--g_objects;}
   STDMETHODIMP QueryInterface(REFIID iid,void **out)override{
     if(!out)return E_POINTER;*out=nullptr;if(iid==IID_IUnknown||iid==IID_ITfTextInputProcessor||iid==IID_ITfTextInputProcessorEx)*out=static_cast<ITfTextInputProcessorEx*>(this);
@@ -406,7 +430,7 @@ public:
     // In a protected desktop do not subscribe to key events, load dictionaries,
     // or create any learning database. The OS retains its own input handling.
     if(secure)return S_OK;
-    if(!enginePaths){WNDCLASSW cls{};cls.lpfnWndProc=clipboardPollProc;cls.hInstance=g_instance;cls.lpszClassName=L"LingheInput.ClipboardCandidatePoll";RegisterClassW(&cls);clipboardPollWindow=CreateWindowExW(0,cls.lpszClassName,L"",0,0,0,0,0,HWND_MESSAGE,nullptr,g_instance,this);if(clipboardPollWindow)SetTimer(clipboardPollWindow,1,250,nullptr);}
+    // Desktop clipboard has no IME offer and requires no UI polling timer.
     archiveEmitter.start();if(!enginePaths){wchar_t module[32768]{};DWORD n=GetModuleFileNameW(g_instance,module,32768);if(n&&n<32768){auto broker=std::filesystem::path(module).parent_path()/L"LingheInputActivity.exe";if(std::filesystem::is_regular_file(broker))ShellExecuteW(nullptr,L"open",broker.c_str(),L"--background",broker.parent_path().c_str(),SW_HIDE);}}
     HRESULT hr=manager.As(&keystrokes);if(FAILED(hr)){manager.Reset();return hr;}
     if(!startEngine()){keystrokes.Reset();manager.Reset();return E_FAIL;}if(!enginePaths){auto resource=utf8((publicContextPath.parent_path().parent_path()/L"rime").wstring());PWSTR local=nullptr;std::filesystem::path preference;if(SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local))){preference=std::filesystem::path(local)/L"PrivateInput/desktop-candidate-layout-v1.json";CoTaskMemFree(local);}learningReader.start(publicContextPath,[resource]{pi_prepare_repair_resources(resource.c_str());},[this,preference]{auto next=std::make_shared<CachedDesktopPreferences>();next->layout=readDesktopLayout(preference);next->input=readDesktopInputPreferences(preference);std::shared_ptr<const CachedDesktopPreferences>frozen=next;std::atomic_store(&desktopCache,std::move(frozen));});}

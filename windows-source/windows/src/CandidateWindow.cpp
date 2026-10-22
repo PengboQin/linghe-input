@@ -20,6 +20,8 @@ void CandidateWindow::show(HINSTANCE instance,const RECT &anchor,const std::vect
  const auto& work=monitor.rcWork;
  layout=private_input::candidateLayout(widths,navigation,int(work.right-work.left),int(work.bottom-work.top),displayDpi);
  if(layout.slots.empty()){hide();return;}
+ // Native accessible name mirrors only visible choices. Painting remains unchanged.
+ std::wstring accessible=L"灵鹤候选";for(const auto&slot:layout.slots){auto line=L"\n"+std::to_wstring(slot.index+1)+L". "+labels[slot.index];if(accessible.size()+line.size()>8192)break;accessible+=line;}SetWindowTextW(window,accessible.c_str());
  auto position=private_input::candidatePosition({int(anchor.left),int(anchor.top),int(anchor.right),int(anchor.bottom)},{int(work.left),int(work.top),int(work.right),int(work.bottom)},layout.width,layout.height,private_input::candidateScale(4,displayDpi));
  SetWindowPos(window,HWND_TOPMOST,position.x,position.y,layout.width,layout.height,SWP_NOACTIVATE|SWP_SHOWWINDOW);InvalidateRect(window,nullptr,TRUE);
 }
@@ -42,7 +44,7 @@ void CandidateWindow::paint(){
 LRESULT CALLBACK CandidateWindow::procedure(HWND hwnd,UINT message,WPARAM w,LPARAM l){auto*self=reinterpret_cast<CandidateWindow*>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));if(message==WM_NCCREATE){self=static_cast<CandidateWindow*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);SetWindowLongPtrW(hwnd,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(self));}if(!self)return DefWindowProcW(hwnd,message,w,l);
  switch(message){case WM_SETTINGCHANGE:self->systemDark=desktopSystemDark();InvalidateRect(hwnd,nullptr,TRUE);return 0;case WM_MOUSEACTIVATE:return MA_NOACTIVATE;case WM_PAINT:self->paint();return 0;case WM_ERASEBKGND:return 1;
  case WM_RBUTTONUP:{auto index=self->layout.hit(GET_X_LPARAM(l),GET_Y_LPARAM(l));if(!index||!self->manage||!self->managementEnabled)return 0;bool pinned=self->pinned&&self->pinned(*index);HMENU menu=CreatePopupMenu();if(!menu)return 0;AppendMenuW(menu,MF_STRING,100,pinned?L"取消置顶":L"置顶候选");AppendMenuW(menu,MF_STRING,101,L"恢复默认词频");POINT point{GET_X_LPARAM(l),GET_Y_LPARAM(l)};ClientToScreen(hwnd,&point);auto result=TrackPopupMenuEx(menu,TPM_RETURNCMD|TPM_NONOTIFY|TPM_RIGHTBUTTON,point.x,point.y,hwnd,nullptr);DestroyMenu(menu);if(result==100||result==101)self->manage(*index,self->revision,result==101?5:(pinned?7:6));return 0;}
- case WM_LBUTTONDOWN:self->pressed=self->layout.hit(GET_X_LPARAM(l),GET_Y_LPARAM(l));self->pressedRevision=self->revision;return 0;
- case WM_LBUTTONUP:{const auto index=self->layout.hit(GET_X_LPARAM(l),GET_Y_LPARAM(l));auto pressed=self->pressed;auto version=self->pressedRevision;self->pressed.reset();if(index&&pressed&&*index==*pressed&&version==self->revision)self->choose(*index,version);return 0;}
+ case WM_LBUTTONDOWN:self->pressed=self->layout.hit(GET_X_LPARAM(l),GET_Y_LPARAM(l));self->pressedRevision=self->revision;if(self->observe&&self->pressed)self->observe(*self->pressed,self->revision,false,true);return 0;
+ case WM_LBUTTONUP:{const auto index=self->layout.hit(GET_X_LPARAM(l),GET_Y_LPARAM(l));auto pressed=self->pressed;auto version=self->pressedRevision;self->pressed.reset();const bool valid=index&&pressed&&*index==*pressed&&version==self->revision;if(self->observe)self->observe(index?*index:SIZE_MAX,self->revision,true,valid);if(valid)self->choose(*index,version);return 0;}
  case WM_MOUSEWHEEL:if(self->wheel)self->wheel(GET_WHEEL_DELTA_WPARAM(w)>0?-1:1);return 0;case WM_DESTROY:self->window=nullptr;return 0;default:return DefWindowProcW(hwnd,message,w,l);}
 }

@@ -44,6 +44,14 @@ Optional fields preserved: `timezone_id,utc_offset_minutes,input_session,editor_
 No client may set `server_received_at`, `change_seq` or `content_hash`.
 Allowed types input_commit,clipboard_observed,paste_action,text_revise,text_retract,source_import,coverage_gap.
 Coverage gap text must be empty. Safe-field capture is a provider responsibility; unknown capture security should be excluded before enqueue.
+Additive `org.linghe.decision.v1` is accepted only on independently authorized
+`ime.diagnostic.v1` / `source_import` / `ime_diagnostic` /
+`not_applicable` process records. Bounded candidates, state/revision IDs and
+monotonic time are validated without changing old v1 records. Ordinary output may
+carry only the pure-ID `org.linghe.decision-link.v1` correlation extension.
+See `docs/INPUT-DECISION-DIAGNOSTICS-V1-20261022.md` in the source root and
+`fixtures/decision-chain-v1.json`; preview absence is not failed recall, published
+candidates are not viewport exposure, and process commit is not output proof.
 Result `{batch_id,accepted_event_ids:[UUID],duplicate_event_ids:[UUID],received_ranges:[{installation_id:UUID,ranges:[[start,end],...],contiguous_through:int}],server_received_at:RFC3339,high_watermark:int}`.
 Same event ID + canonical event hash is duplicate; conflict 409. Same sequence with another event ID is conflict. Deleted old event returns `event_erased`409. No max-seq-only ACK. `ranges` acknowledge this batch only (bounded 128 entries); `contiguous_through` is cumulative. A request is atomically rejected if any event fails.
 

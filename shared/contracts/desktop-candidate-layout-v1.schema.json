@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Per-device desktop candidate layout",
+  "description": "Same presentation contract for macOS and the planned Windows adapter; not a learning-sync payload.",
+  "type": "object",
+  "properties": {
+    "collapsedCount": {"type": "integer", "minimum": 3, "maximum": 9, "default": 6},
+    "expandedColumns": {"type": "integer", "minimum": 3, "maximum": 9, "default": 6},
+    "expandedRows": {"type": "integer", "minimum": 3, "maximum": 9, "default": 6}
+  },
+  "additionalProperties": true
+}

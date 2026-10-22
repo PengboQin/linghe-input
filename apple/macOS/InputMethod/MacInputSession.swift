@@ -218,14 +218,14 @@ final class MacInputSession {
                     let bv = -Double(b.offset)*0.20 + max(-2,min(0,scores[String(b.offset)] ?? -2))*0.65
                     return av==bv ? a.offset<b.offset:av>bv
                 }.map(\.element)
-                self.rows=Self.mergingSemanticRanking(base:self.rows,ranked:ordered)
+                self.rows=Self.mergingSemanticRanking(base:self.rows,ranked:ordered,input:self.engine.alphabeticRankingInput)
                 self.candidatesChanged?()
             }
         }
         rankWork=work;DispatchQueue.main.asyncAfter(deadline:.now()+0.12,execute:work)
     }
-    static func mergingSemanticRanking(base:[InputCandidate],ranked:[InputCandidate])->[InputCandidate] {
-        NativeEngine.mergingSemanticRanking(base:base,ranked:ranked)
+    static func mergingSemanticRanking(base:[InputCandidate],ranked:[InputCandidate],input:String?=nil)->[InputCandidate] {
+        NativeEngine.mergingSemanticRanking(base:base,ranked:ranked,input:input)
     }
 
     func loadMoreCandidates() {

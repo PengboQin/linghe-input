@@ -4,11 +4,13 @@ import UIKit
 /// a drag starts; only touch-up-inside performs the cell's current action.
 final class KeyboardCellTouchButton: UIButton {
     var pressBegan: (() -> Void)?
+    var pressEnded: ((Bool) -> Void)?
     var activationSnapshot: (() -> (() -> Void)?)?
     var highlightChanged: ((Bool) -> Void)?
     private(set) var isHandlingControlTouch = false
     private var touchGeneration: UInt64 = 0
     private var pendingAction: (() -> Void)?
+    private var pendingPressEnd = false
     override var isHighlighted: Bool { didSet { highlightChanged?(isHighlighted) } }
 
     override init(frame: CGRect) {
@@ -21,6 +23,7 @@ final class KeyboardCellTouchButton: UIButton {
             self.touchGeneration &+= 1
             self.isHandlingControlTouch = true
             let generation = self.touchGeneration
+            self.pendingPressEnd = true
             self.pressBegan?()
             guard self.touchGeneration == generation else { return }
             self.pendingAction = self.activationSnapshot?()
@@ -31,12 +34,14 @@ final class KeyboardCellTouchButton: UIButton {
             let generation = self.touchGeneration
             let action = self.pendingAction
             self.pendingAction = nil
+            self.finishPress(accepted: true)
             action?()
             self.endControlTouch(generation: generation)
         }, for: .touchUpInside)
         addAction(UIAction { [weak self] _ in
             guard let self else { return }
             self.pendingAction = nil
+            self.finishPress(accepted: false)
             self.isHighlighted = false
             // UIKit may send touchCancel from cancelTracking itself. Calling
             // cancelTracking again from this action would recurse.
@@ -53,8 +58,13 @@ final class KeyboardCellTouchButton: UIButton {
             self.isHandlingControlTouch = false
         }
     }
+    private func finishPress(accepted: Bool) {
+        guard pendingPressEnd else { return }
+        pendingPressEnd = false; pressEnded?(accepted)
+    }
 
     func resetTouchTracking() {
+        finishPress(accepted: false)
         touchGeneration &+= 1
         pendingAction = nil
         cancelTracking(with: nil)
@@ -63,6 +73,7 @@ final class KeyboardCellTouchButton: UIButton {
     }
 
     override func cancelTracking(with event: UIEvent?) {
+        finishPress(accepted: false)
         pendingAction = nil
         super.cancelTracking(with: event)
         isHighlighted = false

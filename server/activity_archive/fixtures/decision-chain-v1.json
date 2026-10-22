@@ -1,0 +1,1813 @@
+{
+  "schema": "org.linghe.decision.v1",
+  "synthetic_only": true,
+  "cases": [
+    {
+      "name": "unknown_total_preserved",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "total_count",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "total_count": 32
+          }
+        }
+      }
+    },
+    {
+      "name": "stage",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "marked_text",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "selection_beyond_preview",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "selection",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "decision_id": "decision-1",
+            "press_state_id": "state-3",
+            "release_state_id": "state-3",
+            "selected_candidate": {
+              "candidate_id": "candidate-31",
+              "text": "独立合成候选",
+              "reading": "du li he cheng hou xuan",
+              "absolute_rank": 31,
+              "source": "unknown"
+            },
+            "selected_candidate_id": "candidate-31",
+            "selected_rank": 31
+          }
+        }
+      }
+    },
+    {
+      "name": "empty_complete_set",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [],
+            "observed_count": 0,
+            "coverage": "complete_set",
+            "truncated": false,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "total_count": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "explicit_feedback",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "feedback",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "related_decision_id": "decision-1",
+            "label_source": "synthetic",
+            "intended_text": "公开合成目标"
+          }
+        }
+      }
+    },
+    {
+      "name": "content_free_error",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "error",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "reason": "host_rejected",
+            "filter_reason_counts": {
+              "policy": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "version",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": true,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "revision",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": true,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "monotonic_us",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": -1,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "state_id",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "composition_id",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "has space",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "clock_domain",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "设备",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "core_hash",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "stage",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": [],
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "method",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "method": []
+          }
+        }
+      }
+    },
+    {
+      "name": "label_source",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "label_source": []
+          }
+        }
+      }
+    },
+    {
+      "name": "coverage",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": [],
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "observed_count",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": false,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "observed_count",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 3,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "total_count",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "total_count": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown_total_not_claimed_complete",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": false,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "candidates",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              },
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              },
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              },
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              },
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              },
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "candidates",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              },
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "secret_unknown",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "secret_unknown": "not-allowed"
+          }
+        }
+      }
+    },
+    {
+      "name": "intended_text",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "intended_text": "without_feedback"
+          }
+        }
+      }
+    },
+    {
+      "name": "model_hash",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "bad",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "filter_reason_counts",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "filter_reason_counts": {
+              "x": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "selected_candidate",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "selected_candidate": {
+              "candidate_id": "x",
+              "text": "x",
+              "absolute_rank": 1,
+              "source": "guess"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "selected_candidate",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "selected_candidate": {
+              "candidate_id": "x",
+              "text": "x",
+              "absolute_rank": 1,
+              "source": "unknown",
+              "reading": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong_provider",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.commit.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong_event_type",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "input_commit",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong_confirmation",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "insert_requested",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "complete_cannot_omit",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "complete_set",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "total_count": 32
+          }
+        }
+      }
+    },
+    {
+      "name": "selected_mismatch",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "selected_candidate": {
+              "candidate_id": "candidate-0",
+              "text": "合成候选",
+              "reading": "he cheng hou xuan",
+              "absolute_rank": 0,
+              "source": "public"
+            },
+            "selected_rank": 31
+          }
+        }
+      }
+    },
+    {
+      "name": "old_v1_compatible",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.input.v1": {
+            "action": "key",
+            "key": "4",
+            "raw_before": "44",
+            "raw_after": "444",
+            "committed": false
+          }
+        }
+      }
+    },
+    {
+      "name": "output_link_only",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.commit.v1",
+        "event_type": "input_commit",
+        "source_kind": "ime",
+        "commit_confirmation": "insert_requested",
+        "extensions": {
+          "org.linghe.decision-link.v1": {
+            "composition_id": "composition-1",
+            "decision_id": "decision-1"
+          }
+        }
+      }
+    },
+    {
+      "name": "output_link_no_raw",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.commit.v1",
+        "event_type": "input_commit",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision-link.v1": {
+            "composition_id": "composition-1",
+            "raw_input": "444"
+          }
+        }
+      }
+    },
+    {
+      "name": "published_not_viewport_exposure",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "published_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true
+          }
+        }
+      }
+    },
+    {
+      "name": "old_raw_extension_wrong_provider",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.commit.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.input.v1": {
+            "action": "key",
+            "key": "4",
+            "raw_before": "44",
+            "raw_after": "444",
+            "committed": false
+          }
+        }
+      }
+    },
+    {
+      "name": "decision_summary_press_release_clock",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "press_monotonic_us": 100000,
+            "release_monotonic_us": 100003,
+            "press_state_id": "state-3",
+            "release_state_id": "state-3"
+          }
+        }
+      }
+    },
+    {
+      "name": "decision_summary_clock_not_bool",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "press_monotonic_us": true,
+            "release_monotonic_us": 100003,
+            "press_state_id": "state-3",
+            "release_state_id": "state-3"
+          }
+        }
+      }
+    },
+    {
+      "name": "summary_marked_not_raw_or_output",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "marked_text": "GHI",
+            "marked_status": "insert_requested"
+          }
+        }
+      }
+    },
+    {
+      "name": "marked_over_utf8_limit",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "marked_text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "marked_status": "insert_requested"
+          }
+        }
+      }
+    },
+    {
+      "name": "marked_status_not_inferred",
+      "valid": false,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "marked_status": "sent"
+          }
+        }
+      }
+    },
+    {
+      "name": "desktop_mouse_method_is_not_touch",
+      "valid": true,
+      "event": {
+        "provider_id": "ime.diagnostic.v1",
+        "event_type": "source_import",
+        "source_kind": "ime_diagnostic",
+        "commit_confirmation": "not_applicable",
+        "extensions": {
+          "org.linghe.decision.v1": {
+            "version": 1,
+            "composition_id": "composition-1",
+            "revision": 3,
+            "state_id": "state-3",
+            "stage": "candidates",
+            "clock_domain": "boot-synthetic-1",
+            "monotonic_us": 100003,
+            "snapshot_id": "snapshot-3",
+            "candidates": [
+              {
+                "candidate_id": "candidate-0",
+                "text": "合成候选",
+                "reading": "he cheng hou xuan",
+                "absolute_rank": 0,
+                "source": "public"
+              }
+            ],
+            "observed_count": 1,
+            "coverage": "visible_subset",
+            "truncated": true,
+            "core_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "model_version": "synthetic-1",
+            "model_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "local_overlay": true,
+            "method": "mouse"
+          }
+        }
+      }
+    }
+  ]
+}

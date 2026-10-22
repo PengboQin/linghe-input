@@ -3,6 +3,17 @@ import Foundation
 /// Matches real pinyin, initial abbreviations and an unfinished final syllable.
 /// It never expands arbitrary Latin text or changes the supplied spelling.
 public enum PinyinInputMatch {
+    /// Alphabetic presentation tiers match core/pinyin_text.h. Context and
+    /// personal scores cannot move an edited spelling above an unedited path.
+    /// Digit codes deliberately retain their independent nine-key policy.
+    public static func candidatePriority(_ input:String,reading:String,corrected:Bool=false)->Int {
+        let raw=input.lowercased().replacingOccurrences(of:"ü",with:"v").replacingOccurrences(of:"'",with:"").replacingOccurrences(of:" ",with:"")
+        guard !raw.isEmpty,raw.utf8.allSatisfy({(97...122).contains($0)}) else{return 0}
+        if corrected {return 1}
+        if isFullSpelling(raw,reading:reading) {return 3}
+        let mostlyFull=raw.count>=7 && raw.contains(where:{"aeiouv".contains($0)})
+        return covers(raw,reading:reading,maxAbbreviations:mostlyFull ? 1:Int.max) ? 2:0
+    }
     public static func canonicalSyllable(_ value:String)->String {
         let value=value.lowercased().replacingOccurrences(of:"ü",with:"v")
         return value=="lue" ? "lve":(value=="nue" ? "nve":value)

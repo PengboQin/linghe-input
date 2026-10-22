@@ -56,7 +56,11 @@ struct ClipboardCandidateState {
     }
     private(set) var version:Int?
     private(set) var dismissedVersion:Int?
-    mutating func observe(version:Int) { self.version=version }
+    mutating func observe(version:Int,automaticEligible:Bool=true) {
+        let changed=self.version != version;self.version=version
+        // Busy observations are consumed, not a deferred popup after typing.
+        if changed && !automaticEligible {dismissedVersion=version}
+    }
     mutating func dismiss() { dismissedVersion=version }
     func available(version:Int, allowed:Bool, hasPrimary:Bool, deleting:Bool)->Bool {
         allowed && !hasPrimary && !deleting && self.version==version && dismissedVersion != version
@@ -72,11 +76,26 @@ struct ClipboardCandidateState {
     }
 }
 
+/// Presentation only; never gates receiving or writing the system clipboard.
+/// The same 700ms idle window is used by the Android adapter.
+struct ClipboardCandidateActivity {
+    private var lastInput:TimeInterval?
+    mutating func noteInput(at time:TimeInterval) {lastInput=time}
+    func mayPresent(at time:TimeInterval,hasComposition:Bool,hasInteraction:Bool)->Bool {
+        guard !hasComposition,!hasInteraction else{return false}
+        guard let lastInput else{return true}
+        return time>=lastInput && time-lastInput>=0.7
+    }
+}
+
 /// Text, visible preview and action identity are one immutable publication.
 /// A clipboard refresh cannot replace only the action under a held finger.
 struct ClipboardCandidatePresentation {
     struct Snapshot:Equatable {
         let request:ClipboardCandidateState.Request,text:String
+        let receivedSystemWrite:Bool
+        init(request:ClipboardCandidateState.Request,text:String,receivedSystemWrite:Bool=false) {self.request=request;self.text=text;self.receivedSystemWrite=receivedSystemWrite}
+        func permitsPresentation(readPaused:Bool)->Bool {!readPaused || receivedSystemWrite}
         var preview:String {ClipboardCandidateState.preview(text)}
     }
     private(set) var snapshot:Snapshot?

@@ -37,6 +37,7 @@ enum ClipboardCacheCoordinator {
     static func clearForDeparture() throws {
         try cache().clear()
         clearAutomaticPending()
+        clearPreview()
         let status=SecItemDelete(try query as CFDictionary)
         guard status==errSecSuccess || status==errSecItemNotFound else {throw IdentityStoreError.osStatus(status)}
     }
@@ -64,6 +65,116 @@ enum ClipboardCacheCoordinator {
         guard fullAccess, prefs?.bool(forKey:"clipboard-sharing-enabled") == true,
               let value=prefs?.string(forKey:"clipboard-group-id"), UUID(uuidString:value) != nil else { return false }
         return true
+    }
+    private static let previewQueue=DispatchQueue(label:"PrivateInput.clipboard-preview",qos:.utility)
+    static var markerProbeActive:Bool {
+        let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+        return (p?.double(forKey:"clipboard-probe-until") ?? 0)>Date().timeIntervalSince1970 && p?.string(forKey:"clipboard-probe-digest") != nil
+    }
+    // Accessed only by previewQueue. Bounded diagnostic states for the explicit
+    // synthetic marker; no board body/type names, endpoint or device/group IDs.
+    private static var markerDecisionDigest:String?
+    private static var markerDecisionRows:[[String:Any]]=[]
+    private static var markerDecisionSignatures=Set<String>()
+    static func recordMarkerDecision(clips:[ReceivedClipboard],stage:String,fields:[String:Any]) {
+        previewQueue.async {
+            let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+            guard markerProbeActive,let digest=p?.string(forKey:"clipboard-probe-digest"),
+                  clips.contains(where:{SHA256.hash(data:Data($0.text.utf8)).map{String(format:"%02x",$0)}.joined()==digest}) else{return}
+            if markerDecisionDigest != digest {markerDecisionDigest=digest;markerDecisionRows=[];markerDecisionSignatures=[]}
+            guard markerDecisionRows.count<24 else{return}
+            let allowed:Set<String>=["writeAllowed","readAllowed","itemCount","hasStrings","boardVersion","stateArmed","currentPassLocalActivity","changedVersion","outgoingPending","pendingLocal","localReadBlocked","selectedNil","contextValid","deliveryFresh","writeSucceeded"]
+            var row=fields.filter{allowed.contains($0.key) && ($0.value is Bool || $0.value is Int)}
+            row["stage"]=stage
+            guard let signature=try? JSONSerialization.data(withJSONObject:row,options:.sortedKeys).base64EncodedString(),markerDecisionSignatures.insert(signature).inserted else{return}
+            row["recordedAt"]=Date().timeIntervalSince1970;markerDecisionRows.append(row)
+            let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0]
+            let body:[String:Any] = ["markerSHA256":digest,"matchesExplicitSyntheticMarker":true,"owner":Bundle.main.bundleIdentifier?.hasSuffix(".keyboard")==true ? "keyboard":"app","rows":markerDecisionRows]
+            guard let data=try? JSONSerialization.data(withJSONObject:body,options:.sortedKeys) else{return}
+            try? FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+            try? data.write(to:folder.appendingPathComponent("clipboard-marker-decision-probe-v1.json"),options:[.atomic,.completeFileProtection])
+        }
+    }
+    static func recordMarkerReadPause(source:String,version:Int,hasStrings:Bool) {
+        guard source=="archive-observer" || source=="automatic-board" else{return}
+        previewQueue.async {
+            let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+            guard markerProbeActive,let digest=p?.string(forKey:"clipboard-probe-digest") else{return}
+            let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0]
+            let body:[String:Any] = ["markerSHA256":digest,"stage":"stable-body-nil-read-pause","source":source,"boardVersion":version,"hasStrings":hasStrings,"recordedAt":Date().timeIntervalSince1970]
+            guard let data=try? JSONSerialization.data(withJSONObject:body,options:.sortedKeys) else{return}
+            try? FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+            try? data.write(to:folder.appendingPathComponent("clipboard-marker-read-pause-"+source+"-v1.json"),options:[.atomic,.completeFileProtection])
+        }
+    }
+    /// An explicit synthetic-marker probe, never an always-on text logger.
+    /// It expires after ten minutes and writes only matching-marker metadata.
+    static func configureMarkerProbe(arguments:[String]) {
+        let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+        if arguments.contains("--clear-clipboard-probe") {p?.removeObject(forKey:"clipboard-probe-digest");p?.removeObject(forKey:"clipboard-probe-until");return}
+        guard let i=arguments.firstIndex(of:"--clipboard-probe-marker"),arguments.indices.contains(i+1) else{return}
+        let marker=arguments[i+1]
+        guard !marker.isEmpty,marker.utf8.count<=100,marker.allSatisfy({$0.isASCII && ($0.isLetter || $0.isNumber || $0=="-")}) else{return}
+        p?.set(SHA256.hash(data:Data(marker.utf8)).map{String(format:"%02x",$0)}.joined(),forKey:"clipboard-probe-digest")
+        p?.set(Date().timeIntervalSince1970+600,forKey:"clipboard-probe-until")
+    }
+    static func recordMarkerReceipts(_ clips:[ReceivedClipboard]) {
+        previewQueue.async {
+            let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+            guard (p?.double(forKey:"clipboard-probe-until") ?? 0)>Date().timeIntervalSince1970,
+                  let expected=p?.string(forKey:"clipboard-probe-digest"),
+                  clips.contains(where:{SHA256.hash(data:Data($0.text.utf8)).map{String(format:"%02x",$0)}.joined()==expected}) else{return}
+            writeMarkerProbe(digest:expected,stage:"authenticated-relay-cache")
+        }
+    }
+    static func recordMarkerSystemWrite(text:String,version:Int) {
+        previewQueue.async {
+            let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+            let digest=SHA256.hash(data:Data(text.utf8)).map{String(format:"%02x",$0)}.joined()
+            guard (p?.double(forKey:"clipboard-probe-until") ?? 0)>Date().timeIntervalSince1970,
+                  p?.string(forKey:"clipboard-probe-digest")==digest else{return}
+            let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0]
+            let body:[String:Any] = ["markerSHA256":digest,"stage":"system-clipboard-write","version":version,"matchesExplicitSyntheticMarker":true,"recordedAt":Date().timeIntervalSince1970]
+            guard let data=try? JSONSerialization.data(withJSONObject:body,options:.sortedKeys) else{return}
+            try? FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+            try? data.write(to:folder.appendingPathComponent("clipboard-marker-write-probe-v1.json"),options:[.atomic,.completeFileProtection])
+        }
+    }
+    private static func writeMarkerProbe(digest:String,stage:String) {
+        let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0]
+        guard let data=try? JSONSerialization.data(withJSONObject:["markerSHA256":digest,"stage":stage,"matchesExplicitSyntheticMarker":true,"recordedAt":Date().timeIntervalSince1970],options:.sortedKeys) else{return}
+        try? FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+        try? data.write(to:folder.appendingPathComponent("clipboard-marker-probe-v1.json"),options:[.atomic,.completeFileProtection])
+    }
+    private static func previewPermitted(scope:String,generation:String,source:ClipboardPreviewCache.Source = .localRead)->Bool {
+        let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+        return permitted(fullAccess:true) && p?.bool(forKey:"automatic-clipboard-enabled")==true &&
+            (source == .receivedWrite || p?.bool(forKey:"automatic-clipboard-read-paused") != true) && p?.string(forKey:"automatic-clipboard-scope")==scope &&
+            AppleClipboardOnce.generation==generation
+    }
+    static func rememberPreview(text:String,scope:String,version:Int,generation:String,now:UInt64,source:ClipboardPreviewCache.Source = .localRead) {
+        previewQueue.async {
+            guard previewPermitted(scope:scope,generation:generation,source:source),let root=LocalLearningCoordinator.sharedDirectory() else{return}
+            do {
+                let material=try key()
+                let published=try withAutomaticLock {
+                    guard previewPermitted(scope:scope,generation:generation,source:source) else{return false}
+                    return try ClipboardPreviewCache(directory:root).publish(text:text,scope:scope,version:version,generation:generation,now:now,key:material,source:source)
+                }
+                guard published,previewPermitted(scope:scope,generation:generation,source:source) else{return}
+                let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+                p?.set(UUID().uuidString,forKey:"clipboard-preview-generation")
+                DispatchQueue.main.async {NotificationCenter.default.post(name:.clipboardLiveUpdated,object:nil)}
+            } catch { /* No body or permission fallback in the keyboard UI. */ }
+        }
+    }
+    static func currentPreview(scope:String,version:Int,generation:String,now:UInt64)throws->ClipboardPreviewCache.Preview? {
+        guard previewPermitted(scope:scope,generation:generation,source:.receivedWrite),let root=LocalLearningCoordinator.sharedDirectory() else{return nil}
+        let localReadAllowed=UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.bool(forKey:"automatic-clipboard-read-paused") != true
+        return try ClipboardPreviewCache(directory:root).readPreview(scope:scope,version:version,generation:generation,now:now,key:key(),localReadAllowed:localReadAllowed)
+    }
+    static func clearPreview() {
+        try? withAutomaticLock {if let root=LocalLearningCoordinator.sharedDirectory() {try ClipboardPreviewCache(directory:root).clear()}}
     }
     private struct AutomaticPendingWire:Codable {let scopeDigest:String,sealed:Data}
     private struct AutomaticPending:Codable {
@@ -139,7 +250,8 @@ enum ClipboardCacheCoordinator {
             automaticKeyboardBridge.suspend();lastStashed=nil;automaticPollGate.reset();return
         }
         let version=NativeAutomaticClipboardBoard().version
-        let fingerprint=scope+":"+String(version)+":"+(prefs?.string(forKey:"automatic-clipboard-cache-generation") ?? "")+":"+String(prefs?.bool(forKey:"automatic-clipboard-receive-ready")==true)+":"+String(prefs?.bool(forKey:"automatic-clipboard-outgoing-pending")==true)
+        let metadataAllowed=NativeAutomaticClipboardBoard().automaticWriteAllowed
+        let fingerprint=scope+":"+String(version)+":"+(prefs?.string(forKey:"automatic-clipboard-cache-generation") ?? "")+":"+String(prefs?.bool(forKey:"automatic-clipboard-receive-ready")==true)+":"+String(prefs?.bool(forKey:"automatic-clipboard-outgoing-pending")==true)+":"+String(metadataAllowed)
         guard automaticTask==nil,automaticPollGate.begin(fingerprint) else{return}
         let epoch=UUID();automaticTaskEpoch=epoch
         automaticTask=Task {
@@ -170,7 +282,7 @@ enum ClipboardCacheCoordinator {
                     }
                 }
                 automaticKeyboardBridge.begin()
-                automaticKeyboardBridge.finish(snapshot,received:prefs?.bool(forKey:"automatic-clipboard-receive-ready")==true ? 0:1,now:now)
+                await automaticKeyboardBridge.finish(snapshot,received:prefs?.bool(forKey:"automatic-clipboard-receive-ready")==true ? 0:1,now:now,validating:{automaticTaskEpoch==epoch && validating() && permitted(fullAccess:fullAccess) && prefs?.bool(forKey:"automatic-clipboard-enabled")==true && prefs?.string(forKey:"automatic-clipboard-scope")==scope})
                 succeeded=true
             } catch { /* bounded retry only on next visible tick */ }
         }

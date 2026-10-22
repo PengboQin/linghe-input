@@ -3,10 +3,6 @@ import Foundation
 public protocol ActivityArchiveTransport {
     func send(_ request: SignedActivityRequest) async throws -> Data
 }
-private final class ActivityDenyRedirects: NSObject, URLSessionTaskDelegate {
-    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
-}
 /// No shared cookies/cache, redirects, certificate overrides, plaintext body logs or credentials in URLs.
 public struct ActivityHTTPTransport: ActivityArchiveTransport {
     public let endpoint: URL
@@ -23,11 +19,7 @@ public struct ActivityHTTPTransport: ActivityArchiveTransport {
         var http = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 15)
         http.httpMethod = "POST"; http.httpBody = try request.encoded()
         http.setValue("application/json", forHTTPHeaderField: "Content-Type"); http.setValue("application/json", forHTTPHeaderField: "Accept")
-        let config = URLSessionConfiguration.ephemeral
-        config.httpCookieStorage = nil; config.httpShouldSetCookies = false; config.urlCache = nil
-        config.timeoutIntervalForResource = 30
-        let session = URLSession(configuration: config, delegate: ActivityDenyRedirects(), delegateQueue: nil)
-        defer { session.invalidateAndCancel() }
+        let session = PrivateInputHTTPSessions.activity
         try Task.checkCancellation()
         let (bytes, response) = try await session.bytes(for: http)
         guard let response = response as? HTTPURLResponse else { throw ActivityError.invalidResponse }

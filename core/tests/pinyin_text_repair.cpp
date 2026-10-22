@@ -50,6 +50,15 @@ int main(int argc, char **argv) {
   check(covers("nh", "ni hao", 2), "nh covers ni hao");
   check(!covers("nh", "ni hao", 1), "nh exceeds one abbreviation");
   check(encode_nine("zhong guo") == "94664486", "nine-key encoding");
+  check(alphabetic_candidate_priority("nihao", "ni hao") == 3, "full spelling uses exact tier");
+  check(alphabetic_candidate_priority("lue", "lve") == 3, "umlaut aliases remain exact");
+  check(alphabetic_candidate_priority("csm", "chi shen me") == 2, "initials are an unedited path");
+  check(alphabetic_candidate_priority("shih", "shi hou") == 2, "unfinished final is an unedited path");
+  check(alphabetic_candidate_priority("shih", "shi", true) == 1, "deletion repair follows valid unfinished spelling");
+  check(alphabetic_candidate_priority("linaxaing", "lian xiang", true) == 1, "transposition repair remains a fallback");
+  check(alphabetic_candidate_priority("linaxaing", "li na xi ai neng gou") == 0, "many accidental initial matches do not defeat a full-pinyin typo repair");
+  check(alphabetic_candidate_priority("nihao", "ni") == 0, "unconsumed prefix does not become an exact whole");
+  check(alphabetic_candidate_priority("968", "you") == 0, "nine-key is outside alphabetic tier policy");
   check(is_nine_code("94664486") && !is_nine_code("94664a") && !is_nine_code(""),
         "nine-key code validation");
   std::cout << (failures ? "FAILURES " : "PASS ") << failures << "\n";

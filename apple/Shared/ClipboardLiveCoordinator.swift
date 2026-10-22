@@ -16,6 +16,8 @@ extension Notification.Name {static let clipboardLiveUpdated=Notification.Name("
     private var currentScope:String?
     private var failures=0
     private var supportedEndpoint:URL?
+    private var pendingReadRetryScope:String?
+    private var observedReadRetry=UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.string(forKey:"clipboard-live-read-retry-generation")
     private(set) var isActive=false
     private func authorized(scope:String,validating:()->Bool)->Bool {
         let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
@@ -27,6 +29,16 @@ extension Notification.Name {static let clipboardLiveUpdated=Notification.Name("
     func suspend() {
         epoch=UUID();task?.cancel();task=nil;isActive=false
         bridge.pause()
+    }
+    /// A normal explicit UI retry applies before the next prepare/begin, never
+    /// by mutating arbitration while an authenticated network pass is in flight.
+    func requestReadRetry(preferences:UserDefaults?=nil) {
+        let p=preferences ?? UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+        guard let scope=p?.string(forKey:"automatic-clipboard-scope") else{return}
+        let token=UUID().uuidString
+        p?.set(token,forKey:"clipboard-live-read-retry-generation")
+        observedReadRetry=token;pendingReadRetryScope=scope
+        nextPoll = .distantPast;retryAfter = .distantPast
     }
     @discardableResult func tick(fullAccess:Bool,sensitive:Bool=false,validating:@escaping @MainActor ()->Bool={true})->Bool {
         let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
@@ -44,6 +56,11 @@ extension Notification.Name {static let clipboardLiveUpdated=Notification.Name("
         }
         if currentScope != scope {
             suspend();currentScope=scope;supportedEndpoint=nil;nextPoll = .distantPast;retryAfter = .distantPast;observedVersion=nil;failures=0
+        }
+        let readRetry=p?.string(forKey:"clipboard-live-read-retry-generation")
+        if readRetry != observedReadRetry {
+            observedReadRetry=readRetry
+            if readRetry != nil {pendingReadRetryScope=scope;nextPoll = .distantPast;retryAfter = .distantPast}
         }
         let version=NativeAutomaticClipboardBoard().version,changed=version != observedVersion
         guard task==nil,Date()>=retryAfter,changed || Date()>=nextPoll else {return isActive}
@@ -65,6 +82,7 @@ extension Notification.Name {static let clipboardLiveUpdated=Notification.Name("
                     self.supportedEndpoint=config.endpoint
                 }
                 self.isActive=true
+                if self.pendingReadRetryScope==scope {self.bridge.requestReadRetry();self.pendingReadRetryScope=nil}
                 let before=AutomaticClipboardSession(scope:scope,device:config.certificate.parent,clips:ClipboardLiveProjection.merge(loaded.received,[],group:config.certificate.group,epoch:config.certificate.epoch,now:UInt64(Date().timeIntervalSince1970)),outgoingPending:!loaded.pending.isEmpty)
                 if let upload=self.bridge.prepare(before,importPending:false) {
                     let boardVersion=NativeAutomaticClipboardBoard().version
@@ -92,7 +110,11 @@ extension Notification.Name {static let clipboardLiveUpdated=Notification.Name("
                 }.value
                 guard !Task.isCancelled,self.epoch==token,self.authorized(scope:scope,validating:validating),let latest else{return}
                 let now=UInt64(Date().timeIntervalSince1970),clips=ClipboardLiveProjection.merge(latest.received,[],group:config.certificate.group,epoch:config.certificate.epoch,now:now)
-                self.bridge.finish(.init(scope:scope,device:config.certificate.parent,clips:clips,outgoingPending:!latest.pending.isEmpty),received:response.items.count,now:now)
+                #if os(iOS)
+                ClipboardCacheCoordinator.recordMarkerReceipts(clips)
+                #endif
+                await self.bridge.finish(.init(scope:scope,device:config.certificate.parent,clips:clips,outgoingPending:!latest.pending.isEmpty),received:response.items.count,now:now,validating:{self.epoch==token && self.authorized(scope:scope,validating:validating)})
+                guard !Task.isCancelled,self.epoch==token,self.authorized(scope:scope,validating:validating) else{return}
                 // Only actual new receipt/cursor state changes wake candidate UI.
                 let fingerprint=String(latest.cursor ?? 0)+":"+clips.map{$0.id.uuidString}.joined(separator:":")
                 if p?.string(forKey:"clipboard-live-cache-generation") != fingerprint {

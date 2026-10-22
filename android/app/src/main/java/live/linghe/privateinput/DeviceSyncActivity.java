@@ -100,11 +100,11 @@ public final class DeviceSyncActivity extends Activity {
   private void refresh(){
     SyncTasks.worker.execute(()->{
       try{
-        SyncClient c=new SyncClient(this);boolean connected=c.connected(),joining=c.joining(),expired=c.joiningExpired();long deadline=c.joiningDeadline();String departed=c.departureReason();String server=c.endpoint();int count=c.members();boolean l=c.learning(),s=c.clipboard();JSONArray messages=c.inbox(),unsent=c.unsent();JSONObject ticket=c.ticket();boolean inviting=ticket!=null&&ticket.optLong("expiresAt",0)>System.currentTimeMillis()/1000;main.post(()->{
+        SyncClient c=new SyncClient(this);boolean connected=c.connected(),joining=c.joining(),expired=c.joiningExpired();long deadline=c.joiningDeadline();String departed=c.departureReason();String server=c.endpoint();int count=c.members();boolean l=c.learning(),s=c.clipboard();JSONArray unsent=c.unsent();JSONObject ticket=c.ticket();boolean inviting=ticket!=null&&ticket.optLong("expiresAt",0)>System.currentTimeMillis()/1000;main.post(()->{
           if(isFinishing()||isDestroyed())return;status.setText(connected?count+" 台设备 · "+(l||s?"端到端加密":"同步已暂停"):joining?(expired?"连接已超时，请重新扫码或输入新码":"等待邀请设备完成连接"):(departed.isEmpty()?"尚未连接设备组":"已离组，本机个人资料已清除"));if(!lastError.isEmpty())status.append("\n"+lastError);else if(!LingheApplication.syncError.isEmpty())status.append("\n"+LingheApplication.syncError);String shape=connected+":"+joining+":"+expired;if(!shape.equals(details.getTag())){
             details.setTag(shape);render(c,connected,joining,server,l,s);
           }
-          renderInbox(messages,unsent,s);main.removeCallbacks(poll);if(active&&(connected||joining&&!expired))main.postDelayed(poll,joining||inviting?3000:15000);
+          renderUnsent(unsent,s);main.removeCallbacks(poll);if(active&&(connected||joining&&!expired))main.postDelayed(poll,joining||inviting?3000:15000);
         }
         );
       }
@@ -164,15 +164,18 @@ public final class DeviceSyncActivity extends Activity {
       synchronized(SyncClient.CONSENT_LOCK){
         getSharedPreferences("sync-consent",0).edit().putLong("generation",getSharedPreferences("sync-consent",0).getLong("generation",0)+1).putBoolean("learning",a).putBoolean("clipboard",b).commit();
       }
+      if(!a)CloudLearningStore.requestDisable(this);
       SyncJob.schedule(this);
       run(false,x->{
-        x.synchronize();return null;
+        if(!a)x.configureCloudLearning(false,false);x.synchronize();return null;
       }
       );
     }
     ;
     learn.setOnCheckedChangeListener(toggle);
     shared.setOnCheckedChangeListener(toggle);
+    Switch cloud=new Switch(this);cloud.setText("云端词频优化");cloud.setTextColor(Ui.text(this));cloud.setChecked(getSharedPreferences("sync-consent",0).getBoolean(CloudLearningStore.ENABLED,false));cloud.setEnabled(l);details.addView(cloud,new LinearLayout.LayoutParams(-1,dp(54)));
+    cloud.setOnCheckedChangeListener((button,on)->{if(changing)return;if(!on)CloudLearningStore.requestDisable(this);run(true,x->{x.configureCloudLearning(on,true);return null;});});
     Switch automatic=new Switch(this);automatic.setText("自动同步系统剪贴板");automatic.setTextColor(Ui.text(this));automatic.setChecked(AutoClipboardBridge.get(this).enabled());automatic.setEnabled(s);
     details.addView(automatic,new LinearLayout.LayoutParams(-1,dp(54)));
     automatic.setOnCheckedChangeListener((button,on)->{if(!changing){AutoClipboardBridge.get(this).setEnabled(on);SyncJob.schedule(this);run(false,x->{x.synchronize();return null;});}});
@@ -204,8 +207,8 @@ public final class DeviceSyncActivity extends Activity {
     )).show());
   }
   private String inboxSignature="";
-  private void renderInbox(JSONArray items,JSONArray unsent,boolean enabled){
-    String signature=enabled+":"+items.toString()+":"+unsent.toString();
+  private void renderUnsent(JSONArray unsent,boolean enabled){
+    String signature=enabled+":"+unsent.toString();
     if(signature.equals(inboxSignature))return;
     inboxSignature=signature;
     inbox.removeAllViews();
@@ -220,14 +223,6 @@ public final class DeviceSyncActivity extends Activity {
           c.resend(event);return null;
         })));
       }
-    }
-    inbox.addView(label("收到的共享文本",18));
-    for(int i=items.length()-1;i>=0;i--){
-      JSONObject item=items.optJSONObject(i);
-      String text=item.optString("text");
-      inbox.addView(new SharedTextEntry(this,text,"复制",raw->{
-        ClipData clip=ClipData.newPlainText("共享文本",raw);AutoClipboardBridge.get(this).markOwn(clip,item.optString("event",item.optString("id","")));ActivityArchiveManager.get(this).ownClipboard(clip,item.optString("event",item.optString("id","")));((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(clip);Toast.makeText(this,"已复制",Toast.LENGTH_SHORT).show();
-      }));
     }
   }
   private void showTicket(JSONObject value){

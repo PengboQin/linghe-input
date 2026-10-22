@@ -1,0 +1,12 @@
+[Unit]
+Description=PrivateInput learning every ten minutes (hourly decay inside worker)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+RandomizedDelaySec=20
+Persistent=true
+Unit=private-input-learning-worker.service
+
+[Install]
+WantedBy=timers.target

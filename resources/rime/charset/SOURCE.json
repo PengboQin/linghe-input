@@ -1,0 +1,16 @@
+{
+  "policy": "mainland-simplified-v1",
+  "sourceRepository": "https://github.com/jaywcjlove/table-of-general-standard-chinese-characters",
+  "revision": "ea539bfb164946a7aa71048954ac2bd4833098e7",
+  "sourcePath": "data/characters.txt",
+  "sha256": "668f69e856c357157720ab5a6f8644dca8a253b439772f92cd762b186a53b421",
+  "license": "MIT",
+  "authority": "https://www.moe.gov.cn/jyb_xwfb/xw_fbh/moe_2069/s7135/s7562/s7569/201308/t20130827_156353.html",
+  "count": 8105,
+  "tiers": [
+    3500,
+    3000,
+    1605
+  ],
+  "scope": "Automatic Chinese dictionary/candidate admission only; never literal input, clipboard, or archive rewriting"
+}

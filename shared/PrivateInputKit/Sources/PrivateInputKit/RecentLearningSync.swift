@@ -87,6 +87,7 @@ public struct RecentLearningServerStatus: Codable {
     public let event: UUID?
     public let envelope: RecentLearningEnvelope?
     public let next: String?
+    public let conditionalSnapshots: Bool?
     public func validate(request: SignedRecencyRequest, setup: GroupSetup) throws {
         guard version == 1, group == request.group, sender == request.sender, nonce == request.nonce,
               group == setup.membership.statement.group, epoch == setup.membership.statement.epoch,
@@ -97,7 +98,13 @@ public struct RecentLearningServerStatus: Codable {
               serverTime >= request.issuedAt ? serverTime - request.issuedAt < 300 : request.issuedAt - serverTime < 300 else { throw RecentLearningSyncError.invalidTime }
         if request.operation == 2 { guard accepted == true, event != nil else { throw RecentLearningSyncError.invalidWire } }
         if request.operation == 1 {
-            guard (envelope == nil) == publishedEvent.isEmpty else { throw RecentLearningSyncError.invalidWire }
+            if envelope == nil && !publishedEvent.isEmpty {
+                struct ConditionalBody: Decodable { let knownEvent: String? }
+                guard conditionalSnapshots == true,
+                      try JSONDecoder().decode(ConditionalBody.self, from: request.body).knownEvent == publishedEvent else { throw RecentLearningSyncError.invalidWire }
+            } else {
+                guard (envelope == nil) == publishedEvent.isEmpty else { throw RecentLearningSyncError.invalidWire }
+            }
             if let envelope { guard envelope.sender == sender, envelope.event.uuidString == publishedEvent else { throw RecentLearningSyncError.invalidWire } }
         }
         if request.operation == 3 {
@@ -115,10 +122,6 @@ public struct TimedRecentLearningStatus {
 }
 
 public protocol RecentLearningTransport { func send(_ request: SignedRecencyRequest) async throws -> Data }
-private final class RecencyDenyRedirects: NSObject, URLSessionTaskDelegate {
-    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
-}
 public struct RecentLearningHTTPTransport: RecentLearningTransport {
     public let endpoint: URL
     public init(endpoint: URL, allowLoopbackHTTP: Bool = false) throws {
@@ -129,10 +132,7 @@ public struct RecentLearningHTTPTransport: RecentLearningTransport {
         for part in ["v1", "groups", request.group.uuidString, "recency"] { url.appendPathComponent(part) }
         var http = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10)
         http.httpMethod = "POST"; http.httpBody = try request.encoded(); http.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let config = URLSessionConfiguration.ephemeral; config.httpCookieStorage = nil; config.httpShouldSetCookies = false; config.urlCache = nil
-        config.timeoutIntervalForResource = 10
-        let session = URLSession(configuration: config, delegate: RecencyDenyRedirects(), delegateQueue: nil)
-        defer { session.invalidateAndCancel() }
+        let session = PrivateInputHTTPSessions.recency
         let (bytes, raw) = try await session.bytes(for: http)
         guard let response = raw as? HTTPURLResponse else { throw RecentLearningSyncError.invalidWire }
         if response.statusCode == 404 { throw RecentLearningSyncError.unsupported }
@@ -160,11 +160,12 @@ public struct RecentLearningClient {
         try result.validate(request: request, setup: setup)
         return .init(status: result, responseUptime: ended)
     }
-    public func hello(setup: GroupSetup, identity: DeviceIdentity, roles: [String], now: UInt64) async throws -> TimedRecentLearningStatus {
+    public func hello(setup: GroupSetup, identity: DeviceIdentity, roles: [String], now: UInt64, knownEvent: String? = nil) async throws -> TimedRecentLearningStatus {
         guard !roles.isEmpty, roles.count <= 4, Set(roles).count == roles.count,
               roles.allSatisfy({ ["app","keyboard","desktop","ime"].contains($0) }), roles.contains("keyboard") || roles.contains("ime") else { throw RecentLearningSyncError.invalidWire }
-        struct Body: Encodable { let epoch: UInt64; let membershipRevision: UInt64; let roles: [String] }
-        return try await rpc(operation: 1, body: JSONEncoder().encode(Body(epoch: setup.membership.statement.epoch, membershipRevision: setup.membership.statement.revision, roles: roles)), setup: setup, identity: identity, now: now)
+        guard knownEvent == nil || knownEvent == "" || UUID(uuidString: knownEvent!) != nil else { throw RecentLearningSyncError.invalidWire }
+        struct Body: Encodable { let epoch: UInt64; let membershipRevision: UInt64; let roles: [String]; let knownEvent: String? }
+        return try await rpc(operation: 1, body: JSONEncoder().encode(Body(epoch: setup.membership.statement.epoch, membershipRevision: setup.membership.statement.revision, roles: roles, knownEvent: knownEvent)), setup: setup, identity: identity, now: now)
     }
     public func push(_ envelope: RecentLearningEnvelope, expectedEvent: String, setup: GroupSetup, identity: DeviceIdentity, now: UInt64) async throws -> TimedRecentLearningStatus {
         struct Body: Encodable { let epoch: UInt64; let membershipRevision: UInt64; let envelope: RecentLearningEnvelope; let expectedEvent: String }
@@ -173,10 +174,13 @@ public struct RecentLearningClient {
         let result = try await rpc(operation: 2, body: JSONEncoder().encode(Body(epoch: setup.membership.statement.epoch, membershipRevision: setup.membership.statement.revision, envelope: envelope, expectedEvent: expectedEvent)), setup: setup, identity: identity, now: now)
         guard result.status.event == envelope.event, result.status.publishedEvent == envelope.event.uuidString else { throw RecentLearningSyncError.invalidWire }; return result
     }
-    public func pull(after: String, setup: GroupSetup, identity: DeviceIdentity, now: UInt64) async throws -> TimedRecentLearningStatus {
-        struct Body: Encodable { let epoch: UInt64; let membershipRevision: UInt64; let after: String }
+    public func pull(after: String, setup: GroupSetup, identity: DeviceIdentity, now: UInt64, knownSnapshots: [String: String]? = nil) async throws -> TimedRecentLearningStatus {
+        struct Body: Encodable { let epoch: UInt64; let membershipRevision: UInt64; let after: String; let knownSnapshots: [String: String]? }
         guard after.isEmpty || UUID(uuidString: after) != nil else { throw RecentLearningSyncError.invalidWire }
-        let result = try await rpc(operation: 3, body: JSONEncoder().encode(Body(epoch: setup.membership.statement.epoch, membershipRevision: setup.membership.statement.revision, after: after)), setup: setup, identity: identity, now: now)
+        if let knownSnapshots {
+            guard knownSnapshots.count <= 64, knownSnapshots.allSatisfy({ UUID(uuidString: $0.key)?.uuidString == $0.key && UUID(uuidString: $0.value)?.uuidString == $0.value }) else { throw RecentLearningSyncError.invalidWire }
+        }
+        let result = try await rpc(operation: 3, body: JSONEncoder().encode(Body(epoch: setup.membership.statement.epoch, membershipRevision: setup.membership.statement.revision, after: after, knownSnapshots: knownSnapshots)), setup: setup, identity: identity, now: now)
         if let next = result.status.next, !next.isEmpty { guard next > after else { throw RecentLearningSyncError.invalidWire } }
         return result
     }

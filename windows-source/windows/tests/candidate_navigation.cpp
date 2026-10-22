@@ -1,9 +1,17 @@
 #include "desktop_candidates.hpp"
 #include "CandidateStream.h"
+#include "pinyin_text.h"
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 int main(){
  using namespace private_input;
+ // The production comparator cannot let even an extreme context/learned
+ // score move an edit above a legal alphabetic spelling or unfinished path.
+ std::vector<CandidateChoice> spellingRows={{"full",0,SIZE_MAX,"shi he"},{"unfinished",1,SIZE_MAX,"shi heng"},{"repair",SIZE_MAX,0,"shi hou"}};
+ for(auto &row:spellingRows){row.rankingClass=pinyin::alphabetic_candidate_priority("shihe",row.reading,row.repair!=SIZE_MAX);row.rankingScore=row.repair!=SIZE_MAX?1e12:0;}
+ std::stable_sort(spellingRows.begin(),spellingRows.end(),candidateRankingBefore);
+ assert(spellingRows[0].text=="full"&&spellingRows[1].text=="unfinished"&&spellingRows[2].text=="repair");
  DesktopCandidates state;state.reset(100);assert(state.selected==0&&state.digit(1)==0);
  state.horizontal(1);assert(state.selected==1);
  state.vertical(1);assert(state.expanded&&state.selected==1&&state.first()==0);

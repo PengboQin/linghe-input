@@ -2,6 +2,7 @@ import SwiftUI
 import PrivateInputKit
 import CryptoKit
 @main struct PrivateInputApp: App {
+    init() {ClipboardCacheCoordinator.configureMarkerProbe(arguments:ProcessInfo.processInfo.arguments)}
     var body: some Scene { WindowGroup { SetupView().modifier(InputThemeModifier()) } }
 }
 struct SetupView: View {
@@ -10,6 +11,7 @@ struct SetupView: View {
     @StateObject private var engine = NativeEngine()
     @StateObject private var syncModel=DeviceSyncModel.shared
     @Environment(\.scenePhase) private var scenePhase
+    @State private var cloudMigrationInvoked = false
     @State private var sample = ""
     @FocusState private var sampleFocused: Bool
     @State private var testResult = ""
@@ -91,9 +93,19 @@ struct SetupView: View {
         .task(id:scenePhase) {
             syncModel.setClipboardActive(scenePhase == .active)
             guard scenePhase == .active else {return}
+            if ProcessInfo.processInfo.arguments.contains("--export-keyboard-runtime-diagnostics") {
+                try? KeyboardRuntimeDiagnostics.exportToContainingApp()
+            }
+            if !cloudMigrationInvoked, ProcessInfo.processInfo.arguments.contains("--migrate-cloud-learning") {
+                cloudMigrationInvoked = true
+                syncModel.setCloudLearning(true)
+            }
             while !Task.isCancelled {
                 await syncModel.poll()
-                await ActivityArchiveModel.shared.backgroundPass()
+                guard !Task.isCancelled,scenePhase == .active,UIApplication.shared.applicationState == .active else{return}
+                await ActivityArchiveModel.shared.backgroundPass(validating:{
+                    !Task.isCancelled && UIApplication.shared.applicationState == .active
+                })
                 try? await Task.sleep(nanoseconds:syncModel.info.ticket != nil || syncModel.info.joining ? 2_000_000_000:15_000_000_000)
             }
         }

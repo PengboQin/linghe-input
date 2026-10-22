@@ -107,6 +107,7 @@ final class NativeEngine: ObservableObject {
     private var mixedLatinDisplayAllowed=false
     private var lastLatinDisplayInput=""
     private var baseURL: URL?
+    private var cloudCommittedVersion: UInt64 = 0
     private var managedEntries: [LearningEntry] = []
     private var appliedPins: [LearningEntry] = []
     private(set) var managementPending = false
@@ -141,7 +142,7 @@ final class NativeEngine: ObservableObject {
         guard !nineKeyInput,!englishInput,!predictionSuspended,let ranker=semanticRanker else{return}
         let eligible=Array(rows.filter{$0.text.count>=2 && canSemanticRank($0) && ($0.pinyinRepair != nil || hasHostContext)}.prefix(12))
         guard eligible.count>1 else{return}
-        let expected=revision,context=modelContext
+        let expected=revision,context=modelContext,rankingInput=alphabeticRankingInput
         let requests=eligible.enumerated().map{SemanticRanker.Request(id:String($0.offset),before:context.before,text:$0.element.text,after:context.after)}
         ranker.evaluate(requests,limit:12) { [weak self] scores,metrics in
             guard let self,self.revision==expected else{return}
@@ -151,13 +152,17 @@ final class NativeEngine: ObservableObject {
                 let bv = -Double(b.offset)*0.20 + max(-2,min(0,scores[String(b.offset)] ?? -2))*0.65
                 return av==bv ? a.offset<b.offset:av>bv
             }.map(\.element)
-            completion(Self.mergingSemanticRanking(base:rows,ranked:ranked))
+            completion(Self.mergingSemanticRanking(base:rows,ranked:ranked,input:rankingInput))
         }
     }
-    static func mergingSemanticRanking(base:[InputCandidate],ranked:[InputCandidate])->[InputCandidate] {
+    static func mergingSemanticRanking(base:[InputCandidate],ranked:[InputCandidate],input:String?=nil)->[InputCandidate] {
         var result=base
-        for repair in [false,true] {
-            let group=ranked.filter{($0.pinyinRepair != nil)==repair}
+        func priority(_ row:InputCandidate)->Int {
+            guard let input else{return row.pinyinRepair == nil ? 0:1}
+            return PinyinInputMatch.candidatePriority(input,reading:row.comment,corrected:row.pinyinRepair != nil)
+        }
+        for tier in 0...3 {
+            let group=ranked.filter{priority($0)==tier}
             let positions=base.indices.filter{index in group.contains{$0.index==base[index].index && $0.text==base[index].text}}
             for (position,row) in zip(positions,group) {result[position]=row}
         }
@@ -282,7 +287,13 @@ final class NativeEngine: ObservableObject {
     }
     init(sharedResources: URL? = nil, storageBase: URL? = nil, useSemantic:Bool=true,useLexicon:Bool=true,expandedShortRecall:Bool=true,expandedSentenceRecall:Bool=true,cachePredictionQueries:Bool=true,retainPredictionProbe:Bool=false,mixedEnglishProvider:((String)->[String])?=nil,candidateIsDisplayable:@escaping(String)->Bool={CandidateGlyphSupport.supports($0)}) {
         self.mixedEnglishProvider=mixedEnglishProvider
-        self.candidateIsDisplayable=candidateIsDisplayable
+        // Supplementary, personal and continuation rows do not all originate
+        // from Rime's filtered batch. Enforce the same automatic-suggestion
+        // policy at the final Apple boundary, including injected glyph probes.
+        // Literal text, clipboard insertion and archive storage never use it.
+        self.candidateIsDisplayable={text in
+            AppleCandidateAdmission.allows(text,displayable:candidateIsDisplayable)
+        }
         self.useSemantic=useSemantic;self.useLexicon=useLexicon;self.expandedShortRecall=expandedShortRecall;self.expandedSentenceRecall=expandedSentenceRecall;self.cachePredictionQueries=cachePredictionQueries;self.retainPredictionProbe=retainPredictionProbe
         originalSharedResources=sharedResources;originalStorageBase=storageBase
         do { try start(sharedResources: sharedResources, storageBase: storageBase) } catch { ready = false }
@@ -327,6 +338,7 @@ final class NativeEngine: ObservableObject {
         catch {ready=false;return false}
     }
     private func start(sharedResources: URL?, storageBase: URL?) throws {
+        KeyboardRuntimeDiagnostics.record(.nativeStart)
         guard let shared = sharedResources ?? Bundle.main.url(forResource: "rime", withExtension: nil) else { throw EngineFailure.resourceMissing }
         let fileManager = FileManager.default
         let base = storageBase ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("PrivateInput", isDirectory: true)
@@ -340,6 +352,7 @@ final class NativeEngine: ObservableObject {
         let user = base.appendingPathComponent("Rime", isDirectory: true)
         try fileManager.createDirectory(at: user, withIntermediateDirectories: true)
         baseURL = base
+        KeyboardRuntimeDiagnostics.record(.nativeResourcesReady)
         #if os(iOS)
         let personalDirectory=storageBase ?? FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:LocalLearningCoordinator.groupID)
         #else
@@ -373,22 +386,33 @@ final class NativeEngine: ObservableObject {
             } catch { choiceMemoryWritable=false }
         }
         coordinator = try LocalLearningCoordinator(base: baseURL!)
+        KeyboardRuntimeDiagnostics.record(.nativeLocalStateReady)
         if !Self.initialized {
             // Bundle only prebuilt resources. Never compile dictionaries while typing.
-            guard pi_initialize(shared.path, user.path, 0) != 0 else { throw EngineFailure.initializeFailed }
+            KeyboardRuntimeDiagnostics.record(.nativeInitializeBegin)
+            let initialized = pi_initialize(shared.path, user.path, 0) != 0
+            KeyboardRuntimeDiagnostics.record(.nativeInitializeEnd, [.ready: initialized ? 1 : 0])
+            guard initialized else { throw EngineFailure.initializeFailed }
             Self.initialized = true; Self.initializedPath = user.path; Self.initializedSharedPath = shared.path;Self.initializedEpoch=personalEpoch
         } else if Self.initializedPath != user.path || Self.initializedSharedPath != shared.path {
             // Rime is process-global; reject a request for another database.
             throw EngineFailure.initializeFailed
         }
+        KeyboardRuntimeDiagnostics.record(.nativeSessionBegin)
         session = pi_create_session()
+        KeyboardRuntimeDiagnostics.record(.nativeSessionEnd, [.ready: session != 0 ? 1 : 0])
         guard session != 0 else { throw EngineFailure.sessionFailed }
         ready = true
+        KeyboardRuntimeDiagnostics.record(.nativeLanguageBegin)
         languageModelReady = pi_language_initialize(shared.path) != 0
+        KeyboardRuntimeDiagnostics.record(.nativeLanguageEnd, [.ready: languageModelReady ? 1 : 0])
         commonWords = CommonWordPrior(url:shared.appendingPathComponent("essay.txt"))
         // Auxiliary learning corruption must not disable offline typing. Keep
         // the file for recovery; management/sync will report its own failure.
-        managedEntries = (try? coordinator?.entries()) ?? []; applyPins(); reload()
+        managedEntries = (try? coordinator?.entries()) ?? []; cloudCommittedVersion &+= 1
+        KeyboardRuntimeDiagnostics.record(.nativeJournalReady, [.sourceCount: Double(managedEntries.count)])
+        applyPins(); reload()
+        KeyboardRuntimeDiagnostics.record(.nativeStartEnd, [.ready: ready ? 1 : 0])
     }
     @discardableResult func movePinyinCursor(_ direction:Int) -> Bool {
         guard ready,!nineKeyInput,!englishInput,pi_move_pinyin_cursor(session,Int32(direction)) != 0 else{return false}
@@ -396,6 +420,9 @@ final class NativeEngine: ObservableObject {
     }
     func key(_ code: Int32, modifiers: Int32 = 0) -> (handled: Bool, commit: String) {
         guard refreshResetBarrier() else { return (false, "") }
+        if !privateInput, rawInput.isEmpty, preedit.isEmpty,
+           (65...90).contains(code) || (97...122).contains(code) || (50...57).contains(code) { coordinator?.beginComposition() }
+
         if rawInput.isEmpty { refreshPersonalLexicon() }
         markNativeLearningChanged()
         let inputCode = !nineKeyInput && !englishInput && code==252 ? Int32(118):code
@@ -712,17 +739,16 @@ final class NativeEngine: ObservableObject {
             let activeInput=activePinyinDraft()?.input ?? rawInput
             if !repairs.isEmpty || !initials.isEmpty {
                 let ordinary=nativeBatch(offset:0,limit:32)
-                let repairedTexts=Set(repairs.map(\.text))
-                let fullNative=ordinary.contains{fullySpelled($0.comment) && PinyinInputMatch.isFullSpelling(activeInput,reading:$0.comment)}
                 // Keep the established typo-repair priority for long vowel
                 // spellings. Repeated-initial mixtures have their own verified
                 // path and must not admit arbitrary abbreviated long sentences.
                 let maxAbbreviations=activeInput.count>=7 && activeInput.contains(where:{"aeiouv".contains($0)}) ? 1:Int.max
                 let normal=ordinary.filter{PinyinInputMatch.covers(activeInput,reading:$0.comment,maxAbbreviations:maxAbbreviations)}
-                let exact=fullNative ? Array(ordinary.filter{!repairedTexts.contains($0.text)}.prefix(3)):Array(normal.prefix(9))
+                // All exact readings retain their native relative order, not
+                // just three protected slots before correction alternatives.
+                let exact=ordinary.filter{fullySpelled($0.comment) && PinyinInputMatch.isFullSpelling(activeInput,reading:$0.comment)}
                 let whole=initials.filter{$0.initialsInput?.count==activeInput.count}
-                let nativeFirst=fullNative && !initials.contains(where:{$0.prefixCompletion})
-                let proposed=(nativeFirst ? exact+whole:whole+exact)+repairs+initials
+                let proposed=exact+whole+normal+repairs+initials
                 var seen=Set<String>()
                 let front=proposed.filter{seen.insert($0.text).inserted}
                 let texts=Set(front.map(\.text))
@@ -956,6 +982,7 @@ final class NativeEngine: ObservableObject {
         }
         return initialsRows
     }
+    var alphabeticRankingInput:String {activePinyinDraft()?.input ?? rawInput}
     private func pinyinRepairCandidates() -> [InputCandidate] {
         guard ready,!nineKeyInput,!englishInput,pi_cursor_at_end(session) != 0 else {return []}
         if pinyinRevision==revision {return pinyinRows}
@@ -975,13 +1002,14 @@ final class NativeEngine: ObservableObject {
             let unfinished=PinyinInputMatch.canonicalSyllable(String(tail.dropFirst(consumed)))
             return !completeSyllables.contains(unfinished) && completeSyllables.contains(where:{$0.hasPrefix(unfinished)})
         }.map(\.text))
-        // An exact full spelling keeps the native word-frequency order.
+        // Exact paths are protected by presentation tiers, not by deleting
+        // correction recall. Short exact drafts retain eight bounded probes.
         let bytes=Array(tail.utf8),hasDuplicate=zip(bytes,bytes.dropFirst()).contains{$0==$1}
-        if tail.count<10,!hasDuplicate,ordinary.contains(where:{fullySpelled($0.comment) && PinyinInputMatch.isFullSpelling(tail,reading:$0.comment)}) {return []}
+        let probeLimit=tail.count<10 && !hasDuplicate && ordinary.contains(where:{fullySpelled($0.comment) && PinyinInputMatch.isFullSpelling(tail,reading:$0.comment)}) ? 8:64
         let probe=pi_create_session();guard probe != 0 else {return []};defer {pi_destroy_session(probe)}
         guard pi_set_private(probe,1) != 0,pi_set_nine_key(probe,0) != 0,pi_set_ascii_mode(probe,0) != 0 else {return []}
         var ranked:[(row:InputCandidate,score:Double)]=[]
-        for proposal in pinyinCorrector?.proposals(tail,limit:64) ?? [] {
+        for proposal in (pinyinCorrector?.proposals(tail,limit:64) ?? []).prefix(probeLimit) {
             guard pi_set_pinyin_probe_input(probe,proposal.spelling) != 0 else {continue}
             let count=Int(pi_load_candidate_batch(probe,0,16))
             for i in 0..<count {
@@ -1990,9 +2018,21 @@ final class NativeEngine: ObservableObject {
     func takeReadablePendingInput(reading: String) -> String {
         guard ready else { return "" }
         markNativeLearningChanged()
-        // The displayed path includes already selected Chinese prefixes. A
-        // nine-key encoding is never valid text to insert into the host.
+        // Display placeholders are not commit text. Keep verified pinyin for a
+        // readable literal request; an unresolved tail preserves the actual
+        // typed keys instead of committing an ellipsis or expanded letter group.
         var pending = nineKeyInput ? reading.withCString { String(cString:pi_nine_readable_preedit(session,$0)) }.replacingOccurrences(of: " ", with: "") : rawInput
+        if nineKeyInput, pending.contains("…") || pending.isEmpty && !rawInput.isEmpty {
+            let raw = rawInput, selected = String(cString:pi_selected_prefix(session)).trimmingCharacters(in: .whitespaces)
+            let active = Int(pi_unselected_input_start(session))
+            if selected.isEmpty { pending = raw }
+            else {
+                // An unprovable offset must not clear or guess across selected
+                // Chinese text. Keep the draft available for explicit editing.
+                guard active >= 0, active <= raw.count else { return "" }
+                pending = selected + raw.dropFirst(active)
+            }
+        }
         if !nineKeyInput {
             let selected=String(cString:pi_selected_prefix(session)).trimmingCharacters(in:.whitespaces),active=Int(pi_unselected_input_start(session))
             if !selected.isEmpty,active>=0,active<=rawInput.count { pending=selected+rawInput.dropFirst(active) }
@@ -2014,7 +2054,7 @@ final class NativeEngine: ObservableObject {
         markNativeLearningChanged()
         try coordinator.manage(reading: reading, text: candidate.text, pinned: pinned)
         if pinned == nil,choiceMemoryWritable { var next=choiceMemory;next.reset(text:candidate.text,reading:reading);try saveChoiceMemory(next);choiceMemory=next }
-        managedEntries = try coordinator.entries(); managementPending = true
+        managedEntries = try coordinator.entries(); cloudCommittedVersion &+= 1; managementPending = true
         applyPins(); reload()
     }
     private func applyPins() {
@@ -2065,6 +2105,59 @@ final class NativeEngine: ObservableObject {
     }
     /// Opt-in iOS idle adapter. Every path, including invalid input, completes on
     /// the main queue. Disk reads/JSON validation/SHA run on immutable utility work.
+    #if os(iOS)
+    private var cloudUtilityInFlight = false
+    private var cloudPublishedVersion: UInt64?
+    private var cloudPreparedRankToken: String?
+    private var cloudUtilityRetryAt = 0.0
+    /// Value snapshots only. File/JSON/score work stays on utility; a resulting
+    /// rank pointer is adopted at the next new composition, never mid-candidate.
+    func stageCachedCloudLearningBootstrap(publish: SnapshotPublisher?) {
+        let prefs = UserDefaults(suiteName: LocalLearningCoordinator.groupID)
+        guard ready, !cloudUtilityInFlight, ProcessInfo.processInfo.systemUptime >= cloudUtilityRetryAt,
+              originalStorageBase == nil, !privateInput,
+              prefs?.bool(forKey: "learning-sharing-enabled") == true,
+              prefs?.bool(forKey: "cloud-learning-enabled") == true,
+              let (producer, directory) = coordinator?.cloudBootstrapLocation(publisher: publish) else { return }
+        let token = prefs?.string(forKey: "cloud-learning-model-token")
+        let version = cloudCommittedVersion, publishNeeded = cloudPublishedVersion != cloudCommittedVersion
+        let rankNeeded = token != nil && (token != cloudPreparedRankToken || publishNeeded)
+        guard publishNeeded || rankNeeded else { return }
+        cloudUtilityInFlight = true
+        let entries = managedEntries, capturedEpoch = personalEpoch
+        learningRefreshQueue.async { [weak self] in
+            var published = false
+            var prepared: (RecencyCoordinator.Snapshot, UUID, UInt64)?
+            let current = UserDefaults(suiteName: LocalLearningCoordinator.groupID)
+            if PersonalDataReset.generation == capturedEpoch,
+               current?.bool(forKey: "learning-sharing-enabled") == true,
+               current?.bool(forKey: "cloud-learning-enabled") == true {
+                if publishNeeded {
+                    do { try AppleCloudProducerSnapshot.publish(entries, producer: producer, directory: directory); published = true }
+                    catch { /* No native mutation. A later idle tick can retry. */ }
+                }
+                if rankNeeded, let group = current?.string(forKey: "cloud-learning-group").flatMap(UUID.init(uuidString:)),
+                   let epoch = (current?.object(forKey: "cloud-learning-epoch") as? NSNumber)?.uint64Value,
+                   let state = AppleCloudLearningRankState.read(directory: directory, group: group, epoch: epoch, preferences: current) {
+                    prepared = (state.snapshot(producer: producer, entries: entries, uptime: ProcessInfo.processInfo.systemUptime), group, epoch)
+                }
+            }
+            let didPublish = published, result = prepared
+            DispatchQueue.main.async {
+                guard let self else { return }; self.cloudUtilityInFlight = false
+                guard self.personalEpoch == capturedEpoch, self.currentPersonalEpoch == capturedEpoch else { return }
+                if didPublish { self.cloudPublishedVersion = version }
+                if let (snapshot, group, epoch) = result {
+                    self.coordinator?.stageCloudSnapshot(snapshot, group: group, epoch: epoch)
+                    self.cloudPreparedRankToken = token
+                }
+                if (publishNeeded && !didPublish) || (rankNeeded && result == nil) {
+                    self.cloudUtilityRetryAt = ProcessInfo.processInfo.systemUptime + 30
+                }
+            }
+        }
+    }
+    #endif
     func prepareLearningRefresh(publish: SnapshotPublisher?, completion:@escaping (LearningRefreshPreparation)->Void) {
         let request=learningRefreshRequest(publish:publish)
         learningRefreshQueue.async {
@@ -2083,13 +2176,29 @@ final class NativeEngine: ObservableObject {
         (preparation.stamps == nil || LearningRefreshReader.unchangedFiles(preparation))
     }
     func synchronizeLearning(publish: SnapshotPublisher? = nil, preparation:LearningRefreshPreparation? = nil) throws {
-
+        KeyboardRuntimeDiagnostics.record(.checkpointBegin)
+        let diagnosticStarted = ProcessInfo.processInfo.systemUptime
         var checkpointSucceeded=false
-        defer {if !checkpointSucceeded {learningCheckpointGate.invalidate()}}
+        var diagnosticNativeTransactionStarted=false
+        defer {
+            if !checkpointSucceeded {learningCheckpointGate.invalidate()}
+            let metrics = diagnosticNativeTransactionStarted ? learningCheckpointMetrics : LearningCheckpointMetrics()
+            KeyboardRuntimeDiagnostics.record(checkpointSucceeded ? (learningRefreshWasSkipped ? .checkpointSkipped : .checkpointEnd) : .checkpointFailed,
+                [.elapsedMilliseconds: (ProcessInfo.processInfo.systemUptime - diagnosticStarted) * 1000,
+                 .persistedBytes: Double(learningRefreshWasSkipped ? 0 : metrics.persistedBytes),
+                 .skippedWriteBytes: Double(learningRefreshWasSkipped ? 0 : metrics.skippedWriteBytes),
+                 .nativeImports: Double(learningRefreshWasSkipped ? 0 : metrics.nativeImports),
+                 .nativeResets: Double(learningRefreshWasSkipped ? 0 : metrics.nativeResets),
+                 .ready: ready ? 1 : 0])
+        }
         guard ready, let coordinator, let baseURL else { throw LearningSyncFailure.engineUnavailable }
         guard preedit.isEmpty else { throw LearningSyncFailure.busy }
         learningRefreshWasSkipped=false
-        let validPreparation=preparation.flatMap{isCurrentLearningRefreshPreparation($0,publish:publish) ? $0:nil}
+        // A supplied preflight is a permission to run THIS prepared transaction,
+        // not a hint. Falling back to an unprepared full export when it became
+        // stale can start long work after the lifecycle owner cancelled it.
+        if let preparation, !isCurrentLearningRefreshPreparation(preparation,publish:publish) { throw LearningSyncFailure.busy }
+        let validPreparation=preparation
         if let preparation=validPreparation,pi_active_session_count()==1,
            learningCheckpointGate.canReuse(fingerprint:preparation.fingerprint,generation:preparation.request.generation,pending:preparation.pending,forced:managementPending) {
             learningRefreshWasSkipped=true;checkpointSucceeded=true;return
@@ -2114,8 +2223,10 @@ final class NativeEngine: ObservableObject {
             }
         }
         // Never export a running DB or clear an unfinished composition.
+        diagnosticNativeTransactionStarted=true
         managedEntries = try coordinator.checkpoint(exportFile: directory.appendingPathComponent("engine.tsv"), importFile: directory.appendingPathComponent("incoming.tsv"), publish: privateInput ? nil : publish,
             engineExport: { pi_export_learning($0.path) }, engineImport: { pi_import_learning($0.path) }, engineReset: { pi_reset_word_frequency($0.reading, $0.text, $0.frequency) },allowDatedLearning: !privateInput)
+        cloudCommittedVersion &+= 1
         managementPending = false; applyPins()
         learningCheckpointRuns += 1;checkpointSucceeded=true
         // Postflight can only certify inputs unchanged across the completed

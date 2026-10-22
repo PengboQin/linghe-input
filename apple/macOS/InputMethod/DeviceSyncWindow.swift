@@ -65,6 +65,9 @@ struct MacDeviceSyncView: View {
                 }.disabled(model.busy)
                 Section("同步") {
                     Toggle("输入习惯与个人词库", isOn: Binding(get: { model.info.learning }, set: { model.consent(learning: $0, clipboard: model.info.clipboard) })).disabled(model.savingConsent)
+                    Toggle("按组优化词频", isOn: Binding(get: { model.info.cloudLearning }, set: { model.setCloudLearning($0) })).disabled(model.busy || !model.info.learning).accessibilityIdentifier("sync-cloud-learning")
+                    Text("已选词条和词频由所设服务器按组整理，服务器管理员可读。").font(.footnote).foregroundStyle(.secondary)
+                    if model.info.cloudLearning { Text(model.info.cloudPhase).font(.footnote).foregroundStyle(.secondary) }
                     Toggle("共享文本", isOn: Binding(get: { model.info.clipboard }, set: { model.consent(learning: model.info.learning, clipboard: $0) })).disabled(model.savingConsent)
                     Toggle("自动同步系统剪贴板",isOn:Binding(get:{model.info.automaticClipboard},set:{model.setAutomaticClipboard($0)})).disabled(model.savingConsent || !model.info.clipboard).accessibilityIdentifier("sync-automatic-clipboard")
                     if model.info.automaticClipboard && model.automaticClipboardPreparing {Text("正在接收已有记录；准备完成后自动接收新的剪贴板文字。").font(.footnote).foregroundStyle(.secondary)}

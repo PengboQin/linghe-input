@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Fetch only pinned grammar source/data bytes; never execute upstream installers."""
-import argparse, hashlib, json, pathlib, urllib.request
+import argparse, hashlib, json, pathlib, shutil, urllib.request
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 
-def fetch(url,digest,destination):
+def fetch(url,digest,destination,cache=None):
     if destination.exists() and hashlib.sha256(destination.read_bytes()).hexdigest()==digest:return
+    if cache is not None and cache.exists() and hashlib.sha256(cache.read_bytes()).hexdigest()==digest:
+        destination.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(cache,destination);return
     data=urllib.request.urlopen(url,timeout=60).read()
     if hashlib.sha256(data).hexdigest()!=digest:raise RuntimeError('Pinned public dependency hash mismatch')
     destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(data)
@@ -14,8 +16,8 @@ def main():
     lock=json.loads((ROOT/'docs/stages/P2/dictionary/grammar.lock.json').read_text())
     for source in lock['sourceFiles']:fetch(source['url'],source['sha256'],ROOT/source['path'])
     model=lock['model'];output=a.output.absolute()
-    fetch(model['url'],model['sha256'],output/'private_zh_hans_compact.gram')
-    fetch(model['licenseURL'],model['licenseSHA256'],output/'licenses/rime-octagram-data-LICENSE')
+    fetch(model['url'],model['sha256'],output/'private_zh_hans_compact.gram',ROOT/'resources/rime/private_zh_hans_compact.gram')
+    fetch(model['licenseURL'],model['licenseSHA256'],output/'licenses/rime-octagram-data-LICENSE',ROOT/'resources/rime/licenses/rime-octagram-data-LICENSE')
     (output/'licenses/librime-octagram-LICENSE').write_bytes((ROOT/'vendor/librime-octagram/LICENSE').read_bytes())
     manifest=output/'SOURCE.json';data=json.loads(manifest.read_text());data['grammar']=lock
     for name in ['private_zh_hans_compact.gram','licenses/rime-octagram-data-LICENSE','licenses/librime-octagram-LICENSE']:

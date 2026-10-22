@@ -104,7 +104,9 @@ import PrivateInputKit
         polling=true;defer { polling=false }
         do {
             try await session.pollPairing()
+            guard !Task.isCancelled else{return}
             let current=try await session.info()
+            guard !Task.isCancelled else{return}
             let auto=clipboardActive ? try await session.automaticClipboardSession():nil
             let liveOwns=clipboardActive && ClipboardLiveCoordinator.shared.isActive
             let upload=clipboardActive && !liveOwns ? automaticClipboard.prepare(auto):nil
@@ -117,8 +119,9 @@ import PrivateInputKit
             if (!pairingOnly || upload != nil) && current.configured && (current.learning || current.clipboard) {
                 if !liveOwns {automaticClipboard.begin()}
                 let result=try await session.synchronize()
+                guard !Task.isCancelled else {automaticClipboard.pause();return}
                 let after=clipboardActive ? try await session.automaticClipboardSession():nil
-                if clipboardActive,!liveOwns,!ClipboardLiveCoordinator.shared.isActive {automaticClipboard.finish(after,received:result.received,now:UInt64(Date().timeIntervalSince1970))}
+                if clipboardActive,!liveOwns,!ClipboardLiveCoordinator.shared.isActive {await automaticClipboard.finish(after,received:result.received,now:UInt64(Date().timeIntervalSince1970),validating:{self.clipboardActive && !ClipboardLiveCoordinator.shared.isActive})}
                 else {automaticClipboard.pause()}
                 automaticClipboardPreparing=automaticClipboard.initializing
             }
@@ -181,6 +184,7 @@ import PrivateInputKit
             preferences.removeObject(forKey:"automatic-clipboard-read-paused")
             #endif
             self.automaticClipboard.requestReadRetry();self.info.automaticClipboardReadPaused=false
+            ClipboardLiveCoordinator.shared.requestReadRetry(preferences:preferences)
             await self.poll()
         }
         return true
@@ -201,6 +205,12 @@ import PrivateInputKit
                 if enabled,clipboardActive {_ = automaticClipboard.prepare(try await session.automaticClipboardSession());automaticClipboardPreparing=automaticClipboard.initializing}
             }
             catch {if let current=try? await session.info(){info=current};status="设置未保存，请重试"}
+        }
+    }
+    func setCloudLearning(_ enabled: Bool) {
+        run { session in
+            if enabled { try await session.enableCloudLearningMigration() }
+            else { try await session.disableCloudLearningMigration() }
         }
     }
     func consent(learning: Bool, clipboard: Bool) {

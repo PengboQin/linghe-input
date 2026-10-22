@@ -2,6 +2,16 @@ import UIKit
 import XCTest
 
 @MainActor final class KeyboardHeightPreviewTests: XCTestCase {
+    func testDoneCommitsLatestSliderValueBeforePendingPreview() throws {
+        let view=KeyboardHeightAdjustmentView()
+        let slider=try XCTUnwrap(view.subviews.compactMap{$0 as? UISlider}.first)
+        let done=try XCTUnwrap(view.subviews.compactMap{$0 as? UIButton}.first)
+        var changes:[(Double,Bool)]=[];var completed=0
+        view.change={changes.append(($0,$1))};view.done={completed+=1}
+        view.update(48);slider.value=67.1;slider.sendActions(for:.valueChanged)
+        done.sendActions(for:.touchUpInside)
+        XCTAssertEqual(changes.count,1);XCTAssertEqual(changes[0].0,68);XCTAssertTrue(changes[0].1);XCTAssertEqual(completed,1)
+    }
     func testInputViewHasSavedHeightBeforeFirstLayoutOrWindowAttachment() {
         for height:CGFloat in [236,252,284,308,332] {
             let keyboard=KeyboardInputView(contentHeight:height)

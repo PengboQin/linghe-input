@@ -8,6 +8,7 @@ struct LearningCheckpointMetrics {
     var nativeResets = 0
     var recoveredPending = false
     var persistedBytes = 0
+    var skippedWriteBytes = 0
     var completed = false
 }
 
@@ -23,12 +24,14 @@ final class LocalLearningCoordinator {
         #endif
     }
     private let personalEpoch=PersonalDataReset.generation
+    private let rankingPreferences: UserDefaults?
     private let stateURL: URL
     private let device: String
     private let shared: SharedLearningSnapshot?
     private let recencyBridge: AppleRecencyBridge?
     private let refreshSharedDirectory: URL?
-    init(base: URL) throws {
+    init(base: URL, rankingPreferences: UserDefaults? = UserDefaults(suiteName: LocalLearningCoordinator.groupID)) throws {
+        self.rankingPreferences = rankingPreferences
         let manager = FileManager.default
         try manager.createDirectory(at: base, withIntermediateDirectories: true)
         stateURL = base.appendingPathComponent("learning-checkpoint-v1.json")
@@ -63,6 +66,7 @@ final class LocalLearningCoordinator {
         if let root=refreshSharedDirectory {
             rows += [.init(name:"shared-v1",url:root.appendingPathComponent("learning-v1.json"),maximum:2*1024*1024,runtime:false),
                      .init(name:"shared-v2",url:root.appendingPathComponent("learning-recency-v2.json"),maximum:3*1024*1024,runtime:false),
+                     .init(name:"cloud-ranking",url:root.appendingPathComponent(AppleCloudLearningRankState.filename),maximum:4*1024*1024,runtime:false),
                      .init(name:"shared-reset",url:root.appendingPathComponent(PersonalDataReset.marker),maximum:128,runtime:false)]
         }
         return rows
@@ -78,7 +82,39 @@ final class LocalLearningCoordinator {
     }
     private var runtimeURL: URL { stateURL.deletingLastPathComponent().appendingPathComponent("learning-runtime-v2.json") }
     private var recent: RecencyCoordinator?
-    private(set) var scoreSnapshot = RecencyCoordinator.Snapshot.empty
+    private var cloudScoreActive = false
+    private var cloudScoreGroup: UUID?
+    private var cloudScoreEpoch: UInt64?
+    private var storedScoreSnapshot = RecencyCoordinator.Snapshot.empty
+    private var pendingCloudSnapshot: (RecencyCoordinator.Snapshot, UUID, UInt64)?
+    func stageCloudSnapshot(_ snapshot: RecencyCoordinator.Snapshot, group: UUID, epoch: UInt64) {
+        pendingCloudSnapshot = (snapshot, group, epoch)
+    }
+    /// O(1) pointer adoption at the next composition start, never reload a
+    /// visible candidate list. No file, network, Keychain or full-model work.
+    func beginComposition() {
+        guard let (snapshot, group, epoch) = pendingCloudSnapshot else { return }
+        pendingCloudSnapshot = nil
+        guard rankingPreferences?.bool(forKey: "learning-sharing-enabled") == true,
+              rankingPreferences?.bool(forKey: "cloud-learning-enabled") == true,
+              rankingPreferences?.string(forKey: "cloud-learning-group") == group.uuidString,
+              (rankingPreferences?.object(forKey: "cloud-learning-epoch") as? NSNumber)?.uint64Value == epoch,
+              snapshot.isCurrent() else { return }
+        storedScoreSnapshot = snapshot; cloudScoreActive = true; cloudScoreGroup = group; cloudScoreEpoch = epoch
+    }
+    private(set) var scoreSnapshot: RecencyCoordinator.Snapshot {
+        get {
+            if cloudScoreActive {
+                let prefs = rankingPreferences
+                guard prefs?.bool(forKey: "learning-sharing-enabled") == true,
+                      prefs?.bool(forKey: "cloud-learning-enabled") == true,
+                      prefs?.string(forKey: "cloud-learning-group") == cloudScoreGroup?.uuidString,
+                      (prefs?.object(forKey: "cloud-learning-epoch") as? NSNumber)?.uint64Value == cloudScoreEpoch else { return .empty }
+            }
+            return storedScoreSnapshot
+        }
+        set { storedScoreSnapshot = newValue }
+    }
     private(set) var lastCheckpointMetrics = LearningCheckpointMetrics()
     private let boot = AppleRecencyBridge.bootSession ?? UUID().uuidString
     private var recencyGroup: UUID?
@@ -116,21 +152,43 @@ final class LocalLearningCoordinator {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(RuntimeState(journal: journal.persistedData(), recency: recent.persisted(), group: recencyGroup, membershipEpoch: recencyMembershipEpoch))
         guard data.count <= 12 * 1024 * 1024 else { throw InputDataError.oversized }
-        lastCheckpointMetrics.persistedBytes += data.count
-        #if os(iOS)
-        try data.write(to: runtimeURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-        #else
-        try data.write(to: runtimeURL, options: .atomic)
-        #endif
+        try persistIfChanged(data, to: runtimeURL)
         // This file is never authoritative for upgraded readers; an interruption
         // here still leaves the complete native transaction in runtime-v2.
         if journal.pending == nil {
             let legacy = try encoder.encode(journal.checkpoint)
-            try legacy.write(to: stateURL, options: .atomic)
+            try persistIfChanged(legacy, to: stateURL)
         }
+        cloudScoreActive = false
         scoreSnapshot = self.recent?.snapshot(wall: Date().timeIntervalSince1970,
             uptime: ProcessInfo.processInfo.systemUptime, boot: boot) ?? .empty
+        if let directory = refreshSharedDirectory, let producer = UUID(uuidString: device),
+           let cloud = AppleCloudLearningRankState.read(directory: directory,
+                group: rankingPreferences?.string(forKey: "cloud-learning-group").flatMap(UUID.init(uuidString:)) ?? recencyGroup,
+                epoch: (rankingPreferences?.object(forKey: "cloud-learning-epoch") as? NSNumber)?.uint64Value ?? recencyMembershipEpoch,
+                preferences: rankingPreferences) {
+            cloudScoreActive = true; cloudScoreGroup = cloud.group; cloudScoreEpoch = cloud.membershipEpoch
+            scoreSnapshot = cloud.snapshot(producer: producer, entries: Array(journal.checkpoint.model.entries.values), uptime: ProcessInfo.processInfo.systemUptime)
+        }
         succeeded = true
+    }
+    /// Canonical data is already fully validated by the caller. Avoid replacing
+    /// the full journal and compatibility file when observation changed nothing.
+    /// A pending intent is still written before native mutation; equality is the
+    /// only skip rule, never a timestamp or inferred local/native count.
+    private func persistIfChanged(_ data: Data, to url: URL) throws {
+        if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+           (attributes[.size] as? NSNumber)?.intValue == data.count,
+           let old = try? Data(contentsOf: url, options: .mappedIfSafe), old == data {
+            lastCheckpointMetrics.skippedWriteBytes += data.count
+            return
+        }
+        #if os(iOS)
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
+        lastCheckpointMetrics.persistedBytes += data.count
     }
     /// Only an authenticated service adapter calls this. No network or Keychain
     /// work enters NativeEngine's key callbacks.
@@ -163,6 +221,13 @@ final class LocalLearningCoordinator {
         try recent?.acceptAuthenticated(policy: policy, clock: clock, validUntilUptime: anchor.uptime + 7 * 86400)
         if let data = shared.archive { try recent?.mergeRemote(data) }
         recencyGroup = shared.group; recencyMembershipEpoch = shared.epoch
+    }
+    /// Immutable committed state only, no native export/import or key access.
+    func cloudBootstrapLocation(publisher: SnapshotPublisher?) -> (UUID, URL)? {
+        let permitted: Bool
+        switch publisher { case .containingApp?: permitted = true; case .keyboard(let full)?: permitted = full; case nil: permitted = false }
+        guard permitted, let id = UUID(uuidString: device), let directory = refreshSharedDirectory else { return nil }
+        return (id, directory)
     }
     func entries() throws -> [LearningEntry] { Array(try readJournal().checkpoint.model.entries.values) }
     func manage(reading: String, text: String, pinned: Bool?) throws {
@@ -257,6 +322,9 @@ final class LocalLearningCoordinator {
         try persist(journal)
         if let publish, let shared {
             try shared.publish(journal.outboundArchive(), by: publish)
+            if let root = refreshSharedDirectory, let producer = UUID(uuidString: device) {
+                try AppleCloudProducerSnapshot.publish(Array(journal.checkpoint.model.entries.values), producer: producer, directory: root)
+            }
             if let group = recencyGroup, let epoch = recencyMembershipEpoch, let recent {
                 // Permission of the existing v1 publisher is checked before v2.
                 try recencyBridge?.merge(recent.export(), group: group, epoch: epoch)

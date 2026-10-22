@@ -27,4 +27,5 @@ final class ClipboardCandidateState {
  Value visible(int target,boolean idle,boolean deletionLocked){return document==target&&idle&&!deletionLocked&&value!=null&&!value.id.equals(consumed)?value:null;}
  boolean matches(int target,String id){return document==target&&value!=null&&value.id.equals(id)&&!id.equals(consumed);}
  void consume(int target,String id){if(matches(target,id))consumed=id;}
+ void dismiss(int target){if(document==target&&value!=null)consumed=value.id;}
 }

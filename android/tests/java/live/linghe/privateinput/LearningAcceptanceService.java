@@ -3,7 +3,17 @@ import android.view.inputmethod.EditorInfo;import android.text.InputType;import 
 
 /** Same production service, fresh test-only files, and an own-host-only boundary. */
 public final class LearningAcceptanceService extends LingheInputService {
+ static volatile LearningAcceptanceService active;
+ static final java.util.concurrent.CountDownLatch optionalEntered=new java.util.concurrent.CountDownLatch(1),optionalRelease=new java.util.concurrent.CountDownLatch(1);
+ @Override public void onCreate(){active=this;super.onCreate();}
+ @Override public void onDestroy(){super.onDestroy();if(active==this)active=null;}
  private String nonce;
+ @Override protected void beforeEngineStage(String phase)throws IOException {
+  android.content.SharedPreferences fixture=getSharedPreferences("startup-fixture",0);
+  if(phase.equals("native")&&fixture.getBoolean("fail-native-once",false)){fixture.edit().remove("fail-native-once").commit();throw new IOException("synthetic native initialization failure");}
+  if(phase.equals("optional-language")&&fixture.getBoolean("fail-optional",false)){optionalEntered.countDown();try{optionalRelease.await(10,java.util.concurrent.TimeUnit.SECONDS);}catch(InterruptedException interrupted){Thread.currentThread().interrupt();}throw new IOException("synthetic optional model failure");}
+ }
+
  private void trace(String event,boolean restarting){try{java.lang.reflect.Field f=LingheInputService.class.getDeclaredField("snapshot");f.setAccessible(true);String[][] state=(String[][])f.get(this);java.lang.reflect.Field d=LingheInputService.class.getDeclaredField("document");d.setAccessible(true);org.json.JSONObject row=new org.json.JSONObject().put("event",event).put("ms",android.os.SystemClock.elapsedRealtime()).put("restart",restarting).put("document",d.getInt(this)).put("rawLength",state[0][2].length()).put("viewShown",isInputViewShown());File file=new File(getFilesDir().getParentFile(),"lifecycle.jsonl");if(file.length()<128*1024)try(OutputStream out=new FileOutputStream(file,true)){out.write((row.toString()+"\n").getBytes(StandardCharsets.UTF_8));}}catch(Exception ignored){}}
  @Override public void onStartInputView(EditorInfo info,boolean restarting){trace("startView-before",restarting);super.onStartInputView(info,restarting);trace("startView-after",restarting);}
  @Override public void onFinishInputView(boolean finishing){trace("finishView-before",finishing);super.onFinishInputView(finishing);trace("finishView-after",finishing);}

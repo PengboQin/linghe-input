@@ -5,6 +5,8 @@ public final class NativeCore {
  public static native void destroy(long session);
  public static native boolean closeForCheckpoint(long session);
  public static native boolean languageInitialize(String folder);
+ /** Shared automatic-candidate admission only; never rewrite literal or stored text. */
+ public static native boolean candidateTextAllowed(String text);
  public static native double languageScore(String before,String text);
  public static native int exportLearning(String file);
  public static native int importLearning(String file);
@@ -15,6 +17,7 @@ public final class NativeCore {
  public static native boolean atEnd(long session);
  public static native boolean hasPending(long session);
  public static native String[] draft(long session);
+ public static native String readableDraft(long session,String reading);
  public static native void clear(long session);
  public static native void mode(long session,boolean nine,boolean privateMode);
  public static native void choose(long session,long index);

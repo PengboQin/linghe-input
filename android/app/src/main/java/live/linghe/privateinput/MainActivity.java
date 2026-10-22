@@ -30,7 +30,7 @@ public final class MainActivity extends Activity {
   LinearLayout words=section("词库");row(words,"个人词库与快捷短语","",()->startActivity(new Intent(this,PersonalLexiconActivity.class)));
   LinearLayout sync=section("设备");row(sync,"设备与同步","",()->startActivity(new Intent(this,DeviceSyncActivity.class)));
   row(sync,"活动归档","",()->startActivity(new Intent(this,ActivityArchiveActivity.class)));
-  LinearLayout about=section(null);row(about,"关于灵鹤输入法",versionName(),()->new AlertDialog.Builder(this).setTitle("灵鹤输入法 "+versionName()).setMessage("本机离线输入。附近文字仅临时用于本机联想。活动归档默认关闭，需另行同意后才上传所选来源的完整明文。\n\n开源组件许可随安装包提供。仅在你配置并开启同步后连接HTTPS中继；相机仅用于App内扫码，图像不上传。\n\n适配设备：vivo S50").setNeutralButton("开源许可",(dialog,which)->openLicenses()).setPositiveButton("好",null).show());
+  LinearLayout about=section(null);row(about,"关于灵鹤输入法",versionName(),()->new AlertDialog.Builder(this).setTitle("灵鹤输入法 "+versionName()).setMessage("本机离线输入。附近文字仅临时用于本机联想。活动归档默认关闭，需另行同意后才上传所选来源的完整明文。\n\n开源组件许可随安装包提供。仅在你配置并开启同步后连接HTTPS中继；相机仅用于App内扫码，图像不上传。\n\n适配设备：vivo S50、Sony Xperia 5 III").setNeutralButton("开源许可",(dialog,which)->openLicenses()).setPositiveButton("好",null).show());
  }
  private boolean enabled(){for(InputMethodInfo info:((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).getEnabledInputMethodList())if(info.getPackageName().equals(getPackageName()))return true;return false;}
  @Override protected void onResume(){super.onResume();SyncJob.schedule(this);if(status!=null){boolean selected=String.valueOf(Settings.Secure.getString(getContentResolver(),Settings.Secure.DEFAULT_INPUT_METHOD)).startsWith(getPackageName()+"/");status.setText(selected?"当前正在使用":enabled()?"键盘已启用":"键盘尚未启用");Button button=(Button)content.findViewWithTag("activate");button.setText(enabled()?"切换键盘":"启用键盘");}}

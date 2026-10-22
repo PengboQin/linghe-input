@@ -1,5 +1,10 @@
 # Input-process diagnostics and device metadata v1
 
+The additive decision/state evidence contract is defined in
+[INPUT-DECISION-DIAGNOSTICS-V1-20261022.md](INPUT-DECISION-DIAGNOSTICS-V1-20261022.md).
+It retains this provider and its independent default-off authorization; it does
+not replace existing raw fields or retroactively fill historical records.
+
 Diagnostics are an independent, default-off archive provider: `ime.diagnostic.v1`.
 Output and clipboard consent do not enable it. The setting explicitly includes
 unselected and unsent text; ordinary group policy, device consent version,

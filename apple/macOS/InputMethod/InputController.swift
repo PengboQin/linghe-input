@@ -164,9 +164,6 @@ private final class MacHiddenCheckpointCoordinator {
     private var activeClient:IMKTextInput?
     private var preferenceObserver:NSObjectProtocol?
     private var geometryTimer:Timer?
-    private var clipboardTimer:Timer?
-    private var clipboardItem:MacClipboardSuggestion.Item?
-    private var clipboardPresentationSerial=0
     private var archiveSession: String? = CommandLine.arguments.contains("--imk-acceptance") ? nil : UUID().uuidString
     private var archiveReportedPassthrough = false
     private let focusOwner=UUID()
@@ -183,14 +180,16 @@ private final class MacHiddenCheckpointCoordinator {
         }
         candidatePanel.choose={ [weak self] row in
             guard let self,self.activated,let client=self.liveClient() else{return}
-            if row.index == -2 {guard row.generation==self.clipboardPresentationSerial else{return};self.pasteClipboard(client:client);return}
             guard let input=self.input else{return}
             input.chooseCandidate(row,client:IMKClient(client:client,archiveSession:self.archiveSession));self.updateCandidates()
             if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.changed()}
         }
         candidatePanel.managementMenu={ [weak self] row in
             guard let self,let input=self.input else{return nil}
-            return input.managementMenu(for:row) { [weak self] in self?.updateCandidates() }
+            return input.managementMenu(for:row) { [weak self] in
+                if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.changed()}
+                self?.updateCandidates()
+            }
         }
         candidatePanel.highlight={ [weak self] row in self?.input?.highlightCandidate(row) }
         candidatePanel.toggle={ [weak self] in self?.input?.toggleExpanded();self?.updateCandidates() }
@@ -228,14 +227,6 @@ private final class MacHiddenCheckpointCoordinator {
         guard let client=sender as? IMKTextInput else { return false }
         activeClient=client
         if !activated {activated=true;focusGeneration &+= 1;if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.activate(focusOwner)}}
-        if self.input?.engine.preedit.isEmpty != false,clipboardItem != nil {
-            if keyCode==51,candidatePanel.isVisible,flags & Int(NSEvent.ModifierFlags([.command,.control,.option]).rawValue)==0 {
-                dismissClipboard();updateCandidates();return true
-            }
-            // Clipboard suggestions are explicit mouse targets. Space, digits,
-            // navigation and new typing must retain their normal meanings.
-            dismissClipboard()
-        }
         // An empty session must not initialize Rime just for a host shortcut.
         if self.input==nil,flags & Int(NSEvent.ModifierFlags([.command,.control,.option]).rawValue) != 0 {return false}
         let input=activeInput()
@@ -275,15 +266,9 @@ private final class MacHiddenCheckpointCoordinator {
     private func updateCandidates() {
         guard activated else {geometryTimer?.invalidate();geometryTimer=nil;candidateWindow?.hide();candidatePanel.hide();return}
         if let input {
-            if input.engine.preedit.isEmpty,input.engine.managementPending {checkpoint(input)}
             input.applyCandidateLayout(KeyboardPreferences.desktopCandidateLayout)
             presented=input.allCandidateRows
         } else {presented=[]}
-        if input?.engine.preedit.isEmpty != false,let item=MacClipboardSuggestion.shared.current() {
-            if clipboardItem != item {clipboardPresentationSerial &+= 1}
-            clipboardItem=item
-            presented=[InputCandidate(text:item.preview,comment:"",index:-2,generation:clipboardPresentationSerial)]
-        } else {if clipboardItem != nil {clipboardPresentationSerial &+= 1};clipboardItem=nil}
         guard !presented.isEmpty else {geometryTimer?.invalidate();geometryTimer=nil;candidateWindow?.hide();candidatePanel.hide();return}
         refreshCandidatePosition(reload:true)
         if geometryTimer==nil {
@@ -292,20 +277,16 @@ private final class MacHiddenCheckpointCoordinator {
         }
     }
     private func refreshCandidatePosition(reload:Bool) {
-        guard activated,input?.engine.preedit.isEmpty == false || clipboardItem != nil else {geometryTimer?.invalidate();geometryTimer=nil;candidatePanel.hide();candidateWindow?.hide();return}
-        if let item=clipboardItem, NSPasteboard.general.changeCount != item.version || !MacClipboardSuggestion.permitted || IsSecureEventInputEnabled() {
-            clipboardPresentationSerial &+= 1;clipboardItem=nil;presented=[];candidatePanel.hide();candidateWindow?.hide();return
-        }
+        guard activated,input?.engine.preedit.isEmpty == false else {geometryTimer?.invalidate();geometryTimer=nil;candidatePanel.hide();candidateWindow?.hide();return}
         var caret=NSRect.zero
         let located=liveClient().map{PIReadIMKCaret($0,&caret)} ?? false
         if located {
             if reload || !candidatePanel.isVisible {
-                candidatePanel.show(items:presented,selected:clipboardItem == nil ? (input?.selectedIndex ?? 0):-1,offset:clipboardItem == nil ? (input?.candidateOffset ?? 0):0,expanded:clipboardItem == nil && input?.expanded == true,caret:caret,layout:input?.candidateLayout ?? KeyboardPreferences.desktopCandidateLayout,clipboard:clipboardItem != nil)
+                candidatePanel.show(items:presented,selected:input?.selectedIndex ?? 0,offset:input?.candidateOffset ?? 0,expanded:input?.expanded == true,caret:caret,layout:input?.candidateLayout ?? KeyboardPreferences.desktopCandidateLayout)
             } else {candidatePanel.reposition(caret:caret)}
         } else {candidatePanel.hide()}
         if candidatePanel.isVisible {candidateWindow?.hide()}
-        else if clipboardItem != nil {candidateWindow?.hide()}
-        else if clipboardItem == nil,let input {
+        else if let input {
             // The OS can place its own candidates even when a client omits
             // optional geometry. Never strand a custom panel at an old point.
             candidateWindow?.setSelectionKeys(Array([18,19,20,21,23,22,26,28,25].prefix(input.candidateLayout.collapsedCount)))
@@ -315,24 +296,7 @@ private final class MacHiddenCheckpointCoordinator {
             }
         }
     }
-    private func dismissClipboard() {
-        if let item=clipboardItem {MacClipboardSuggestion.shared.dismiss(version:item.version)}
-        clipboardPresentationSerial &+= 1;clipboardItem=nil
-    }
-    private func pasteClipboard(client:IMKTextInput) {
-        guard activated,clipboardItem != nil,input?.engine.preedit.isEmpty != false else{return}
-        let originalSession=archiveSession,originalGeneration=focusGeneration,selection=client.selectedRange(),originalInput=input
-        guard activated,let item=clipboardItem,originalInput?.engine.preedit.isEmpty != false,
-              let text=MacClipboardSuggestion.shared.paste(item),clipboardItem==item,input === originalInput,
-              activated,focusGeneration==originalGeneration,archiveSession==originalSession,client.selectedRange()==selection,
-              liveClient().map({ObjectIdentifier($0 as AnyObject)==ObjectIdentifier(client as AnyObject)}) == true else {updateCandidates();return}
-        input?.invalidateCorrection();clipboardItem=nil
-        let app=client.bundleIdentifier()
-        client.insertText(text,replacementRange:NSRange(location:NSNotFound,length:0))
-        if let archiveSession {ActivityArchiveCapture.shared.recordSystemPaste(text,sourceApp:app,document:nil,session:archiveSession,epoch:UUID().uuidString,safety:.safe)}
-        updateCandidates()
-    }
-    deinit {geometryTimer?.invalidate();clipboardTimer?.invalidate();if let preferenceObserver {NotificationCenter.default.removeObserver(preferenceObserver)};if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.deactivate(focusOwner)}}
+    deinit {geometryTimer?.invalidate();if let preferenceObserver {NotificationCenter.default.removeObserver(preferenceObserver)};if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.deactivate(focusOwner)}}
     override func candidateSelectionChanged(_ candidateString:NSAttributedString!) {
         // The session owns arrow/number selection. Native panel refreshes can
         // publish an old first-row highlight asynchronously; never let that
@@ -340,10 +304,8 @@ private final class MacHiddenCheckpointCoordinator {
         // through candidateSelected instead.
     }
     override func activateServer(_ sender:Any!) { super.activateServer(sender);activated=true;focusGeneration &+= 1
-        clipboardPresentationSerial &+= 1
         if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.activate(focusOwner)}
         archiveSession = Self.acceptanceStorage == nil ? UUID().uuidString : nil; archiveReportedPassthrough = false;trace("activate")
-        clipboardTimer?.invalidate()
         let generation=focusGeneration
         // Never query the host's caret or initialize the engine while that host
         // is synchronously waiting for this activation callback to return.
@@ -351,14 +313,7 @@ private final class MacHiddenCheckpointCoordinator {
             guard let self,self.activated,self.focusGeneration==generation else{return}
             ActivityArchiveCapture.shared.refresh(permitted:Self.acceptanceStorage == nil)
             guard Self.acceptanceStorage==nil,!IsSecureEventInputEnabled() else{return}
-            let timer=Timer(timeInterval:1,repeats:true) { [weak self] _ in
-                guard let self,self.activated,self.focusGeneration==generation,
-                      self.input?.engine.preedit.isEmpty != false,!IsSecureEventInputEnabled() else{return}
-                let previous=self.clipboardItem
-                let next=MacClipboardSuggestion.shared.current()
-                if previous != next {self.updateCandidates()}
-            }
-            self.clipboardTimer=timer;RunLoop.main.add(timer,forMode:.common);self.updateCandidates()
+            self.updateCandidates()
         }
     }
     override func candidates(_ sender:Any!) -> [Any]! { presented.map(\.text) }
@@ -402,14 +357,12 @@ private final class MacHiddenCheckpointCoordinator {
     @objc private func refreshLearning(_ sender:Any?) { if let input { checkpoint(input) } }
     override func candidateSelected(_ candidateString:NSAttributedString!) {
         guard activated,let candidateString,let row=presented.first(where:{$0.text==candidateString.string}),let client=liveClient() else { return }
-        if row.index == -2 {guard row.generation==clipboardPresentationSerial else{return};pasteClipboard(client:client);return}
         guard let input else{return}
         input.chooseCandidate(row,client:IMKClient(client:client,archiveSession:archiveSession));updateCandidates()
         if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.changed()}
     }
     override func deactivateServer(_ sender:Any!) {
-        activated=false;focusGeneration &+= 1;clipboardPresentationSerial &+= 1
-        clipboardTimer?.invalidate();clipboardTimer=nil;clipboardItem=nil
+        activated=false;focusGeneration &+= 1
         commitComposition(sender)
         if let input {input.engine.finish()}
         // Inactive IMK controllers must not keep Rime sessions alive and block

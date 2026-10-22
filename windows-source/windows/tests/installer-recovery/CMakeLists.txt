@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+project(LingheInstallerRecoveryContract LANGUAGES CXX)
+enable_testing()
+add_executable(installer_recovery_transaction ../installer_recovery_transaction.cpp)
+target_compile_features(installer_recovery_transaction PRIVATE cxx_std_17)
+add_test(NAME installer_recovery_transaction COMMAND installer_recovery_transaction)

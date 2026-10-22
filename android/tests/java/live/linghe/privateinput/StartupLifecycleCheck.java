@@ -1,0 +1,29 @@
+package live.linghe.privateinput;
+import android.app.*;import android.content.*;import android.os.*;import java.io.*;import java.lang.reflect.*;import java.util.*;import org.json.*;
+/** Real synthetic IME service, isolated fixture data, controlled failure once.
+ * Does not read product files, enroll a group or type into another app. */
+public final class StartupLifecycleCheck extends Instrumentation {
+ private int checks;private Bundle args;private String original;private UiAutomation ui;
+ private void check(boolean ok,String why){if(!ok)throw new AssertionError(why);checks++;}
+ private void shell(String command)throws Exception{try(ParcelFileDescriptor fd=ui.executeShellCommand(command);InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] buffer=new byte[4096];while(in.read(buffer)!=-1){}}}
+ private EngineStartupState state(LearningAcceptanceService s)throws Exception{Field field=LingheInputService.class.getDeclaredField("startup");field.setAccessible(true);return (EngineStartupState)field.get(s);}
+ private boolean ready(LearningAcceptanceService s)throws Exception{Field field=LingheInputService.class.getDeclaredField("ready");field.setAccessible(true);return field.getBoolean(s);}
+ public void onCreate(Bundle args){super.onCreate(args);this.args=args;start();}
+ public void onStart(){Bundle result=new Bundle();Activity activity=null;try{
+  Context context=getTargetContext();check(context.getPackageName().equals("live.linghe.privateinput.tests"),"self fixture only");ui=getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);original=android.provider.Settings.Secure.getString(context.getContentResolver(),android.provider.Settings.Secure.DEFAULT_INPUT_METHOD);
+  String nonce=UUID.randomUUID().toString();context.getSharedPreferences("startup-fixture",0).edit().putBoolean("fail-native-once",true).putBoolean("fail-optional",true).commit();
+  activity=startActivitySync(new Intent(context,TypingAcceptanceActivity.class).putExtra("fixture",nonce).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+  shell("ime enable live.linghe.privateinput.tests/live.linghe.privateinput.LearningAcceptanceService");shell("ime set live.linghe.privateinput.tests/live.linghe.privateinput.LearningAcceptanceService");
+  long until=SystemClock.uptimeMillis()+30000;LearningAcceptanceService service;while((service=LearningAcceptanceService.active)==null&&SystemClock.uptimeMillis()<until)Thread.sleep(50);check(service!=null,"real InputMethodService instantiated");
+  EngineStartupState state=state(service);while(!state.failed()&&SystemClock.uptimeMillis()<until)Thread.sleep(25);check(state.failed()&&!ready(service),"first native failure is explicit not false ready");long previous=state.owner();
+  LearningAcceptanceService live=service;runOnMainSync(()->{try{Method method=LingheInputService.class.getDeclaredMethod("startEngine",boolean.class);method.setAccessible(true);method.invoke(live,true);}catch(Exception failure){throw new RuntimeException(failure);}});
+  until=SystemClock.uptimeMillis()+30000;while(!ready(service)&&SystemClock.uptimeMillis()<until)Thread.sleep(25);check(ready(service)&&state.owner()>previous,"same live keyboard recovers without changing apps");
+  check(LearningAcceptanceService.optionalEntered.await(5,java.util.concurrent.TimeUnit.SECONDS),"optional loader held by controlled test barrier");check(ready(service),"held optional loader does not gate base ready");
+  Field choice=LingheInputService.class.getDeclaredField("choiceMemory"),choiceRevision=LingheInputService.class.getDeclaredField("choiceMemoryRevision");choice.setAccessible(true);choiceRevision.setAccessible(true);ChoiceMemory newerChoice=new ChoiceMemory();
+  Field worker=LingheInputService.class.getDeclaredField("worker"),handle=LingheInputService.class.getDeclaredField("session");worker.setAccessible(true);handle.setAccessible(true);java.util.concurrent.FutureTask<Boolean> typing=new java.util.concurrent.FutureTask<>(()->{long id=handle.getLong(live);NativeCore.mode(id,false,true);for(char key:"nihao".toCharArray())NativeCore.key(id,key);String[][] rows=NativeCore.snapshot(id);boolean found=false;for(int k=1;k<rows.length;k++)if(rows[k][1].equals("你好"))found=true;NativeCore.clear(id);choiceRevision.setLong(live,choiceRevision.getLong(live)+1);choice.set(live,newerChoice);return found;});((java.util.concurrent.Executor)worker.get(service)).execute(typing);check(typing.get(1,java.util.concurrent.TimeUnit.SECONDS),"real native base candidate task while optional IO blocked");
+  LearningAcceptanceService.optionalRelease.countDown();Thread.sleep(2000);check(ready(service),"optional failure preserves base ready");check(choice.get(service)==newerChoice,"late optional snapshot does not overwrite newer choice memory");
+  shell("ime set "+original);Thread.sleep(200);shell("ime set live.linghe.privateinput.tests/live.linghe.privateinput.LearningAcceptanceService");Thread.sleep(500);check(LearningAcceptanceService.active!=null&&ready(LearningAcceptanceService.active),"IME switch away and back stays usable in same editor");
+  result.putString("result",new JSONObject().put("assertions",checks).put("nativeFailureRecovered",true).put("optionalFailureBaseUsable",true).put("scope","synthetic-service-only").toString());finish(-1,result);
+ }catch(Throwable failure){result.putInt("assertions",checks);result.putString("failureClass",failure.getClass().getSimpleName());String message=failure.getMessage();if(message!=null)result.putString("fixtureFailure",message);finish(1,result);
+ }finally{LearningAcceptanceService.optionalRelease.countDown();try{if(ui!=null&&original!=null&&original.matches("[A-Za-z0-9_.]+/[A-Za-z0-9_.$]+")){shell("ime set "+original);shell("ime disable live.linghe.privateinput.tests/live.linghe.privateinput.LearningAcceptanceService");}}catch(Exception ignored){}if(activity!=null){Activity own=activity;runOnMainSync(own::finish);}}}
+}

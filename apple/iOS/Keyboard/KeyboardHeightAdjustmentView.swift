@@ -62,20 +62,25 @@ final class KeyboardHeightAdjustmentView: UIView {
     private var pendingPreview: Double?
     private var previewWork: DispatchWorkItem?
     private var previewGeneration: UInt64 = 0
+    private var lastPreviewExtra:Double?
+    private var displayedExtra:Double?
     private func preview(_ extra: Double) {
-        pendingPreview=extra;title.text="拖动调高 · +\(Int(extra))"
+        let value=KeyboardHeight.normalized(extra)
+        pendingPreview=value;title.text="拖动调高 · +\(Int(value))"
         guard previewWork == nil else {return}
         let generation=previewGeneration
         let work=DispatchWorkItem { [weak self] in
             guard let self,self.previewGeneration==generation else{return};self.previewWork=nil
             guard let value=self.pendingPreview else{return};self.pendingPreview=nil
+            guard self.lastPreviewExtra != value else{return};self.lastPreviewExtra=value
             self.change?(value,false)
         }
         previewWork=work;DispatchQueue.main.asyncAfter(deadline:.now()+1.0/30,execute:work)
     }
     private func commit(_ extra: Double) {
         previewGeneration &+= 1;previewWork?.cancel();previewWork=nil;pendingPreview=nil
-        change?(extra,true)
+        let value=KeyboardHeight.normalized(extra);lastPreviewExtra=value
+        change?(value,true)
     }
     override func didMoveToWindow() {
         super.didMoveToWindow()
@@ -88,7 +93,10 @@ final class KeyboardHeightAdjustmentView: UIView {
         super.init(frame: .zero)
         let finish = UIButton(type: .system)
         finish.setTitle("完成", for: .normal); finish.accessibilityIdentifier = "finish-keyboard-height"
-        finish.addAction(UIAction { [weak self] _ in self?.done?() }, for: .touchUpInside)
+        finish.addAction(UIAction { [weak self] _ in
+            guard let self else{return}
+            self.commit(Double(self.slider.value));self.done?()
+        }, for: .touchUpInside)
         title.font = .systemFont(ofSize: 13); title.textColor = InputThemeColors.secondary
         title.isUserInteractionEnabled = true; title.accessibilityIdentifier = "drag-keyboard-height"
         title.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(drag(_:))))
@@ -112,6 +120,8 @@ final class KeyboardHeightAdjustmentView: UIView {
     required init?(coder: NSCoder) { fatalError() }
     func applyTheme() { title.textColor = InputThemeColors.secondary; tintColor = InputThemeColors.accent }
     func update(_ extra: Double) {
+        guard displayedExtra != extra || Double(slider.value) != extra else{return}
+        displayedExtra=extra;lastPreviewExtra=extra
         slider.value = Float(extra)
         slider.accessibilityValue = "+\(Int(extra))"
         title.text = "拖动调高 · +\(Int(extra))"

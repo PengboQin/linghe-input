@@ -6,6 +6,13 @@ std::string line(const std::string& path) { return std::string(64,'a')+"  "+path
 const std::string base="version=0.2.3-win1\n"+line("AMD64/PrivateInputTSF.dll")+line("AMD64/LingheInputSettings.exe")+line("AMD64/librime.dll");
 int main() {
  unsigned count=0;
+ // Extending one release pin must never turn the ownership predicate into an
+ // always-true expression. Unknown valid-length hashes remain untrusted.
+ assert(!recognizedSetupHash(std::string(64,'0'),std::string(64,'a')));
+ assert(!recognizedSetupHash(std::string(64,'f'),std::string(64,'a')));
+ assert(recognizedSetupHash("d617c9572e89a92890689679c1ff6ea3d3333bd28e59e4fd6b522aa2159310ba",std::string(64,'a')));
+ assert(recognizedSetupHash(std::string(64,'a'),std::string(64,'a')));
+
  auto reject=[&](const std::string& manifest) { bool failed=false; try{parseManifest(manifest,"0.2.3-win1");}catch(const std::runtime_error&){failed=true;} assert(failed);++count; };
  assert(parseManifest(base,"0.2.3-win1").size()==3);
  reject(""); reject("version=0.2.2-win1\n"+base.substr(base.find('\n')+1));

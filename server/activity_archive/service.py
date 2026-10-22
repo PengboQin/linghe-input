@@ -21,6 +21,7 @@ import uuid
 from urllib.parse import quote
 
 from .metadata import latest_authorized_activity
+from .diagnostics import validate_decision_extensions
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -536,6 +537,9 @@ class ArchiveStore:
             fail('event_links')
         if 'extensions' in event and (type(event['extensions']) is not dict or len(event['extensions']) > 32):
             fail('extensions')
+        diagnostic_error = validate_decision_extensions(event)
+        if diagnostic_error:
+            fail(diagnostic_error)
         if 'edit_op' in event and event['edit_op'] is not None:
             if type(event['edit_op']) is not dict or type(event['edit_op'].get('kind')) is not str or event['edit_op'].get('kind') not in {'insert', 'replace', 'delete', 'unknown'}:
                 fail('edit_op')

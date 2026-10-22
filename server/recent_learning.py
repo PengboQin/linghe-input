@@ -47,9 +47,25 @@ def handle(relay,group,request):
         import device_administration
         device_administration.authorized_activity(relay,group,sender,now)
         payload=strict_json(body)
-        shape(payload,'epoch membershipRevision roles' if op==1 else ('epoch membershipRevision envelope expectedEvent' if op==2 else 'epoch membershipRevision after'))
+        fields='epoch membershipRevision roles' if op==1 else ('epoch membershipRevision envelope expectedEvent' if op==2 else 'epoch membershipRevision after')
+        if type(payload) is dict:
+            if op==1 and 'knownEvent' in payload:fields+=' knownEvent'
+            if op==3 and 'knownSnapshots' in payload:fields+=' knownSnapshots'
+        shape(payload,fields)
         epoch=number(payload['epoch'],1);revision=number(payload['membershipRevision'],1)
         if epoch!=state['epoch'] or revision!=state['revision']:reject('recent_membership',409)
+        known_event=None;known_snapshots={}
+        if op==1 and 'knownEvent' in payload:
+            known_event=payload['knownEvent']
+            if type(known_event) is not str:reject('recent_known_event')
+            if known_event:known_event=identifier(known_event)[0]
+        if op==3 and 'knownSnapshots' in payload:
+            hints=payload['knownSnapshots']
+            if type(hints) is not dict or len(hints)>64:reject('recent_known_snapshots')
+            for actor,event in hints.items():
+                actor=identifier(actor)[0];event=identifier(event)[0]
+                if actor in known_snapshots:reject('recent_known_snapshots')
+                known_snapshots[actor]=event
         day=now//86400
         if not 90<=day<=3000000:reject('recent_time_unavailable',503)
         old=relay.db.execute('SELECT reference_day FROM recent_policy WHERE group_id=?',(group,)).fetchone()
@@ -75,7 +91,7 @@ def handle(relay,group,request):
                   'serverTime':now,'referenceDay':day,'ready':not missing,'missing':sorted(missing)}
         own=relay.db.execute('SELECT event,wire FROM recent_snapshots WHERE group_id=? AND sender=? AND epoch=?',(group,sender,str(epoch))).fetchone()
         response['publishedEvent']=own[0] if own else ''
-        if op==1:return dict(response,envelope=strict_json(own[1]) if own else None)
+        if op==1:return dict(response,conditionalSnapshots=True,envelope=strict_json(own[1]) if own and known_event!=own[0] else None)
         if missing:reject('recent_not_ready',409)
         if op==2:
             message=payload['envelope']
@@ -104,7 +120,7 @@ def handle(relay,group,request):
         if type(after) is not str:reject('recent_cursor')
         if after:after=identifier(after)[0]
         allowed={identifier(m['device'])[0] for m in state['members'] if m['permissions']&1}
-        rows=relay.db.execute('SELECT sender,wire FROM recent_snapshots WHERE group_id=? AND epoch=? AND sender>? AND sender!=? ORDER BY sender',(group,str(epoch),after,sender))
-        for actor,wire in rows:
-            if actor in allowed:return dict(response,envelope=strict_json(wire),next=actor)
+        rows=relay.db.execute('SELECT sender,event,wire FROM recent_snapshots WHERE group_id=? AND epoch=? AND sender>? AND sender!=? ORDER BY sender',(group,str(epoch),after,sender))
+        for actor,event,wire in rows:
+            if actor in allowed and known_snapshots.get(actor)!=event:return dict(response,envelope=strict_json(wire),next=actor)
         return dict(response,envelope=None,next='')

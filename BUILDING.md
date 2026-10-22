@@ -51,3 +51,40 @@ See `SELF-HOSTING.md` and `server/deploy/README.md`. Run the isolated server uni
 Optional input-process diagnostics use separate default-off consent. See `docs/INPUT-DIAGNOSTICS-V1-20261021.md`; output, copy observations, explicit paste and unselected composition are distinct records. Public hardware descriptions contain no serials or hostnames. New Windows code supports solitary Shift toggles and literal Return; native TSF acceptance remains separate from cross-compilation.
 
 `package_android_incremental.py` is an optional bounded packaging recipe using an existing reviewed APK for unchanged public resources; supply `--base-apk`, a new `--output` and optional `--unsigned`. It does not distribute signing keys. The standard `build_android.py` remains the from-source entry point. Install/real-device and clean-room reproducibility are not established by source presence.
+
+
+## Current clipboard regression materials
+
+The public snapshot includes `scripts/tests/mobile_clipboard_presentation.swift`,
+`scripts/tests/clipboard_preview_cache.swift`, the shared production state/cache
+sources, and `android/tests/fixtures/clipboard-presentation-v1.json`. These use
+synthetic values and temporary local state; they do not access the system
+clipboard, a real device group or a network server. On a Mac with the documented
+Swift SDK, run from the source root after creating a disposable build directory:
+
+```sh
+mkdir -p build/public-smoke
+swiftc apple/iOS/Keyboard/StableCandidatePublication.swift scripts/tests/mobile_clipboard_presentation.swift -o build/public-smoke/mobile-clipboard
+build/public-smoke/mobile-clipboard android/tests/fixtures/clipboard-presentation-v1.json
+swiftc shared/PrivateInputKit/Sources/PrivateInputKit/ClipboardPreviewCache.swift scripts/tests/clipboard_preview_cache.swift -o build/public-smoke/clipboard-preview
+build/public-smoke/clipboard-preview
+```
+
+The Android test builder also includes the public synthetic personal-lexicon
+fixture under `shared/contracts/`; that fixture is not user data. Production
+Windows worker fragments ending in `.inc` are required C++ source inputs, not
+optional installer resources. A source audit checks their literal local includes
+and the reviewed build/test inputs before export; this is still not a complete
+clean-room build claim.
+
+For the optional Android incremental recipe, `--reuse-native-from-base` requires
+`--expected-base-sha256` and keeps the reviewed APK's JNI binary unchanged. Only
+use this shortcut when the canonical core/JNI provenance is independently known
+to match the intended version; the flag does not rebuild or establish that match.
+Without it the native target is rebuilt from root `core/`. An unsigned run never
+opens signing keys. For signed output, use your own key and, when required,
+`--expected-signer-sha256`; a publisher key is never distributed. Set
+`--source-release-url` to the matching corresponding-source release when preparing
+your own distribution. The base APK, runtime JARs, SDK/NDK/JDK and optional model
+weights remain explicit external build inputs; their absence from the source ZIP
+is intentional and their public preparation paths are documented above.

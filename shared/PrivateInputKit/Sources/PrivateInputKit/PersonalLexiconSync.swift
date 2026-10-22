@@ -12,6 +12,13 @@ public struct PersonalLexiconSync: Codable, Equatable {
     public var version = 1
     public private(set) var records: [String: Record] = [:]
     public init() {}
+    /// Preserve entry IDs, logical revisions and tombstones on incremental wire
+    /// publication. Materialization stays receiver-side after CRDT merge.
+    public func selectingRecords(_ identifiers: Set<String>) throws -> Self {
+        try validate()
+        var result = self; result.records = records.filter { identifiers.contains($0.key) }
+        try result.validate(); return result
+    }
     private func key(_ entry: PersonalLexicon.Entry) -> String {
         entry.kind.rawValue + "\u{1f}" + entry.trigger + "\u{1f}" + entry.text
     }

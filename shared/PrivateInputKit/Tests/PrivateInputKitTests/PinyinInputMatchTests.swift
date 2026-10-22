@@ -1,6 +1,16 @@
 import XCTest
 @testable import PrivateInputKit
 final class PinyinInputMatchTests:XCTestCase {
+ func testAlphabeticPriorityPreservesSpellingBeforeCorrections() {
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("nihao",reading:"ni hao"),3)
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("lue",reading:"lve"),3)
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("csm",reading:"chi shen me"),2)
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("shih",reading:"shi hou"),2)
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("shih",reading:"shi",corrected:true),1)
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("linaxaing",reading:"lian xiang",corrected:true),1)
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("linaxaing",reading:"li na xi ai neng gou"),0)
+  XCTAssertEqual(PinyinInputMatch.candidatePriority("968",reading:"you"),0)
+ }
  func testInitialsMixedAndUnfinishedPinyinStayDistinctFromTypos() {
   for raw in ["csm","chsm","chishenm","chishenme"] {XCTAssertTrue(PinyinInputMatch.covers(raw,reading:"chi shen me"),raw)}
   XCTAssertTrue(PinyinInputMatch.covers("shih",reading:"shi hou"))

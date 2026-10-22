@@ -1,0 +1,20 @@
+[Unit]
+Description=PrivateInput bounded cloud learning batch
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=private-input-learning
+Group=private-input-learning
+WorkingDirectory=/opt/private-input-learning/current/server
+EnvironmentFile=/etc/private-input-learning/environment
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/private-input-learning/venv/bin/python -m cloud_learning.worker --database ${PRIVATE_INPUT_LEARNING_DATABASE} --relay-database ${PRIVATE_INPUT_LEARNING_RELAY_DATABASE} --event-limit 1024
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/private-input-learning
+MemoryMax=256M
+TimeoutStartSec=90

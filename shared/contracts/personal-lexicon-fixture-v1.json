@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+      "kind": "word",
+      "text": "拟好",
+      "trigger": "ni hao"
+    },
+    {
+      "id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+      "kind": "word",
+      "text": "米好",
+      "trigger": "mi hao"
+    },
+    {
+      "id": "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC",
+      "kind": "phrase",
+      "text": "合成地址\n请先联系",
+      "trigger": "dz"
+    }
+  ],
+  "synchronization": {
+    "version": 1,
+    "records": {
+      "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA": {
+        "entry": {
+          "id": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+          "kind": "word",
+          "text": "拟好",
+          "trigger": "ni hao"
+        },
+        "deleted": false,
+        "revision": {
+          "sequence": 1,
+          "device": "11111111-1111-1111-1111-111111111111"
+        },
+        "created": {
+          "sequence": 1,
+          "device": "11111111-1111-1111-1111-111111111111"
+        }
+      },
+      "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB": {
+        "entry": {
+          "id": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+          "kind": "word",
+          "text": "米好",
+          "trigger": "mi hao"
+        },
+        "deleted": false,
+        "revision": {
+          "sequence": 2,
+          "device": "11111111-1111-1111-1111-111111111111"
+        },
+        "created": {
+          "sequence": 2,
+          "device": "11111111-1111-1111-1111-111111111111"
+        }
+      },
+      "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC": {
+        "entry": {
+          "id": "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC",
+          "kind": "phrase",
+          "text": "合成地址\n请先联系",
+          "trigger": "dz"
+        },
+        "deleted": false,
+        "revision": {
+          "sequence": 3,
+          "device": "11111111-1111-1111-1111-111111111111"
+        },
+        "created": {
+          "sequence": 3,
+          "device": "11111111-1111-1111-1111-111111111111"
+        }
+      },
+      "DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD": {
+        "entry": {
+          "id": "DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD",
+          "kind": "word",
+          "text": "已移除合成词",
+          "trigger": "yi yi chu he cheng ci"
+        },
+        "deleted": true,
+        "revision": {
+          "sequence": 8,
+          "device": "11111111-1111-1111-1111-111111111111"
+        },
+        "created": {
+          "sequence": 4,
+          "device": "11111111-1111-1111-1111-111111111111"
+        }
+      }
+    }
+  }
+}

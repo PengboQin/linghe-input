@@ -33,7 +33,7 @@ final class InputQuality {
  boolean exact(String raw,String reading,boolean nine) {
   return fullySpelled(reading)&&(nine?raw.equals(code(reading)):PinyinMatch.isFullSpelling(raw,reading));
  }
- private String tail(long session,String[][] state,boolean nine) {
+ private static String tail(long session,String[][] state,boolean nine) {
   if(state.length==0||state[0].length<5)return "";
   String raw=state[0][2],selected=state[0][4];long start=NativeCore.editableStart(session);
   if(start<0&&!nine&&selected.isEmpty())start=0;
@@ -123,16 +123,22 @@ final class InputQuality {
  }
  // Repeated initials are deliberate input, not insertion/deletion errors.
  // Each result owns its consumed prefix and keeps every unmatched tail key.
- private void repeatedHeads(long session,String[][] state,String raw,boolean nine,List<Repair> result,BooleanSupplier cancelled) {
+ static List<Repair> immediateRepeatedHeads(long session,String[][] state,boolean nine) {
+  if(!nine||state.length!=1)return Collections.emptyList();String raw=tail(session,state,true);
+  if(raw.length()<2||raw.length()>96)return Collections.emptyList();
+  List<Repair> result=new ArrayList<>();repeatedHeads(session,state,raw,true,result,()->false,reading->reading.matches("[a-z]+(?:[ ']+[a-z]+)*"));result.sort((a,b)->{int c=Double.compare(b.score,a.score);return c!=0?c:a.text.compareTo(b.text);});return new ArrayList<>(result.subList(0,Math.min(32,result.size())));
+ }
+ private void repeatedHeads(long session,String[][] state,String raw,boolean nine,List<Repair> result,BooleanSupplier cancelled) {repeatedHeads(session,state,raw,nine,result,cancelled,this::fullySpelled);}
+ private static void repeatedHeads(long session,String[][] state,String raw,boolean nine,List<Repair> result,BooleanSupplier cancelled,java.util.function.Predicate<String> fullySpelled) {
   if(raw.length()<2||raw.length()>96)return;int run=1;while(run<raw.length()&&raw.charAt(run)==raw.charAt(0))run++;
   if(run<2)return;LinkedHashSet<Integer> cuts=new LinkedHashSet<>();
   if(run<raw.length()){if(run>=3&&run-1<=8)cuts.add(run-1);if(run<=8)cuts.add(run);}else if(run<=8)cuts.add(run);
   if(cuts.isEmpty()&&run>8)cuts.add(8);if(cuts.isEmpty())return;
   String letters=nine?new String[]{"abc","def","ghi","jkl","mno","pqrs","tuv","wxyz"}[raw.charAt(0)-'2']:raw.substring(0,1);
   int queries=0;
-  for(int cut:cuts){String suffix=raw.substring(cut);List<String[]> tails=new ArrayList<>();if(!suffix.isEmpty()&&suffix.length()<=16)for(String[] row:NativeCore.query(session,suffix,nine,96))if(exact(suffix,row[2],nine)&&tails.size()<8)tails.add(row);
+  for(int cut:cuts){String suffix=raw.substring(cut);List<String[]> tails=new ArrayList<>();if(!suffix.isEmpty()&&suffix.length()<=16)for(String[] row:NativeCore.query(session,suffix,nine,96))if(fullySpelled.test(row[2])&&(nine?suffix.equals(code(row[2])):PinyinMatch.isFullSpelling(suffix,row[2]))&&tails.size()<8)tails.add(row);
    for(int letterIndex=0;letterIndex<letters.length()&&queries<8;letterIndex++){if(cancelled.getAsBoolean())return;char letter=letters.charAt(letterIndex);if("aeiouv".indexOf(letter)>=0)continue;String initials=String.join("",Collections.nCopies(cut,String.valueOf(letter)));queries++;
-    int rank=0;for(String[] head:NativeCore.initials(session,initials,32)){if(cancelled.getAsBoolean())return;String[] parts=head[2].trim().split("[ ']+");if(parts.length!=cut||head[1].codePointCount(0,head[1].length())!=cut||!fullySpelled(head[2]))continue;boolean valid=true;for(String part:parts)if(part.charAt(0)!=letter){valid=false;break;}if(!valid)continue;
+    int rank=0;for(String[] head:NativeCore.initials(session,initials,32)){if(cancelled.getAsBoolean())return;String[] parts=head[2].trim().split("[ ']+");if(parts.length!=cut||head[1].codePointCount(0,head[1].length())!=cut||!fullySpelled.test(head[2]))continue;boolean valid=true;for(String part:parts)if(part.charAt(0)!=letter){valid=false;break;}if(!valid)continue;
      if(rank>=4)break;boolean uniform=head[1].codePoints().distinct().count()==1;double priority=(uniform?2:0)-rank++*.1;
      int tailRank=0;for(String[] tail:tails){String reading=head[2]+" "+tail[2];result.add(new Repair(state[0][2],normalized(reading),head[1]+tail[1],reading,"",8+priority+suffix.length()*.15-tailRank++*.08));}
      result.add(new Repair(state[0][2],normalized(head[2]),head[1],head[2],suffix,priority));if(result.size()>=256)return;
@@ -207,6 +213,9 @@ final class InputQuality {
   for(int i=1;i<augmented.length;i++)if(used.add(augmented[i][1]))rows.add(augmented[i]);
   if(nine&&rows.size()>1&&rows.get(1)[0].startsWith("repair:"))rows.get(0)[3]=ordinary[0][4]+rows.get(1)[2].replace(' ', '\'');
   return rows.toArray(new String[0][]);
+ }
+ static String[][] mergeImmediateRepeated(String[][] state,List<Repair> repairs,Map<String,Repair> plans){
+  if(state.length!=1||repairs.isEmpty())return state;ArrayList<String[]> rows=new ArrayList<>();rows.add(state[0].clone());Set<String> used=new HashSet<>();for(Repair repair:repairs)if(used.add(repair.text)){String id=repairID(repair);plans.put(id,repair);rows.add(new String[]{id,repair.text,repair.reading});}return rows.toArray(new String[0][]);
  }
  static String repairID(Repair repair) {
   try {

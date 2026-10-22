@@ -1,11 +1,6 @@
 import Foundation
 
 public enum RelayClientError: Error { case invalidEndpoint, responseTooLarge, invalidResponse, httpStatus(Int), rotationRequired }
-private final class DenyRedirects: NSObject, URLSessionTaskDelegate {
-    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
-}
-
 /// Transport lives in the containing app/sync agent. No cookies, body logs,
 /// persistent cache, certificate overrides or silent redirects to another host.
 public struct RelayClient: RelaySyncTransport {
@@ -24,11 +19,7 @@ public struct RelayClient: RelaySyncTransport {
         request.httpMethod = method; request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.httpCookieStorage = nil; configuration.urlCache = nil; configuration.httpShouldSetCookies = false
-        configuration.timeoutIntervalForResource = 30
-        let session = URLSession(configuration: configuration, delegate: DenyRedirects(), delegateQueue: nil)
-        defer { session.invalidateAndCancel() }
+        let session = PrivateInputHTTPSessions.relay
         let (bytes, response) = try await session.bytes(for: request)
         guard let http = response as? HTTPURLResponse else { throw RelayClientError.invalidResponse }
         guard http.statusCode == 200 else { throw RelayClientError.httpStatus(http.statusCode) }

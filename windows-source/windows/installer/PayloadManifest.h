@@ -9,6 +9,14 @@
 namespace linghe::installer {
 struct PayloadEntry { std::string sha256, path; };
 enum class CleanupDisposition { AlreadyAbsent, RemoveVerified, PreserveUnknownOrChanged };
+// Active upgrade/repair ownership requires EVERY pinned payload, not merely the DLL.
+// Missing bytes are tolerated ONLY by uninstall cleanup retry; never by repair.
+enum class PayloadPurpose { InstallOrRepair, CleanupRetry };
+inline bool validOwnedPayload(const PayloadEntry& entry,bool exists,bool regular,
+                              const std::string& actualHash,PayloadPurpose purpose) {
+ if(!exists)return purpose==PayloadPurpose::CleanupRetry;
+ return regular&&actualHash==entry.sha256;
+}
 inline CleanupDisposition cleanupDisposition(const std::vector<PayloadEntry>& entries,const std::string& relativePath,
                                             bool exists,const std::string& actualHash) {
  if(!exists)return CleanupDisposition::AlreadyAbsent;
@@ -43,7 +51,13 @@ inline bool recognizedSetupHash(const std::string& hash,const std::string& runni
         hash=="e348e7720ba45322b912b4098b4528edc677b4548be328859d8ab8a6dbd340b2" ||
         hash=="87cd19e618398c348aeac1224ccd6d17fc5849eeedf1f639a257c1ca9c4a010e" ||
         hash=="4290d63d340caa60caf2666a315e4703360869942016ce31415495055ccf1823" ||
-        hash=="b046bb595ca36de6be52c11b1c036b3069e6d83499248fed4762d325110608d4";
+        hash=="b046bb595ca36de6be52c11b1c036b3069e6d83499248fed4762d325110608d4" ||
+        hash=="b67513fd913aa227eae199374552b7f443494f1fa60119cd49c2f8b3692d7b7d" ||
+        hash=="6eaf456124102f37144b5cd715e09cb34f2b0c007fe2b0eab32897228dcb6b60" ||
+        hash=="783c90c7b22582153fea86d9db3e5d4abd0a6250cbe741d9af3498d1d28efe51" ||
+        hash=="d617c9572e89a92890689679c1ff6ea3d3333bd28e59e4fd6b522aa2159310ba" ||
+        hash=="aad708921cb7deae91b9ebe6dac2dda09e1077235894cee43ec98da854680f12" ||
+        hash=="4a09a75b70eb6dbf309afd8809669df04d11dcef427d3d8b55e54598aeb0b120";
 }
 inline std::vector<PayloadEntry> parseManifest(const std::string& bytes, const std::string& version) {
  if(bytes.empty() || bytes.size()>256*1024 || bytes.find('\0')!=std::string::npos)throw std::runtime_error("Invalid manifest size");

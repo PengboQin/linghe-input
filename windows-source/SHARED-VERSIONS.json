@@ -8,6 +8,12 @@
       "same_bytes": false
     },
     {
+      "path": "core/include/mainland_candidate_policy.h",
+      "main_sha256": "050d617ef603056d8fd844f90c3b4cc3754135e7284721bafd3dec87728fad65",
+      "windows_sha256": "64683a54ed33e3983880974c0b40a404c4bc6b108d1f7fc98247754f953f0b45",
+      "same_bytes": false
+    },
+    {
       "path": "core/include/pinyin_repair.h",
       "main_sha256": "27feb57373363854a336058193af4e2a69194801ff0ffbb2b17b73c517e3cf57",
       "windows_sha256": "4e61dbd97f6fd03febc016cfde53795c3b50e8b5a36dfb3181749815dbd50356",
@@ -15,13 +21,13 @@
     },
     {
       "path": "core/include/pinyin_text.h",
-      "main_sha256": "803f4fb4a3e29afcd5287aa6f4b2f23867447c164da5e7da9cd8eb8f7b27534e",
+      "main_sha256": "3a13328518383e1687d0e0f3d7226e6e403241e3c0bd9b3301b518444401ceaa",
       "windows_sha256": "03761a000abb4f7e0fdcb693ddfbecc7b38de8ac8deb3528d65178d9547dcb47",
       "same_bytes": false
     },
     {
       "path": "core/include/private_input.h",
-      "main_sha256": "c02adb0810a6cc981eb187e9fa4dbac5b9154532df3783f0a2f3a5d397a864cd",
+      "main_sha256": "ff2e8556cef8602b6dd6f6566070b66f90f0ec15eb4cb3f370f39079ab96a984",
       "windows_sha256": "918566fe2b50b363df29c47e72ae5e45ec66f4af2e7fcbdcbfa4f066f6dab17c",
       "same_bytes": false
     },
@@ -32,6 +38,12 @@
       "same_bytes": false
     },
     {
+      "path": "core/include/private_standard_characters.h",
+      "main_sha256": "0e491eafd0e35f1b576b0cff40cc4c4c2911842e0015106d36b36a20c6aa90d0",
+      "windows_sha256": "003da2ccc4d0acb28d6b0424abf8021b20c989a9e9e652bfa467d99bdd8ed7f3",
+      "same_bytes": false
+    },
+    {
       "path": "core/src/language_scoring.cpp",
       "main_sha256": "a5901b3318f5c2e7074ee00df644976e18726fe1b786d8c073f9fe284ece4f72",
       "windows_sha256": "b68030603353d41a5e0e1478801a619d6f84c3b6d695db06c34bf8a0db85edd5",
@@ -39,7 +51,7 @@
     },
     {
       "path": "core/src/private_input.cpp",
-      "main_sha256": "855b0212d53ea4658542544829858774958823a400b5c0e592242a2c6b378197",
+      "main_sha256": "b3e0e32328e19d311046c27debc1d2b4c1f5e814e1712e1a0ece62034d0709d5",
       "windows_sha256": "09dcc2126bf32ffa2f7cb7d30b25528ec6718fd3440ecc9fc08395ac48c4b744",
       "same_bytes": false
     },
@@ -74,8 +86,14 @@
       "same_bytes": false
     },
     {
+      "path": "core/tests/mainland_candidate_policy.cpp",
+      "main_sha256": "0a94cce952f6b5889f2826fd6f4331060f2badc3f7736d74c36b2a700b5c65b6",
+      "windows_sha256": "bdb77d6bf4b217090f1823fc5780fd5518b2f9c71a2d0dc0ed7f2e54ebe73506",
+      "same_bytes": false
+    },
+    {
       "path": "core/tests/nine_filter_smoke.cpp",
-      "main_sha256": "63b2b8357b69a7edc1375f080bca6fc6105b44e8c3ad9b174e5d4af90c951f51",
+      "main_sha256": "471349a796759f5ffa46ba447e8c4901cacbb82b2d35f73372c70a9f2fe5096c",
       "windows_sha256": "6a436a33da708644b41ef90975b068c9e34998f8a62827786f6232d5a62ec756",
       "same_bytes": false
     },
@@ -92,14 +110,20 @@
       "same_bytes": false
     },
     {
+      "path": "core/tests/packaged_prebuilt_selection.cpp",
+      "main_sha256": "6f0ec1d587e23971b7fcf8db6c168176e4034dc858eb39d0ead7872e99df784b",
+      "windows_sha256": "f1aa6378983cea1e534172a591e36b1a23842a6556de844840e8f963d28040f4",
+      "same_bytes": false
+    },
+    {
       "path": "core/tests/pinyin_text_repair.cpp",
-      "main_sha256": "fa2bb61af8135736b3e1e12ea63229ccc5c686079836d49e62a3e2507c026c5f",
+      "main_sha256": "e1a7a4592dc5f8e4c2d39d47884e82823ea13208769b6c50badd2a96fea11138",
       "windows_sha256": "374549fa38642cd4434e482668d8b6cd83ea1e80087250491cad8e61a249cb76",
       "same_bytes": false
     },
     {
       "path": "core/tests/repair_smoke.cpp",
-      "main_sha256": "ca2fbada91cbdc792949c2df44ecb4d5f7a34dbe3b34966b40b3da56fa047b28",
+      "main_sha256": "bbd0839972965216d1be14d1687f86c0d5ce296bb0b412cd602d9721c8b0171f",
       "windows_sha256": "cb9f6da6e9753bf486620bfbf71941a5b55655b5bf03ce494533365e19f72047",
       "same_bytes": false
     },
@@ -117,13 +141,13 @@
     },
     {
       "path": "core/tests/windows_long_composition.cpp",
-      "main_sha256": "894cea986388ecbcb5904ab804caff2809b82b3933f22c813a5b4221cc962c92",
+      "main_sha256": "69c9b5a5fe94b21a4504bb2c5ac539a11b5f29925ab774c4610c1800d3786f4f",
       "windows_sha256": "87cbd423aa75d353b040d9f6d4e6831f2586400672991bf6922436f3573f1674",
       "same_bytes": false
     },
     {
       "path": "resources/rime/SOURCE.json",
-      "main_sha256": "32995822c707dc68817f293a49ed2cea71f0c9af06dacd988b790bee55b1f655",
+      "main_sha256": "14c2ef6bc50b30d4473ffefef68753785579f9e8dbf629d1a288f4f31caded2e",
       "windows_sha256": "62d7ceb7cd86deb610813b4df6b77297be9c0401615749fc24a9ae6c4e6737ce",
       "same_bytes": false
     },
@@ -135,9 +159,9 @@
     },
     {
       "path": "resources/rime/essay.txt",
-      "main_sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+      "main_sha256": "380fa3ac9aad36b2b02971fdd77dc4fc3cd47d91b079a2facf06d101e4e7129a",
       "windows_sha256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
-      "same_bytes": true
+      "same_bytes": false
     },
     {
       "path": "resources/rime/private_nine.schema.yaml",
@@ -159,9 +183,9 @@
     },
     {
       "path": "resources/rime/private_pinyin.dict.yaml",
-      "main_sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
+      "main_sha256": "5d22821f4b637ad831edd65e24f85d6253a3d1969731f1166a9da3ff611fd916",
       "windows_sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
-      "same_bytes": true
+      "same_bytes": false
     },
     {
       "path": "resources/rime/private_pinyin.schema.yaml",
@@ -185,6 +209,84 @@
       "path": "resources/rime/private_zh_hans_compact.gram",
       "main_sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
       "windows_sha256": "d3cb2438c1fdcd6a855dd6ca8f5c1060a29273c6b64c2c2c69af67cd71b6aa7e",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/build/default.yaml",
+      "main_sha256": "75b5c5bada91b85d282d6862b0e89dda78d51a85f2e0ed4abb1ef49499cb39d0",
+      "windows_sha256": "75b5c5bada91b85d282d6862b0e89dda78d51a85f2e0ed4abb1ef49499cb39d0",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/build/private_nine.prism.bin",
+      "main_sha256": "a8bb04b75c7989e0e7dd39dd64cf704c387793116c3b340abd6fced186ae0b99",
+      "windows_sha256": "94457b39a0610ee9683e76ebf6bedd68283b6a5868dd7f153ff25a93809e7ffe",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_nine.schema.yaml",
+      "main_sha256": "91a9db1a9f13745f65ed10c6fb72318cc1e1b73cc7c3f6488e8b3e605bfb62f0",
+      "windows_sha256": "60ac42ed2d2dc65550810caad67f9785cccce04d6102dc858ebfaa5555de8cc4",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_nine_initials.prism.bin",
+      "main_sha256": "1f020b9f61ea500a283515f106e6dfc02e70f3439c7c3af9cd016db068e9189a",
+      "windows_sha256": "f0c3eae7434f83d4e176eda2cce684b1b6bb02e97bb6321babb1b2831cfabe21",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_nine_initials.schema.yaml",
+      "main_sha256": "7d06c1351f71235178283bb7d5617cfdc5a7ded9a1cb07189867594a1785a42a",
+      "windows_sha256": "c0071c42406006b9db4453f8e7a08a22b63119a001558607e35fd6b558415363",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_nine_private.schema.yaml",
+      "main_sha256": "4e11be0f1eeb5a3fda327a2076b94ddffaee82aa6e026b70712019ff06e5d6f5",
+      "windows_sha256": "3103de61b7028c818a07af90cc15b49af78499b7366bf47dd5cfc97289be861e",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.prism.bin",
+      "main_sha256": "ab31558cfe18e97a2be6925cd6414ecb6bc08c4fdb03517dff7bd818ef465fa9",
+      "windows_sha256": "13d974875eb4de9145ad11e9d9c529ffdd0c83debaeffde821da08224a634f49",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.reverse.bin",
+      "main_sha256": "21b3da8eeb0aef108f42904fbc59f41c2752bdbae8e5a69d7db8fbb08f56f477",
+      "windows_sha256": "456214e6a6f0355a38ff26d538863463286b97f52a245803c20968c62afbcbfa",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.schema.yaml",
+      "main_sha256": "c59efb7c4996388a084df02f424c8c603feab7dab286ade287f55481badc689f",
+      "windows_sha256": "c59efb7c4996388a084df02f424c8c603feab7dab286ade287f55481badc689f",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/build/private_pinyin.table.bin",
+      "main_sha256": "759f8e21d25b984f18e57f91ffc263ad6b1894d48fd503adf46adeb6966afa07",
+      "windows_sha256": "021d5593c6b8b1c80dd0016c2cf079cee28aca93acb62a4d8738e2a9bfa7ab3d",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_pinyin_exact.prism.bin",
+      "main_sha256": "4c69166978301dfbdef4a52814a9328238857c36ce662d0040a868735253d6b7",
+      "windows_sha256": "1733dcdbdfb0431b43c4b603a5ee24b9cbede7a8d0269b9da087a6dfa3d71cda",
+      "same_bytes": false
+    },
+    {
+      "path": "resources/rime/build/private_pinyin_exact.schema.yaml",
+      "main_sha256": "ee898551b1e712c23ab60f84f7245bb0bf31de96925c3202fdd4951f7862fd26",
+      "windows_sha256": "ee898551b1e712c23ab60f84f7245bb0bf31de96925c3202fdd4951f7862fd26",
+      "same_bytes": true
+    },
+    {
+      "path": "resources/rime/build/private_pinyin_private.schema.yaml",
+      "main_sha256": "eee93ff50002f089a6ac13d0fb1f777db01badf697d9a7560c282873cec74e50",
+      "windows_sha256": "eee93ff50002f089a6ac13d0fb1f777db01badf697d9a7560c282873cec74e50",
       "same_bytes": true
     },
     {
@@ -231,15 +333,15 @@
     },
     {
       "path": "resources/semantic/CONTINUATION.json",
-      "main_sha256": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa",
+      "main_sha256": "e53053d29e46f3574bdfd15f035c3d91b47f30c19c922f4df0ea062921bad79f",
       "windows_sha256": "940f02cef2d2c6d64cbf86aaefecf5354e49dd747f68e2d8ccd0694d8d1225aa",
-      "same_bytes": true
+      "same_bytes": false
     },
     {
       "path": "resources/semantic/LEXICON.json",
-      "main_sha256": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341",
+      "main_sha256": "91d1dcaa12ec3190c3c1c20e9ccb3b0ee3512a0a0ee0459d47e1c15f72029b21",
       "windows_sha256": "eeb9b0f06c96fed6fdad8b2370ebb65a5ab7317d8124fd5f6b3512b92d0cf341",
-      "same_bytes": true
+      "same_bytes": false
     },
     {
       "path": "resources/semantic/MODEL-LICENSE.txt",
@@ -261,15 +363,15 @@
     },
     {
       "path": "resources/semantic/continuation.bin",
-      "main_sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
+      "main_sha256": "d95205316274ef1a4e0b36f1c0816ccab3e0f0c92d32ef05e7e9da39b440b6a7",
       "windows_sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
-      "same_bytes": true
+      "same_bytes": false
     },
     {
       "path": "resources/semantic/nine-lexicon.bin",
-      "main_sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
+      "main_sha256": "a7f59e8e90ffc57f3ed9616634643884fd3bc116c1c7ae19ed337e49d8576353",
       "windows_sha256": "33b4d52f97614a872d4670f380fd627e7a568a45bae161449e8733f9e7c97281",
-      "same_bytes": true
+      "same_bytes": false
     },
     {
       "path": "resources/semantic/pinyin-syllables.txt",

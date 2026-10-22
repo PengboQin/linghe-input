@@ -2,6 +2,7 @@
 #include "private_pinyin_syllables.h"
 #include "pinyin_repair.h"
 #include "pinyin_text.h"
+#include "mainland_candidate_policy.h"
 #include "rime_api.h"
 #include "rime_levers_api.h"
 #include <map>
@@ -23,7 +24,7 @@ struct StreamCandidate { std::string text, comment; size_t index; };
 struct Syllable { std::string text; size_t start, consumed; bool complete = true; };
 struct SyllableUndo { std::string before, after; };
 struct RepairRow { std::string text, reading, spelling; size_t absolute = SIZE_MAX; int edits = 0; };
-struct Snapshot { std::vector<Syllable> syllables; std::vector<SyllableUndo> syllable_undo; std::vector<StreamCandidate> batch, ranked; std::vector<RepairRow> repairs; bool ranked_ready = false; std::string preedit, input, commit, display_preedit, active_reading,selected_prefix; std::vector<std::string> candidates; std::vector<size_t> indices; int page = 0; bool next_page = false; bool nine_key = false, private_mode = false, exact_probe = false; };
+struct Snapshot { std::vector<Syllable> syllables; std::vector<SyllableUndo> syllable_undo; std::vector<StreamCandidate> batch, ranked, admitted; size_t admitted_cursor = 0; bool admitted_end = false; std::vector<RepairRow> repairs; bool absolute_page = false; bool ranked_ready = false; std::string preedit, input, commit, display_preedit, active_reading,selected_prefix; std::vector<std::string> candidates; std::vector<size_t> indices; int page = 0; bool next_page = false; bool nine_key = false, private_mode = false, exact_probe = false; };
 std::recursive_mutex gate;
 std::map<PI_Session, Snapshot> sessions;
 RimeApi *api = nullptr;
@@ -160,7 +161,7 @@ void refresh(PI_Session id) {
   auto it = sessions.find(id);
   if (!api || it == sessions.end()) return;
   auto &s = it->second;
-  s.preedit.clear(); s.active_reading.clear();s.selected_prefix.clear(); s.candidates.clear(); s.indices.clear(); s.batch.clear(); s.ranked.clear(); s.ranked_ready = false; s.repairs.clear();
+  s.preedit.clear(); s.active_reading.clear();s.selected_prefix.clear(); s.candidates.clear(); s.indices.clear(); s.batch.clear(); s.ranked.clear(); s.ranked_ready = false; s.admitted.clear(); s.admitted_cursor = 0; s.admitted_end = false; s.absolute_page = false; s.repairs.clear();
   const char *raw = api->get_input(id); s.input = raw ? raw : ""; s.page = 0; s.next_page = false;
   s.syllables.clear();
   if (s.input.empty()) s.syllable_undo.clear();
@@ -174,18 +175,34 @@ void refresh(PI_Session id) {
     s.active_reading = selected <= s.preedit.size() ? s.preedit.substr(selected) : "";
     if (selected<=s.preedit.size()) s.selected_prefix=s.preedit.substr(0,selected);
     api->free_context(&context);
-    for (size_t i = 0; i < s.candidates.size(); ++i) s.indices.push_back(i);
+    std::vector<StreamCandidate> page;
+    for (size_t i = 0; i < s.candidates.size(); ++i)
+      if (private_input::mainland::candidate_allowed(s.candidates[i])) page.push_back({s.candidates[i], "", i});
+    // A legacy native page can consist entirely of rejected rows. The visible
+    // fallback still needs working space/digit selection with absolute IDs.
+    if (page.empty() && !s.candidates.empty()) {
+      s.absolute_page = true;
+      RimeCandidateListIterator iterator{};
+      if (api->candidate_list_begin(id, &iterator)) {
+        while (page.size() < 7 && api->candidate_list_next(&iterator)) {
+          if (iterator.index < 0) break;
+          const std::string text = iterator.candidate.text ? iterator.candidate.text : "";
+          if (private_input::mainland::candidate_allowed(text)) page.push_back({text, "", static_cast<size_t>(iterator.index)});
+        }
+        api->candidate_list_end(&iterator);
+      }
+    }
     const char *input = api->get_input(id);
     const auto reading = s.nine_key ? nine_reading(input ? input : "") : normalized_reading(input ? input : "");
     if (!s.private_mode && !reading.empty() && !preferences.empty()) {
-      const auto original = s.candidates;
-      auto score = [&](size_t i) {
-        if (!s.nine_key) { auto p = preferences.find({reading, original[i]}); return p == preferences.end() ? 0ULL : p->second; }
-        unsigned long long result = 0; for (const auto &p : preferences) if (p.first.second == original[i] && nine_reading(p.first.first) == reading) result = std::max(result, p.second); return result;
+      auto score = [&](const StreamCandidate &row) {
+        if (!s.nine_key) { auto p = preferences.find({reading, row.text}); return p == preferences.end() ? 0ULL : p->second; }
+        unsigned long long result = 0; for (const auto &p : preferences) if (p.first.second == row.text && nine_reading(p.first.first) == reading) result = std::max(result, p.second); return result;
       };
-      std::stable_sort(s.indices.begin(), s.indices.end(), [&](size_t a, size_t b) { return score(a) > score(b); });
-      for (size_t i = 0; i < s.indices.size(); ++i) s.candidates[i] = original[s.indices[i]];
+      std::stable_sort(page.begin(), page.end(), [&](const StreamCandidate &a, const StreamCandidate &b) { return score(a) > score(b); });
     }
+    s.candidates.clear();
+    for (const auto &row : page) { s.candidates.push_back(row.text); s.indices.push_back(row.index); }
   }
 }
 RimeLeversApi *levers() {
@@ -204,6 +221,17 @@ int pi_initialize(const char *shared_dir, const char *user_dir, int deploy) {
   api = rime_get_api();
   RimeTraits traits{}; RIME_STRUCT_INIT(RimeTraits, traits);
   traits.shared_data_dir = shared_path.c_str(); traits.user_data_dir = user_path.c_str();
+  // Installed packages ship complete public tables. In NO_DEPLOY mode an old
+  // user/build table must not shadow a newly bundled dictionary. Keep userdbs
+  // and the legacy deployment tree intact; this isolated staging namespace is
+  // not populated or compiled on the key/initialization path. Explicit deploy
+  // tests/tools retain Rime's normal user/build staging when deploy is true.
+  const std::string packaged_build = shared_path + "/build";
+  const std::string managed_staging = user_path + "/ManagedPrebuilt-v1";
+  if (!deploy) {
+    traits.prebuilt_data_dir = packaged_build.c_str();
+    traits.staging_dir = managed_staging.c_str();
+  }
   traits.distribution_name = "Private Input"; traits.distribution_code_name = "private-input";
   traits.distribution_version = "0.2.0"; traits.app_name = "rime.private-input";
   traits.min_log_level = 3; traits.log_dir = "";
@@ -250,9 +278,11 @@ int pi_process_key(PI_Session id, int keycode, int mask) {
   if (mask == 0 && !snapshot.indices.empty() && ((!snapshot.nine_key && keycode >= '1' && keycode <= '9') || keycode == ' ')) {
     const auto visible = keycode == ' ' ? size_t(0) : size_t(keycode - '1');
     if (visible < snapshot.indices.size()) {
-      auto handled = api->select_candidate_on_current_page(id, snapshot.indices[visible]); refresh(id); return handled;
+      auto handled = snapshot.absolute_page ? api->select_candidate(id, snapshot.indices[visible]) : api->select_candidate_on_current_page(id, snapshot.indices[visible]); refresh(id); return handled;
     }
   }
+  if (mask == 0 && !snapshot.input.empty() &&
+      ((!snapshot.nine_key && keycode >= '1' && keycode <= '9') || keycode == ' ')) return 1;
   auto handled = api->process_key(id, keycode, mask); refresh(id); return handled;
 }
 int pi_cursor_at_end(PI_Session id) {
@@ -381,7 +411,7 @@ int pi_select_candidate(PI_Session id, size_t index) {
   if (!api || !sessions.count(id)) return 0;
   const auto &indices = sessions.at(id).indices;
   if (index >= indices.size()) return 0;
-  auto result = api->select_candidate_on_current_page(id, indices[index]); refresh(id); return result;
+  auto result = sessions.at(id).absolute_page ? api->select_candidate(id, indices[index]) : api->select_candidate_on_current_page(id, indices[index]); refresh(id); return result;
 }
 size_t pi_load_candidate_batch(PI_Session id, size_t offset, size_t limit) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -394,51 +424,47 @@ size_t pi_load_candidate_batch(PI_Session id, size_t offset, size_t limit) {
       const auto code = s.nine_key ? nine_reading(p.first) : p.first;
       if (code.compare(0, input_reading.size(), input_reading) == 0 || input_reading.compare(0, code.size(), code) == 0) pinned.insert(p.second);
     }
-  // Discover promoted candidates only until every matching pin is found.
-  // Cache their native indices, not an eagerly truncated candidate stream.
-  if (!pinned.empty()) {
-    if (!s.ranked_ready) {
+  // Build an incrementally cached logical stream of admitted rows. Offsets
+  // refer to visible rows, while selection retains original native indices.
+  // Filtering cannot duplicate/skip a later page or hide all valid rows behind
+  // a native page made entirely of obsolete traditional/rare user entries.
+  if (!s.ranked_ready) {
+    if (!pinned.empty()) {
       RimeCandidateListIterator all{};
       if (api->candidate_list_begin(id, &all)) {
         while (!pinned.empty() && api->candidate_list_next(&all)) {
           if (all.index < 0) break;
           const std::string text = all.candidate.text ? all.candidate.text : "";
-          if (pinned.erase(text)) s.ranked.push_back({text, all.candidate.comment ? all.candidate.comment : "", static_cast<size_t>(all.index)});
+          if (pinned.erase(text) && private_input::mainland::candidate_allowed(text))
+            s.ranked.push_back({text, all.candidate.comment ? all.candidate.comment : "", static_cast<size_t>(all.index)});
         }
         api->candidate_list_end(&all);
       }
-      s.ranked_ready = true;
     }
-    const auto promoted = s.ranked.size();
-    size_t logical = offset;
-    while (logical < promoted && s.batch.size() < limit) s.batch.push_back(s.ranked[logical++]);
-    if (s.batch.size() == limit) return s.batch.size();
-    std::set<size_t> indices;
-    for (const auto &c : s.ranked) indices.insert(c.index);
-    size_t start = logical - promoted;
-    for (const auto index : indices) if (index <= start) ++start;
-    RimeCandidateListIterator tail{};
-    if (api->candidate_list_from_index(id, &tail, static_cast<int>(start))) {
-      while (s.batch.size() < limit && api->candidate_list_next(&tail)) {
-        if (tail.index < 0) break;
-        if (!indices.count(static_cast<size_t>(tail.index))) s.batch.push_back({tail.candidate.text ? tail.candidate.text : "", tail.candidate.comment ? tail.candidate.comment : "", static_cast<size_t>(tail.index)});
+    s.admitted = s.ranked; s.ranked_ready = true;
+  }
+  if (s.admitted.size() < offset + limit && !s.admitted_end) {
+    std::set<size_t> promoted;
+    for (const auto &row : s.ranked) promoted.insert(row.index);
+    RimeCandidateListIterator iterator{};
+    if (api->candidate_list_from_index(id, &iterator, static_cast<int>(s.admitted_cursor))) {
+      while (s.admitted.size() < offset + limit) {
+        if (!api->candidate_list_next(&iterator) || iterator.index < 0) { s.admitted_end = true; break; }
+        const auto native_index = static_cast<size_t>(iterator.index);
+        s.admitted_cursor = native_index + 1;
+        const std::string text = iterator.candidate.text ? iterator.candidate.text : "";
+        if (!promoted.count(native_index) && private_input::mainland::candidate_allowed(text))
+          s.admitted.push_back({text, iterator.candidate.comment ? iterator.candidate.comment : "", native_index});
       }
-      api->candidate_list_end(&tail);
-    }
-    return s.batch.size();
+      api->candidate_list_end(&iterator);
+    } else s.admitted_end = true;
   }
-  RimeCandidateListIterator iterator{};
-  if (!api->candidate_list_from_index(id, &iterator, static_cast<int>(offset))) return 0;
-  while (s.batch.size() < limit && api->candidate_list_next(&iterator)) {
-    if (iterator.index < 0) break;
-    s.batch.push_back({iterator.candidate.text ? iterator.candidate.text : "", iterator.candidate.comment ? iterator.candidate.comment : "", static_cast<size_t>(iterator.index)});
-  }
-  api->candidate_list_end(&iterator);
+  for (size_t i = offset; i < s.admitted.size() && s.batch.size() < limit; ++i) s.batch.push_back(s.admitted[i]);
   const auto reading = s.nine_key ? nine_reading(s.active_reading) : normalized_reading(s.active_reading);
   std::map<std::string, unsigned long long> scores;
   if (!s.private_mode) for (const auto &p : preferences) if ((s.nine_key ? nine_reading(p.first.first) : p.first.first) == reading) scores[p.first.second] = std::max(scores[p.first.second], p.second);
   auto score = [&](const StreamCandidate &c) { auto p = scores.find(c.text); return p == scores.end() ? 0ULL : p->second; };
-  std::stable_sort(s.batch.begin(), s.batch.end(), [&](const auto &a, const auto &b) { return score(a) > score(b); });
+  std::stable_sort(s.batch.begin(), s.batch.end(), [&](const auto &a, const auto &b) { const bool ap = std::any_of(s.ranked.begin(), s.ranked.end(), [&](const auto &row) { return row.index == a.index; }); const bool bp = std::any_of(s.ranked.begin(), s.ranked.end(), [&](const auto &row) { return row.index == b.index; }); if (ap != bp) return ap; return score(a) > score(b); });
   return s.batch.size();
 }
 const char *pi_batch_candidate_text(PI_Session id, size_t index) {
@@ -456,6 +482,14 @@ size_t pi_batch_candidate_index(PI_Session id, size_t index) {
 int pi_select_candidate_absolute(PI_Session id, size_t index) {
   std::lock_guard<std::recursive_mutex> lock(gate);
   if (!api || !sessions.count(id)) return 0;
+  if (index > 100000) return 0;
+  RimeCandidateListIterator selected{}; bool allowed = false;
+  if (api->candidate_list_from_index(id, &selected, static_cast<int>(index))) {
+    allowed = api->candidate_list_next(&selected) && selected.index == static_cast<int>(index) &&
+      selected.candidate.text && private_input::mainland::candidate_allowed(selected.candidate.text);
+    api->candidate_list_end(&selected);
+  }
+  if (!allowed) return 0;
   auto result = api->select_candidate(id, index); sessions.at(id).syllable_undo.clear(); refresh(id); return result;
 }
 size_t pi_nine_syllable_count(PI_Session id) {
@@ -589,7 +623,7 @@ int pi_delete_candidate(PI_Session id, size_t index) {
   if (!api || !sessions.count(id)) return 0;
   const auto &indices = sessions.at(id).indices;
   if (index >= indices.size()) return 0;
-  auto result = api->delete_candidate_on_current_page(id, indices[index]); refresh(id); return result;
+  auto result = sessions.at(id).absolute_page ? api->delete_candidate(id, indices[index]) : api->delete_candidate_on_current_page(id, indices[index]); refresh(id); return result;
 }
 void pi_clear(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -663,7 +697,7 @@ static const char *nine_display_preedit(PI_Session id, const char *reading, bool
     }
   } else if (!abbreviated.empty()) {
     result = abbreviated;
-  } else if (compact) {
+  } else {
     // Show one best verified partial reading and a single unresolved marker,
     // rather than multiplying each ambiguous key into three or four letters.
     const auto encoded = nine_reading(hint);
@@ -675,15 +709,6 @@ static const char *nine_display_preedit(PI_Session id, const char *reading, bool
         else if (c == '\'' || c == ' ') { if (!result.empty() && result.back() != ' ') result += ' '; }
         else if (c >= 'a' && c <= 'z') { result += c == 'v' ? "ü" : std::string(1, c); unresolved = false; }
       }
-    }
-  } else {
-    // Unknown reading: preserve exact locked letters and show ambiguous letter
-    // groups, rather than inventing a unique spelling or exposing key numbers.
-    static const char *groups[] = {"abc", "def", "ghi", "jkl", "mno", "pqrs", "tuv", "wxyz"};
-    for (char c : pending) {
-      if (c >= '2' && c <= '9') { if (!result.empty() && result.back() != ' ') result += ' '; result += groups[c - '2']; result += ' '; }
-      else if (c == '\'' || c == ' ') { if (!result.empty() && result.back() != ' ') result += ' '; }
-      else if (c >= 'a' && c <= 'z') result += c == 'v' ? "ü" : std::string(1, c);
     }
   }
   while (!result.empty() && result.back() == ' ') result.pop_back();
@@ -711,6 +736,9 @@ int pi_set_ascii_mode(PI_Session id, int enabled) {
   if (!api || !sessions.count(id)) return 0;
   api->set_option(id, "ascii_mode", enabled != 0); refresh(id);
   return api->get_option(id, "ascii_mode") == (enabled != 0);
+}
+int pi_candidate_text_allowed(const char *text) {
+  return text && private_input::mainland::candidate_allowed(text);
 }
 size_t pi_candidate_count(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -782,16 +810,19 @@ size_t pi_load_repair_candidates(PI_Session id, size_t limit) {
   }
   bool duplicate = false;
   for (size_t i = 1; i < tail.size(); ++i) if (tail[i] == tail[i - 1]) duplicate = true;
-  // An exact full spelling keeps the native word-frequency order; repeated
-  // keys still need repair because the tail may hide an extra letter.
-  if (tail.size() < 10 && !duplicate && exact_native_spelling) return 0;
+  // A complete native spelling stays ahead in the presentation tier, while
+  // bounded correction alternatives remain selectable as a fallback. Keep
+  // repeated/long typo recall unchanged; cheap exact drafts use eight probes.
+  const size_t probe_limit = tail.size() < 10 && !duplicate && exact_native_spelling ? 8 : 64;
   const auto proposals = resources->corrector.proposals(tail, 64);
   if (proposals.empty()) return 0;
   const auto probe = pi_create_session();
   if (!probe) return 0;
   std::vector<std::pair<double, RepairRow>> ranked;
   if (pi_set_private(probe, 1) && pi_set_nine_key(probe, 0) && pi_set_ascii_mode(probe, 0)) {
+    size_t attempted = 0;
     for (const auto &proposal : proposals) {
+      if (attempted++ >= probe_limit) break;
       if (!pi_set_pinyin_probe_input(probe, proposal.spelling.c_str())) continue;
       const auto count = pi_load_candidate_batch(probe, 0, 10);
       for (size_t i = 0; i < count; ++i) {
@@ -853,12 +884,18 @@ const char *pi_commit_repair_candidate(PI_Session id, size_t index) {
   if (!probe) return empty;
   std::string committed;
   if (pi_set_private(probe, 1) && pi_set_nine_key(probe, 0) && pi_set_ascii_mode(probe, 0) &&
-      pi_set_pinyin_probe_input(probe, row.spelling.c_str()) &&
-      pi_load_candidate_batch(probe, row.absolute, 1) == 1 &&
-      row.text == pi_batch_candidate_text(probe, 0) &&
-      normalized_reading(row.reading) == normalized_reading(pi_batch_candidate_comment(probe, 0)) &&
-      pi_select_candidate_absolute(probe, row.absolute))
-    committed = pi_take_commit(probe);
+      pi_set_pinyin_probe_input(probe, row.spelling.c_str())) {
+    // Stored repair IDs are native IDs, not offsets into the filtered visible
+    // stream. Verify the exact native row again before committing it.
+    RimeCandidateListIterator verify{}; bool matches = false;
+    if (row.absolute <= 100000 && api->candidate_list_from_index(probe, &verify, static_cast<int>(row.absolute))) {
+      matches = api->candidate_list_next(&verify) && verify.index == static_cast<int>(row.absolute) &&
+        verify.candidate.text && row.text == verify.candidate.text &&
+        normalized_reading(row.reading) == normalized_reading(verify.candidate.comment ? verify.candidate.comment : "");
+      api->candidate_list_end(&verify);
+    }
+    if (matches && pi_select_candidate_absolute(probe, row.absolute)) committed = pi_take_commit(probe);
+  }
   pi_destroy_session(probe);
   if (committed != row.text) return empty;
   // The typed suffix is replaced, not appended: drop the live composition.

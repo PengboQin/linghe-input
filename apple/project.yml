@@ -16,7 +16,7 @@ settings:
     "HEADER_SEARCH_PATHS[sdk=iphoneos*]": ["$(SRCROOT)/../core/include", "$(SRCROOT)/../vendor/librime/src", "$(SRCROOT)/../vendor/librime/include", "$(SRCROOT)/../vendor/boost_1_85_0", "$(SRCROOT)/../build/rime/ios-arm64/include", "$(SRCROOT)/../build/librime/ios-arm64/src"]
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ""
-    CURRENT_PROJECT_VERSION: "73"
+    CURRENT_PROJECT_VERSION: "82"
     MARKETING_VERSION: "1.0.0"
     PRIVATE_INPUT_RELAY_HOST: ""
     GENERATE_INFOPLIST_FILE: NO
@@ -106,8 +106,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.inputmethod.PrivateInput
         PRODUCT_NAME: PrivateInput
-        CURRENT_PROJECT_VERSION: "69"
-        MARKETING_VERSION: "0.33.0"
+        CURRENT_PROJECT_VERSION: "74"
+        MARKETING_VERSION: "0.35.3"
         ARCHS: arm64
         ENABLE_DEBUG_DYLIB: NO
       configs:
@@ -158,7 +158,7 @@ targets:
   PrivateInput-MacInputTests:
     type: bundle.unit-test
     platform: macOS
-    sources: [Tests/macOS, macOS/InputMethod/MacClipboardSuggestion.swift, Shared/SharedTextCopy.swift, Shared/ClipboardReadPausePolicy.swift, Shared/ClipboardLiveCoordinator.swift, Shared/AppleClipboardLiveStorage.swift, macOS/InputMethod/MacArchiveEnglishInsertion.swift, Shared/ActivityArchiveController.swift, Shared/ActivityArchiveView.swift, Shared/PersonalDataReset.swift, Shared/DeviceSyncModel.swift, Shared/AutomaticClipboardBridge.swift, Shared/DeviceSyncSession.swift, Shared/KeyboardPreferences.swift, Shared/InputTheme.swift, Shared/KeyboardHeight.swift, Shared/InlineComposition.swift, Shared/NativeEngine.swift, Shared/LearningCheckpointGate.swift, Shared/LearningRefreshPreparation.swift, Shared/CandidateGlyphSupport.swift, Shared/SymbolPairing.swift, macOS/InputMethod/MacSymbolInsertion.swift, Shared/SemanticRanker.swift, Shared/LocalLearningCoordinator.swift, Shared/RecencyCoordinator.swift, macOS/InputMethod/MacInputSession.swift, macOS/InputMethod/MacEnglishDictionary.swift, macOS/InputMethod/MacSemanticRanker.swift, macOS/InputMethod/MacCandidatePanel.swift, macOS/InputMethod/MacCandidatePlacement.swift, macOS/InputMethod/MacSettingsLayout.swift, macOS/InputMethod/MacTheme.swift, macOS/InputMethod/IMKClientGeometry.m, ../core/src, ../vendor/librime-octagram/src, {path: ../resources/rime, type: folder, buildPhase: resources}, {path: ../resources/semantic, type: folder, buildPhase: resources}, {path: ../resources/semantic-mac, type: folder, buildPhase: resources}]
+    sources: [Tests/macOS, macOS/InputMethod/MacClipboardSuggestion.swift, Shared/SharedTextCopy.swift, Shared/ClipboardReadPausePolicy.swift, Shared/ClipboardLiveCoordinator.swift, Shared/AppleClipboardLiveStorage.swift, macOS/InputMethod/MacArchiveEnglishInsertion.swift, Shared/ActivityArchiveController.swift, Shared/ActivityArchiveView.swift, Shared/PersonalDataReset.swift, Shared/DeviceSyncModel.swift, Shared/AutomaticClipboardBridge.swift, Shared/DeviceSyncSession.swift, Shared/KeyboardPreferences.swift, Shared/InputTheme.swift, Shared/KeyboardHeight.swift, Shared/InlineComposition.swift, Shared/NativeEngine.swift, Shared/KeyboardRuntimeDiagnostics.swift, Shared/LearningCheckpointGate.swift, Shared/LearningRefreshPreparation.swift, Shared/CandidateGlyphSupport.swift, Shared/SymbolPairing.swift, macOS/InputMethod/MacSymbolInsertion.swift, Shared/SemanticRanker.swift, Shared/LocalLearningCoordinator.swift, Shared/RecencyCoordinator.swift, Shared/AppleCloudLearningBridge.swift, Shared/AppleCloudMigrationSeed.swift, macOS/InputMethod/MacInputSession.swift, macOS/InputMethod/MacEnglishDictionary.swift, macOS/InputMethod/MacSemanticRanker.swift, macOS/InputMethod/MacCandidatePanel.swift, macOS/InputMethod/MacCandidatePlacement.swift, macOS/InputMethod/MacSettingsLayout.swift, macOS/InputMethod/MacTheme.swift, macOS/InputMethod/IMKClientGeometry.m, ../core/src, ../vendor/librime-octagram/src, {path: ../resources/rime, type: folder, buildPhase: resources}, {path: ../resources/semantic, type: folder, buildPhase: resources}, {path: ../resources/semantic-mac, type: folder, buildPhase: resources}]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.mac-input-tests
@@ -170,7 +170,7 @@ targets:
   PrivateInput-SharedTextTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [Tests/iOSUnit, Shared/SymbolPairing.swift, Shared/CandidateGlyphSupport.swift, Shared/InputTheme.swift, iOS/AppTheme.swift, iOS/Keyboard/KeyboardHeightAdjustmentView.swift, iOS/Keyboard/SharedTextPanel.swift, iOS/Keyboard/KeyboardAppearanceSync.swift, iOS/Keyboard/CandidateListLayout.swift, iOS/Keyboard/CandidateExpansionButton.swift, iOS/Keyboard/StableCandidatePublication.swift, iOS/Keyboard/ClipboardCandidateLoadState.swift, iOS/Keyboard/ClipboardCandidateInlineLayout.swift, iOS/Keyboard/ClipboardPasteCandidateView.swift, iOS/Keyboard/CandidateCell.swift, iOS/Keyboard/GlyphCenteredLabel.swift, iOS/Keyboard/KeyboardRailView.swift, iOS/Keyboard/KeyboardCellTouchButton.swift]
+    sources: [Tests/iOSUnit, Shared/KeyboardHeight.swift, Shared/SymbolPairing.swift, Shared/CandidateGlyphSupport.swift, Shared/InputTheme.swift, iOS/AppTheme.swift, iOS/Keyboard/KeyboardHeightAdjustmentView.swift, iOS/Keyboard/SharedTextPanel.swift, iOS/Keyboard/KeyboardAppearanceSync.swift, iOS/Keyboard/CandidateListLayout.swift, iOS/Keyboard/CandidateExpansionButton.swift, iOS/Keyboard/StableCandidatePublication.swift, iOS/Keyboard/ClipboardCandidateLoadState.swift, iOS/Keyboard/ClipboardCandidateInlineLayout.swift, iOS/Keyboard/ClipboardPasteCandidateView.swift, iOS/Keyboard/CandidateCell.swift, iOS/Keyboard/GlyphCenteredLabel.swift, iOS/Keyboard/KeyboardRailView.swift, iOS/Keyboard/KeyboardCellTouchButton.swift]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.sharedtext-tests

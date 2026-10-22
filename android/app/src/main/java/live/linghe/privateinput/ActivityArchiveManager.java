@@ -56,19 +56,39 @@ final class ActivityArchiveManager {
   void foreground(boolean on){foreground=Math.max(0,foreground+(on?1:-1));if(on){if(prefs.getBoolean("wipePending",false))storage.execute(this::pauseForDeparture);observeClipboard(false);if(enabled())flush();}}
   InputProvider inputProvider(){return new InputProvider();}
   final class InputProvider implements ActivityArchiveProvider {
-    private String source,session,epoch;private boolean safe;private long diagnosticGeneration=1;private String fieldType,returnKey,layout;
+    private String source,session,epoch;private boolean safe;private final InputDecisionEvidence.Scope diagnosticScope=new InputDecisionEvidence.Scope();private String fieldType,returnKey,layout;private final InputDecisionEvidence.Owner decisions=new InputDecisionEvidence.Owner();private final LinkedHashMap<String,InputDecisionEvidence> decisionSnapshots=new LinkedHashMap<>();private final Set<String> emittedSnapshots=new HashSet<>();private InputDecisionEvidence decisionPress,decisionRelease;
     public String[] capabilities(){return new String[]{"ime.commit.v1","ime.diagnostic.v1","app.paste.v1"};}
-    public synchronized void start(String sourceApp,boolean safeField){diagnosticGeneration++;source=sourceApp;safe=safeField;fieldType=null;returnKey=null;layout=null;session=ActivityArchiveRules.id();epoch=ActivityArchiveRules.id();imeSafe=safeField;if(!safeField&&inputEnabled())status="安全或未知输入框已停记；输入不受影响";}
+    public synchronized void start(String sourceApp,boolean safeField){diagnosticScope.advance();decisions.reset();decisionSnapshots.clear();emittedSnapshots.clear();decisionPress=decisionRelease=null;source=sourceApp;safe=safeField;fieldType=null;returnKey=null;layout=null;session=ActivityArchiveRules.id();epoch=ActivityArchiveRules.id();imeSafe=safeField;if(!safeField&&inputEnabled())status="安全或未知输入框已停记；输入不受影响";}
     void start(EditorInfo info){start(info==null?null:info.packageName,info!=null&&ActivityArchiveRules.safeInput(info.inputType,info.imeOptions,true));if(info!=null){fieldType="android_input_type_"+info.inputType;returnKey="ime_action_"+(info.imeOptions&EditorInfo.IME_MASK_ACTION);}}
-    public synchronized void pause(){diagnosticGeneration++;safe=false;imeSafe=false;session=null;epoch=null;}
-    void uncertainEdit(){epoch=ActivityArchiveRules.id();}
+    public synchronized void pause(){diagnosticScope.advance();decisions.reset();decisionSnapshots.clear();emittedSnapshots.clear();decisionPress=decisionRelease=null;safe=false;imeSafe=false;session=null;epoch=null;}
+    synchronized void uncertainEdit(){diagnosticScope.advance();decisions.reset();decisionSnapshots.clear();emittedSnapshots.clear();decisionPress=decisionRelease=null;epoch=ActivityArchiveRules.id();}
     void layout(String value){layout=value;}
-    synchronized long diagnosticsToken(){return safe&&diagnosticEnabled()?diagnosticGeneration:0;}
+    synchronized long diagnosticsToken(){return safe&&diagnosticEnabled()?diagnosticScope.current():0;}
     synchronized void diagnostic(long expected,String key,String before,String after){
-      if(expected==0||expected!=diagnosticGeneration||!safe||!diagnosticEnabled()||key==null||before==null||after==null||key.length()>128||before.length()>2048||after.length()>2048)return;
+      if(expected==0||!diagnosticScope.accepts(expected)||!safe||!diagnosticEnabled()||key==null||before==null||after==null||key.length()>128||before.length()>2048||after.length()>2048)return;
       try{JSONObject detail=new JSONObject().put("action",key.equals("backspace")?"delete":key.startsWith("literal:")?"literal":key.equals("edit")?"edit":"key").put("key",key).put("raw_before",before).put("raw_after",after).put("committed",false);
         emit("ime.diagnostic.v1","source_import",after,"ime_diagnostic",source,session,epoch,"not_applicable",null,null,fieldType,returnKey,layout,detail);
       }catch(Exception ignored){}
+    }
+    synchronized boolean diagnosticCurrent(long expected){return expected!=0&&diagnosticScope.accepts(expected)&&safe&&diagnosticEnabled();}
+    synchronized InputDecisionEvidence snapshot(long expected,String raw,String[][] rows){if(!diagnosticCurrent(expected))return null;InputDecisionEvidence value=decisions.snapshot(raw,rows,SystemClock.elapsedRealtimeNanos()/1000);decisionSnapshots.put(value.state,value);while(decisionSnapshots.size()>8)decisionSnapshots.remove(decisionSnapshots.keySet().iterator().next());return value;}
+    synchronized void marked(long expected,InputDecisionEvidence value,String text,String status){if(!diagnosticCurrent(expected)||value==null)return;InputDecisionEvidence prior=decisionSnapshots.get(value.state);if(prior!=null)decisionSnapshots.put(value.state,prior.marked(text,status));}
+    synchronized void decision(long expected,InputDecisionEvidence value){
+      if(!diagnosticCurrent(expected)||value==null)return;
+      if(value.stage.equals("input")||value.stage.equals("candidates"))return;
+      if(value.stage.equals("press")){decisionPress=value;decisionRelease=null;return;}
+      if(value.stage.equals("release")){decisionRelease=value;return;}
+      InputDecisionEvidence summary="touch".equals(value.method)?value.touch(decisionPress,decisionRelease):value;InputDecisionEvidence snapshot=decisionSnapshots.get(value.state);if(snapshot!=null&&snapshot.markedStatus!=null)summary=summary.marked(snapshot.markedText,snapshot.markedStatus);
+      if(snapshot!=null&&emittedSnapshots.add(snapshot.state))emitDecision(expected,snapshot.model(value.modelVersion,value.localOverlay));
+      emitDecision(expected,summary);if(emittedSnapshots.size()>32)emittedSnapshots.clear();
+      if(value.stage.equals("commit")||value.stage.equals("cancel")){decisionPress=decisionRelease=null;}
+    }
+    private void emitDecision(long expected,InputDecisionEvidence value){InputDecisionEvidence.Scope.Frozen captured=diagnosticScope.freeze(expected,safe,diagnosticEnabled(),session,epoch);if(captured==null)return;emit("ime.diagnostic.v1","source_import",value.raw,"ime_diagnostic",source,captured.session,captured.epoch,"not_applicable",null,null,fieldType,returnKey,layout,null,value,null,this,expected);}
+    synchronized void compositionEnded(long expected){if(diagnosticCurrent(expected))decisions.reset();}
+    synchronized void committedDecision(long expected,String text,boolean acknowledged,InputDecisionEvidence value){
+      InputDecisionEvidence.CommitPermission allowed=new InputDecisionEvidence.CommitPermission(safe,inputEnabled(),diagnosticEnabled(),diagnosticScope.accepts(expected),value!=null);String output=allowed.output?ActivityArchiveRules.id():null;
+      if(allowed.output)emit("ime.commit.v1","input_commit",text,"ime",source,session,epoch,acknowledged?"editor_acknowledged":"insert_requested",null,null,fieldType,returnKey,layout,null,null,allowed.link?value:null,null,0,output);
+      if(allowed.diagnostic)decision(expected,value.event("commit",value.selected,value.method,value.reason,output,SystemClock.elapsedRealtimeNanos()/1000));
     }
     public void committed(String text,boolean acknowledged){if(safe&&inputEnabled())emit("ime.commit.v1","input_commit",text,"ime",source,session,epoch,acknowledged?"editor_acknowledged":"insert_requested",null,null,fieldType,returnKey,layout);}
     void systemClipboardCommitted(String text,boolean acknowledged){if(safe&&clipboardEnabled()&&pasteAllowed())emit("app.paste.v1","paste_action",text,"system_clipboard",source,session,epoch,acknowledged?"editor_acknowledged":"insert_requested","system_clipboard",null,fieldType,returnKey,layout);}
@@ -90,13 +110,17 @@ final class ActivityArchiveManager {
     emit(provider,type,text,sourceKind,source,session,epoch,confirmation,origin,reference,fieldType,returnKey,layout,null);
   }
   private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout,JSONObject diagnostic){
+    emit(provider,type,text,sourceKind,source,session,epoch,confirmation,origin,reference,fieldType,returnKey,layout,diagnostic,null,null,null,0);
+  }
+  private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout,JSONObject diagnostic,InputDecisionEvidence decision,InputDecisionEvidence link,InputProvider guard,long expected){emit(provider,type,text,sourceKind,source,session,epoch,confirmation,origin,reference,fieldType,returnKey,layout,diagnostic,decision,link,guard,expected,ActivityArchiveRules.id());}
+  private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout,JSONObject diagnostic,InputDecisionEvidence decision,InputDecisionEvidence link,InputProvider guard,long expected,String event){
     if(!enabled()||!privacyCurrent())return;
-    if(!type.equals("coverage_gap")&&!(diagnostic!=null&&text!=null&&text.isEmpty())&&!ActivityArchiveRules.acceptedText(text)){gap("正文过大或Unicode无效");return;}
+    if(!type.equals("coverage_gap")&&!((diagnostic!=null||decision!=null)&&text!=null&&text.isEmpty())&&!ActivityArchiveRules.acceptedText(text)){gap("正文过大或Unicode无效");return;}
     if(captureInFlight.incrementAndGet()>64){captureInFlight.decrementAndGet();gap("归档写入暂时繁忙，存在覆盖缺口");return;}
-    final long token=generation(),observed=System.currentTimeMillis();final String event=ActivityArchiveRules.id();
+    final long token=generation(),observed=System.currentTimeMillis();
     storage.execute(()->{
       try{
-        if(!active(token))return;
+        if(!active(token)||decision!=null&&!diagnosticEnabled())return;
         String group=prefs.getString("group",""),device=prefs.getString("device","");
         if(group.isEmpty()||device.isEmpty()){pauseForRevocation();return;}
         SimpleDateFormat date=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",Locale.ROOT);date.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -110,6 +134,8 @@ final class ActivityArchiveManager {
         JSONObject extensions=new JSONObject().put(ActivitySourceContext.KEY,sourceContext(source,fieldType,returnKey,layout));
         extensions.put("org.linghe.device.v1",new JSONObject().put("platform","android").put("device_type","mobile_device").put("brand",Build.BRAND).put("manufacturer",Build.MANUFACTURER).put("model",Build.MODEL).put("os_version",Build.VERSION.RELEASE));
         if(diagnostic!=null)extensions.put("org.linghe.input.v1",diagnostic);
+        if(decision!=null)extensions.put(InputDecisionEvidence.KEY,decisionJSON(decision));
+        if(link!=null)extensions.put(InputDecisionEvidence.LINK,new JSONObject().put("composition_id",link.composition).put("decision_id",link.decision).put("state_id",link.state));
         if(origin!=null){JSONObject extra=new JSONObject().put("origin",origin);if(reference!=null&&!reference.isEmpty())extra.put("origin_event_reference",reference);extensions.put("org.linghe.provenance.v1",extra);}
         row.put("extensions",extensions);
         if(!active(token))return;
@@ -118,6 +144,16 @@ final class ActivityArchiveManager {
       }catch(Exception failure){gap("写入归档队列失败；输入不受影响");}
       finally{captureInFlight.decrementAndGet();}
     });
+  }
+  private static JSONObject candidateJSON(InputDecisionEvidence.Candidate value)throws Exception{return new JSONObject().put("candidate_id",value.id).put("text",value.text).put("reading",value.reading).put("absolute_rank",value.rank).put("source",value.source);}
+  static JSONObject decisionJSON(InputDecisionEvidence value)throws Exception{
+    JSONObject out=new JSONObject().put("version",1).put("composition_id",value.composition).put("revision",value.revision).put("state_id",value.state).put("decision_id",value.decision).put("snapshot_id",value.snapshot).put("stage",value.stage).put("clock_domain",InputDecisionEvidence.CLOCK).put("monotonic_us",value.micros).put("core_hash",SyncBuildConfig.CORE_HASH).put("resource_hash",SyncBuildConfig.RESOURCE_HASH).put("policy_hash",SyncBuildConfig.POLICY_HASH);
+    if(value.stage.equals("candidates")){JSONArray rows=new JSONArray();for(InputDecisionEvidence.Candidate item:value.candidates)rows.put(candidateJSON(item));out.put("candidates",rows).put("observed_count",rows.length()).put("coverage","published_subset").put("truncated",value.truncated);}
+    if(value.markedStatus!=null)out.put("marked_text",value.markedText).put("marked_status",value.markedStatus);
+    if(value.pressState!=null)out.put("press_state_id",value.pressState);if(value.releaseState!=null)out.put("release_state_id",value.releaseState);if(value.pressMicros>=0)out.put("press_monotonic_us",value.pressMicros);if(value.releaseMicros>=0)out.put("release_monotonic_us",value.releaseMicros);
+    if(value.selected!=null){if(!value.selected.textTruncated)out.put("selected_candidate",candidateJSON(value.selected));out.put("selected_candidate_id",value.selected.id).put("selected_rank",value.selected.rank);if(value.selected.textTruncated)out.put("reason",value.reason==null?"selected_text_too_large":value.reason+"_selected_text_too_large");}
+    if(value.modelVersion!=null&&value.modelVersion.matches("[A-Za-z0-9_.:-]{1,96}"))out.put("model_version",value.modelVersion);if(value.localOverlay!=null)out.put("local_overlay",value.localOverlay);
+    if(value.method!=null)out.put("method",value.method);if(value.reason!=null&&!out.has("reason"))out.put("reason",value.reason);if(value.output!=null)out.put("output_event_id",value.output);return out;
   }
   private void gap(String reason){synchronized(prefs){prefs.edit().putLong("gapCount",prefs.getLong("gapCount",0)+1).putLong("pendingGapCount",prefs.getLong("pendingGapCount",0)+1).apply();}status=reason;}
   private void reportPendingGap(JSONObject template,long token)throws Exception {

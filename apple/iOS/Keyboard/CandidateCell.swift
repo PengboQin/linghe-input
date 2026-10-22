@@ -2,15 +2,18 @@ import UIKit
 
 /// Full-sized tap target, rounded pressed surface and a compact native edit
 /// menu for word management; no context-menu lift or full-keyboard dark preview.
-final class CandidateCell: UICollectionViewCell, UIEditMenuInteractionDelegate {
+final class CandidateCell: UICollectionViewCell, UIEditMenuInteractionDelegate, UIGestureRecognizerDelegate {
     let label = GlyphCenteredLabel()
     var activate: (() -> Void)?
     var pressBegan: (() -> Void)?
+    var controlTouchBegan: (() -> Void)?
+    var controlTouchEnded: ((Bool) -> Void)?
     var contextMenuProvider: (() -> UIMenu?)?
     private let touchButton = KeyboardCellTouchButton(frame: .zero)
     private lazy var editMenu=UIEditMenuInteraction(delegate:self)
     private var menuSnapshot: UIMenu?
     private var menuGeneration: UInt64 = 0
+    private weak var menuPress:UILongPressGestureRecognizer?
     var isHandlingControlTouch: Bool { touchButton.isHandlingControlTouch }
     func cancelPendingControlActivation() { touchButton.resetTouchTracking() }
     var normalBackground: UIColor = .clear
@@ -52,12 +55,14 @@ final class CandidateCell: UICollectionViewCell, UIEditMenuInteractionDelegate {
             label.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         ])
         touchButton.translatesAutoresizingMaskIntoConstraints = false
-        touchButton.pressBegan = { [weak self] in self?.pressBegan?() }
+        touchButton.pressBegan = { [weak self] in self?.pressBegan?(); self?.controlTouchBegan?() }
+        touchButton.pressEnded = { [weak self] accepted in self?.controlTouchEnded?(accepted) }
         touchButton.activationSnapshot = { [weak self] in self?.activate }
         touchButton.highlightChanged = { [weak self] in self?.isHighlighted = $0 }
         touchButton.addInteraction(editMenu)
         let hold=UILongPressGestureRecognizer(target:self,action:#selector(showCandidateMenu(_:)))
         hold.minimumPressDuration=0.45;hold.allowableMovement=12;hold.cancelsTouchesInView=true
+        hold.delegate=self;menuPress=hold
         touchButton.addGestureRecognizer(hold)
         contentView.addSubview(touchButton)
         NSLayoutConstraint.activate([
@@ -66,6 +71,13 @@ final class CandidateCell: UICollectionViewCell, UIEditMenuInteractionDelegate {
             touchButton.topAnchor.constraint(equalTo: contentView.topAnchor),
             touchButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         ])
+    }
+
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer:UIGestureRecognizer)->Bool {
+        // Symbols, English and continuations still accept a deliberate slow
+        // tap. An empty word-management menu must not cancel its native key.
+        guard gestureRecognizer === menuPress else{return super.gestureRecognizerShouldBegin(gestureRecognizer)}
+        return contextMenuProvider?() != nil && super.gestureRecognizerShouldBegin(gestureRecognizer)
     }
 
     override func layoutSubviews() {
@@ -122,6 +134,7 @@ final class CandidateCell: UICollectionViewCell, UIEditMenuInteractionDelegate {
         super.prepareForReuse();dismissCandidateMenu()
         activate = nil
         pressBegan = nil
+        controlTouchBegan = nil; controlTouchEnded = nil
         contextMenuProvider = nil
         touchButton.resetTouchTracking()
         isHighlighted = false

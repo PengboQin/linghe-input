@@ -124,6 +124,20 @@ enum ActivityArchiveDelegateKeys {
 final class ActivityArchiveCapture: @unchecked Sendable {
     static let shared = ActivityArchiveCapture()
     private struct Context { let connection: ActivityArchiveConnection; let queue: ActivityLocalEventQueue; let lease: ActivityAuthorizationLease }
+    struct DiagnosticScope: Equatable {
+        fileprivate let group: UUID, device: UUID, lease: UUID
+        fileprivate let personalEpoch: String
+    }
+    private func diagnosticScope(_ context: Context) -> DiagnosticScope {
+        .init(group: context.connection.group, device: context.connection.device, lease: context.lease.generation, personalEpoch: context.connection.personalEpoch)
+    }
+    /// In-memory permission check only; existing output authorization does not
+    /// authorize process diagnostics. A scope never contains a private key.
+    var diagnosticScope: DiagnosticScope? {
+        lock.lock(); defer { lock.unlock() }
+        guard permission, let context, context.lease.configuration.providers.contains(ActivityInputDiagnostic.provider) else { return nil }
+        return diagnosticScope(context)
+    }
     private let lock = NSLock()
     private let io = DispatchQueue(label: "live.linghe.privateinput.activity", qos: .utility)
     private var context: Context?
@@ -139,6 +153,17 @@ final class ActivityArchiveCapture: @unchecked Sendable {
     private var clipboardAttemptedVersion: Int?
     private var syncClipboard: (version: Int, event: UUID, sender: UUID)?
     private var sourceNames: [String: String] = [:]
+    #if PRIVATE_INPUT_TESTING
+    /// Compiled only by the isolated adapter executable, never product builds.
+    /// A real signed synthetic connection/SQLite queue is used; networking is
+    /// kept disabled and no real singleton, Keychain or preferences are touched.
+    func installIsolatedTestContext(connection: ActivityArchiveConnection, queue: ActivityLocalEventQueue, lease: ActivityAuthorizationLease) throws {
+        _ = try connection.verified()
+        lock.lock(); defer { lock.unlock() }
+        permission = true; context = Context(connection: connection, queue: queue, lease: lease); uploading = true
+    }
+    func drainIsolatedTestIO() { io.sync { } }
+    #endif
 
     func stop() {
         lock.lock(); permission = false; permissionGeneration = UUID(); context = nil; sourceNames.removeAll()
@@ -172,46 +197,65 @@ final class ActivityArchiveCapture: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         return permission && context?.lease.configuration.providers.contains(provider) == true
     }
-    func capture(_ draft: ActivityEventDraft, safety: ActivityFieldSafety) {
-        lock.lock(); let snapshot = permission ? context : nil; let generation = permissionGeneration; lock.unlock()
-        guard let snapshot, snapshot.lease.configuration.providers.contains(draft.providerID) else { return }
+    func capture(_ draft: ActivityEventDraft, safety: ActivityFieldSafety, diagnosticScope expectedScope: DiagnosticScope? = nil, completion: ((UUID?) -> Void)? = nil) {
+        lock.lock()
+        let sameScope = expectedScope == nil || context.map { diagnosticScope($0) == expectedScope } == true
+        let snapshot = permission && sameScope ? context : nil; let generation = permissionGeneration; lock.unlock()
+        guard let snapshot, snapshot.lease.configuration.providers.contains(draft.providerID) else { completion?(nil); return }
         var draft = draft
         if draft.extensions == nil { draft.extensions = [:] }
         draft.extensions?[ActivityDeviceDescription.extensionKey] = .object(ActivityDeviceDescription.fields)
         io.async { [weak self] in
-            guard let self, self.isPermitted(generation), snapshot.connection.personalEpoch == PersonalDataReset.generation else { return }
-            do { _ = try snapshot.queue.capture(draft, safety: safety, lease: snapshot.lease); self.scheduleUpload() }
+            guard let self, self.isPermitted(generation, diagnosticScope: expectedScope), snapshot.connection.personalEpoch == PersonalDataReset.generation else {
+                if let completion { DispatchQueue.main.async { completion(nil) } }; return
+            }
+            var eventID: UUID?
+            do { eventID = try snapshot.queue.capture(draft, safety: safety, lease: snapshot.lease).eventID; self.scheduleUpload() }
             catch ActivityError.alreadyObserved { }
             catch { self.report(error) }
+            if let completion { let result = eventID; DispatchQueue.main.async { completion(result) } }
         }
     }
     func recordDiagnostic(action: String, key: String, before: String, after: String, candidates: [String] = [],
                           sourceApp: String?, document: String?, session: String, epoch: String,
-                          safety: ActivityFieldSafety) {
+                          safety: ActivityFieldSafety, decision: ActivityInputDecisionDiagnostic? = nil, diagnosticScope: DiagnosticScope? = nil) {
         guard permits(ActivityInputDiagnostic.provider), safety == .safe,
               let diagnostic = ActivityInputDiagnostic(action: action, key: key, before: before, after: after, candidates: candidates) else { return }
         var extras = sourceContextExtensions(sourceApp: sourceApp)
         extras[ActivityInputDiagnostic.extensionKey] = .object(diagnostic.fields)
+        if let decision { extras[ActivityInputDecisionDiagnostic.extensionKey] = decision.extensionValue }
         capture(ActivityEventDraft(providerID: ActivityInputDiagnostic.provider, eventType: .sourceImport, text: diagnostic.text,
             inputSession: session, editorEpoch: epoch, sourceKind: "ime_diagnostic", sourceApp: sourceApp,
-            documentID: document, commitConfirmation: .notApplicable, extensions: extras), safety: safety)
+            documentID: document, commitConfirmation: .notApplicable, extensions: extras), safety: safety, diagnosticScope: diagnosticScope)
+    }
+    func recordDecision(_ value: ActivityInputDecisionDiagnostic, scope: DiagnosticScope, document: String?, session: String, epoch: String) {
+        guard permits(ActivityInputDiagnostic.provider) else { return }
+        capture(ActivityEventDraft(providerID: ActivityInputDiagnostic.provider, eventType: .sourceImport, text: "",
+            inputSession: session, editorEpoch: epoch, sourceKind: "ime_diagnostic", documentID: document,
+            commitConfirmation: .notApplicable, extensions: [ActivityInputDecisionDiagnostic.extensionKey: value.extensionValue]),
+            safety: .safe, diagnosticScope: scope)
     }
     func recordInput(_ text: String, sourceApp: String?, document: String?, session: String, epoch: String,
                      safety: ActivityFieldSafety, pasteEvent: UUID? = nil, pasteSender: UUID? = nil,
-                     sourceContext: ActivitySourceContext? = nil) {
-        guard !text.isEmpty, permits(pasteEvent == nil ? "ime.commit.v1" : "ime.paste.v1") else { return }
+                     sourceContext: ActivitySourceContext? = nil, decisionLink: [String: String]? = nil,
+                     diagnosticScope: DiagnosticScope? = nil, completion: ((UUID?) -> Void)? = nil) {
+        guard !text.isEmpty, permits(pasteEvent == nil ? "ime.commit.v1" : "ime.paste.v1") else { completion?(nil); return }
         var links: [ActivityJSONValue] = []
         if let pasteEvent {
             var link: [String: ActivityJSONValue] = ["event_id": .string(pasteEvent.uuidString), "relation": .string("explicit_shared_text_paste")]
             if let pasteSender { link["device_id"] = .string(pasteSender.uuidString) }
             links = [.object(link)]
         }
+        var extras = sourceContextExtensions(sourceApp: sourceApp, supplied: sourceContext)
+        if let decisionLink, !decisionLink.isEmpty, diagnosticScope != nil, diagnosticScope == self.diagnosticScope {
+            extras["org.linghe.decision-link.v1"] = .object(decisionLink.mapValues(ActivityJSONValue.string))
+        }
         capture(ActivityEventDraft(providerID: pasteEvent == nil ? "ime.commit.v1" : "ime.paste.v1",
                                    eventType: pasteEvent == nil ? .inputCommit : .pasteAction, text: text,
                                    inputSession: session, editorEpoch: epoch, spanID: UUID().uuidString,
                                    editOperation: .object(["kind": .string("unknown")]), sourceKind: pasteEvent == nil ? "ime" : "shared_text",
                                    sourceApp: sourceApp, documentID: document, commitConfirmation: .insertRequested,
-                                   links: links, extensions: sourceContextExtensions(sourceApp: sourceApp, supplied: sourceContext)), safety: safety)
+                                   links: links, extensions: extras), safety: safety, completion: completion)
     }
     func recordSystemPaste(_ text: String, sourceApp: String?, document: String?, session: String, epoch: String,
                            safety: ActivityFieldSafety, sourceContext: ActivitySourceContext? = nil) {
@@ -279,8 +323,8 @@ final class ActivityArchiveCapture: @unchecked Sendable {
     }
     /// Main/keyboard callers invoke this ONLY while active/visible and permitted by the OS.
     /// Never makes a clipboard write, guesses an external paste, or promises every copy.
-    func observeClipboardIfPermitted() {
-        guard permits("clipboard.observed.v1") else { return }
+    func observeClipboardIfPermitted(active:Bool=true) {
+        guard active,permits("clipboard.observed.v1") else { return }
         #if os(iOS)
         let preferences=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
         guard preferences?.bool(forKey:"automatic-clipboard-read-paused") != true else{return}
@@ -293,6 +337,7 @@ final class ActivityArchiveCapture: @unchecked Sendable {
             let hasStringsAfter=board.hasStrings,versionAfter=board.changeCount
             if ClipboardReadPausePolicy.shouldPause(textIsNil:true,hasStringsBefore:hasStrings,versionBefore:version,versionAfter:versionAfter,hasStringsAfter:hasStringsAfter) {
                 preferences?.set(true,forKey:"automatic-clipboard-read-paused")
+                ClipboardCacheCoordinator.recordMarkerReadPause(source:"archive-observer",version:version,hasStrings:hasStringsAfter)
             }
             return
         }
@@ -319,7 +364,10 @@ final class ActivityArchiveCapture: @unchecked Sendable {
                                    sourceKind: "clipboard", commitConfirmation: .notApplicable, links: links,
                                    extensions: extra, observationID: observationSession + ":" + String(version)), safety: .safe)
     }
-    private func isPermitted(_ generation: UUID) -> Bool { lock.lock(); defer { lock.unlock() }; return permission && permissionGeneration == generation }
+    private func isPermitted(_ generation: UUID, diagnosticScope expectedScope: DiagnosticScope? = nil) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return permission && permissionGeneration == generation && (expectedScope == nil || context.map { diagnosticScope($0) == expectedScope } == true)
+    }
     private func report(_ error: Error) {
         let code: String
         switch error { case ActivityError.quotaExceeded: code = "local_quota"; case ActivityError.staleAuthorization, ActivityError.disabled: code = "paused"; default: code = "archive_unavailable" }

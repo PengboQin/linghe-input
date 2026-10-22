@@ -3,7 +3,8 @@ import Foundation
 /// Local arbitration only. It neither infers a cross-device clock order nor
 /// stores clipboard contents. Authorization and OS reads belong to adapters.
 public struct AutomaticClipboardState:Codable {
-    public struct Pass { public let scope:String; public let version:Int; fileprivate let serial:UInt64;fileprivate let localActivity:Bool }
+    public struct Pass { public let scope:String; public let version:Int; fileprivate let serial:UInt64;fileprivate let localActivity:Bool;public var diagnosticLocalActivity:Bool {localActivity} }
+    public struct Diagnostic {public let armed:Bool,localReadBlocked:Bool,pendingLocal:Bool,localActivity:Bool,versionMatches:Bool}
     public struct Remote {
         public let id:UUID,sender:UUID,digest:String
         public let expiresAt:UInt64
@@ -21,6 +22,7 @@ public struct AutomaticClipboardState:Codable {
     private var echoVersion:Int?
     private var seen:[UUID]=[]
     public init() {}
+    public func diagnosticStatus(version:Int)->Diagnostic {.init(armed:armed,localReadBlocked:localReadBlocked==true,pendingLocal:pendingDigest != nil,localActivity:localActivity,versionMatches:self.version==version)}
     public mutating func configure(scope:String?,version:Int) {
         guard self.scope != scope else{return}
         // Group/session cleanup cannot erase what we already know about the
@@ -88,4 +90,19 @@ public struct AutomaticClipboardPollGate {
     }
     public mutating func finish(_ fingerprint:String,succeeded:Bool) {running=false;last=succeeded ? fingerprint:nil}
     public mutating func reset() {self=Self()}
+}
+
+/// Metadata can arrive after changeCount has advanced (for example, an OS
+/// remote clipboard promise). Retry a body read once when that same copy first
+/// becomes readable. An actual denied body read is not a metadata transition.
+public struct ClipboardMetadataReadGate {
+    private var scope:String?
+    private var version:Int?
+    private var allowed:Bool?
+    public init() {}
+    public mutating func observe(scope:String,version:Int,allowed:Bool)->Bool {
+        let retry=self.scope==scope && self.version==version && self.allowed==false && allowed
+        self.scope=scope;self.version=version;self.allowed=allowed
+        return retry
+    }
 }

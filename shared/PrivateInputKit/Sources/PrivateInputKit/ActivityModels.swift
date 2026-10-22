@@ -160,6 +160,7 @@ public struct ActivityEvent: Codable, Equatable {
               draft.eventType != .coverageGap || draft.text.isEmpty,
               [draft.inputSession, draft.editorEpoch, draft.spanID, draft.sourceKind, draft.sourceApp, draft.documentID].allSatisfy({ ($0?.utf8.count ?? 0) <= 1024 }),
               (draft.observationID?.utf8.count ?? 0) <= 1024 else { throw ActivityError.invalidEvent }
+        try ActivityInputDecisionDiagnostic.validateEnvelope(provider: draft.providerID, eventType: draft.eventType, sourceKind: draft.sourceKind, confirmation: draft.commitConfirmation, extensions: draft.extensions)
         schemaVersion = 1; eventID = UUID(); deviceGroup = group; deviceID = device; installationID = installation
         deviceSeq = sequence; providerID = draft.providerID; eventType = draft.eventType
         let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

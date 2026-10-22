@@ -62,6 +62,8 @@ int pi_stage_nine_input(PI_Session session,const char *canonical_pinyin);
 int pi_page_number(PI_Session session);
 int pi_has_next_page(PI_Session session);
 int pi_set_ascii_mode(PI_Session session, int enabled);
+/* Automatic suggestion admission only; never use to rewrite literal/user data. */
+int pi_candidate_text_allowed(const char *text);
 size_t pi_candidate_count(PI_Session session);
 const char *pi_candidate_text(PI_Session session, size_t index);
 const char *pi_take_commit(PI_Session session);

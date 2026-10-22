@@ -4,7 +4,7 @@
 namespace private_input::activity {
 class ContentStore {
  Json state;std::function<void(const Json&)>persist;
- void save(const Json&);void enqueue(const Data&,uint8_t,const protocol::VerifiedMembership&,const GroupIdentity&,const Key&,uint64_t,bool automatic=false,const Id*fixedEvent=nullptr,uint64_t fixedExpiry=0);
+ void save(const Json&);void enqueue(const Data&,uint8_t,const protocol::VerifiedMembership&,const GroupIdentity&,const Key&,uint64_t,bool automatic=false,const Id*fixedEvent=nullptr,uint64_t fixedExpiry=0,const Json*learningPublication=nullptr);
 public:
  ContentStore(Json,std::function<void(const Json&)>);
  const Json& current()const{return state;}

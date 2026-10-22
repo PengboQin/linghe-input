@@ -23,6 +23,31 @@ private struct TextViewClient: MacInputClient {
 }
 
 final class MacInputSessionTests: XCTestCase {
+    func testMainlandCandidatePolicyAlsoFiltersSupplementaryAndPersonalRows() throws {
+        let store=PersonalLexiconStore(directory:Self.storage),saved=try? Data(contentsOf:store.url)
+        defer {
+            if let saved {try? saved.write(to:store.url,options:.atomic)}
+            else {try? FileManager.default.removeItem(at:store.url)}
+        }
+        var personal=PersonalLexicon()
+        try personal.upsert(.init(kind:.word,text:"貓貓",trigger:"mao mao"))
+        try personal.upsert(.init(kind:.word,text:"猫猫",trigger:"mao mao"))
+        try store.save(personal)
+        // Even a platform glyph override cannot bypass the product's shared
+        // automatic candidate policy. Stored source text itself stays intact.
+        let engine=try engine(displayable:{_ in true});defer{engine.clear();engine.finish()}
+        _ = engine.privacy(true);_ = engine.nineKey(false)
+        XCTAssertTrue(engine.setSupplementaryLexicon(SupplementaryLexicon(pairs:[("maomao","貓貓"),("maomao","𨈖"),("maomao","猫猫")])))
+        for key in "maomao".utf8 {_ = engine.key(Int32(key))}
+        let rows=engine.candidateBatch(offset:0,limit:128)
+        XCTAssertTrue(rows.contains{$0.text=="猫猫"})
+        XCTAssertFalse(rows.contains{$0.text=="貓貓" || $0.text=="𨈖"})
+        XCTAssertTrue(try store.load().entries.contains{$0.text=="貓貓"},"Filtering suggestions does not rewrite personal source records")
+        let forged=InputCandidate(text:"貓貓",comment:"mao mao",index:0,sourceInput:engine.rawInput,generation:engine.revision)
+        XCTAssertEqual(engine.chooseCandidate(forged),"")
+        XCTAssertEqual(engine.rawInput,"maomao")
+    }
+
     func testOptInLearningCheckpointGateReusesOnlyUnchangedNativeAndSources() throws {
         let engine=try engine();defer{engine.clear();engine.finish()}
         _ = engine.privacy(false);_ = engine.nineKey(false)

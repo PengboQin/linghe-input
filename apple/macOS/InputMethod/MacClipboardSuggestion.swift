@@ -1,5 +1,6 @@
 import AppKit
 import Carbon
+import PrivateInputKit
 
 /// A derived, bounded preview. Dismissal follows the system clipboard version,
 /// so deleting or changing input fields cannot resurrect the same copy.
@@ -9,6 +10,7 @@ final class MacClipboardSuggestion {
         var preview: String { deferred ? "粘贴剪贴板":"剪贴板：" + String(text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ").prefix(80)) }
     }
     private var observed: Int?, dismissed: Int?, item: Item?
+    private var receiptItem:Item?,receiptApproved=false,receiptEpoch=UUID(),receiptGeneration:String?
     func update(version: Int, allowed: Bool, secure: Bool, read: () -> String?) -> Item? {
         guard allowed, !secure else { item=nil; observed=nil; return nil }
         guard dismissed != version else { return nil }
@@ -20,6 +22,15 @@ final class MacClipboardSuggestion {
         return item
     }
     func dismiss(version: Int) { dismissed=version; item=nil }
+    func discardPending() {
+        guard receiptItem != nil,!receiptApproved else{return}
+        receiptEpoch=UUID()
+        if let item {dismiss(version:item.version)}
+    }
+    func leavePresentation() {
+        receiptEpoch=UUID()
+        if let item {dismiss(version:item.version)}
+    }
     func deferred(version:Int,allowed:Bool,secure:Bool) -> Item? {
         guard allowed,!secure,dismissed != version else {item=nil;observed=nil;return nil}
         observed=version;let value=Item(version:version,text:"",deferred:true);item=value;return value
@@ -38,11 +49,25 @@ final class MacClipboardSuggestion {
             // typing path. An explicit paste click can request that access.
             return deferred(version:version,allowed:Self.permitted && safeTypes && board.availableType(from:[.string]) != nil,secure:IsSecureEventInputEnabled())
         }
-        return update(version:version,allowed:Self.permitted,secure:IsSecureEventInputEnabled()) {
+        guard let value=update(version:version,allowed:Self.permitted,secure:IsSecureEventInputEnabled(),read:{
             guard safeTypes else { return nil }
             let text=board.string(forType:.string)
             return board.changeCount==version ? text:nil
+        }) else {return nil}
+        let generation=AppleClipboardOnce.generation
+        if receiptItem==value,receiptGeneration==generation {return receiptApproved ? value:nil}
+        receiptItem=value;receiptApproved=false;receiptGeneration=generation
+        let epoch=UUID();receiptEpoch=epoch
+        // Disk/SQLite is never entered by the input-controller render path.
+        DispatchQueue.global(qos:.utility).async { [weak self] in
+            let fresh=(try? AppleClipboardOnce.claim(.candidate,texts:[value.text],generation:generation))?.first==true
+            DispatchQueue.main.async { [weak self] in
+                guard let self,self.receiptEpoch==epoch,self.item==value,self.dismissed != version,
+                      NSPasteboard.general.changeCount==version,Self.permitted,!IsSecureEventInputEnabled(),AppleClipboardOnce.generation==generation else{return}
+                if fresh {self.receiptApproved=true}else{self.dismiss(version:version)}
+            }
         }
+        return nil
     }
     func paste(_ expected:Item) -> String? {
         let board=NSPasteboard.general

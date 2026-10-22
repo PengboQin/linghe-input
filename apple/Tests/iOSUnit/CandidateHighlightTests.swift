@@ -2,6 +2,15 @@ import UIKit
 import XCTest
 
 @MainActor final class CandidateHighlightTests: XCTestCase {
+    func testNonManageableLongPressCannotCancelASlowCandidateTap() throws {
+        let cell=CandidateCell(frame:CGRect(x:0,y:0,width:80,height:44));cell.layoutIfNeeded()
+        let button=try XCTUnwrap(cell.hitTest(CGPoint(x:1,y:22),with:nil) as? UIButton)
+        let hold=try XCTUnwrap(button.gestureRecognizers?.compactMap{$0 as? UILongPressGestureRecognizer}.first(where:{$0.delegate === cell}))
+        XCTAssertFalse(cell.gestureRecognizerShouldBegin(hold))
+        cell.contextMenuProvider={nil};XCTAssertFalse(cell.gestureRecognizerShouldBegin(hold))
+        cell.contextMenuProvider={UIMenu(children:[UIAction(title:"置顶"){_ in}])}
+        XCTAssertTrue(cell.gestureRecognizerShouldBegin(hold))
+    }
     func testFirstCandidatePressedSurfaceStaysInsideItsFullTapTarget() {
         for size in [CGSize(width: 48, height: 44), CGSize(width: 336, height: 104)] {
             let cell = CandidateCell(frame: CGRect(origin: .zero, size: size))

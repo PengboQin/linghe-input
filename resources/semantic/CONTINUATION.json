@@ -1,10 +1,11 @@
 {
+  "characterPolicy": "mainland-simplified-v1",
   "format": "PINEXT01",
-  "records": 41528,
-  "prefixes": 23727,
-  "bytes": 985151,
-  "sha256": "fed44db10df3f40ddd48f0ae3f6ffabcba72e163f6c641921d1f9e79b2daf7f4",
-  "sourceSHA256": "4f9fc85760493144bcbf9fd920cf6964be9aff8cf37c95e736eea236340e10f2",
+  "records": 41530,
+  "prefixes": 23732,
+  "bytes": 985215,
+  "sha256": "d95205316274ef1a4e0b36f1c0816ccab3e0f0c92d32ef05e7e9da39b440b6a7",
+  "sourceSHA256": "380fa3ac9aad36b2b02971fdd77dc4fc3cd47d91b079a2facf06d101e4e7129a",
   "license": "LGPL-3.0, derived from bundled pinned rime-essay; original license remains bundled",
   "method": "Public word prefix continuation; not a generated sentence or conversational training corpus"
 }

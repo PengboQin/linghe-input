@@ -1,0 +1,23 @@
+[Unit]
+Description=PrivateInput optional confirmed cloud learning
+After=network.target
+
+[Service]
+Type=simple
+User=private-input-learning
+Group=private-input-learning
+WorkingDirectory=/opt/private-input-learning/current/server
+EnvironmentFile=/etc/private-input-learning/environment
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/private-input-learning/venv/bin/gunicorn --bind 127.0.0.1:8033 --workers 1 --worker-class gthread --threads 2 --timeout 15 --access-logfile /dev/null 'cloud_learning.production:create_app()'
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/private-input-learning
+MemoryMax=256M
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

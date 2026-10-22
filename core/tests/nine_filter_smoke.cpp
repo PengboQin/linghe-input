@@ -20,6 +20,29 @@ int main(int argc,char **argv) {
  try {
   require(argc==3 || argc==4,"Usage: nine_filter_smoke RESOURCES FRESH_DATA [NO_DEPLOY]"); require(!std::filesystem::exists(argv[2]),"Synthetic directory must be new"); std::filesystem::create_directories(argv[2]);
   require(pi_initialize(argv[1],argv[2],argc==3),"Initialize"); auto s=pi_create_session(); require(s && pi_set_nine_key(s,1),"Nine schema");
+  for (const auto &code : {"4", "44", "444", "4444", "44444426"}) {
+    pi_clear(s); type(s,code);
+    const auto before = std::string(pi_raw_input(s));
+    const auto display = std::string(pi_nine_readable_preedit(s,""));
+    require(display.find("ghi")==std::string::npos && display.find("abc")==std::string::npos,
+            "Unresolved marked draft expanded a key into arbitrary letters");
+    require(!display.empty(),"Unresolved marked draft disappeared");
+    require(std::string(pi_raw_input(s))==before && std::string(pi_take_commit(s)).empty(),
+            "Rendering a repeated key draft changed input or committed host text");
+    if (before.size()>1) {
+      require(pi_process_key(s,0xff08,0),"Repeated draft backspace");
+      require(std::string(pi_raw_input(s))==before.substr(0,before.size()-1),"Repeated draft delete lost tail");
+    }
+  }
+  pi_clear(s); type(s,"444");
+  require(std::string(pi_nine_readable_preedit(s,"ha ha ha"))=="h h h",
+          "Verified repeated initials did not preserve consumed key lengths");
+  require(std::string(pi_raw_input(s))=="444" && std::string(pi_take_commit(s)).empty(),
+          "Verified hint implicitly committed or rewrote repeated raw keys");
+  pi_clear(s); require(pi_set_nine_key(s,0),"26-key repeated control mode"); type(s,"hhhh");
+  require(std::string(pi_nine_readable_preedit(s,""))==std::string(pi_preedit(s)),
+          "Nine-key fallback changed the 26-key draft");
+  pi_clear(s); require(pi_set_nine_key(s,1),"Restore nine mode after repeated control");
   type(s,"782636874472666"); // quan dou shi pao mo
   filter(s,"quan");
   std::cout << "AFTER_QUAN:";

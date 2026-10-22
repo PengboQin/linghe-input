@@ -1,0 +1,5 @@
+#include "../installer/RecoveryJournalCodec.h"
+#include <cassert>
+#include <iostream>
+using namespace linghe::installer::recovery;
+int main(){Journal j;j.transaction="11111111-2222-4333-8444-555555555555";j.ownerSid="S-1-5-21-111-222-333-1001";j.sourceSetupHash=std::string(64,'a');j.targetSetupHash=std::string(64,'b');j.targetVersion="0.4.3-win1";j.before.slots={std::string("a\0b",3),"before-arp","before-run","before-link"};j.desired.slots={"desired-reg","desired-arp","desired-run","desired-link"};auto data=encodeJournal(j);auto restored=decodeJournal(data);assert(restored.before.slots==j.before.slots&&restored.desired.slots==j.desired.slots);unsigned checks=1;for(std::size_t n=0;n<data.size();++n){bool failed=false;try{decodeJournal(data.substr(0,n));}catch(...){failed=true;}assert(failed);++checks;}bool failed=false;try{decodeJournal(data+"x");}catch(...){failed=true;}assert(failed);++checks;j.ownerSid="untrusted";failed=false;try{encodeJournal(j);}catch(...){failed=true;}assert(failed);++checks;std::cout<<"PASS "<<checks<<" repair codec truncation/binary-slot/identity checks\n";}

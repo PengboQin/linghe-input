@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "synthetic_only": true,
+  "description": "Offline evidence-classification cases; not live accuracy and not native recall measurements. Labels are synthetic, not inferred from archived user text.",
+  "cases": [
+    {
+      "id": "C01",
+      "expected": "recalled_in_observed_snapshot",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {
+        "stage": "candidates",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1
+      }
+    },
+    {
+      "id": "C02",
+      "expected": "not_observed_in_bounded_snapshot",
+      "label": {
+        "source": "synthetic",
+        "target_text": "世界"
+      },
+      "decision": {
+        "stage": "candidates",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1
+      }
+    },
+    {
+      "id": "C03",
+      "expected": "not_recalled_in_declared_scope",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {
+        "stage": "candidates",
+        "candidates": [],
+        "coverage": "complete_set",
+        "truncated": false,
+        "observed_count": 0
+      },
+      "enumeration_complete": true,
+      "eligible_after_policy": true,
+      "search_scope": "fixture complete bounded synthetic set"
+    },
+    {
+      "id": "C04",
+      "expected": "excluded_by_policy",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {
+        "stage": "candidates",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1
+      },
+      "eligible_after_policy": false
+    },
+    {
+      "id": "C05",
+      "expected": "not_exposed_in_observed_viewport",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {
+        "stage": "candidates",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1
+      },
+      "visible_snapshot_complete": true,
+      "visible_candidate_ids": [
+        "other"
+      ]
+    },
+    {
+      "id": "C06",
+      "expected": "selection_target_mismatch",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {
+        "stage": "candidates",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1,
+        "selected_candidate_id": "c1"
+      },
+      "selection_policy": "frozen_press_target",
+      "press_candidate_id": "c0"
+    },
+    {
+      "id": "C07",
+      "expected": "selection_output_mismatch",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {
+        "stage": "commit",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1
+      },
+      "expected_inserted_text": "你好",
+      "output": {
+        "status": "editor_acknowledged",
+        "text": "世界"
+      }
+    },
+    {
+      "id": "C08",
+      "expected": "commit_unconfirmed",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {
+        "stage": "commit",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1
+      },
+      "expected_inserted_text": "你好",
+      "output": {
+        "status": "insert_requested"
+      }
+    },
+    {
+      "id": "C09",
+      "expected": "evidence_insufficient",
+      "label": {
+        "source": "weak_signal",
+        "target_text": "我"
+      },
+      "decision": {
+        "stage": "candidates",
+        "candidates": [
+          {
+            "candidate_id": "c0",
+            "text": "你好",
+            "reading": "ni hao",
+            "absolute_rank": 2,
+            "source": "unknown"
+          }
+        ],
+        "coverage": "published_subset",
+        "truncated": true,
+        "observed_count": 1
+      }
+    },
+    {
+      "id": "C10",
+      "expected": "evidence_insufficient",
+      "label": {
+        "source": "synthetic",
+        "target_text": "你好",
+        "target_reading": "ni hao"
+      },
+      "decision": {},
+      "diagnostic_default_off": true
+    }
+  ]
+}

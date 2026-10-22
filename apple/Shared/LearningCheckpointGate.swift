@@ -1,5 +1,24 @@
 import Foundation
 
+/// Native dictionary export/import cannot be interrupted safely. An empty
+/// composition while the keyboard is visible is not a maintenance window: the
+/// next touch may already be on its way. Only a completed dismissal grants a
+/// token, and revealing the keyboard invalidates every outstanding token.
+struct LearningMaintenanceBoundary {
+    private enum Phase { case visible, dismissing, hidden }
+    private var phase = Phase.visible
+    private var generation: UInt64 = 0
+    mutating func willAppear() { generation &+= 1; phase = .visible }
+    mutating func willDisappear() { generation &+= 1; phase = .dismissing }
+    mutating func didDisappear() -> UInt64? {
+        guard phase == .dismissing else {return nil}
+        phase = .hidden; return generation
+    }
+    func permits(_ token: UInt64, hasComposition: Bool, interacting: Bool) -> Bool {
+        phase == .hidden && token == generation && !hasComposition && !interacting
+    }
+}
+
 /// A successful native transaction is reusable only for the same complete
 /// source token and local native generation. This helper owns no I/O or Rime.
 struct LearningCheckpointGate {

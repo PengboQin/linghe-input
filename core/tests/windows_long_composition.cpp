@@ -47,7 +47,7 @@ int main(int argc,char **argv){
   pi_clear(s);type(s,"haoo");pi_load_candidate_batch(s,0,128);require(repair(s,"好"),"Extra complete vowel repair suppressed");
   for(const auto &item:{std::pair<const char *,const char *>{"linaxaing","联想"},{"zhongguoo","中国"}}){pi_clear(s);type(s,item.first);pi_load_candidate_batch(s,0,128);require(repair(s,item.second),"Existing typo correction regressed");}
   pi_clear(s);type(s,"shenm");require(native(s,"什么")!=SIZE_MAX,"Valid unfinished full/native syllable lost");require(!repair(s,"什么"),"Unnecessary repair shadowed valid native completion");
-  pi_clear(s);type(s,"nihao");pi_load_candidate_batch(s,128,128);require(pi_load_repair_candidates(s,16)==0,"Deep batch bypassed exact spelling short circuit");
+  pi_clear(s);type(s,"nihao");pi_load_candidate_batch(s,128,128);require(!repair(s,"你好"),"Deep batch allowed a repair to shadow exact native choice");require(native(s,"你好")==0,"Fallback changed exact native first choice");
   pi_clear(s);type(s,"nihaoo");require(pi_select_candidate_absolute(s,native(s,"你")),"Repair prefix fixture");
   require(repair(s,"好"),"Selected-prefix repair absent");auto count=pi_load_repair_candidates(s,16);size_t chosen=SIZE_MAX;for(size_t i=0;i<count;++i)if(std::string(pi_repair_candidate_text(s,i))=="好")chosen=i;
   require(std::string(pi_commit_repair_candidate(s,chosen))=="你好","Repair replaced already selected Chinese");require(!*pi_preedit(s)&&!*pi_take_commit(s),"Repair left duplicate pending commit");

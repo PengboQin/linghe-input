@@ -1,6 +1,7 @@
 import Foundation
 import PrivateInputKit
 import CryptoKit
+import Darwin
 
 struct DeviceSyncInfo:Equatable {
     var ticket: QuickPairTicket?
@@ -23,6 +24,8 @@ struct DeviceSyncInfo:Equatable {
     var joiningExpiresAt:UInt64=0
     var joiningExpired=false
     var departed:String?
+    var cloudLearning = false
+    var cloudPhase = "未迁移"
 }
 private struct SyncConfiguration: Codable {
     var endpoint: URL?
@@ -51,19 +54,47 @@ private struct SyncConfiguration: Codable {
     var lastLearningDigest: Data?
     var lastLearningGroup: UUID?
     var lastLearningEpoch: UInt64?
+    var lastLearningPublishAt: UInt64?
+    var lastFullLearningRepairAt: UInt64?
     var lastRecencyDigest: Data?
     var lastRecencyGroup: UUID?
     var lastRecencyEpoch: UInt64?
     var lastRecencyPublishAt: UInt64?
+    var conditionalRecencyEndpoint: URL?
+    var recencyCacheGroup: UUID?
+    var recencyCacheEpoch: UInt64?
+    var recencyOwnEvent: String?
+    var recencyPeerEvents: [String: String]?
+    var cloudMigrationRequested: Bool?
+    var cloudInstallation: UUID?
+    var cloudRevocationPending: Bool?
+    var lastCloudModelVerifiedAt: UInt64?
+    var cloudVerifiedGroup: UUID?
+    var cloudVerifiedEpoch: UInt64?
+    var cloudVerifiedInstallation: UUID?
+    var lastRecencyCompatibilitySuccessAt: UInt64?
+    var recencyCompatibilityGroup: UUID?
+    var recencyCompatibilityEpoch: UInt64?
 }
 
 actor DeviceSyncSession {
     private let base: URL
     private let configFile: URL
+    private let learningDeltaFile: URL
     private let identityAccount: String
     private var configuration: SyncConfiguration
+    private var learningDeltaCheckpoint: LearningDeltaCheckpoint?
+    private var learningDeltaLoaded = false
+    private var cloudMigration: CloudLearningComponentMigration?
+    private var cloudSyncRunning = false
+    private var cloudRevokeRunning = false
+    private var cloudRevokeRetryAfter: UInt64 = 0
+    private var cloudRetryAfter: UInt64 = 0
+    private var cloudPhase = "未迁移"
     private var deviceStatuses:[GroupDeviceStatus]=[]
     private var recencySyncRunning = false
+    private var recencyCloudMode: Bool?
+    private var recencyAttemptEpoch: UInt64?
     private var recencyRetryAfter: UInt64 = 0
     private var recencyAttemptGroup: UUID?
     private let authorization: SyncConsentGate
@@ -92,10 +123,12 @@ actor DeviceSyncSession {
         #endif
         try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         configFile = base.appendingPathComponent("session-config-v1.json")
+        learningDeltaFile = base.appendingPathComponent("learning-delta-checkpoint-v2.json")
         if FileManager.default.fileExists(atPath: configFile.path) {
             configuration = try JSONDecoder().decode(SyncConfiguration.self, from: Data(contentsOf: configFile))
         } else { configuration = SyncConfiguration() }
         authorization = SyncConsentGate(.init(learning: configuration.learning, clipboard: configuration.clipboard))
+        if configuration.cloudMigrationRequested == true { cloudPhase = "待同步" }
     }
     private var now: UInt64 { UInt64(Date().timeIntervalSince1970) }
     private func context(create: Bool = false) throws -> (DeviceIdentityVault, SecureReplicaStore, DeviceIdentity) {
@@ -119,6 +152,7 @@ actor DeviceSyncSession {
         try JSONEncoder().encode(configuration).write(to: configFile, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         let prefs = UserDefaults(suiteName: LocalLearningCoordinator.groupID)
         prefs?.set(configuration.learning, forKey: "learning-sharing-enabled")
+        prefs?.set(configuration.learning && configuration.cloudMigrationRequested == true, forKey: "cloud-learning-enabled")
         prefs?.set(configuration.clipboard, forKey: "clipboard-sharing-enabled")
         prefs?.set(configuration.clipboard && configuration.automaticClipboard==true,forKey:"automatic-clipboard-enabled")
         if prefs?.string(forKey:"automatic-clipboard-consent-generation") != configuration.automaticClipboardGeneration {
@@ -163,6 +197,7 @@ actor DeviceSyncSession {
         if configuration.wipePending==true {try resetForDeparture(reason:configuration.departed ?? "removed")}
         if configuration.group != nil,configuration.personalEpoch != nil,PersonalDataReset.generation != "initial",configuration.personalEpoch != PersonalDataReset.generation {try resetForDeparture(reason:"inactive")}
         var info = DeviceSyncInfo(endpoint: configuration.endpoint?.absoluteString ?? "", learning: configuration.learning, clipboard: configuration.clipboard)
+        info.cloudLearning = configuration.cloudMigrationRequested == true; info.cloudPhase = cloudPhase
         info.automaticClipboard=configuration.clipboard && configuration.automaticClipboard==true
         #if os(iOS)
         info.automaticClipboardReadPaused=UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.bool(forKey:"automatic-clipboard-read-paused")==true
@@ -254,6 +289,7 @@ actor DeviceSyncSession {
         configuration.endpoint=invitation.endpoint;configuration.joining=invitation;configuration.request=request;configuration.challenge=nil;configuration.quickJoining=true;configuration.quickDeadline=min(request.expiresAt,now+120);configuration.departed=nil;try save()
     }
     func pollPairing() async throws {
+        await flushCloudLearningRevocation()
         if configuration.quickJoining==true,let request=configuration.request {
             guard (configuration.quickDeadline ?? request.expiresAt)>now else {throw PairingError.expired}
             do { try await fetchJoiningCode();try await confirmPair() }
@@ -429,10 +465,15 @@ actor DeviceSyncSession {
         let secrets=try KeychainIdentityStore(account:identityAccount)
         #endif
         try secrets.removeForConfirmedDeparture()
-        for name in ["Database","Identity"] {
+        for name in ["Database","Identity","CloudMigrationSeeds"] {
             let url=base.appendingPathComponent(name)
             if FileManager.default.fileExists(atPath:url.path) {try FileManager.default.removeItem(at:url)}
         }
+        if FileManager.default.fileExists(atPath:learningDeltaFile.path) { try FileManager.default.removeItem(at:learningDeltaFile) }
+        learningDeltaCheckpoint=nil;learningDeltaLoaded=false
+        cloudMigration=nil;cloudRetryAfter=0;cloudPhase="未迁移"
+        try? FileManager.default.removeItem(at:base.appendingPathComponent("cloud-learning-components-v1.json"))
+        try? FileManager.default.removeItem(at:base.appendingPathComponent("cloud-migration-status-v1.json"))
         let endpoint=configuration.endpoint
         configuration=SyncConfiguration();configuration.endpoint=endpoint;configuration.departed=reason
         configuration.personalEpoch=PersonalDataReset.generation;deviceStatuses=[];try save()
@@ -448,13 +489,18 @@ actor DeviceSyncSession {
         #endif
         let previous = configuration
         try authorization.update(.init(learning: learning, clipboard: clipboard)) {
+            if !learning, configuration.cloudMigrationRequested == true {
+                configuration.cloudMigrationRequested = false; configuration.cloudRevocationPending = true
+                configuration.lastCloudModelVerifiedAt = nil
+            }
             configuration.learning = learning; configuration.clipboard = clipboard
             if !clipboard {configuration.automaticClipboard=false;configuration.automaticClipboardGeneration=nil}
             do { try save() } catch { configuration = previous; throw error }
         }
         #if os(iOS)
-        if !clipboard { try ClipboardCacheCoordinator.cache().clear() }
+        if !clipboard { try ClipboardCacheCoordinator.cache().clear();ClipboardCacheCoordinator.clearPreview() }
         #endif
+        if !learning { retireCloudRanking() }
         if !learning, let directory = LocalLearningCoordinator.sharedDirectory() {
             try? AppleRecencyBridge(directory: directory).suspend()
         }
@@ -497,11 +543,43 @@ actor DeviceSyncSession {
             }
             let archive=try outgoing.export(),digest = Data(SHA256.hash(data: archive))
             let epoch=try store.group(group).membership.statement.epoch
-            if LearningPublication.needed(digest:digest,group:group,epoch:epoch,
+            // The legacy relay expires events after seven days. A bounded
+            // daily repair snapshot prevents a missed delta becoming permanent.
+            let repairDue = configuration.lastFullLearningRepairAt.map { now < $0 || now - $0 >= 86400 } ?? true
+            if repairDue || LearningPublication.needed(digest:digest,group:group,epoch:epoch,
                                           previousDigest:configuration.lastLearningDigest,
                                           previousGroup:configuration.lastLearningGroup,previousEpoch:configuration.lastLearningEpoch) {
-                _ = try store.enqueue(archive, domain: .learning, group: group, sharingEnabled: true, now: now)
-                configuration.lastLearningDigest = digest;configuration.lastLearningGroup=group;configuration.lastLearningEpoch=epoch;try save()
+                // Keep the large baseline out of the frequently saved session
+                // preferences. Only dirty learning publication reads/writes it.
+                if !learningDeltaLoaded {
+                    if FileManager.default.fileExists(atPath:learningDeltaFile.path) {
+                        let handle=try FileHandle(forReadingFrom:learningDeltaFile);defer{try? handle.close()}
+                        let data=try handle.read(upToCount:2*1024*1024+1) ?? Data()
+                        // This is a disposable publication index. Missing/bad
+                        // metadata forces full repair, never drops word data.
+                        if data.count<=2*1024*1024 {learningDeltaCheckpoint=try? JSONDecoder().decode(LearningDeltaCheckpoint.self,from:data)}
+                    }
+                    learningDeltaLoaded=true
+                }
+                let publication:LearningDeltaPublication
+                do {publication=try LearningDeltaPublication.prepare(archive:archive,group:group,epoch:epoch,
+                                                                      previous:repairDue ? nil:learningDeltaCheckpoint)}
+                catch InputDataError.invalidRecord {
+                    publication=try LearningDeltaPublication.prepare(archive:archive,group:group,epoch:epoch,previous:nil)
+                }
+                if let delta = publication.payload {
+                    _ = try store.enqueue(delta, domain: .learning, group: group, sharingEnabled: true, now: now)
+                }
+                let previous = configuration
+                configuration.lastLearningPublishAt = now
+                if publication.bootstrap { configuration.lastFullLearningRepairAt = now }
+                configuration.lastLearningDigest = digest;configuration.lastLearningGroup=group;configuration.lastLearningEpoch=epoch
+                do {
+                    let checkpoint=try JSONEncoder().encode(publication.checkpoint)
+                    guard checkpoint.count<=2*1024*1024 else{throw InputDataError.oversized}
+                    try checkpoint.write(to:learningDeltaFile,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+                    try save();learningDeltaCheckpoint=publication.checkpoint
+                } catch { configuration = previous; throw error }
             }
         }
         let result = try await RelaySyncPass.run(group: group, store: store, vault: vault, client: client(),
@@ -532,13 +610,28 @@ actor DeviceSyncSession {
         // A missing/newer optional endpoint must never turn a successful v1
         // word/clipboard sync into an error, nor block the typing process.
         await synchronizeRecentLearning(group: group, store: store, lease: lease)
+        await synchronizeCloudLearning(group: group, lease: lease)
         return result
     }
 
     private func synchronizeRecentLearning(group: UUID, store: SecureReplicaStore, lease: SyncConsentGate.Lease) async {
         guard !recencySyncRunning else { return }
-        if recencyAttemptGroup != group { recencyAttemptGroup = group; recencyRetryAfter = 0 }
+        let currentEpoch = (try? store.group(group).membership.statement.epoch)
+        if recencyAttemptGroup != group || recencyAttemptEpoch != currentEpoch {
+            recencyAttemptGroup = group; recencyAttemptEpoch = currentEpoch; recencyRetryAfter = 0
+        }
+        let cloudCurrent = LearningTransportPolicy.cloudIsCurrent(now: now, verifiedAt: configuration.lastCloudModelVerifiedAt,
+            scopeMatches: configuration.cloudVerifiedGroup == group && configuration.cloudVerifiedEpoch == currentEpoch &&
+                configuration.cloudVerifiedInstallation == configuration.cloudInstallation,
+            enabled: configuration.learning && configuration.cloudMigrationRequested == true &&
+                UserDefaults(suiteName: LocalLearningCoordinator.groupID)?.bool(forKey: "cloud-learning-enabled") == true)
+        if recencyCloudMode != cloudCurrent { recencyCloudMode = cloudCurrent; recencyRetryAfter = 0 }
         guard now >= recencyRetryAfter else { return }
+        if !LearningTransportPolicy.legacyCompatibilityDue(now: now,
+            lastSuccess: configuration.recencyCompatibilityGroup == group && configuration.recencyCompatibilityEpoch == currentEpoch ? configuration.lastRecencyCompatibilitySuccessAt : nil,
+            cloudCurrent: cloudCurrent) {
+            recencyRetryAfter = now + 600; return
+        }
         recencySyncRunning = true
         defer { recencySyncRunning = false }
         guard let directory = LocalLearningCoordinator.sharedDirectory() else { return }
@@ -555,9 +648,14 @@ actor DeviceSyncSession {
             #else
             let roles = ["desktop", "ime"]
             #endif
-            let timed = try await recent.hello(setup: setup, identity: identity, roles: roles, now: now)
+            let epoch = setup.membership.statement.epoch
+            let cacheUsable = try configuration.recencyCacheGroup == group && configuration.recencyCacheEpoch == epoch &&
+                              (try bridge.archive(group: group, epoch: epoch)) != nil
+            let conditional = configuration.conditionalRecencyEndpoint == endpoint
+            let timed = try await recent.hello(setup: setup, identity: identity, roles: roles, now: now,
+                                               knownEvent: conditional && cacheUsable ? configuration.recencyOwnEvent : nil)
             guard timed.status.ready else { recencyRetryAfter = now + 30; try? bridge.suspend(); return }
-            let policy = try timed.status.policy, epoch = setup.membership.statement.epoch
+            let policy = try timed.status.policy
             try authorization.withLease(lease) { consent in
                 guard consent.learning, configuration.group == group,
                       try store.group(group).membership.statement.epoch == epoch else { throw ReplicaStoreError.changedState }
@@ -566,6 +664,11 @@ actor DeviceSyncSession {
                 if let own = timed.status.envelope {
                     try bridge.merge(own.open(group: setup, now: now, policy: policy), group: group, epoch: epoch)
                 }
+                if !cacheUsable { configuration.recencyOwnEvent = nil; configuration.recencyPeerEvents = [:] }
+                configuration.recencyCacheGroup = group; configuration.recencyCacheEpoch = epoch
+                configuration.conditionalRecencyEndpoint = timed.status.conditionalSnapshots == true ? endpoint : nil
+                if timed.status.envelope != nil { configuration.recencyOwnEvent = timed.status.publishedEvent }
+                try save()
             }
             if let outgoing = try bridge.archive(group: group, epoch: epoch) {
                 let digest = Data(SHA256.hash(data: outgoing))
@@ -582,7 +685,8 @@ actor DeviceSyncSession {
                     try authorization.withLease(lease) { consent in
                         guard consent.learning, configuration.group == group else { throw ReplicaStoreError.changedState }
                         configuration.lastRecencyDigest = digest; configuration.lastRecencyGroup = group
-                        configuration.lastRecencyEpoch = epoch; configuration.lastRecencyPublishAt = now; try save()
+                        configuration.lastRecencyEpoch = epoch; configuration.lastRecencyPublishAt = now
+                        configuration.recencyOwnEvent = envelope.event.uuidString; try save()
                     }
                 }
             }
@@ -591,7 +695,8 @@ actor DeviceSyncSession {
                 try authorization.withLease(lease) { consent in
                     guard consent.learning, configuration.group == group else { throw ReplicaStoreError.changedState }
                 }
-                let page = try await recent.pull(after: cursor, setup: setup, identity: identity, now: now)
+                let page = try await recent.pull(after: cursor, setup: setup, identity: identity, now: now,
+                                                knownSnapshots: timed.status.conditionalSnapshots == true ? configuration.recencyPeerEvents : nil)
                 guard page.status.ready else { throw RecentLearningSyncError.notReady }
                 guard page.status.referenceDay == policy.referenceDay else { throw RecentLearningSyncError.invalidTime }
                 guard let envelope = page.status.envelope else { break }
@@ -600,14 +705,23 @@ actor DeviceSyncSession {
                     guard consent.learning, configuration.group == group,
                           try store.group(group).membership.statement.epoch == epoch else { throw ReplicaStoreError.changedState }
                     try bridge.merge(payload, group: group, epoch: epoch)
+                    configuration.recencyPeerEvents?[envelope.sender.uuidString] = envelope.event.uuidString
+                    try save()
                 }
                 cursor = page.status.next ?? ""
             }
-            recencyRetryAfter = 0
+            configuration.lastRecencyCompatibilitySuccessAt = now
+            configuration.recencyCompatibilityGroup = group; configuration.recencyCompatibilityEpoch = epoch; try save()
+            recencyRetryAfter = now + 600
         } catch {
             // Unsupported service, stale capability, bad time, cancellation or
             // malformed new data only disable this optional scoring source.
             if configuration.group == group {
+                if case RecentLearningSyncError.httpStatus(400) = error {
+                    // A downgraded endpoint may no longer accept optional
+                    // conditional fields. Re-negotiate with legacy hello.
+                    configuration.conditionalRecencyEndpoint = nil; try? save()
+                }
                 recencyRetryAfter = now + ((error as? RecentLearningSyncError).map { if case .unsupported = $0 { return UInt64(300) }; return UInt64(30) } ?? 30)
                 try? bridge.suspend()
             }
@@ -626,6 +740,9 @@ actor DeviceSyncSession {
         if enabled {UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.removeObject(forKey:"automatic-clipboard-read-paused")}
         do {try save()}catch{configuration=previous;throw error}
         if !enabled {AutomaticClipboardOrigin.clear()}
+        #if os(iOS)
+        if !enabled {ClipboardCacheCoordinator.clearPreview()}
+        #endif
     }
     func automaticClipboardSession() throws -> AutomaticClipboardSession? {
         guard configuration.automaticClipboard==true,configuration.clipboard,configuration.wipePending != true,
@@ -666,5 +783,193 @@ actor DeviceSyncSession {
         let (_, store, _) = try context()
         _ = try store.enqueue(Data(text.utf8), domain: .clipboard, group: group, sharingEnabled: configuration.clipboard, now: now)
         _ = try await synchronize()
+    }
+    /// Explicit migration entry used by the app's settings and the local
+    /// deployment command. It never invents a server or enrolls a new device.
+    func enableCloudLearningMigration() async throws {
+        guard configuration.learning, let group = configuration.group, let endpoint = configuration.endpoint else { throw ReplicaStoreError.missingGroup }
+        _ = try await archiveConnection()
+        let (_, _, identity) = try context()
+        let client = CloudLearningClient(transport: try CloudLearningHTTPTransport(endpoint: endpoint, allowLoopbackHTTP: Self.loopback))
+        var status = try await client.status(group: group, identity: identity, now: now)
+        if !status.enabled { status = try await client.configureGroup(expectedVersion: status.policyVersion, enabled: true, group: group, identity: identity, now: now) }
+        let installation = configuration.cloudInstallation ?? status.consent?.installationID ?? UUID()
+        if status.consent?.enabled != true || status.consent?.installationID != installation {
+            status = try await client.configureDevice(expectedVersion: status.consent?.version ?? 0, enabled: true,
+                installation: installation, group: group, identity: identity, now: now)
+        }
+        guard configuration.group == group, configuration.endpoint == endpoint, configuration.learning,
+              status.enabled, status.consent?.enabled == true, status.consent?.installationID == installation else { throw ReplicaStoreError.changedState }
+        configuration.cloudInstallation = installation; configuration.cloudMigrationRequested = true; configuration.cloudRevocationPending = false
+        try save(); cloudRetryAfter = 0
+        await synchronizeCloudLearning(group: group, lease: authorization.lease())
+    }
+    private func retireCloudRanking() {
+        cloudMigration = nil; cloudRetryAfter = 0; cloudPhase = "已关闭"
+        let preferences = UserDefaults(suiteName: LocalLearningCoordinator.groupID)
+        preferences?.set(false, forKey: "cloud-learning-enabled")
+        for key in ["cloud-learning-group", "cloud-learning-epoch", "cloud-learning-model-token"] { preferences?.removeObject(forKey: key) }
+        if let directory = LocalLearningCoordinator.sharedDirectory() {
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent(AppleCloudLearningRankState.filename))
+        }
+    }
+    func disableCloudLearningMigration() async throws {
+        // Commit local stop before any network await. Offline revocation is
+        // durable and retried by the app's ordinary pairing/background owner.
+        configuration.cloudMigrationRequested = false; configuration.cloudRevocationPending = true
+        configuration.lastCloudModelVerifiedAt = nil
+        try save(); retireCloudRanking()
+        await flushCloudLearningRevocation()
+    }
+    private func flushCloudLearningRevocation() async {
+        guard !cloudRevokeRunning, now >= cloudRevokeRetryAfter,
+              configuration.cloudRevocationPending == true, configuration.cloudMigrationRequested != true,
+              let group = configuration.group, let endpoint = configuration.endpoint,
+              let installation = configuration.cloudInstallation else { return }
+        cloudRevokeRunning = true; cloudRevokeRetryAfter = now + 60
+        defer { cloudRevokeRunning = false }
+        do {
+            let (_, store, identity) = try context()
+            let epoch = try store.group(group).membership.statement.epoch
+            let client = CloudLearningClient(transport: try CloudLearningHTTPTransport(endpoint: endpoint, allowLoopbackHTTP: Self.loopback))
+            let status = try await client.status(group: group, identity: identity, now: now)
+            guard configuration.group == group, configuration.endpoint == endpoint, configuration.cloudMigrationRequested != true,
+                  try store.group(group).membership.statement.epoch == epoch else { throw ReplicaStoreError.changedState }
+            if let consent = status.consent, consent.enabled, consent.installationID == installation {
+                _ = try await client.configureDevice(expectedVersion: consent.version, enabled: false, installation: installation,
+                                                      group: group, identity: identity, now: now)
+            }
+            guard configuration.group == group, configuration.cloudMigrationRequested != true else { throw ReplicaStoreError.changedState }
+            configuration.cloudRevocationPending = false; try save()
+        } catch { /* Local stop remains effective; keep the durable retry flag. */ }
+    }
+    private func writeCloudMigrationStatus() {
+        struct Status: Encodable {
+            let version = 1
+            let build: String
+            let recordedAt: UInt64
+            let enabled, modelAndWatermarksVerified: Bool
+            let phase: String
+            let modelVersion: UInt64
+            let producerCount, acceptedComponents, representedComponents: Int
+            let lastLegacyCompatibilitySuccessAt: UInt64?
+            let network: [InputNetworkUsage]
+        }
+        let producers = cloudMigration?.producers.values
+        let report = Status(build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
+            recordedAt: now, enabled: configuration.cloudMigrationRequested == true,
+            modelAndWatermarksVerified: cloudMigration?.ready == true, phase: cloudPhase,
+            modelVersion: cloudMigration?.model.modelVersion ?? 0, producerCount: cloudMigration?.producers.count ?? 0,
+            acceptedComponents: producers?.reduce(0) { $0 + $1.accepted.count } ?? 0,
+            representedComponents: producers?.reduce(0) { $0 + $1.represented.count } ?? 0,
+            lastLegacyCompatibilitySuccessAt: configuration.lastRecencyCompatibilitySuccessAt,
+            network: InputNetworkMetrics.snapshot())
+        if let data = try? JSONEncoder().encode(report), data.count < 16384 {
+            try? data.write(to: base.appendingPathComponent("cloud-migration-status-v1.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        }
+    }
+    private func synchronizeCloudLearning(group: UUID, lease: SyncConsentGate.Lease) async {
+        guard !cloudSyncRunning, configuration.cloudMigrationRequested == true, configuration.learning,
+              configuration.group == group, let endpoint = configuration.endpoint, let installation = configuration.cloudInstallation,
+              let directory = LocalLearningCoordinator.sharedDirectory(), now >= cloudRetryAfter else { return }
+        cloudSyncRunning = true; cloudRetryAfter = now + 60
+        defer { cloudSyncRunning = false; writeCloudMigrationStatus() }
+        // One bounded process owns this lane (daily IME/app or deployment CLI).
+        // The native keyboard never takes this lock. Reload inside the lease.
+        let descriptor = Darwin.open(base.appendingPathComponent("cloud-learning-components-v1.lock").path,
+                                     O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard descriptor >= 0 else { return }; defer { Darwin.close(descriptor) }
+        guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else { return }; defer { flock(descriptor, LOCK_UN) }
+        do {
+            let (_, store, identity) = try context()
+            let membershipEpoch = try store.group(group).membership.statement.epoch
+            let personalEpoch = PersonalDataReset.generation
+            func check() throws {
+                try authorization.withLease(lease) { consent in
+                    guard consent.learning, configuration.group == group, configuration.endpoint == endpoint,
+                          configuration.cloudMigrationRequested == true, PersonalDataReset.generation == personalEpoch,
+                          UserDefaults(suiteName: LocalLearningCoordinator.groupID)?.bool(forKey: "cloud-learning-enabled") == true,
+                          try store.group(group).membership.statement.epoch == membershipEpoch else { throw ReplicaStoreError.changedState }
+                }
+            }
+            let client = CloudLearningClient(transport: try CloudLearningHTTPTransport(endpoint: endpoint, allowLoopbackHTTP: Self.loopback))
+            let status = try await client.status(group: group, identity: identity, now: now); try check()
+            guard status.enabled, status.algorithmVersion == "shared-lexeme-decay-v2", let consent = status.consent,
+                  consent.enabled, consent.installationID == installation else {
+                configuration.lastCloudModelVerifiedAt = nil; configuration.cloudMigrationRequested = false
+                try save(); retireCloudRanking(); throw CloudLearningError.unsupported
+            }
+            let file = base.appendingPathComponent("cloud-learning-components-v1.json")
+            if FileManager.default.fileExists(atPath: file.path) {
+                let handle = try FileHandle(forReadingFrom: file); defer { try? handle.close() }
+                let data = try handle.read(upToCount: 12 * 1024 * 1024 + 1) ?? Data()
+                // The publication index is recoverable: op7 reconciles the
+                // complete server-owned producer set before a replay. Native
+                // journals/archives stay authoritative and are never removed.
+                cloudMigration = try? CloudLearningComponentMigration.restore(data)
+            }
+            if let old = cloudMigration {
+                if old.model.group != group || old.model.device != identity.device || old.model.installation != installation ||
+                    old.model.generation != status.generation || old.model.consentVersion != consent.version {
+                    // Explicit current opt-in established a new scope. Recover
+                    // server-owned cumulative components with op7 before any
+                    // new publication; never guess away a remote watermark.
+                    cloudMigration = try .init(model: .init(group: group, device: identity.device, installation: installation,
+                                                           generation: status.generation, consentVersion: consent.version))
+                }
+            } else {
+                cloudMigration = try .init(model: .init(group: group, device: identity.device, installation: installation,
+                                                       generation: status.generation, consentVersion: consent.version))
+            }
+            guard let table = Bundle.main.url(forResource: "rime", withExtension: nil)?.appendingPathComponent("charset/standard-8105.txt") else { throw CloudLearningError.invalid }
+            let policy = try CloudLearningTextPolicy(standardCharacters: Data(contentsOf: table))
+            _ = try AppleCloudMigrationSeed.consume(inbox: base.appendingPathComponent("CloudMigrationSeeds", isDirectory: true),
+                group: group, device: identity.device, personalEpoch: personalEpoch, shared: directory, policy: policy)
+            try AppleCloudProducerSnapshot.seedCommittedProducer(base: base.deletingLastPathComponent(), directory: directory)
+            let snapshots = try AppleCloudProducerSnapshot.read(directory: directory)
+            func persist() throws {
+                try check()
+                guard let state = cloudMigration else { throw CloudLearningError.invalid }
+                try state.data().write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            }
+            var uploads = 0
+            let uploadLimit = cloudMigration?.ready == true ? 2 : 40
+            for producer in snapshots {
+                if cloudMigration?.producers[producer.producer.uuidString] == nil {
+                    let recovered = try await client.componentSnapshot(producer: producer.producer, generation: status.generation,
+                        consentVersion: consent.version, installation: installation, group: group, identity: identity, now: now)
+                    try check(); try cloudMigration?.bootstrap(recovered); try persist()
+                }
+                let records = CloudLearningComponents.project(producer.entries, producer: producer.producer, policy: policy)
+                while uploads < uploadLimit {
+                    guard let publication = try cloudMigration?.prepare(producer: producer.producer, records: records) else { break }
+                    try persist() // exact publication durable BEFORE HTTP
+                    let receipt = try await client.publishComponents(publication, group: group, identity: identity, now: now); try check()
+                    try cloudMigration?.receive(receipt); try persist(); uploads += 1
+                }
+            }
+            for _ in 0..<4 {
+                guard let model = cloudMigration?.model else { throw CloudLearningError.invalid }
+                let delta = try await client.pull(generation: status.generation, fromVersion: model.modelVersion, group: group, identity: identity, now: now); try check()
+                try cloudMigration?.stage(delta, policy: policy); try persist()
+                if !delta.hasMore { break }
+            }
+            if let state = cloudMigration, state.ready {
+                try AppleCloudLearningRankState.publish(state, membershipEpoch: membershipEpoch, directory: directory, now: now)
+                let preferences = UserDefaults(suiteName: LocalLearningCoordinator.groupID)
+                preferences?.set(group.uuidString, forKey: "cloud-learning-group")
+                preferences?.set(membershipEpoch, forKey: "cloud-learning-epoch")
+                preferences?.set("\(group.uuidString):\(membershipEpoch):\(state.model.modelVersion):\(now / 3600)", forKey: "cloud-learning-model-token")
+                configuration.lastCloudModelVerifiedAt = now; configuration.cloudVerifiedGroup = group
+                configuration.cloudVerifiedEpoch = membershipEpoch; configuration.cloudVerifiedInstallation = installation
+                try save()
+                cloudPhase = "已迁移 · 模型 \(state.model.modelVersion)"; cloudRetryAfter = now + 600
+            } else { cloudPhase = "迁移中 · 等待聚合对账"; cloudRetryAfter = now + 30 }
+        } catch {
+            // Optional model transport cannot break a successful clipboard/v1
+            // exchange or erase the last usable native learning state.
+            cloudPhase = "迁移待重试"
+            cloudRetryAfter = now + 60
+        }
     }
 }

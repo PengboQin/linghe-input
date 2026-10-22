@@ -1,9 +1,6 @@
 import Foundation
 import CryptoKit
 
-private final class ClipboardLiveDenyRedirects:NSObject,URLSessionTaskDelegate,@unchecked Sendable {
-    func urlSession(_ session:URLSession,task:URLSessionTask,willPerformHTTPRedirection response:HTTPURLResponse,newRequest request:URLRequest,completionHandler:@escaping(URLRequest?)->Void) {completionHandler(nil)}
-}
 public enum ClipboardLiveHTTPError:Error {case status(Int,String)}
 
 public struct ClipboardLiveClient {
@@ -17,8 +14,7 @@ public struct ClipboardLiveClient {
         if body != nil {r.setValue("application/json",forHTTPHeaderField:"Content-Type")};return r
     }
     private func send(_ request:URLRequest,maximum:Int)async throws->Data {
-        let c=URLSessionConfiguration.ephemeral;c.httpCookieStorage=nil;c.urlCache=nil;c.httpShouldSetCookies=false;c.timeoutIntervalForResource=12
-        let s=URLSession(configuration:c,delegate:ClipboardLiveDenyRedirects(),delegateQueue:nil);defer{s.invalidateAndCancel()}
+        let s=PrivateInputHTTPSessions.clipboard
         let (bytes,response)=try await s.bytes(for:request)
         guard let http=response as? HTTPURLResponse else {throw ClipboardLiveError.invalid}
         if http.statusCode==404 {throw ClipboardLiveError.unavailable}

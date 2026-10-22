@@ -278,7 +278,7 @@ END
         [str(windres),'--codepage=65001','-i',str(rc),'-o',str(resource),'-O','coff'],
         [str(compiler),'-std=c++17','-O2','-static','-mwindows','-municode','-DUNICODE','-D_UNICODE','-DNOMINMAX',
          '-D_WIN32_WINNT=0x0A00','-DWINVER=0x0A00','-DLINGHE_EMBEDDED_ONLY=1',
-         str(ROOT/'windows/installer/Setup.cpp'),str(resource),'-lshell32','-lole32','-ladvapi32','-lbcrypt','-luser32','-luuid',
+         str(ROOT/'windows/installer/Setup.cpp'),str(resource),'-lshell32','-lole32','-loleaut32','-ladvapi32','-lbcrypt','-luser32','-luuid',
          '-Wl,--no-insert-timestamp','-o',str(output)]
     ]
     output.parent.mkdir(parents=True,exist_ok=True)

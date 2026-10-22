@@ -2,6 +2,14 @@ import Foundation
 import CoreText
 import CryptoKit
 
+/// Shared product admission plus platform rendering support, for automatic
+/// suggestions only. Do not use this for literal insertion or stored records.
+enum AppleCandidateAdmission {
+    static func allows(_ text:String,displayable:(String)->Bool)->Bool {
+        text.withCString {pi_candidate_text_allowed($0) != 0} && displayable(text)
+    }
+}
+
 /// Only candidates with real system-font glyphs are presented. This is a local
 /// rendering policy, not a Unicode-plane blacklist or a user-dictionary edit.
 enum CandidateGlyphSupport {

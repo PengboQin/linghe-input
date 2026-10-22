@@ -75,6 +75,7 @@ final class SyncClient {
     byte[] body=json.toString().getBytes(SyncCrypto.UTF8);
     c.setDoOutput(true);
     c.setFixedLengthStreamingMode(body.length);
+    long metricStart=android.os.SystemClock.elapsedRealtime(),metricReceived=0;boolean metricSuccess=false;String metricLane=SyncTransferMetrics.lane(path,json);
     try{
       try(OutputStream o=c.getOutputStream()){
         o.write(body);
@@ -87,7 +88,7 @@ final class SyncClient {
             ByteArrayOutputStream small=new ByteArrayOutputStream();
             byte[] buffer=new byte[1024];
             int n;
-            while((n=error.read(buffer))>0&&small.size()+n<=4096)small.write(buffer,0,n);
+            while((n=error.read(buffer))>0&&small.size()+n<=4096){small.write(buffer,0,n);metricReceived+=n;}
             String value=new JSONObject(SyncCrypto.utf8(small.toByteArray())).optString("error");
             if(value.matches("[a-z_]{1,40}"))code=value;
           }
@@ -103,13 +104,13 @@ final class SyncClient {
         int n;
         while((n=input.read(buffer))!=-1){
           if(b.size()+n>4*1024*1024)throw new IOException("同步响应过大");
-          b.write(buffer,0,n);
+          b.write(buffer,0,n);metricReceived+=n;
         }
       }
-      return LosslessJson.object(SyncCrypto.utf8(b.toByteArray()),4*1024*1024);
+      JSONObject decoded=LosslessJson.object(SyncCrypto.utf8(b.toByteArray()),4*1024*1024);metricSuccess=true;return decoded;
     }
     finally{
-      c.disconnect();
+      SyncTransferMetrics.record(metricLane,body.length,metricReceived,android.os.SystemClock.elapsedRealtime()-metricStart,metricSuccess);c.disconnect();
     }
   }
   private JSONObject rpc(String group,int op,JSONObject body,boolean owner)throws Exception{
@@ -222,7 +223,7 @@ final class SyncClient {
       retainUnsent();holdPendingForRotation();
       state.put("membership",m).put("groupKey",SyncCrypto.b64(key));
       state.remove("publishedDigest");
-      save();
+      save();new CloudLearningStore(context).invalidateRank();
     }
   }
   private JSONObject reserve(byte[] payload,int domain)throws Exception{
@@ -238,6 +239,10 @@ final class SyncClient {
     byte[] membership=SyncCrypto.membership(state.getJSONObject("membership"));
     String flags=generation+":"+prefs.getLong(AutoClipboardBridge.GENERATION,0)+":"+PersonalReset.generation(context)+":"+state.getJSONObject("identity").getString("device");
     return SyncCrypto.b64(SyncCrypto.sha(SyncCrypto.concat(membership,SyncCrypto.bytes(flags))));
+  }
+  String automaticLearningScope()throws Exception{
+    long generation=prefs.getLong("generation",0);if(!connected()||!permitted(1,generation))return "";
+    return SyncCrypto.b64(SyncCrypto.sha(SyncCrypto.concat(SyncCrypto.membership(state.getJSONObject("membership")),SyncCrypto.bytes("learning:"+generation+":"+PersonalReset.generation(context)+":"+state.optString("endpoint")))));
   }
   void queueAutomaticText(String text,String expectedScope)throws Exception{
     SyncCrypto.require(AutoClipboardState.eligible(text));refreshMembership();
@@ -266,13 +271,13 @@ final class SyncClient {
       int domain=wire.getInt("domain");
       long generation=row.getLong("generation");
       if(!permitted(domain,generation)||(row.has("automaticGeneration")&&(!prefs.getBoolean(AutoClipboardBridge.ENABLED,false)||row.getLong("automaticGeneration")!=prefs.getLong(AutoClipboardBridge.GENERATION,0)))){
-        out.remove(0);
-        save();
+        if(domain==1){state=LearningDeltaPublication.discardLearning(state,0,store::save);out=state.getJSONArray("outbox");}
+        else{out.remove(0);save();}
         continue;
       }
       if(wire.getLong("expiresAt")<=now()){
-        out.remove(0);
-        save();
+        if(domain==1){state=LearningDeltaPublication.discardLearning(state,0,store::save);out=state.getJSONArray("outbox");}
+        else{out.remove(0);save();}
         continue;
       }
       if(!SyncCrypto.u(wire,"epoch").equals(SyncCrypto.u(state.getJSONObject("membership"),"epoch")))throw new IOException("设备组已变化，有尚未发送的内容。请在共享文本中重新发送");
@@ -540,7 +545,7 @@ final class SyncClient {
     if(automaticPass!=null&&!new ClipboardLiveStore(context).available()&&(mask==2||!automaticIncoming.isEmpty()))automatic.completedPass(automaticPass,automaticIncoming,!orderedFallback&&SyncPhasePolicy.clipboardDrained(mask,events.length()),generation,automaticGeneration,privacyEpoch);
     flushOutbox();
     synchronized(CONSENT_LOCK){checkPass(generation,membership,privacyEpoch);}
-    if((mask&1)!=0&&learning()&&permitted(1,generation)&&!new LearningCoordinator(context.getFilesDir(),new File(context.getFilesDir(),"Shared")).requiresPrivateRecovery()){
+    if(preferredAutomaticDomain!=2&&(mask&1)!=0&&learning()&&permitted(1,generation)&&!new LearningCoordinator(context.getFilesDir(),new File(context.getFilesDir(),"Shared")).requiresPrivateRecovery()){
       LearningModel export=new LearningModel();
       File shared=new File(context.getFilesDir(),"Shared");
       String current=new LearningSnapshotFile(shared).read();
@@ -548,28 +553,30 @@ final class SyncClient {
       File checkpoint=new File(context.getFilesDir(),"learning-checkpoint-v1.json");
       if(checkpoint.isFile())export.merge(RimeCheckpoint.decode(AppFiles.read(checkpoint,RimeCheckpoint.MAX_STATE_BYTES)).model.export());
       export.mergePersonalLexicon(new PersonalLexicon(shared).synchronizationSnapshot());
-      String text=export.export(),digest=SyncCrypto.b64(SyncCrypto.sha(SyncCrypto.bytes(text)));
-      String publication=group()+"/"+state.getJSONObject("membership").get("epoch")+"/"+digest;
-      if(!publication.equals(state.optString("publishedDigest"))&&permitted(1,generation)){
+      LearningDeltaPublication.Prepared publication=LearningDeltaPublication.prepare(export,group(),SyncCrypto.u(state.getJSONObject("membership"),"epoch"),state.optString("endpoint"),privacyEpoch,state.optJSONObject(LearningDeltaPublication.CHECKPOINT),now(),state.optBoolean(LearningDeltaPublication.REPAIR,false));
+      if(publication.payload!=null&&permitted(1,generation)){
         synchronized(CONSENT_LOCK){
           checkPass(generation,membership,privacyEpoch);SyncCrypto.require(permitted(1,generation));
-          JSONObject wire=reserve(SyncCrypto.bytes(text),1);
-          state.getJSONArray("outbox").put(new JSONObject().put("wire",wire).put("generation",generation));
-          save();
+          // Reserve the deterministic nonce sequence first. The encrypted
+          // envelope, outbox and delta/repair baseline then commit together.
+          state=LearningDeltaPublication.enqueue(state,publication,generation,(payload,reserved)->SyncCrypto.seal(payload,1,reserved,now()),next->{store.save(next);state=next;});
         }
         flushOutbox();
-        synchronized(CONSENT_LOCK){
-          checkPass(generation,membership,privacyEpoch);SyncCrypto.require(permitted(1,generation));
-          state.put("publishedDigest",publication);
-          save();
-        }
       }
     }
     if((mask&1)!=0&&learning()&&permitted(1,generation)){
-      try{new RecentLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body),()->permitted(1,generation),this::save).synchronize();}
+      try{new RecentLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body),()->permitted(1,generation),this::save).synchronize(preferredAutomaticDomain==0);}
       catch(Exception unsupportedOrUnavailable){/* v1 and clipboard already completed; recency stays cumulative-only. */}
     }
+    if(prefs.getBoolean(CloudLearningStore.ENABLED,false)||prefs.getBoolean(CloudLearningStore.REVOKE,false))try{new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).synchronize(preferredAutomaticDomain==0);}catch(Exception optionalCloud){/* Durable cloud pending state and legacy input stay available. */}
   }
+  void configureCloudLearning(boolean enabled,boolean authorizeRank)throws Exception{
+    if(!enabled){prefs.edit().putBoolean(CloudLearningStore.ENABLED,false).putBoolean(CloudLearningStore.RANK,false).putBoolean(CloudLearningStore.VALID,false).putBoolean(CloudLearningStore.REVOKE,connected()).commit();PersonalChangeSignal.notifyChanged(context);if(!connected())return;}
+    SyncCrypto.require(connected());new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).configure(enabled,authorizeRank);
+  }
+  void synchronizeCloudLearning()throws Exception{SyncCrypto.require(connected());new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).synchronize(true);}
+  void authorizeCloudRanking()throws Exception{SyncCrypto.require(connected());new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).authorizeRank();}
+  JSONObject cloudLearningStatus()throws Exception{return new CloudLearningStore(context).status();}
   void disconnect()throws Exception{
     consent(false,false);
     save();

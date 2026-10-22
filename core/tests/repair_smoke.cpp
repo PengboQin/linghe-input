@@ -1,4 +1,5 @@
 #include "private_input.h"
+#include "pinyin_text.h"
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -45,7 +46,21 @@ int main(int argc, char **argv) {
   show(s, "shijei");
   check(has(repairs(s), "世界"), "shijei repairs to 世界 (transposition)");
   show(s, "nihao");
-  check(repairs(s).empty(), "exact nihao offers no repairs");
+  check(!has(repairs(s), "你好"), "exact native 你好 is not shadowed by a repair");
+  check(!repairs(s).empty(), "exact input retains dictionary-validated fallback corrections");
+  pi_load_candidate_batch(s, 0, 32);
+  check(std::string(pi_batch_candidate_text(s, 0)) == "你好", "exact nihao keeps native first choice while fallback remains available");
+  show(s, "shih");
+  pi_load_candidate_batch(s, 0, 32);
+  check(std::string(pi_batch_candidate_text(s, 0)) == "时候", "unfinished native shih keeps 时候 available");
+  check(private_input::pinyin::alphabetic_candidate_priority("shih", "shi hou") >
+        private_input::pinyin::alphabetic_candidate_priority("shih", "shi", true),
+        "native unfinished 时候 precedes edited 是 independently of context score");
+  show(s, "csm");
+  pi_load_candidate_batch(s, 0, 32);
+  bool meal = false;
+  for (size_t i=0; i<32; ++i) if (std::string(pi_batch_candidate_text(s,i)) == "吃什么") meal=true;
+  check(meal, "csm retains native abbreviation 吃什么 without forcing its full rank");
   show(s, "nihap");
   check(!has(repairs(s), "你好"), "substitution-only typo is not rewritten as a repair");
   // Commit a repair: the suffix is replaced, the live composition ends.

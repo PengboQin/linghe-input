@@ -37,6 +37,7 @@ assert len(categories)==12
 (B/'assets/symbols.json').write_text(json.dumps({'version':1,'source':'apple/iOS/Keyboard/SymbolCatalog.swift','categories':categories},ensure_ascii=False,indent=2))
 for name in ['pinyin-syllables.txt','nine-lexicon.bin','continuation.bin']:shutil.copy2(R/'resources/semantic'/name,B/'assets'/name)
 for name in ['LEXICON.json','CONTINUATION.json','PINYIN.json']:shutil.copy2(R/'resources/semantic'/name,B/'assets/licenses'/name)
+shutil.copy2(R/'android/tests/fixtures/cloud-component-v1.json',B/'assets/cloud-component-fixture-v1.json')
 shutil.copy2(R/'vendor/zxing/LICENSE',B/'assets/licenses/ZXing-LICENSE')
 import re,html
 (B/'assets/licenses/BouncyCastle-LICENSE.txt').write_text(html.unescape(re.sub('<[^>]+>','',(R/'vendor/bouncycastle/LICENSE.html').read_text())))
@@ -47,7 +48,11 @@ classes.mkdir()
 run([tools/'aapt2','link','-o',B/'resources.apk','-I',sdk,'--manifest',R/'android/app/src/main/AndroidManifest.xml','--java',B/'generated','-A',B/'assets',compiled])
 relay=''
 private_config=None # One release; endpoint is saved by the user or read from QR.
-config_java=B/'generated/live/linghe/privateinput/SyncBuildConfig.java';config_java.parent.mkdir(parents=True,exist_ok=True);config_java.write_text('package live.linghe.privateinput; final class SyncBuildConfig {static final String DEFAULT_ENDPOINT='+json.dumps(relay)+';}')
+config_java=B/'generated/live/linghe/privateinput/SyncBuildConfig.java';config_java.parent.mkdir(parents=True,exist_ok=True);fingerprint=lambda rows:hashlib.sha256('\n'.join(sorted(str(p.relative_to(R))+':'+hashlib.sha256(p.read_bytes()).hexdigest() for p in rows)).encode()).hexdigest()
+core_hash=fingerprint([p for p in (R/'core').rglob('*') if p.is_file() and p.suffix in ['.h','.hpp','.c','.cpp']])
+resource_hash=fingerprint([p for p in (R/'resources/rime').rglob('*') if p.is_file()]+[R/('resources/semantic/'+name) for name in ['pinyin-syllables.txt','nine-lexicon.bin','continuation.bin']])
+policy_hash=fingerprint([R/('android/app/src/main/java/live/linghe/privateinput/'+name+'.java') for name in ['InputQuality','PinyinMatch','PinyinCorrector','CommonExpressionOrder']])
+config_java.write_text('package live.linghe.privateinput; final class SyncBuildConfig {static final String DEFAULT_ENDPOINT='+json.dumps(relay)+';static final String CORE_HASH='+json.dumps(core_hash)+';static final String RESOURCE_HASH='+json.dumps(resource_hash)+';static final String POLICY_HASH='+json.dumps(policy_hash)+';}')
 qr=R/'vendor/zxing/core-3.5.3.jar';bc=R/'vendor/bouncycastle/bcprov-android.jar'
 java=list((R/'android/app/src/main/java').rglob('*.java'))+list((B/'generated').rglob('*.java'))
 run([jdk/'bin/javac','-encoding','UTF-8','--release','8','-classpath',str(sdk)+os.pathsep+str(qr)+os.pathsep+str(bc),'-d',classes,*java])

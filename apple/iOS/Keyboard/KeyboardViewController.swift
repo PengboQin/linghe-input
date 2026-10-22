@@ -6,10 +6,11 @@ import OSLog
 private struct KeyboardCompositionHost: InlineCompositionHost {
     let proxy: UITextDocumentProxy
     let compositionDocument: UUID?
+    var markObserved: ((String) -> Void)?
     var compositionBefore:String? { proxy.documentContextBeforeInput }
     var compositionAfter:String? { proxy.documentContextAfterInput }
     var compositionSelection:String? { proxy.selectedText }
-    func markComposition(_ text:String,selection:NSRange) { proxy.setMarkedText(text,selectedRange:selection) }
+    func markComposition(_ text:String,selection:NSRange) { proxy.setMarkedText(text,selectedRange:selection); markObserved?(text) }
     func unmarkComposition() { proxy.unmarkText() }
 }
 
@@ -111,6 +112,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private var learningWorkGeneration:UInt64 = 0
     private var learningRefreshFailures = 0
     private var learningPreparationID:UUID?
+    private var learningMaintenance = LearningMaintenanceBoundary()
+    private typealias DecisionTrace = KeyboardDecisionTrace<ActivityArchiveCapture.DiagnosticScope>
+    private var decisionTrace: DecisionTrace?
+    private var decisionSnapshotIDs = Set<String>()
+    private var diagnosticMarkedRequest: (text: String, scope: ActivityArchiveCapture.DiagnosticScope)?
+    private var pendingDecisionSelection: DecisionTrace.Selection?
     private var pressedKeyboardControls=Set<ObjectIdentifier>()
     private var builtInputModeSwitchKey:Bool?
     private var syncingAppearance = false
@@ -128,7 +135,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private let inlineComposition = InlineComposition()
     private var compositionPosition = KeyboardPreferences.compositionPosition
     private var sharedCompositionPosition = UserDefaults.standard.string(forKey:"last-shared-composition-position") ?? KeyboardPreferences.compositionPosition
-    private var compositionHost:KeyboardCompositionHost { .init(proxy:textDocumentProxy,compositionDocument:documentID) }
+    private var compositionHost:KeyboardCompositionHost {
+        .init(proxy:textDocumentProxy,compositionDocument:documentID,markObserved:{ [weak self] text in
+            guard let self, let scope = self.diagnosticScope() else { return }
+            self.diagnosticMarkedRequest = (text, scope)
+        })
+    }
     private var lastRevision = -1
     private var preferenceObserver: NSObjectProtocol?
     private var preferencesPending = false
@@ -177,27 +189,22 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private var geometryCompact = false
     private var heightConstraint: NSLayoutConstraint!
     private var heightExtra = KeyboardHeight.defaultExtra
-    private var persistedHeightExtra: Double?
     private var sharedHeightExtra = UserDefaults.standard.object(forKey:"last-shared-height-extra") as? Double ?? KeyboardPreferences.keyboardHeightExtra
     private var sharedHeightRevision = UserDefaults.standard.string(forKey:"last-shared-height-revision")
-    private let heightAdjustment = KeyboardHeightAdjustmentView()
-    private var adjustingHeight = false
     private let candidateBar = UIStackView()
     private let clipboardCandidate=ClipboardPasteCandidateView()
     private var clipboardState=ClipboardCandidateState()
     private var clipboardKnown:ClipboardCandidatePresentation.Snapshot?
     private var clipboardLoad=ClipboardCandidateLoadState()
+    private var clipboardActivity=ClipboardCandidateActivity()
 
     private let expand = CandidateExpansionButton(type: .custom)
     private let toolbar = UIStackView()
-    private let settingsButton = UIButton(type: .system)
     private weak var languageButton:UIButton?
     private var menuSignature=""
     private let keys = UIStackView()
     private let keyboardBody = UIStackView()
     private let footer = UIStackView()
-    private let sharedTextPanel = SharedTextPanel()
-    private var systemRefreshRequested=false
     private var systemWordsLoading=false
     private var systemWords: SupplementaryLexicon?
     private var appliedSystemWords: Bool?
@@ -215,8 +222,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private var archiveTimer: Timer?
     private var clipboardTimer:Timer?
     private var clipboardObservers:[NSObjectProtocol]=[]
-    private var sharedTextRefreshTask:Task<Void,Never>?
-    private var sharedTextRefreshPending=false
     private var ownCommitTracker=OwnCommitCorrectionTracker()
     private let predictionLog=Logger(subsystem:"live.linghe.privateinput",category:"prediction")
     // UIKit's nonoptional Swift accessor can bridge nil before the host proxy
@@ -278,6 +283,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
     }
     override func loadView() {
+        KeyboardRuntimeDiagnostics.record(.loadViewBegin)
         heightExtra=KeyboardHeight.normalized(UserDefaults.standard.object(forKey:"local-height-extra") as? Double ?? KeyboardPreferences.keyboardHeightExtra)
         let keyboard=KeyboardInputView(contentHeight:desiredKeyboardHeight(width:UIScreen.main.bounds.width))
         // The host asks for intrinsic size during first presentation, before
@@ -288,7 +294,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         // touches into the keyboard underneath; footer and header controls retain
         // their normal native hit testing outside these exact collection bounds.
         keyboard.scrollHitTest = { [weak self] point,event in
-            guard let self,!self.sharedTextPanel.isShowing else { return nil }
+            guard let self else { return nil }
             if self.expanded { return self.scrollSurfaceHit(self.grid, point: point, event: event, excluding: [self.expand]) }
             let controls: [UIView] = [self.expand, self.footer]
             if let hit = self.scrollSurfaceHit(self.strip, point: point, event: event, excluding: controls) { return hit }
@@ -301,6 +307,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
         keyboard.prepareAppearance = { [weak self] in self?.synchronizeAppearance() }
         view=keyboard;inputView=keyboard
+        KeyboardRuntimeDiagnostics.record(.loadViewEnd)
     }
     private func scrollSurfaceHit(_ scroll: UIScrollView, point: CGPoint, event: UIEvent?, excluding controls: [UIView] = []) -> UIView? {
         guard let hit = KeyboardScrollSurfaceRouting.hit(in: scroll, point: point, root: view, excluding: controls, event: event) else { return nil }
@@ -311,6 +318,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         return hit
     }
     override func viewDidLoad() {
+        KeyboardRuntimeDiagnostics.record(.viewLoadBegin)
         super.viewDidLoad()
         loadSymbolUsage()
         privacyResetObserver=PersonalDataReset.observe {[weak self] in
@@ -320,6 +328,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             self.refreshSymbolPage();self.symbolGrid.reloadData()
         }
         let checker=englishChecker
+        KeyboardRuntimeDiagnostics.record(.engineCreateBegin)
         engine = NativeEngine(retainPredictionProbe: true,mixedEnglishProvider: { prefix in
             guard UITextChecker.availableLanguages.contains("en_US") else { return [] }
             let range=NSRange(location:0,length:prefix.utf16.count)
@@ -329,6 +338,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             words += checker.guesses(forWordRange:range,in:prefix,language:"en_US") ?? []
             return words
         })
+        KeyboardRuntimeDiagnostics.record(.engineCreateEnd, [.ready: engine.ready ? 1 : 0])
         KeyboardPreferences.observeUpdates()
         preferenceObserver = NotificationCenter.default.addObserver(forName: KeyboardPreferences.updated, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
@@ -336,7 +346,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
         inputView?.allowsSelfSizing = true
         heightExtra = KeyboardHeight.normalized(UserDefaults.standard.object(forKey:"local-height-extra") as? Double ?? KeyboardPreferences.keyboardHeightExtra)
-        persistedHeightExtra=heightExtra
         heightConstraint = view.heightAnchor.constraint(equalToConstant: (inputView as? KeyboardInputView)?.contentHeight ?? desiredKeyboardHeight(width:UIScreen.main.bounds.width))
         heightConstraint.priority = .init(999); heightConstraint.isActive = true
         view.backgroundColor = .clear;view.isOpaque=false
@@ -396,28 +405,10 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         clipboardCandidate.requestForNativePress = { [weak self] in self?.clipboardRequest() }
         clipboardCandidate.providers = { [weak self] providers,request in self?.pasteClipboardProviders(providers,request:request) }
         clipboardCandidate.insertKnown = { [weak self] snapshot in
-            self?.insertClipboardText(snapshot.text,request:snapshot.request)
+            guard let self,snapshot.permitsPresentation(readPaused:UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.bool(forKey:"automatic-clipboard-read-paused")==true) else{return}
+            self.insertClipboardText(snapshot.text,request:snapshot.request)
         }
 
-        heightAdjustment.translatesAutoresizingMaskIntoConstraints = false; header.addSubview(heightAdjustment)
-        NSLayoutConstraint.activate([heightAdjustment.leadingAnchor.constraint(equalTo:header.leadingAnchor),heightAdjustment.trailingAnchor.constraint(equalTo:header.trailingAnchor),heightAdjustment.topAnchor.constraint(equalTo:header.topAnchor),heightAdjustment.bottomAnchor.constraint(equalTo:header.bottomAnchor)])
-        heightAdjustment.isHidden = true
-        heightAdjustment.change = { [weak self] value, persist in self?.configureHeight(value,persist:persist) }
-        heightAdjustment.done = { [weak self] in self?.finishHeightAdjustment() }
-        settingsButton.setImage(UIImage(systemName: "slider.horizontal.3"), for: .normal)
-        settingsButton.accessibilityLabel = "键盘设置"; settingsButton.accessibilityIdentifier = "keyboard-settings"
-        settingsButton.widthAnchor.constraint(equalToConstant: 40).isActive = true
-        settingsButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
-        settingsButton.showsMenuAsPrimaryAction = true
-        toolbar.addArrangedSubview(settingsButton)
-        let shared = UIButton(type: .system); shared.setImage(UIImage(systemName: "clipboard"), for: .normal)
-        shared.accessibilityLabel = "共享文本"; shared.accessibilityIdentifier = "open-shared-text"
-        shared.widthAnchor.constraint(equalToConstant: 40).isActive = true
-        shared.heightAnchor.constraint(equalToConstant: 44).isActive = true
-        shared.addAction(UIAction { [weak self] _ in self?.openSharedText() }, for: .touchUpInside)
-        toolbar.addArrangedSubview(shared)
-        let status = UILabel(); status.font = .systemFont(ofSize: 13); status.textColor = InputThemeColors.secondary; status.accessibilityIdentifier = "learning-status"
-        toolbar.addArrangedSubview(status)
         // Keep the normal keyboard in Auto Layout while the candidate list
         // covers it. Removing it lets UIKit self-fit an almost zero-height
         // collection view, turning a swipe into a candidate tap.
@@ -428,22 +419,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         keyboardBody.axis = .vertical; keyboardBody.spacing = 4; keyboardBody.accessibilityIdentifier = "keyboard-body"
         footer.axis = .horizontal; footer.spacing = 4; footerHeight=footer.heightAnchor.constraint(equalToConstant:44);footerHeight.priority = .init(999);footerHeight.isActive=true
         keyboardBody.addArrangedSubview(keys); keyboardBody.addArrangedSubview(footer); root.addArrangedSubview(keyboardBody)
-        addChild(sharedTextPanel);sharedTextPanel.view.translatesAutoresizingMaskIntoConstraints = false;view.addSubview(sharedTextPanel.view)
-        NSLayoutConstraint.activate([sharedTextPanel.view.leadingAnchor.constraint(equalTo: root.leadingAnchor), sharedTextPanel.view.trailingAnchor.constraint(equalTo: root.trailingAnchor), sharedTextPanel.view.topAnchor.constraint(equalTo: root.topAnchor), sharedTextPanel.view.bottomAnchor.constraint(equalTo: root.bottomAnchor)])
-        sharedTextPanel.didMove(toParent:self)
-        sharedTextPanel.select = { [weak self] id in self?.insertSharedText(id) }
-        sharedTextPanel.refresh = { [weak self] in self?.openSharedText() }
-        sharedTextPanel.didDismiss = { [weak self] in self?.render() }
-        sharedTextPanel.availabilityIssue = { [weak self] in
-            guard let self else { return "共享文本暂不可用" }
-            guard self.hasFullAccess else { return "请允许完全访问，再使用共享文本。" }
-            return ClipboardCacheCoordinator.permitted(fullAccess:true) ? nil:"共享文本已暂停，请在主 App 开启。"
-        }
         chineseLayout = configuredChineseLayout()
         english = startEnglish; layout = english ? .letters : chineseLayout
         _ = engine.nineKey(!english && chineseLayout == .nine); _ = engine.switchToEnglish(english)
         synchronizeAppearance();updateKeyboardGeometry(); buildKeys(); render()
         if KeyboardPreferences.systemLexicon { loadSystemWords() }
+        KeyboardRuntimeDiagnostics.record(.viewLoadEnd, [.ready: engine.ready ? 1 : 0])
     }
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -468,39 +449,18 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         geometrySize=view.bounds.size;geometryCompact=compact
         let footer=(compact ? 32.0:44.0)+CGFloat(heightExtra)/(compact ? 8:4)
         if footerHeight?.constant != footer {footerHeight?.constant=footer}
-        let header:CGFloat=adjustingHeight ? 64:(compact ? 62:64)
+        let header:CGFloat=compact ? 62:64
         if headerHeight?.constant != header {headerHeight?.constant=header}
         let preedit:CGFloat=compact ? 18:20
         if preeditHeight?.constant != preedit {preeditHeight?.constant=preedit}
-        heightAdjustment.compact=compact
-        if !adjustingHeight {heightAdjustment.update(heightExtra)}
         if candidateTop != nil { updateHeaderFrames() }
         if changed { [strip,grid,symbolGrid].forEach{$0.collectionViewLayout.invalidateLayout()} }
     }
-    private func configureHeight(_ value:Double,persist:Bool = true) {
-        let normalized=KeyboardHeight.normalized(value),changed=heightExtra != normalized
-        guard changed || persist else{return}
-        heightExtra=normalized
-        if persist,persistedHeightExtra != heightExtra {
-            if hasFullAccess {
-                sharedHeightExtra=heightExtra
-                UserDefaults.standard.set(heightExtra,forKey:"last-shared-height-extra")
-                UserDefaults.standard.removeObject(forKey:"local-height-extra")
-                KeyboardPreferences.keyboardHeightExtra=heightExtra
-                sharedHeightRevision=KeyboardPreferences.keyboardHeightRevision
-                UserDefaults.standard.set(sharedHeightRevision,forKey:"last-shared-height-revision")
-            } else { UserDefaults.standard.set(heightExtra,forKey:"local-height-extra") }
-            persistedHeightExtra=heightExtra
-        }
-        if persist {heightAdjustment.update(heightExtra)}
-        if changed {updateKeyboardGeometry();view.setNeedsLayout()}
-        if persist {refreshSettingsMenus()}
-    }
-    private func beginHeightAdjustment() {
-        expanded=false;adjustingHeight=true;heightAdjustment.update(heightExtra);updateKeyboardGeometry();render()
-    }
-    private func finishHeightAdjustment() {
-        configureHeight(heightExtra);adjustingHeight=false;updateKeyboardGeometry();render()
+    private func configureHeight(_ value:Double,persist:Bool=false) {
+        // The App owns height settings; the keyboard only applies a snapshot.
+        let normalized=KeyboardHeight.normalized(value)
+        guard heightExtra != normalized else{return}
+        heightExtra=normalized;updateKeyboardGeometry();view.setNeedsLayout()
     }
     private func updateHeaderFrames() {
         let top=preeditRow.isHidden ? 0:preeditHeight.constant
@@ -518,7 +478,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
                 DispatchQueue.main.async {
                     guard let self else { return }
                     self.systemWordsLoading=false;self.systemWords=KeyboardPreferences.systemLexicon ? words:nil;self.appliedSystemWords=nil;self.applySystemWords()
-                    if self.systemRefreshRequested { self.systemRefreshRequested=false;self.learningStatus="词库已更新" };self.render()
+                    self.render()
                 }
             }
         }
@@ -532,7 +492,8 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         if engine.setSupplementaryLexicon(enabled ? (systemWords ?? SupplementaryLexicon(pairs:[])):SupplementaryLexicon(pairs:[])) { appliedSystemWords=enabled }
     }
     override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated);keyboardPresentation &+= 1;keyboardAppeared=false;learningRefreshPending=true;learningRefreshFailures=0;pressedKeyboardControls.removeAll();synchronizeAppearance();applyPreferences()
+        KeyboardRuntimeDiagnostics.record(.viewWillAppear)
+        super.viewWillAppear(animated);learningMaintenance.willAppear();cancelLearningForInteraction();keyboardPresentation &+= 1;keyboardAppeared=false;learningRefreshPending=true;learningRefreshFailures=0;pressedKeyboardControls.removeAll();synchronizeAppearance();applyPreferences()
         archiveEpoch = UUID().uuidString
         ActivityArchiveCapture.shared.refresh(permitted: hasFullAccess, force: true)
         if layout == .symbols { refreshSymbolPage();symbolGrid.reloadData() }
@@ -544,11 +505,14 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         #endif
     }
     override func viewDidAppear(_ animated:Bool) {
-        super.viewDidAppear(animated);keyboardAppeared=true;scheduleLearningAfterReveal();refreshAutomaticClipboard()
+        KeyboardRuntimeDiagnostics.record(.viewDidAppear)
+        super.viewDidAppear(animated);keyboardAppeared=true;refreshAutomaticClipboard()
+        engine.stageCachedCloudLearningBootstrap(publish: learningPublisher)
         clipboardTimer?.invalidate()
         let clipboardTick=Timer(timeInterval:1,repeats:true) { [weak self] _ in
             guard let self,self.keyboardAppeared,self.viewIfLoaded?.window != nil else{return}
             self.refreshAutomaticClipboard()
+            self.engine.stageCachedCloudLearningBootstrap(publish: self.learningPublisher)
         }
         clipboardTimer=clipboardTick;RunLoop.main.add(clipboardTick,forMode:.common)
         for observer in clipboardObservers {NotificationCenter.default.removeObserver(observer)};clipboardObservers=[]
@@ -556,18 +520,18 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             clipboardObservers.append(NotificationCenter.default.addObserver(forName:name,object:nil,queue:.main) { [weak self] _ in
                 guard let self,self.keyboardAppeared,self.viewIfLoaded?.window != nil else{return}
                 self.refreshAutomaticClipboard()
-                if self.sharedTextPanel.isShowing {self.refreshVisibleSharedText()}
             })
         }
         archiveTimer?.invalidate()
         let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
-            guard let self, self.view.window != nil else { return }
+            guard let self,self.keyboardAppeared,self.viewIfLoaded?.window != nil else { return }
             ActivityArchiveCapture.shared.refresh(permitted: self.hasFullAccess)
-            if self.hasFullAccess { ActivityArchiveCapture.shared.observeClipboardIfPermitted() };self.refreshAutomaticClipboard()
+            if self.hasFullAccess,self.textDocumentProxy.isSecureTextEntry == false { ActivityArchiveCapture.shared.observeClipboardIfPermitted() };self.refreshAutomaticClipboard()
         }
         archiveTimer = timer; RunLoop.main.add(timer, forMode: .common)
     }
     private func refreshAutomaticClipboard() {
+        guard keyboardAppeared,viewIfLoaded?.window != nil else{return}
         refreshClipboardCandidateCache()
         ClipboardCacheCoordinator.automaticKeyboardPass(fullAccess:hasFullAccess,
             sensitive:textDocumentProxy.isSecureTextEntry != false,validating:{ [weak self] in
@@ -579,6 +543,19 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     // read only by UIPasteControl's explicit user action or the existing opted-in
     // automatic cache, never by this candidate's reveal/render path.
     private var clipboardHasPrimary:Bool {engine == nil || !engine.preedit.isEmpty || (english && !englishWord().isEmpty)}
+    private var clipboardPresentationIdle:Bool {
+        clipboardActivity.mayPresent(at:Date.timeIntervalSinceReferenceDate,hasComposition:clipboardHasPrimary,
+            hasInteraction:!pressedKeyboardControls.isEmpty || expanded || expand.isTracking || deleteDelay != nil || deleteRepeat != nil ||
+            strip.isTracking || grid.isTracking || strip.isDragging || grid.isDragging || strip.isDecelerating || grid.isDecelerating)
+    }
+    private func observeClipboardVersion(_ version:Int) {
+        clipboardState.observe(version:version,automaticEligible:clipboardPresentationIdle)
+    }
+    private func noteClipboardInput() {
+        clipboardActivity.noteInput(at:Date.timeIntervalSinceReferenceDate)
+        clipboardState.observe(version:UIPasteboard.general.changeCount);clipboardState.dismiss()
+        clipboardKnown=nil;clipboardLoad.cancel()
+    }
     private var clipboardScope:String {
         let prefs=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
         return [prefs?.string(forKey:"automatic-clipboard-scope") ?? "",
@@ -590,11 +567,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
         return [p?.string(forKey:"automatic-clipboard-cache-generation") ?? "",
                 p?.string(forKey:"clipboard-live-cache-generation") ?? "",
+                p?.string(forKey:"clipboard-preview-generation") ?? "",
                 String(p?.bool(forKey:"automatic-clipboard-read-paused")==true)].joined(separator:"|")
     }
     private var clipboardAllowed:Bool {
         guard keyboardAppeared,viewIfLoaded?.window != nil,hasFullAccess,documentID != nil,
-              textDocumentProxy.isSecureTextEntry == false,!adjustingHeight,!expanded,!sharedTextPanel.isShowing else{return false}
+              textDocumentProxy.isSecureTextEntry == false,!expanded else{return false}
         let board=UIPasteboard.general
         let excluded=["org.nspasteboard.ConcealedType","org.nspasteboard.TransientType","org.nspasteboard.AutoGeneratedType"]
         return board.numberOfItems==1 && board.hasStrings && !board.types.contains(where:excluded.contains)
@@ -606,14 +584,14 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func acceptsClipboard(_ request:ClipboardCandidateState.Request)->Bool {
         clipboardState.accepts(request,current:clipboardRequest(),allowed:clipboardAllowed,
-                               hasPrimary:clipboardHasPrimary,deleting:deletionPrediction.suppressed)
+                               hasPrimary:clipboardHasPrimary,deleting:!clipboardPresentationIdle)
     }
     private func updateClipboardCandidateVisibility() {
         let version=UIPasteboard.general.changeCount
-        clipboardState.observe(version:version)
-        let visible=clipboardState.available(version:version,allowed:clipboardAllowed,
-                    hasPrimary:clipboardHasPrimary,deleting:deletionPrediction.suppressed)
-        if let known=clipboardKnown,!acceptsClipboard(known.request) {clipboardKnown=nil}
+        observeClipboardVersion(version)
+        if let known=clipboardKnown,(!acceptsClipboard(known.request) || !known.permitsPresentation(readPaused:UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.bool(forKey:"automatic-clipboard-read-paused")==true)) {clipboardKnown=nil}
+        let visible=clipboardKnown != nil && clipboardState.available(version:version,allowed:clipboardAllowed,
+                    hasPrimary:clipboardHasPrimary,deleting:!clipboardPresentationIdle)
         let wasVisible = !clipboardCandidate.isHidden
         // A sync arrival may wait one idle tick; it must not remove the
         // continuation cell or control currently held by the user.
@@ -624,9 +602,9 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             if wasVisible {
                 let pending = !engine.preedit.isEmpty || !choices.isEmpty
                 preeditRow.isHidden=engine.preedit.isEmpty || inlineComposition.active
-                candidateBar.isHidden = !pending || adjustingHeight
-                toolbar.isHidden=pending || adjustingHeight
-                expand.isHidden = !pending || choices.isEmpty || adjustingHeight
+                candidateBar.isHidden = !pending
+                toolbar.isHidden=pending
+                expand.isHidden = !pending || choices.isEmpty
             }
             return
         }
@@ -635,7 +613,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func refreshClipboardCandidateCache() {
         let version=UIPasteboard.general.changeCount
-        clipboardState.observe(version:version)
+        observeClipboardVersion(version)
         if clipboardLoad.observe(version:version,scope:clipboardScope,generation:clipboardCacheFingerprint) {
             clipboardKnown=nil
         }
@@ -644,15 +622,21 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
               ClipboardCacheCoordinator.permitted(fullAccess:hasFullAccess) else{return}
         let p=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
         guard p?.bool(forKey:"automatic-clipboard-enabled")==true,
-              p?.bool(forKey:"automatic-clipboard-read-paused") != true,
               let scope=p?.string(forKey:"automatic-clipboard-scope"),!scope.isEmpty,
               let ticket=clipboardLoad.begin(request:request,eligible:true) else{return}
+        let generation=AppleClipboardOnce.generation
         DispatchQueue.global(qos:.utility).async { [weak self] in
-            let text=SharedClipboardCandidateReader.read(scope:scope,version:version,now:UInt64(Date().timeIntervalSince1970))
+            let result=SharedClipboardCandidateReader.read(scope:scope,version:version,now:UInt64(Date().timeIntervalSince1970),generation:generation)
             DispatchQueue.main.async { [weak self] in
-                guard let self,self.clipboardLoad.finish(ticket),self.acceptsClipboard(request),
-                      let text,ClipboardCandidateState.validText(text) else{return}
-                self.clipboardKnown = .init(request:request,text:text);self.updateClipboardCandidateVisibility()
+                guard let self,self.clipboardLoad.finish(ticket),self.acceptsClipboard(request),AppleClipboardOnce.generation==generation else{return}
+                switch result {
+                case .text(let text,let source):
+                    guard ClipboardCandidateState.validText(text) else{return}
+                    self.clipboardKnown = .init(request:request,text:text,receivedSystemWrite:source == .receivedWrite)
+                case .consumed:self.clipboardState.dismiss();self.clipboardKnown=nil
+                case .unavailable:return
+                }
+                self.updateClipboardCandidateVisibility()
             }
         }
     }
@@ -680,41 +664,41 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         expanded=false;publishedCandidates.reset();lastRevision = -1;render()
     }
     private func cancelLearningForInteraction() {
-        learningWorkGeneration &+= 1;deferredLearningRefresh?.cancel();deferredLearningRefresh=nil
+        learningWorkGeneration &+= 1;deferredLearningRefresh?.cancel();deferredLearningRefresh=nil;learningPreparationID=nil
     }
-    private var learningRefreshWindowAvailable:Bool {
-        keyboardAppeared && !expanded && !adjustingHeight && choices.isEmpty && pressedKeyboardControls.isEmpty &&
-        (layout == .nine || layout == .letters) &&
-        !strip.isTracking && !grid.isTracking && !strip.isDragging && !grid.isDragging &&
-        !strip.isDecelerating && !grid.isDecelerating && !expand.isTracking && !clipboardCandidate.isTrackingPaste
+    private func permitsHiddenLearning(_ token:UInt64) -> Bool {
+        learningMaintenance.permits(token,hasComposition:engine == nil || !engine.rawInput.isEmpty || !engine.preedit.isEmpty,
+            interacting:keyboardAppeared || !pressedKeyboardControls.isEmpty || expand.isTracking || clipboardCandidate.isTrackingPaste)
     }
-    private func scheduleLearningAfterReveal() {
-        guard learningRefreshWindowAvailable,learningRefreshPending,learningRefreshFailures<3,deferredLearningRefresh == nil,learningPreparationID == nil,engine != nil,engine.ready,
-              engine.rawInput.isEmpty,engine.preedit.isEmpty else{return}
+    private func scheduleHiddenLearningRefresh(_ token:UInt64) {
+        guard permitsHiddenLearning(token),learningRefreshPending,learningRefreshFailures<3,deferredLearningRefresh == nil,learningPreparationID == nil,engine != nil,engine.ready else{return}
         let presentation=keyboardPresentation,revision=engine.revision,generation=learningWorkGeneration
+        KeyboardRuntimeDiagnostics.record(.checkpointScheduled)
         let work=DispatchWorkItem { [weak self] in
             guard let self,self.learningWorkGeneration==generation,self.keyboardPresentation==presentation else{return}
             self.deferredLearningRefresh=nil
-            guard self.learningRefreshPending,self.learningRefreshWindowAvailable,self.view.window != nil,
-                  self.engine.revision==revision,self.engine.rawInput.isEmpty,self.engine.preedit.isEmpty else {self.scheduleLearningAfterReveal();return}
-            // Still a serialized main-thread checkpoint, not background work.
-            // Wait for an actual quiet window; any input cancels the pending job.
-            self.prepareIdleLearningRefresh(presentation:presentation,revision:revision,generation:generation)
+            guard self.learningRefreshPending,self.permitsHiddenLearning(token),self.engine.revision==revision else{return}
+            self.prepareHiddenLearningRefresh(token:token,presentation:presentation,revision:revision,generation:generation)
         }
-        deferredLearningRefresh=work;DispatchQueue.main.asyncAfter(deadline:.now()+1.5,execute:work)
+        // Best effort after dismissal, not an entitlement to background time.
+        // Suspension leaves the native local learner intact for a later hide.
+        deferredLearningRefresh=work;DispatchQueue.main.asyncAfter(deadline:.now()+0.25,execute:work)
     }
-    private func prepareIdleLearningRefresh(presentation:UInt64,revision:Int,generation:UInt64) {
+    private func prepareHiddenLearningRefresh(token:UInt64,presentation:UInt64,revision:Int,generation:UInt64) {
+        guard learningRefreshPending, permitsHiddenLearning(token), keyboardPresentation == presentation,
+              learningWorkGeneration == generation, engine.revision == revision else { return }
+        KeyboardRuntimeDiagnostics.record(.checkpointPreflight)
         let identifier=UUID();learningPreparationID=identifier
         engine.prepareLearningRefresh(publish:learningPublisher) { [weak self] preparation in
             guard let self,self.learningPreparationID==identifier else{return}
             self.learningPreparationID=nil
+            KeyboardRuntimeDiagnostics.record(.checkpointPreflightEnd)
             guard self.keyboardPresentation==presentation,self.learningWorkGeneration==generation,
-                  self.learningRefreshPending,self.learningRefreshWindowAvailable,self.view.window != nil,
-                  self.engine.revision==revision,self.engine.rawInput.isEmpty,self.engine.preedit.isEmpty,
+                  self.learningRefreshPending,self.permitsHiddenLearning(token),self.engine.revision==revision,
                   self.engine.isCurrentLearningRefreshPreparation(preparation,publish:self.learningPublisher) else {
-                self.scheduleLearningAfterReveal();return
+                return
             }
-            self.refreshLearning(explicit:false,preparation:preparation)
+            self.refreshLearning(explicit:false,preparation:preparation,hiddenToken:token)
         }
     }
     private func synchronizeAppearance() {
@@ -732,7 +716,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             for collection in [strip,grid,symbolGrid] {
                 collection.backgroundColor = InputThemeColors.rail.withAlphaComponent(0.02)
             }
-            sharedTextPanel.applyTheme()
             view.tintColor = InputThemeColors.accent
             composition.textColor = InputThemeColors.secondary
             toolbar.tintColor = InputThemeColors.accent
@@ -741,7 +724,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             style?.baseForegroundColor = InputThemeColors.accent
             expand.configuration = style; expand.tintColor = InputThemeColors.accent
             expand.setNeedsUpdateConfiguration()
-            heightAdjustment.applyTheme()
             applyKeyTheme(in: keys); applyKeyTheme(in: footer)
             sideScroll?.applyTheme(); categoryScroll?.applyTheme()
             for collection in [strip,grid,symbolGrid] {
@@ -766,10 +748,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
     }
     override func viewWillDisappear(_ animated: Bool) {
+        KeyboardRuntimeDiagnostics.record(.viewWillDisappear)
+        cancelDiagnosticComposition(reason: "keyboard_disappeared")
+        learningMaintenance.willDisappear();cancelLearningForInteraction()
         dismissCandidateMenus()
         archiveTimer?.invalidate(); archiveTimer = nil
         clipboardTimer?.invalidate();clipboardTimer=nil
-        sharedTextRefreshTask?.cancel();sharedTextRefreshTask=nil;sharedTextRefreshPending=false
         for observer in clipboardObservers {NotificationCenter.default.removeObserver(observer)};clipboardObservers=[]
         ActivityArchiveCapture.shared.suspendNetwork()
         keyboardPresentation &+= 1;keyboardAppeared=false;deferredLearningRefresh?.cancel();deferredLearningRefresh=nil
@@ -779,8 +763,13 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         if inlineComposition.active { NSLog("INLINE_END disappearing draft=%d",inlineComposition.draft.utf16.count) }
         #endif
         if inlineComposition.active { inlineComposition.leave(host:compositionHost);engine.clear();expanded=false }
-        if adjustingHeight { configureHeight(heightExtra);adjustingHeight=false }
-        cancelCandidatePage();cancelPrediction();ownCommitTracker.invalidate();engine.resetPredictionContext();cursorActive = false; keys.alpha = 1; stopDeletion(); sharedTextPanel.dismissPanel(); super.viewWillDisappear(animated)
+        cancelCandidatePage();cancelPrediction();ownCommitTracker.invalidate();engine.resetPredictionContext();cursorActive = false; keys.alpha = 1; stopDeletion(); super.viewWillDisappear(animated)
+    }
+    override func viewDidDisappear(_ animated:Bool) {
+        KeyboardRuntimeDiagnostics.record(.viewDidDisappear)
+        super.viewDidDisappear(animated)
+        pressedKeyboardControls.removeAll()
+        if let token=learningMaintenance.didDisappear() {scheduleHiddenLearningRefresh(token)}
     }
     private func configuredChineseLayout() -> Layout {
         let shared = KeyboardPreferences.chineseLayout
@@ -788,7 +777,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         return (UserDefaults.standard.string(forKey: "local-chinese-layout") ?? shared) == "pinyin26" ? .letters : .nine
     }
     private func applyPreferences() {
-        guard engine != nil, engine.preedit.isEmpty, !adjustingHeight else { return }
+        guard engine != nil, engine.preedit.isEmpty else { return }
         preferencesPending = false
         let sharedHeight=KeyboardPreferences.keyboardHeightExtra
         let heightRevision=KeyboardPreferences.keyboardHeightRevision
@@ -834,9 +823,9 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func refreshSettingsMenus() {
         let signature="\(chineseLayout)|\(compositionPosition)|\(engine.mixedEnglishEnabled)|\(lastRemember ?? true)|\(currentFeedback)|\(heightExtra)|\(hasFullAccess)"
-        guard menuSignature != signature || settingsButton.menu==nil else { return }
+        guard menuSignature != signature || languageButton?.menu==nil else { return }
         menuSignature=signature
-        let menu=settingsMenu();settingsButton.menu=menu;languageButton?.menu=menu
+        languageButton?.menu=settingsMenu()
     }
     private func settingsMenu() -> UIMenu {
         let layouts = [UIAction(title: "中文九宫格", state: chineseLayout == .nine ? .on : .off) { [weak self] _ in self?.configureChinese(.nine) }, UIAction(title: "中文26键", state: chineseLayout == .letters ? .on : .off) { [weak self] _ in self?.configureChinese(.letters) }]
@@ -872,8 +861,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
                 self.compositionPosition=value.0;self.render()
             }
         }
-        let heights = KeyboardHeight.presets.map { preset in UIAction(title:preset.title,state:heightExtra==preset.extra ? .on:.off) { [weak self] _ in self?.configureHeight(preset.extra) } }
-        let adjust = UIAction(title:"拖动微调…",image:UIImage(systemName:"arrow.up.and.down")) { [weak self] _ in self?.beginHeightAdjustment() }
         let access=UIAction(title:hasFullAccess ? "完全访问已开启":"完全访问未开启",image:UIImage(systemName:hasFullAccess ? "checkmark.shield":"shield"),attributes:.disabled) {_ in}
         let permissionHelp=UIMenu(title:"权限说明",children:[
             UIAction(title:"基础打字与本机纠错可用",attributes:.disabled) {_ in},
@@ -881,7 +868,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             UIAction(title:"在主 App 查看开启方法",attributes:.disabled) {_ in},
             UIAction(title:"返回键盘") { [weak self] _ in self?.render() }
         ])
-        return UIMenu(children: [UIMenu(title:"权限",children:[access,permissionHelp]),UIMenu(title:"布局与显示",children:layouts+[UIMenu(title:"键盘高度",children:heights+[adjust]),UIMenu(title:"拼音显示位置",children:positions)]), UIMenu(title:"词库与联想",children:[mixed,remember,refresh]), UIMenu(title:"按键触感",children:feedback)])
+        return UIMenu(children: [UIMenu(title:"权限",children:[access,permissionHelp]),UIMenu(title:"布局与显示",children:layouts+[UIMenu(title:"拼音显示位置",children:positions)]), UIMenu(title:"词库与联想",children:[mixed,remember,refresh]), UIMenu(title:"按键触感",children:feedback)])
     }
     private var currentFeedback: String { UserDefaults.standard.string(forKey: "local-key-feedback") ?? feedbackPreference }
     private func pressFeedback(_ key: FeedbackButton, pressed: Bool) {
@@ -980,7 +967,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         let space = button(layout == .numbers ? "0" : "空格") { [weak self] in
             guard let self, !self.cursorActive, Date.timeIntervalSinceReferenceDate > self.suppressSpaceUntil else { return }
             if self.layout == .numbers { self.insertLiteral("0") }
-            else if !self.english && !self.engine.preedit.isEmpty && !self.choices.isEmpty { self.choose(self.choices[0]) }
+            else if !self.english && !self.engine.preedit.isEmpty && !self.choices.isEmpty { self.choose(self.choices[0], method: "space") }
             else { self.type(" ") }
         }; space.titleLabel?.font = .systemFont(ofSize: 16); space.setContentHuggingPriority(.defaultLow, for: .horizontal); aligned.insertArrangedSubview(space, at: 1)
         if layout != .numbers {
@@ -1111,7 +1098,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func manageCandidate(_ candidate: InputCandidate, revision: Int, pinned: Bool?) {
         guard engine.revision == revision, !english else { return }
-        do { try engine.manage(candidate, pinned: pinned); render() }
+        do { try engine.manage(candidate, pinned: pinned);learningRefreshPending=true;learningRefreshFailures=0;render() }
         catch { learningStatus = "候选设置失败，可重试" }
     }
     private func englishWord() -> String {
@@ -1187,7 +1174,11 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         expanded=false
     }
     private func archiveOutput(_ text: String, pasteEvent: UUID? = nil, pasteSender: UUID? = nil, systemPaste:Bool=false) {
+        let currentScope = diagnosticScope()
+        let selection = pendingDecisionSelection.flatMap { $0.state.scope == currentScope ? $0 : nil }; pendingDecisionSelection = nil
+        let decisionState = selection?.state ?? (currentScope != nil ? decisionTrace?.state : nil)
         guard hasFullAccess else { ActivityArchiveCapture.shared.stop(); return }
+        if let decisionState { emitReferencedDecisionSnapshot(decisionState) }
         ActivityArchiveCapture.shared.refresh(permitted: true)
         let document = documentID?.uuidString
         if document != archiveDocument { archiveDocument = document; archiveEpoch = UUID().uuidString }
@@ -1204,8 +1195,21 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         if systemPaste {
             ActivityArchiveCapture.shared.recordSystemPaste(text,sourceApp:nil,document:document,session:archiveSession,epoch:epoch,safety:safe,sourceContext:sourceContext)
         } else {
-            ActivityArchiveCapture.shared.recordInput(text,sourceApp:nil,document:document,session:archiveSession,epoch:epoch,safety:safe,pasteEvent:pasteEvent,pasteSender:pasteSender,sourceContext:sourceContext)
+            let capture = ActivityArchiveCapture.shared, session = archiveSession
+            let link = selection?.link ?? decisionState.map { ["composition_id": $0.compositionID, "state_id": $0.stateID] }
+            let completion: ((UUID?) -> Void)?
+            if let state = decisionState {
+                completion = { [weak self] eventID in
+                    guard let self, state.matchesOwner(scope: self.diagnosticScope(), document: self.documentID?.uuidString, epoch: self.archiveEpoch) else { return }
+                    guard let diagnostic = DecisionTrace.decision(state, stage: "commit", nowUS: Self.diagnosticNowUS(), selection: selection,
+                        reason: "insert_requested", outputEventID: eventID) else { return }
+                    capture.recordDecision(diagnostic, scope: state.scope, document: state.document, session: session, epoch: state.epoch)
+                }
+            } else { completion = nil }
+            capture.recordInput(text,sourceApp:nil,document:document,session:session,epoch:epoch,safety:safe,pasteEvent:pasteEvent,pasteSender:pasteSender,sourceContext:sourceContext,
+                decisionLink:link, diagnosticScope:decisionState?.scope, completion: completion)
         }
+        decisionTrace?.endComposition()
     }
     private func settlePending() { let pending = engine.takeReadablePendingInput(reading: currentReading); if !pending.isEmpty { commitHostText(pending) } }
     private func setLanguage(_ value: Bool) {
@@ -1226,17 +1230,92 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         buildKeys(); render()
     }
     private func resumeAutomaticPredictionForUserInput() {
+        noteClipboardInput()
         deletionPrediction.beginUserInput();predictionPausedRevision = -1;lastRevision = -1
     }
     private func archiveDiagnostic(_ action:String,key:String,before:String) {
-        guard hasFullAccess, ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider),
-              textDocumentProxy.isSecureTextEntry == false else { return }
+        guard let scope = diagnosticScope() else { return }
+        let state = decisionTrace?.state.flatMap { $0.matchesOwner(scope: scope, document: documentID?.uuidString, epoch: archiveEpoch) ? $0 : nil }
+        let decision = (action == "choose" || action == "clear") ? nil : state.flatMap { DecisionTrace.decision($0, stage: "input", nowUS: Self.diagnosticNowUS(), reason: action) }
         ActivityArchiveCapture.shared.recordDiagnostic(action:action,key:key,before:before,after:engine.rawInput,
             candidates:Array(choices.prefix(5)).map(\.text),sourceApp:nil,document:documentID?.uuidString,
-            session:archiveSession,epoch:archiveEpoch,safety:.safe)
+            session:archiveSession,epoch:archiveEpoch,safety:.safe, decision: decision, diagnosticScope: scope)
+    }
+    private static func diagnosticNowUS() -> Int64 { Int64(min(9_007_199_254_740_991, ProcessInfo.processInfo.systemUptime * 1_000_000)) }
+    private func diagnosticScope() -> ActivityArchiveCapture.DiagnosticScope? {
+        guard ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider),
+              hasFullAccess, textDocumentProxy.isSecureTextEntry == false else {
+            decisionTrace = nil; pendingDecisionSelection = nil; decisionSnapshotIDs = []; diagnosticMarkedRequest = nil
+            return nil
+        }
+        return ActivityArchiveCapture.shared.diagnosticScope
+    }
+    private func diagnosticCandidate(_ row: InputCandidate) -> DecisionTrace.Candidate {
+        let source = row.personalID != nil ? "personal" : (row.pinyinRepair != nil || row.replacementInput != nil ? "correction" : (row.latinInput != nil ? "literal" : "unknown"))
+        return .init(identity: "\(row.index)|\(row.generation ?? engine.revision)|\(row.text)|\(row.comment)", text: row.text, reading: row.comment, source: source)
+    }
+    private func publishDecisionSnapshot() {
+        guard let scope = diagnosticScope() else { return }
+        if decisionTrace == nil { decisionTrace = DecisionTrace() }
+        let oldComposition = decisionTrace?.state?.compositionID
+        // Metadata must describe this captured state. A newer preference token
+        // does not prove which cloud model the live native snapshot adopted;
+        // omit model_version/hash until the owner exposes that exact identity.
+        var metadata: [String: ActivityJSONValue] = [:]
+        if compositionPosition == "inline", !engine.preedit.isEmpty {
+            if let marked = diagnosticMarkedRequest, marked.scope == scope, marked.text.utf8.count <= 4096 {
+                metadata["marked_status"] = .string("insert_requested"); metadata["marked_text"] = .string(marked.text)
+            } else { metadata["marked_status"] = .string("unknown") }
+        } else { metadata["marked_status"] = .string("not_used") }
+        for (key, info) in [("core_hash", "PrivateInputCoreSHA256"), ("resource_hash", "PrivateInputResourceSHA256"), ("policy_hash", "PrivateInputPolicySHA256")] {
+            if let value = Bundle.main.object(forInfoDictionaryKey: info) as? String, value.count == 64,
+               value.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) { metadata[key] = .string(value) }
+        }
+        guard let state = decisionTrace?.publish(scope: scope, document: documentID?.uuidString, epoch: archiveEpoch,
+            revision: Int64(engine.revision), rows: Array(choices.prefix(5)).map(diagnosticCandidate), metadata: metadata) else { return }
+        if oldComposition != state.compositionID { decisionSnapshotIDs = [] }
+        // Keep only lightweight current values. A referenced state is emitted
+        // once at an actual decision/cancel, never a new per-key candidate dump.
+    }
+    private func emitReferencedDecisionSnapshot(_ state: DecisionTrace.State) {
+        guard state.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch), !decisionSnapshotIDs.contains(state.stateID),
+              let value = DecisionTrace.decision(state, stage: "candidates", nowUS: Self.diagnosticNowUS(), includeCandidates: true) else { return }
+        if decisionSnapshotIDs.count >= 64 { decisionSnapshotIDs.removeAll() }
+        decisionSnapshotIDs.insert(state.stateID)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch)
+    }
+    private func diagnosticCandidatePress(_ candidate: InputCandidate, rank: Int) {
+        guard let owner = decisionTrace?.state, owner.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch),
+              let selection = decisionTrace?.press(diagnosticCandidate(candidate), rank: rank, nowUS: Self.diagnosticNowUS()),
+              let value = DecisionTrace.decision(selection.state, stage: "press", nowUS: Self.diagnosticNowUS(), selection: selection) else { return }
+        emitReferencedDecisionSnapshot(selection.state)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: selection.state.scope, document: selection.state.document, session: archiveSession, epoch: selection.state.epoch)
+    }
+    private func diagnosticCandidateRelease(_ candidate: InputCandidate, accepted: Bool) {
+        guard let owner = decisionTrace?.state, owner.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch),
+              let selection = decisionTrace?.release(diagnosticCandidate(candidate), accepted: accepted, nowUS: Self.diagnosticNowUS()),
+              let state = decisionTrace?.state,
+              let value = DecisionTrace.decision(state, stage: accepted ? "release" : "cancel", nowUS: Self.diagnosticNowUS(), selection: selection, reason: accepted ? nil : "touch_cancelled") else { return }
+        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch)
+    }
+    private func stageDiagnosticSelection(_ candidate: InputCandidate, method: String = "unknown") {
+        guard let owner = decisionTrace?.state, owner.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch) else { return }
+        guard let rank = choices.firstIndex(where: { $0.index == candidate.index && $0.text == candidate.text && $0.generation == candidate.generation }) else { return }
+        guard let selection = decisionTrace?.select(diagnosticCandidate(candidate), rank: rank, method: method),
+              let value = DecisionTrace.decision(selection.state, stage: "selection", nowUS: Self.diagnosticNowUS(), selection: selection) else { return }
+        pendingDecisionSelection = selection
+        emitReferencedDecisionSnapshot(selection.state)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: selection.state.scope, document: selection.state.document, session: archiveSession, epoch: selection.state.epoch)
+    }
+    private func cancelDiagnosticComposition(reason: String) {
+        defer { decisionTrace?.endComposition(); pendingDecisionSelection = nil; diagnosticMarkedRequest = nil }
+        guard let state = decisionTrace?.state, state.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch),
+              let value = DecisionTrace.decision(state, stage: "cancel", nowUS: Self.diagnosticNowUS(), reason: reason) else { return }
+        emitReferencedDecisionSnapshot(state)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch)
     }
     private func type(_ text: String) {
-        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        let diagnosticBefore=diagnosticScope() != nil ? engine.rawInput : ""
         defer { archiveDiagnostic("key",key:text,before:diagnosticBefore) }
         if !text.isEmpty {resumeAutomaticPredictionForUserInput()}
         cancelLearningForInteraction();validateInlineContext()
@@ -1259,12 +1338,16 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func finishPendingForLiteral() {
         if !engine.preedit.isEmpty {
-            if let first=choices.first {let commit=engine.chooseCandidate(first);if !commit.isEmpty {commitHostText(commit)}}
+            if let first=choices.first {
+                stageDiagnosticSelection(first, method: "unknown")
+                let commit=engine.chooseCandidate(first);if !commit.isEmpty {commitHostText(commit)}
+                pendingDecisionSelection = nil
+            }
             settlePending()
         }
     }
     private func insertLiteral(_ text: String, caretBack: Int = 0) {
-        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        let diagnosticBefore=diagnosticScope() != nil ? engine.rawInput : ""
         defer { archiveDiagnostic("literal",key:text,before:diagnosticBefore) }
         if !text.isEmpty {resumeAutomaticPredictionForUserInput()}
         cancelPrediction()
@@ -1296,7 +1379,9 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     /// One explicit cancellation for every layout. Only the next real input
     /// (or a confirmed new field) can re-enable automatic suggestions.
     private func clearCurrentSuggestions() {
-        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        clipboardActivity.noteInput(at:Date.timeIntervalSinceReferenceDate)
+        let diagnosticBefore=diagnosticScope() != nil ? engine.rawInput : ""
+        cancelDiagnosticComposition(reason: "user_clear")
         defer { archiveDiagnostic("clear",key:"clear",before:diagnosticBefore) }
         let hadComposition = !engine.preedit.isEmpty || !engine.rawInput.isEmpty
         stopDeletion();deletionPrediction.observeDocument(documentID);deletionPrediction.beginClear()
@@ -1312,7 +1397,8 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         render()
     }
     private func backspace() {
-        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+        clipboardActivity.noteInput(at:Date.timeIntervalSinceReferenceDate)
+        let diagnosticBefore=diagnosticScope() != nil ? engine.rawInput : ""
         defer { archiveDiagnostic("delete",key:"backspace",before:diagnosticBefore) }
         let dismissClipboard = !clipboardCandidate.isHidden
         clipboardState.observe(version:UIPasteboard.general.changeCount);clipboardState.dismiss()
@@ -1354,8 +1440,10 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         deleteDelay = delay; RunLoop.main.add(delay, forMode: .common)
     }
     private func stopDeletion() { deletionGeneration &+= 1; deleteDelay?.invalidate(); deleteRepeat?.invalidate(); deleteDelay = nil; deleteRepeat = nil }
-    private func choose(_ candidate: InputCandidate) {
-        let diagnosticBefore=ActivityArchiveCapture.shared.permits(ActivityInputDiagnostic.provider) ? engine.rawInput : ""
+    private func choose(_ candidate: InputCandidate, method: String = "unknown") {
+        stageDiagnosticSelection(candidate, method: method)
+        defer { pendingDecisionSelection = nil }
+        let diagnosticBefore=diagnosticScope() != nil ? engine.rawInput : ""
         defer { archiveDiagnostic("choose",key:candidate.text,before:diagnosticBefore) }
         if validateInlineContext() { render();return }
         if english {
@@ -1394,10 +1482,13 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         render()
         if commit.isEmpty && !engine.preedit.isEmpty {
             // A partial selection updates both the host's marked range and the
-            // collection being tapped. Reload after UIKit finishes that event.
+            // collection being tapped. Refresh bindings after UIKit's event.
+            let revision=engine.revision,document=documentID,presentation=keyboardPresentation
             DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.lastRevision = -1;self.render()
+                guard let self,self.engine?.revision==revision,self.documentID==document,self.keyboardPresentation==presentation else{return}
+                // The synchronous selection render already queried this
+                // revision. Only refresh UIKit bindings after its touch ends.
+                self.render()
             }
         }
     }
@@ -1521,7 +1612,8 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         let revision=engine.revision,document=documentID,generation=candidatePageGeneration
         let work=DispatchWorkItem { [weak self] in
             guard let self,self.candidatePageGeneration==generation else{return};self.candidatePageWork=nil
-            guard self.engine.revision==revision,self.documentID==document,!self.expand.isTracking else{return}
+            guard self.engine.revision==revision,self.documentID==document,!self.expand.isTracking,self.pressedKeyboardControls.isEmpty,
+                  ![self.strip,self.grid].contains(where:{$0.visibleCells.contains(where:{($0 as? CandidateCell)?.isHandlingControlTouch==true})}) else{return}
             self.loadMore(limit:8);self.candidateExpansionFillRemaining=max(0,self.candidateExpansionFillRemaining-8)
             // Fill the newly exposed viewport a small slice at a time. Existing
             // cells and their tap actions stay intact; collapse cancels the rest.
@@ -1549,7 +1641,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         inlineComposition.leave(host:compositionHost);engine.clear();expanded=false;ownCommitTracker.invalidate();engine.resetPredictionContext();return true
     }
     private func render() {
-        scheduleLearningAfterReveal()
         guard engine != nil,!inlineComposition.applying else { return }
         deletionPrediction.observeDocument(documentID)
         if let currentDocument=documentID,activeDocument != currentDocument {
@@ -1564,9 +1655,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         validateInlineContext()
         validateOwnContext()
         if preferencesPending && engine.preedit.isEmpty { applyPreferences() }
-        if engine.preedit.isEmpty && engine.managementPending {
-            do { try engine.synchronizeLearning(publish: learningPublisher) } catch { learningStatus = "词频更新失败，可重试" }
-        }
+        if engine.managementPending {learningRefreshPending=true}
         if engine.preedit.isEmpty,!deletionPrediction.suppressed {captureHostContext()}
         if layout == .numbers {
             publishedCandidates.reset(); candidateSourceOffset=0
@@ -1575,7 +1664,9 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         } else if english { publishedCandidates.reset();candidateSourceOffset=0;refreshEnglishChoices() }
         else if lastRevision != engine.revision {
             cancelCandidatePage();lastRevision = engine.revision
-            let limit = expanded ? 48 : 12
+            // Partial selections keep the panel open but should not block the
+            // next touch on a synchronous 48-row query. Fill using small pages.
+            let limit = 12
             let next:[InputCandidate]
             switch deletionPrediction.source(hasComposition:!engine.preedit.isEmpty) {
             case .primary:next=engine.candidateBatch(offset:0,limit:limit)
@@ -1587,6 +1678,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             hasMore = !engine.preedit.isEmpty && next.count == limit
             loading = true
             if newInput {
+                candidateExpansionFillRemaining=expanded ? 32:0
                 choices = publishedCandidates.publish(next, revision: engine.revision, document: documentID, identity: PublishedCandidateIdentity.init)
                 strip.reloadData(); grid.collectionViewLayout.invalidateLayout(); grid.reloadData()
                 strip.setContentOffset(.zero, animated: false); grid.setContentOffset(.zero, animated: false)
@@ -1634,11 +1726,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         expand.accessibilityLabel = expanded ? "返回键盘" : "展开全部候选"
         expand.accessibilityValue = !english && engine.hasPreparedNinePrediction ? "候选已更新":nil
         if pending { view.bringSubviewToFront(expand) }
-        heightAdjustment.isHidden = !adjustingHeight
-        if adjustingHeight {
-            preeditRow.isHidden=true;candidateBar.isHidden=true;toolbar.isHidden=true;expand.isHidden=true
-            header.bringSubviewToFront(heightAdjustment)
-        }
         updateClipboardCandidateVisibility()
         letterActionButton?.setTitle("清空",for:.normal)
         let clearable=chinesePending || !choices.isEmpty || !clipboardCandidate.isHidden
@@ -1649,7 +1736,6 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         clearButton?.alpha = clearable ? 1 : 0.45
         expand.isEnabled = !choices.isEmpty; returnButton?.setTitle(returnTitle, for: .normal)
         refreshSettingsMenus()
-        if let status = toolbar.arrangedSubviews.last as? UILabel { status.text = !engine.ready ? "中文词库暂不可用" : (learningStatus ?? "") }
         // iOS may keep visible collection cells through an input-view/marked-
         // text layout update. Refresh their content and actions as one snapshot.
         for collection in [strip,grid] {
@@ -1657,17 +1743,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
                 if let cell=collection.cellForItem(at:index) as? CandidateCell { configureCandidate(cell,in:collection,at:index) }
             }
         }
-        let sharing=sharedTextPanel.isShowing
-        header.alpha=sharing ? 0:1;header.isUserInteractionEnabled = !sharing;header.accessibilityElementsHidden=sharing
-        if sharing {
-            keyboardBody.alpha=0;keyboardBody.isUserInteractionEnabled=false;keyboardBody.accessibilityElementsHidden=true
-            grid.isHidden=true;grid.accessibilityElementsHidden=true;expand.isHidden=true
-            view.bringSubviewToFront(sharedTextPanel.view)
-        }
         #if targetEnvironment(simulator)
         if let probe=try? JSONSerialization.data(withJSONObject:["hostContext":engine.hasHostContext,"beforeCount":engine.modelContext.before.count,"afterCount":engine.modelContext.after.count,"available":engine.semanticLastMetrics.available,"semanticRevision":engine.semanticMetricsRevision,"revision":engine.revision]) {strip.accessibilityValue=String(data:probe,encoding:.utf8)}
         #endif
+        publishDecisionSnapshot()
         schedulePrediction()
+        if expanded,candidateExpansionFillRemaining>0 {requestCandidatePage()}
     }
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int { collectionView === symbolGrid ? allSymbols.count : choices.count }
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -1704,12 +1785,15 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             }
         }
         if symbol {
+            cell.controlTouchBegan = nil; cell.controlTouchEnded = nil
             cell.activate = { [weak self, weak collectionView] in
                 (collectionView as? CandidateCollectionView)?.markControlEvent()
                 self?.insertSymbol(text)
             }
         } else {
             let choice = choices[indexPath.item],revision=engine.revision
+            cell.controlTouchBegan = { [weak self] in self?.diagnosticCandidatePress(choice, rank: indexPath.item) }
+            cell.controlTouchEnded = { [weak self] accepted in self?.diagnosticCandidateRelease(choice, accepted: accepted) }
             cell.activate = { [weak self, weak collectionView] in
                 guard let self,self.engine.revision==revision else{return}
                 (collectionView as? CandidateCollectionView)?.markControlEvent()
@@ -1786,7 +1870,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         #endif
         if scrollView === strip || scrollView === grid { pauseCandidateRankingForInteraction() }
     }
-    override func textWillChange(_ textInput: UITextInput?) { super.textWillChange(textInput); applyPreferences() }
+    override func textWillChange(_ textInput: UITextInput?) { super.textWillChange(textInput);if keyboardAppeared {noteClipboardInput()};applyPreferences() }
     override func textDidChange(_ textInput: UITextInput?) { super.textDidChange(textInput); ActivityArchiveCapture.shared.refresh(permitted:hasFullAccess); synchronizeAppearance();applyPreferences(); render() }
     override func selectionDidChange(_ textInput:UITextInput?) {
         super.selectionDidChange(textInput)
@@ -1799,57 +1883,23 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         validateInlineContext()
         render()
     }
-    private func refreshLearning(explicit: Bool,preparation:LearningRefreshPreparation? = nil) {
+    private func refreshLearning(explicit: Bool,preparation:LearningRefreshPreparation? = nil,hiddenToken:UInt64? = nil) {
+        if explicit {
+            // The menu may request work while visible, but cannot run a native
+            // session teardown under the next input/expand touch.
+            learningRefreshPending=true;learningRefreshFailures=0
+            learningStatus="收起键盘后更新词库";loadSystemWords();render();return
+        }
+        guard let hiddenToken,permitsHiddenLearning(hiddenToken) else{return}
         let started=Date.timeIntervalSinceReferenceDate
         defer {predictionLog.debug("learning_checkpoint_ms=\((Date.timeIntervalSinceReferenceDate-started)*1000,privacy:.public) explicit=\(explicit,privacy:.public)")}
-        if explicit { loadSystemWords() }
         do {
             try engine.synchronizeLearning(publish:learningPublisher,preparation:preparation)
             learningRefreshPending=false;learningRefreshFailures=0
-            if explicit { systemRefreshRequested=systemWordsLoading;learningStatus = systemWordsLoading ? "正在更新词库":"词库已更新" }
-        } catch LearningSyncFailure.busy {learningRefreshFailures+=1;if explicit { learningStatus = "先完成当前输入" } }
-        catch {learningRefreshFailures+=1;if explicit { learningStatus = "词库更新失败，可重试" } }
-        render()
+            learningStatus="词库已更新"
+        } catch LearningSyncFailure.busy {learningRefreshFailures+=1}
+        catch {learningRefreshFailures+=1;learningStatus="词库更新失败，可重试"}
+        if keyboardAppeared {render()}
     }
-    deinit { sharedTextRefreshTask?.cancel();clipboardTimer?.invalidate();for observer in clipboardObservers {NotificationCenter.default.removeObserver(observer)};if let privacyResetObserver {PersonalDataReset.unobserve(privacyResetObserver)};deferredLearningRefresh?.cancel();deleteDelay?.invalidate(); deleteRepeat?.invalidate(); if let preferenceObserver { NotificationCenter.default.removeObserver(preferenceObserver) } }
-    private func refreshVisibleSharedText() {
-        guard keyboardAppeared,hasFullAccess,sharedTextPanel.isShowing else{return}
-        guard sharedTextRefreshTask==nil else {sharedTextRefreshPending=true;return}
-        let presentation=keyboardPresentation,scope=clipboardScope,cache=clipboardCacheFingerprint
-        sharedTextRefreshTask=Task { [weak self] in
-            defer {
-                self?.sharedTextRefreshTask=nil
-                if self?.sharedTextRefreshPending==true {self?.sharedTextRefreshPending=false;self?.refreshVisibleSharedText()}
-            }
-            let clips=try? await Task.detached(priority:.utility) {try ClipboardCacheCoordinator.read(fullAccess:true,now:UInt64(Date().timeIntervalSince1970))}.value
-            guard !Task.isCancelled,let self,self.keyboardAppeared,self.hasFullAccess,self.sharedTextPanel.isShowing,
-                  self.keyboardPresentation==presentation,self.clipboardScope==scope,self.clipboardCacheFingerprint==cache,let clips else{return}
-            self.sharedTextPanel.show(clips)
-        }
-    }
-    private func openSharedText() {
-        guard engine.preedit.isEmpty else { return }
-        #if DEBUG
-        sharedTextPanel.view.accessibilityIdentifier = "shared-text-panel"
-        sharedTextPanel.diagnostic(hasFullAccess ? (ClipboardCacheCoordinator.privateIdentityAccessibleFromKeyboard() ? "main-identity-visible" : "main-identity-blocked") : "permission-denied")
-        #endif
-        do { sharedTextPanel.show(try ClipboardCacheCoordinator.read(fullAccess: hasFullAccess, now: UInt64(Date().timeIntervalSince1970))) }
-        catch ClipboardCacheError.permissionRequired { sharedTextPanel.show([], status: hasFullAccess ? "共享文本已暂停，请在主 App 开启。" : "请允许完全访问，再使用共享文本。") }
-        catch { sharedTextPanel.show([], status: "共享文本暂不可用，可在主 App 重试同步。") }
-        render();view.bringSubviewToFront(sharedTextPanel.view)
-    }
-    private func insertSharedText(_ id: UUID) {
-        guard engine.preedit.isEmpty else { return }
-        do {
-            let clips = try ClipboardCacheCoordinator.read(fullAccess: hasFullAccess, now: UInt64(Date().timeIntervalSince1970))
-            guard let clip = clips.first(where: { $0.id == id }) else {
-                sharedTextPanel.show(clips, status: "文本已过期或共享已暂停"); return
-            }
-            if !clip.text.isEmpty {resumeAutomaticPredictionForUserInput()}
-            textDocumentProxy.insertText(clip.text)
-            archiveOutput(clip.text, pasteEvent: clip.eventID, pasteSender: clip.sender)
-            sharedTextPanel.dismissPanel()
-        } catch ClipboardCacheError.permissionRequired { sharedTextPanel.show([], status: "共享已暂停或完全访问已关闭") }
-        catch { sharedTextPanel.show([], status: "共享文本暂不可用") }
-    }
+    deinit { clipboardTimer?.invalidate();for observer in clipboardObservers {NotificationCenter.default.removeObserver(observer)};if let privacyResetObserver {PersonalDataReset.unobserve(privacyResetObserver)};deferredLearningRefresh?.cancel();deleteDelay?.invalidate(); deleteRepeat?.invalidate(); if let preferenceObserver { NotificationCenter.default.removeObserver(preferenceObserver) } }
 }

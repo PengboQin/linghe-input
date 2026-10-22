@@ -149,7 +149,7 @@ private struct KeyboardHeightSettingsView: View {
                 }
                 Slider(value: binding, in: 0...96, step: 4)
                     .accessibilityLabel("键盘高度微调").accessibilityIdentifier("main-keyboard-height-slider")
-            } footer: { Text("也可长按键盘中英文键，在“布局与显示”中直接调整。") }
+            } footer: { Text("设置对所有键盘布局生效。") }
         }.navigationTitle("键盘高度")
     }
 }
@@ -178,7 +178,7 @@ struct InputHelpView: View {
             }
             Section("隐私与权限") {
                 #if os(iOS)
-                Text("基础输入和本地记忆离线可用。主 App 自定义设置与设备共享需键盘完全访问；设备同步与共享文本分别开启。活动归档默认关闭，需另行明确启用；启用后将所选来源的完整原文上传到你选择的明文服务器，不记录原始键击。")
+                Text("基础输入和本地记忆离线可用。主 App 自定义设置与设备共享需键盘完全访问；设备同步与共享文本分别开启。活动归档默认关闭，需另行明确启用；启用后将所选来源的完整原文上传到你选择的明文服务器，输入过程需另行开启。")
                 #else
                 Text("添加输入法：系统设置 → 键盘 → 文本输入 → 编辑 → ＋ → 中文（简体）→ 灵鹤输入法。")
                 Text("正常打字和附近文字分析使用系统输入法接口，无需开启输入监控或辅助功能。设备同步与共享文本分别开启。")

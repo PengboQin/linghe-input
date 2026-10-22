@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput.tests" android:versionCode="35" android:versionName="0.1.34">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput.tests" android:versionCode="48" android:versionName="0.1.47">
+ <instrumentation android:name="live.linghe.privateinput.StartupLifecycleCheck" android:targetPackage="live.linghe.privateinput.tests" android:functionalTest="true"/>
  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36"/>
  <instrumentation android:name="live.linghe.privateinput.ActivityArchiveHttpInstrumentation" android:targetPackage="live.linghe.privateinput.tests"/>
  <instrumentation android:name="live.linghe.privateinput.ActivityArchiveInstrumentation" android:targetPackage="live.linghe.privateinput.tests"/>
@@ -9,6 +10,7 @@
  <instrumentation android:name="live.linghe.privateinput.InputInteractionCheck" android:targetPackage="live.linghe.privateinput.tests"/>
  <instrumentation android:name="live.linghe.privateinput.LearningProof" android:targetPackage="live.linghe.privateinput.tests"/>
  <uses-permission android:name="android.permission.INTERNET"/>
+ <uses-permission android:name="android.permission.VIBRATE"/>
  <instrumentation android:name="live.linghe.privateinput.SyncBacklogRecoveryCheck" android:targetPackage="live.linghe.privateinput.tests"/>
  <instrumentation android:name="live.linghe.privateinput.SyncCheck" android:targetPackage="live.linghe.privateinput.tests"/>
  <instrumentation android:name="live.linghe.privateinput.SyncOwnerCheck" android:targetPackage="live.linghe.privateinput.tests"/>

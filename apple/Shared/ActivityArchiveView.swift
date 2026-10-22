@@ -120,8 +120,8 @@ import PrivateInputKit
     }
     /// Called while the main app is active, and by the Mac application background owner.
     /// It refreshes existing relay membership normally and never requires a settings window.
-    func backgroundPass() async {
-        guard !busy, !applying, Date().timeIntervalSince(lastBackground) >= 5 else { return }
+    func backgroundPass(validating:()->Bool={true}) async {
+        guard !Task.isCancelled,validating(),!busy, !applying, Date().timeIntervalSince(lastBackground) >= 5 else { return }
         lastBackground = Date(); applying = true; defer { applying = false }
         do {
             // Do not create a sync identity/group or contact the archive by merely launching.
@@ -129,13 +129,14 @@ import PrivateInputKit
             let q = try ActivityArchiveLocation.queue(publicConnection), value = try q.configuration()
             guard value.collecting else { return }
             try await loadContext(refresh: true)
-            guard let live = connection, let q = queue, let endpoint = value.endpoint else { return }
+            guard !Task.isCancelled,validating(),let live = connection, let q = queue, let endpoint = value.endpoint else { return }
             ActivityArchiveCapture.shared.refresh(permitted: true)
-            ActivityArchiveCapture.shared.observeClipboardIfPermitted()
+            ActivityArchiveCapture.shared.observeClipboardIfPermitted(active:validating() && !Task.isCancelled)
             let client = try ActivityArchiveClient(endpoint: endpoint), worker = ActivityArchiveWorker(queue: q, client: client)
             _ = try await worker.flush(identity: live.identity, membershipRevision: live.publicConnection.membership.revision, now: now)
+            guard !Task.isCancelled,validating() else{return}
             queueStatus = try q.status(); configuration = try q.configuration()
-        } catch { report(error) }
+        } catch { if !Task.isCancelled,validating() {report(error)} }
     }
     private var now: UInt64 { UInt64(Date().timeIntervalSince1970) }
     private var selectedProviders: Set<String> {
