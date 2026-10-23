@@ -3,8 +3,8 @@
   "snapshot_kind": "development-source-only",
   "complete_build_source_published": false,
   "development_archive": {
-    "name": "LingheInput-Source-20261022-development.zip",
-    "sha256": "ccb0d796b6204be6e1698ad30d063e56a17ab3be7307aa00fd1d81f57ac5266c",
+    "name": "LingheInput-Source-20261022-development-win056-r3.zip",
+    "sha256": "5f412a139172316dc63f6543e250c942d1ebe11fef9b0e38064b74742555802a",
     "public_download_available": false
   },
   "last_release_tag": "v0.2026.10.21-preview.2",

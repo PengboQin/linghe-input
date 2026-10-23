@@ -58,6 +58,43 @@ int main(){
  assert(position.x==-906&&position.y==482);
  position=candidatePosition({-1400,-200,-1390,-180},work,626,194,4);
  assert(position.x==-1280&&position.y==-100);
+ // Reproduce the previous high-DPI long-input jump: sizing against all of a
+ // 1920px monitor made a 900-DIP row start at x=120 rather than caret x=1040.
+ state.reset(6);
+ const CandidateRect desktop{0,0,1920,1080},caret{1040,400,1042,424};
+ auto oldLong=candidateLayout(std::vector<int>(6,600),state,1920,1080,192);
+ assert(candidatePosition(caret,desktop,oldLong.width,oldLong.height,8).x==120);
+ for(int measured:{8,80,200,600,INT_MAX}){
+  const int budget=candidateWidthAtCaret(caret,desktop,state.width(),192);
+  auto row=candidateLayout(std::vector<int>(6,measured),state,budget,1080,192);
+  validate(row,budget,1080,6);
+  assert(candidatePosition(caret,desktop,row.width,row.height,8).x==caret.left);
+ }
+ // At a genuine right edge the popup stays small and within one minimum row
+ // of the caret, rather than growing towards the monitor's opposite edge.
+ for(unsigned scale:{96u,120u,144u,192u,288u}){
+  CandidateRect edge{1880,400,1882,424};
+  int budget=candidateWidthAtCaret(edge,desktop,6,scale);
+  auto row=candidateLayout(std::vector<int>(6,INT_MAX),state,budget,1080,scale);
+  auto p=candidatePosition(edge,desktop,row.width,row.height,candidateScale(4,scale));
+  assert(p.x>=0&&p.x+row.width<=desktop.right&&p.x+row.width>=edge.left);
+  assert(row.width<=6*candidateScale(48,scale)+2*candidateScale(1,scale));
+ }
+ const CandidateRect negativeWork{-1920,-500,0,580},negativeCaret{-880,-100,-878,-76};
+ auto negativeBudget=candidateWidthAtCaret(negativeCaret,negativeWork,6,192);
+ auto negativeRow=candidateLayout(std::vector<int>(6,INT_MAX),state,negativeBudget,1080,192);
+ assert(candidatePosition(negativeCaret,negativeWork,negativeRow.width,negativeRow.height,8).x==-880);
+ assert(candidateWidthAtCaret(caret,{0,0,0,100},6,192)==0);
+ for(unsigned scale:{96u,192u}){
+  int previous=-1;
+  for(int x=0;x<desktop.right;++x){
+   CandidateRect moving{x,400,x+1,424};
+   auto row=candidateLayout(std::vector<int>(6,INT_MAX),state,candidateWidthAtCaret(moving,desktop,6,scale),1080,scale);
+   auto p=candidatePosition(moving,desktop,row.width,row.height,candidateScale(4,scale));
+   assert(p.x>=previous&&p.x<=x&&p.x+row.width<=desktop.right);
+   previous=p.x;
+  }
+ }
  for(unsigned scale:{48u,96u,120u,144u,192u,288u,768u})for(int width:{16,50,97,624,900}){
   state.reset(11);state.expanded=true;state.selected=10;
   auto sample=candidateLayout(std::vector<int>(11,INT_MAX),state,width,93,scale);

@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1792696663,
-  "member_count": 1051,
-  "uncompressed_bytes": 147508489,
+  "created_at_unix": 1792715545,
+  "member_count": 1058,
+  "uncompressed_bytes": 147548551,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -1791,8 +1791,8 @@
     },
     {
       "path": "docs/CROSS-PLATFORM-ISSUES-20261022.md",
-      "bytes": 15932,
-      "sha256": "bb979b7ef616929c457c966bf90659f9a13d0c66f993d2f2cb35f71aad5e8280"
+      "bytes": 16991,
+      "sha256": "495111b239091cc943a12c0ecf2df912fa75d1e372869acbd6dc7e4bc44495b6"
     },
     {
       "path": "docs/DIAGNOSTIC-CHAIN-PLAN-20261022.md",
@@ -3726,8 +3726,8 @@
     },
     {
       "path": "windows-source/tools/test_windows_input.py",
-      "bytes": 2953,
-      "sha256": "cdc54a619c210f1300cf017d5539759af19d14348acb78bf848010c0e3fd53e4"
+      "bytes": 2923,
+      "sha256": "c1133c188aeab7786725c4749a880349750f5651efd51f02165262727d7b689e"
     },
     {
       "path": "windows-source/tools/test_windows_long_composition.py",
@@ -4070,6 +4070,16 @@
       "sha256": "e21d55617c91e39ce23ae7444c0e35c5cba3beb79bfe44def89c1a7c4496350d"
     },
     {
+      "path": "windows-source/windows/docs/CANDIDATE-ANCHOR056-20261022.md",
+      "bytes": 2856,
+      "sha256": "58b381920f803c6149cebf4e9a448cda4c1a01b896ecfc1e6addb99b709a5a99"
+    },
+    {
+      "path": "windows-source/windows/docs/CANDIDATE-ANCHOR056-SOURCE-20261022.md",
+      "bytes": 5823,
+      "sha256": "197864fc47c076197f39911fa9f6886cdd6516c81f9b7a0d253b274dcdd3d624"
+    },
+    {
       "path": "windows-source/windows/docs/DIAGNOSTICS055-SOURCE-20261022.md",
       "bytes": 7948,
       "sha256": "60c90fc00a5f75beb1e1b0c31d0406d42b60c91e7391008a5d9d740641601668"
@@ -4122,7 +4132,7 @@
     {
       "path": "windows-source/windows/installer/Setup.cpp",
       "bytes": 47811,
-      "sha256": "b0b4d2112857fb74c4fc6a355f39b1d05ff72aaf3688f30af443e22020816bbc"
+      "sha256": "fb58de2393eb922d5e62afc613061c1e7349405ee40f2713a985e07bb3b87877"
     },
     {
       "path": "windows-source/windows/installer/UpgradeState.h",
@@ -4145,9 +4155,14 @@
       "sha256": "50f6ab7c052bfb8ca76c549a00723c390c8039d845e748eac2dec356bd51efcd"
     },
     {
+      "path": "windows-source/windows/src/CandidateAnchorPolicy.h",
+      "bytes": 3166,
+      "sha256": "3ab98835002b71f15c06fb4a329afa2760587f448f2b39614cf161709296a9e7"
+    },
+    {
       "path": "windows-source/windows/src/CandidateLayout.h",
-      "bytes": 4126,
-      "sha256": "095039b4be28333be73ba5195e81decceb0e58d18cf7683ec3bd25d7c9f0d366"
+      "bytes": 4962,
+      "sha256": "d56e8edcd77d46baec3537983af17203eb7e96fa726c3dbd6711e1ba666908bf"
     },
     {
       "path": "windows-source/windows/src/CandidateStream.h",
@@ -4156,8 +4171,8 @@
     },
     {
       "path": "windows-source/windows/src/CandidateWindow.cpp",
-      "bytes": 6854,
-      "sha256": "7bf5d5490ef1cfc4d459ca4daede2e5b89ac0c1f85122ceb4b920318cd6bbc2f"
+      "bytes": 7067,
+      "sha256": "c42bab4256f9d28379a3ff1498fa0be72a226449af748a3400e06dd1e3b9daeb"
     },
     {
       "path": "windows-source/windows/src/CandidateWindow.h",
@@ -4226,8 +4241,13 @@
     },
     {
       "path": "windows-source/windows/src/TextService.cpp",
-      "bytes": 58337,
-      "sha256": "b553ec2db6ad37604bfbfe1f478ac6cbb5ecf6cd03ea0a302a36ef37cb75e8fc"
+      "bytes": 65182,
+      "sha256": "554249c8967d83b19f4336cb39b73f5b43788bf9ba5f54e3397ebc3b0b824d21"
+    },
+    {
+      "path": "windows-source/windows/src/TsfLayoutSink.h",
+      "bytes": 619,
+      "sha256": "05e2a668d46f7111d8c66d49469844fb38dda76b315c9b1650b6cdde6d340b4b"
     },
     {
       "path": "windows-source/windows/sync/CMakeLists.txt",
@@ -4276,13 +4296,18 @@
     },
     {
       "path": "windows-source/windows/tests/SyntheticTextStore.h",
-      "bytes": 7677,
-      "sha256": "e150a0e78de00320e9255ef142711e7aff98cd63758daee88a93ad804163d338"
+      "bytes": 8593,
+      "sha256": "4fafe023fe83ee5b0302d4c5deaf37c88430a1d40b79d86d88c460fbacadf790"
+    },
+    {
+      "path": "windows-source/windows/tests/candidate_anchor_policy.cpp",
+      "bytes": 4334,
+      "sha256": "ba4347304343a460d4abb9ac57a96277dc0626f2d569c2c19f767c0a67db857d"
     },
     {
       "path": "windows-source/windows/tests/candidate_layout.cpp",
-      "bytes": 4157,
-      "sha256": "9936f3a1a7e9c86f52fb12640c24c0a59b2126b6956e8bf3fe6ec8292134b38a"
+      "bytes": 6338,
+      "sha256": "a0a1876f1b7c9b8e7935edd769d8a66a76b54a4986668e051e76cc74e3a1e894"
     },
     {
       "path": "windows-source/windows/tests/candidate_mainland_admission.cpp",
@@ -4426,8 +4451,8 @@
     },
     {
       "path": "windows-source/windows/tests/tsf_input_regression.cpp",
-      "bytes": 22378,
-      "sha256": "8d80e8cd92cd1779917235d03f6e4c59b3792430c9e3b455d06f60234f32f187"
+      "bytes": 31401,
+      "sha256": "9e3476c77f8ba91992153107d8931cc1ea4578dc1078e477e54514ebd740553b"
     },
     {
       "path": "windows-source/windows/tests/tsf_registration_probe.cpp",
@@ -4441,8 +4466,18 @@
     },
     {
       "path": "windows-source/windows/tests/activity/CMakeLists.txt",
-      "bytes": 9014,
-      "sha256": "9aab83beda51a8815cec20894dd962f03b634b6529f54b7322afb4c54d08ef8b"
+      "bytes": 9164,
+      "sha256": "0cfb951710f0a0478c8003e6b2e44b78003dd9d9f5a2e0dc6d5370d4bc91f153"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/FixtureIPC.cpp",
+      "bytes": 1802,
+      "sha256": "2ee8cd8b763bf386d20991c4423e497e943ab2681c2f24ec2d182ea03c9a809c"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/FixtureIPC.h",
+      "bytes": 269,
+      "sha256": "af88c502cb5fdd163d26fd6562cb3d70c8ad9eb5c2b9c9e32b696f4517f953b0"
     },
     {
       "path": "windows-source/windows/tests/activity/admission.cpp",

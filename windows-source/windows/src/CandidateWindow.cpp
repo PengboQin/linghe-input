@@ -18,11 +18,14 @@ void CandidateWindow::show(HINSTANCE instance,const RECT &anchor,const std::vect
  for(auto i=first;i<end;++i){SIZE size{};GetTextExtentPoint32W(dc,labels[i].c_str(),int(std::min(labels[i].size(),std::size_t(std::numeric_limits<int>::max()))),&size);widths[i]=int(size.cx);}
  SelectObject(dc,old);ReleaseDC(window,dc);
  const auto& work=monitor.rcWork;
- layout=private_input::candidateLayout(widths,navigation,int(work.right-work.left),int(work.bottom-work.top),displayDpi);
+ const private_input::CandidateRect caretRect{int(anchor.left),int(anchor.top),int(anchor.right),int(anchor.bottom)};
+ const private_input::CandidateRect workRect{int(work.left),int(work.top),int(work.right),int(work.bottom)};
+ const int availableWidth=private_input::candidateWidthAtCaret(caretRect,workRect,navigation.width(),displayDpi);
+ layout=private_input::candidateLayout(widths,navigation,availableWidth,int(work.bottom-work.top),displayDpi);
  if(layout.slots.empty()){hide();return;}
  // Native accessible name mirrors only visible choices. Painting remains unchanged.
  std::wstring accessible=L"灵鹤候选";for(const auto&slot:layout.slots){auto line=L"\n"+std::to_wstring(slot.index+1)+L". "+labels[slot.index];if(accessible.size()+line.size()>8192)break;accessible+=line;}SetWindowTextW(window,accessible.c_str());
- auto position=private_input::candidatePosition({int(anchor.left),int(anchor.top),int(anchor.right),int(anchor.bottom)},{int(work.left),int(work.top),int(work.right),int(work.bottom)},layout.width,layout.height,private_input::candidateScale(4,displayDpi));
+ auto position=private_input::candidatePosition(caretRect,workRect,layout.width,layout.height,private_input::candidateScale(4,displayDpi));
  SetWindowPos(window,HWND_TOPMOST,position.x,position.y,layout.width,layout.height,SWP_NOACTIVATE|SWP_SHOWWINDOW);InvalidateRect(window,nullptr,TRUE);
 }
 void CandidateWindow::paint(){

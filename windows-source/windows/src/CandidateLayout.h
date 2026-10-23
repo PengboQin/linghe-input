@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <optional>
+#include <limits>
 #include <vector>
 #include "desktop_candidates.hpp"
 
@@ -21,6 +22,16 @@ struct CandidateLayout {
  }
 };
 inline int candidateScale(int value,unsigned dpi){return std::max(1,int((static_cast<long long>(value)*std::clamp(dpi,48u,768u)+48)/96));}
+// Fit the row into the space after the caret before positioning it. Measuring
+// against the whole monitor lets long alternatives widen a high-DPI popup all
+// the way to the opposite edge. Only the minimum readable row may need to move
+// left when the actual insertion point is close to the right screen boundary.
+inline int candidateWidthAtCaret(CandidateRect anchor,CandidateRect work,int columns,unsigned dpi){
+ const auto width=std::max(0LL,static_cast<long long>(work.right)-work.left);
+ const auto rightRoom=std::clamp(static_cast<long long>(work.right)-anchor.left,0LL,width);
+ const auto minimum=static_cast<long long>(std::clamp(columns,1,9))*candidateScale(48,dpi)+2LL*candidateScale(1,dpi);
+ return int(std::min<long long>(std::numeric_limits<int>::max(),std::min(width,std::max(minimum,rightRoom))));
+}
 inline CandidateLayout candidateLayout(const std::vector<int>& textWidths,const DesktopCandidates& state,int availableWidth,int availableHeight,unsigned dpi){
  CandidateLayout result;
  if(textWidths.empty()||availableWidth<3||availableHeight<3)return result;

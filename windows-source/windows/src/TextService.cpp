@@ -1,5 +1,8 @@
 #include "PrivateInputTSF.h"
 #include "CandidateWindow.h"
+#include "CandidateAnchorPolicy.h"
+#include "TsfLayoutSink.h"
+#include <textstor.h>
 #include "LearningSnapshotBoundary.h"
 #include "CandidateStream.h"
 #include "CandidateAdmission.h"
@@ -70,10 +73,26 @@ bool disabled(ITfContext *ctx){
   VARIANT v;VariantInit(&v);bool result=false;if(SUCCEEDED(item->GetValue(&v)))result=(v.vt==VT_I4&&v.lVal!=0)||(v.vt==VT_BOOL&&v.boolVal!=VARIANT_FALSE);VariantClear(&v);return result;
 }
 struct CachedDesktopPreferences{private_input::DesktopCandidates layout;DesktopInputPreferences input;};
-class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,public ITfCompositionSink,public ITfTextEditSink {
+class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,public ITfCompositionSink,public ITfTextEditSink,public ITfTextLayoutSink {
   std::atomic<ULONG> refs{1};ComPtr<ITfThreadMgr> manager;ComPtr<ITfKeystrokeMgr> keystrokes;
   ComPtr<ITfContext> compositionContext,pendingContext;ComPtr<ITfComposition> composition;
   TfClientId client=PrivateInputClientNull;PI_Session session=0;
+  private_input::CandidateAnchorPolicy anchorPolicy;ComPtr<ITfContext>layoutContext;ComPtr<IUnknown>anchorViewIdentity,layoutViewIdentity,destroyedViewIdentity;DWORD layoutSinkCookie=TF_INVALID_COOKIE;uint64_t layoutEpoch=0;bool layoutRefreshPending=false,layoutDestroyed=false;HWND anchorLeaseWindow=nullptr;private_input::CandidateAnchorLease anchorLease;
+  static LRESULT CALLBACK anchorLeaseProc(HWND hwnd,UINT message,WPARAM w,LPARAM l){auto*self=reinterpret_cast<TextService*>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));if(message==WM_NCCREATE){self=static_cast<TextService*>(reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);SetWindowLongPtrW(hwnd,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(self));}if(self&&message==WM_TIMER&&w==1){KillTimer(hwnd,1);auto remaining=self->anchorLease.timer(GetTickCount64());if(!remaining)return 0;if(*remaining&&SetTimer(hwnd,1,UINT(*remaining),nullptr))return 0;self->clearAnchor();self->panel.hide();return 0;}return DefWindowProcW(hwnd,message,w,l);}
+  void clearAnchor(){if(anchorLeaseWindow)KillTimer(anchorLeaseWindow,1);anchorLease.clear();anchorPolicy.clear();anchorViewIdentity.Reset();}
+  bool expireAnchorLease(){auto remaining=anchorPolicy.leaseRemaining(GetTickCount64());if(!remaining)return false;if(!anchorLeaseWindow){WNDCLASSW cls{};cls.lpfnWndProc=anchorLeaseProc;cls.hInstance=g_instance;cls.lpszClassName=L"LingheInput.AnchorLease";RegisterClassW(&cls);anchorLeaseWindow=CreateWindowExW(0,cls.lpszClassName,L"",0,0,0,0,0,HWND_MESSAGE,nullptr,g_instance,this);}if(!anchorLeaseWindow)return false;auto now=GetTickCount64();remaining=anchorPolicy.leaseRemaining(now);if(!remaining)return false;anchorLease.arm(now,remaining);return SetTimer(anchorLeaseWindow,1,UINT(remaining),nullptr)!=0;}
+
+  void unwatchLayout(){++layoutEpoch;layoutRefreshPending=false;layoutDestroyed=false;clearAnchor();layoutViewIdentity.Reset();destroyedViewIdentity.Reset();auto ctx=layoutContext;auto cookie=layoutSinkCookie;layoutSinkCookie=TF_INVALID_COOKIE;layoutContext.Reset();if(ctx&&cookie!=TF_INVALID_COOKIE){ComPtr<ITfSource>source;if(SUCCEEDED(ctx.As(&source)))source->UnadviseSink(cookie);}}
+  void watchLayout(ITfContext*ctx){if(layoutContext.Get()==ctx)return;unwatchLayout();ComPtr<ITfSource>source;if(!ctx||FAILED(ctx->QueryInterface(IID_PPV_ARGS(&source))))return;DWORD cookie=TF_INVALID_COOKIE;if(SUCCEEDED(source->AdviseSink(IID_ITfTextLayoutSink,static_cast<ITfTextLayoutSink*>(this),&cookie))){layoutContext=ctx;layoutSinkCookie=cookie;}}
+  void refreshLayout(ITfContext*ctx){
+    if(layoutRefreshPending||!ctx||layoutContext.Get()!=ctx||compositionContext.Get()!=ctx||!composition||finishPending||words.empty())return;
+    // Until the read job verifies current geometry, an old caret has only its
+    // original short lease. A denied/stalled async request cannot keep it forever.
+    if(!expireAnchorLease()){clearAnchor();panel.hide();}
+    layoutRefreshPending=true;auto epoch=layoutEpoch;ComPtr<ITfContext>retained=ctx;auto own=composition;HRESULT result=E_FAIL;
+    request(ctx,TF_ES_ASYNC|TF_ES_READ,[this,retained,own,epoch](TfEditCookie cookie){if(epoch!=layoutEpoch)return S_FALSE;if(layoutContext.Get()!=retained.Get()||compositionContext.Get()!=retained.Get()||composition.Get()!=own.Get()||finishPending||!focusedContext(retained.Get())){clearAnchor();panel.hide();return S_FALSE;}updatePanel(retained.Get(),cookie);return S_OK;},&result,[this,epoch]{if(epoch==layoutEpoch)layoutRefreshPending=false;});
+  }
+
   bool secure=false,english=false,privateSchema=false,degraded=false,finishPending=false,keySinkAdvised=false;
   private_input::ShiftTapMode shiftTap;
   std::shared_ptr<const CachedDesktopPreferences>desktopCache=std::make_shared<CachedDesktopPreferences>();
@@ -171,7 +190,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   }
   HRESULT request(ITfContext *ctx,DWORD flags,std::function<HRESULT(TfEditCookie)> action,HRESULT *result,std::function<void()>completed={}){auto *job=new EditJob(identity(),std::move(action),std::move(completed));HRESULT hr=ctx->RequestEditSession(client,job,flags,result);job->Release();return hr;}
   void detachComposition(){
-    auto old=composition;auto ctx=compositionContext;composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();panel.hide();contextBefore.clear();contextAfter.clear();englishInput.clear();learningSelections.clear();if(session)pi_clear(session);++revision;
+    unwatchLayout();auto old=composition;auto ctx=compositionContext;composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();panel.hide();contextBefore.clear();contextAfter.clear();englishInput.clear();learningSelections.clear();if(session)pi_clear(session);++revision;
     if(old&&ctx){HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,[old](TfEditCookie cookie){return old->EndComposition(cookie);},&result);}
   }
   bool selectionInside(ITfContext *ctx,TfEditCookie cookie){
@@ -193,7 +212,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     ComPtr<ITfInsertAtSelection> insert;HRESULT hr=ctx->QueryInterface(IID_ITfInsertAtSelection,reinterpret_cast<void**>(insert.GetAddressOf()));if(FAILED(hr))return hr;
     ComPtr<ITfRange> range;hr=insert->InsertTextAtSelection(cookie,TF_IAS_QUERYONLY,nullptr,0,&range);if(FAILED(hr))return hr;
     ComPtr<ITfContextComposition> comp;hr=ctx->QueryInterface(IID_ITfContextComposition,reinterpret_cast<void**>(comp.GetAddressOf()));if(FAILED(hr))return hr;
-    hr=comp->StartComposition(cookie,range.Get(),this,&composition);if(SUCCEEDED(hr))compositionContext=ctx;return hr;
+    hr=comp->StartComposition(cookie,range.Get(),this,&composition);if(SUCCEEDED(hr)){compositionContext=ctx;watchLayout(ctx);}return hr;
   }
   HRESULT finishComposition(TfEditCookie cookie){
     if(!composition){finishPending=false;return S_OK;}
@@ -205,9 +224,9 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
 #endif
     hr=done->EndComposition(cookie);
     --ownEndDepth;
-    if(SUCCEEDED(hr)){if(composition.Get()==done.Get()){composition.Reset();compositionContext.Reset();}finishPending=false;}
+    if(SUCCEEDED(hr)){if(composition.Get()==done.Get()){unwatchLayout();composition.Reset();compositionContext.Reset();}finishPending=false;}
     else finishPending=true;
-    panel.hide();return hr;
+    clearAnchor();panel.hide();return hr;
   }
   HRESULT setOwnText(ITfContext *ctx,TfEditCookie cookie,const std::wstring &text,bool finish){
     ComPtr<ITfRange> range;HRESULT hr;
@@ -260,14 +279,21 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   }
   void updatePanel(ITfContext *ctx,TfEditCookie cookie){
     if(diagnosticSafe)diagnosticSafe=!secure&&scopeOf(ctx,cookie)==FieldScope::normal;diagnosticField=diagnosticSafe?archiveFieldType(ctx,cookie):0;
-    if(words.empty()){panel.hide();return;}
-    ComPtr<ITfContextView> view;RECT rect{};BOOL clipped=FALSE;ComPtr<ITfRange> range,caret;bool located=false;HWND host=nullptr;
-    if(SUCCEEDED(ctx->GetActiveView(&view))){view->GetWnd(&host);if(clipboardVisible&&clipboardSelection&&SUCCEEDED(clipboardSelection->Clone(&caret))&&SUCCEEDED(caret->Collapse(cookie,TF_ANCHOR_END)))located=SUCCEEDED(view->GetTextExt(cookie,caret.Get(),&rect,&clipped))&&rect.bottom>rect.top;if(composition&&SUCCEEDED(composition->GetRange(&range))&&SUCCEEDED(range->Clone(&caret))&&SUCCEEDED(caret->Collapse(cookie,TF_ANCHOR_END))){located=SUCCEEDED(view->GetTextExt(cookie,caret.Get(),&rect,&clipped))&&rect.bottom>rect.top;}}
-    // A host may temporarily deny layout during an edit. Keep a usable
-    // candidate at that host's edge instead of making the whole input blind.
-    if(!located){if(!host)host=GetForegroundWindow();if(!host||!GetWindowRect(host,&rect)){panel.hide();return;}rect.left+=16;rect.top+=40;rect.right=rect.left+1;rect.bottom=rect.top+20;}
-    diagnosticHost=host;panel.show(g_instance,rect,words,revision,host?GetDpiForWindow(host):96,navigation);
+    if(words.empty()||secure||finishPending||!composition||compositionContext.Get()!=ctx||!focusedContext(ctx)||disabled(ctx)||scopeOf(ctx,cookie)==FieldScope::password){clearAnchor();panel.hide();return;}
+    ComPtr<ITfContextView>view;ComPtr<IUnknown>viewIdentity;ComPtr<ITfRange>range,caret;RECT rect{};BOOL clipped=FALSE;HWND host=nullptr;HRESULT geometry=E_FAIL;
+    if(FAILED(ctx->GetActiveView(&view))||FAILED(view.As(&viewIdentity))||FAILED(view->GetWnd(&host))||!host||!IsWindow(host)||FAILED(composition->GetRange(&range))||FAILED(range->Clone(&caret))||FAILED(caret->Collapse(cookie,TF_ANCHOR_END))){clearAnchor();panel.hide();return;}
+    if(!private_input::candidateViewMayRecover(layoutDestroyed,reinterpret_cast<uintptr_t>(destroyedViewIdentity.Get()),reinterpret_cast<uintptr_t>(viewIdentity.Get()))){clearAnchor();panel.hide();return;}
+    if(layoutDestroyed){layoutDestroyed=false;destroyedViewIdentity.Reset();clearAnchor();}
+    layoutViewIdentity=viewIdentity;geometry=view->GetTextExt(cookie,caret.Get(),&rect,&clipped);POINT origin{};if(!ClientToScreen(host,&origin)){clearAnchor();panel.hide();return;}auto dpi=GetDpiForWindow(host);if(!dpi){clearAnchor();panel.hide();return;}
+    private_input::CandidateAnchorIdentity key{reinterpret_cast<uintptr_t>(ctx),reinterpret_cast<uintptr_t>(viewIdentity.Get()),reinterpret_cast<uintptr_t>(composition.Get()),reinterpret_cast<uintptr_t>(host),layoutEpoch,dpi,origin.x,origin.y};
+    auto observation=geometry==S_OK&&!clipped?private_input::CandidateAnchorObservation::Verified:((geometry==TS_E_NOLAYOUT||geometry==E_FAIL)&&!clipped)?private_input::CandidateAnchorObservation::TemporaryUnavailable:private_input::CandidateAnchorObservation::Invalid;
+    auto anchor=anchorPolicy.resolve(key,observation,{rect.left,rect.top,rect.right,rect.bottom},GetTickCount64(),true,true);
+    if(!anchor){clearAnchor();panel.hide();return;}
+    if(observation==private_input::CandidateAnchorObservation::Verified){anchorLease.clear();if(anchorLeaseWindow)KillTimer(anchorLeaseWindow,1);}else if(!expireAnchorLease()){clearAnchor();panel.hide();return;}
+    anchorViewIdentity=viewIdentity;rect={anchor->left,anchor->top,anchor->right,anchor->bottom};diagnosticHost=host;
+    panel.show(g_instance,rect,words,revision,dpi,navigation);
   }
+
   // Native rows select their absolute engine index; repair rows replay their
   // spelling in a private probe and replace only the unselected suffix.
   HRESULT applyCandidate(ITfContext *ctx,TfEditCookie cookie,size_t index){
@@ -417,10 +443,10 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   void manageCandidate(size_t index,unsigned long long version,unsigned action){if(clipboardVisible)return;auto ctx=compositionContext;if(english||!ctx||!focusedContext(ctx.Get())||version!=revision||index>=candidates.rows.size())return;auto choice=candidates.rows[index];auto reading=private_input::activity::canonicalLearningReading(choice.reading);if(reading.empty())return;HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READ,[this,ctx,version,reading,word=choice.text,action](TfEditCookie cookie){if(!focusedContext(ctx.Get())||version!=revision||scopeOf(ctx.Get(),cookie)!=FieldScope::normal)return S_FALSE;ComPtr<ITfContextView>view;HWND hwnd=nullptr;if(SUCCEEDED(ctx->GetActiveView(&view)))view->GetWnd(&hwnd);archiveEmitter.emitLearning(wide(reading.c_str()),wide(word.c_str()),hwnd,action);return S_OK;},&result);}
 public:
   TextService(const PrivateInputEnginePaths *paths):panel([this](size_t index,unsigned long long version){choose(index,version);},[this](int direction){auto ctx=compositionContext;const auto version=revision;if(!focusedContext(ctx.Get())){panel.hide();return;}HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READ,[this,ctx,direction,version](TfEditCookie cookie){if(!focusedContext(ctx.Get())){panel.hide();return S_FALSE;}if(version!=revision||!selectionInside(ctx.Get(),cookie)||disabled(ctx.Get())||scopeOf(ctx.Get(),cookie)==FieldScope::password)return S_FALSE;prepareForwardNavigation(direction,size_t(navigation.columns));navigation.vertical(direction);++revision;updatePanel(ctx.Get(),cookie);return S_OK;},&result);}){panel.setObservation([this](size_t i,unsigned long long v,bool released,bool valid){observeCandidate(i,v,released,valid);});if(paths)enginePaths=*paths;panel.setManagement([this](size_t i,unsigned long long v,unsigned a){manageCandidate(i,v,a);},[this](size_t i){if(i>=candidates.rows.size())return false;auto snapshot=learningReader.read();auto&row=candidates.rows[i];auto key=private_input::activity::canonicalLearningReading(row.reading)+char(31)+row.text;auto found=snapshot->scores.find(key);return found!=snapshot->scores.end()&&found->second.pinned;});GUID archiveID{};if(SUCCEEDED(CoCreateGuid(&archiveID)))memcpy(archiveSession.data(),&archiveID,sizeof(archiveID));++g_objects;}
-  ~TextService(){if(clipboardPollWindow)DestroyWindow(clipboardPollWindow);learningReader.stop();if(session)pi_destroy_session(session);--g_objects;}
+  ~TextService(){if(anchorLeaseWindow)DestroyWindow(anchorLeaseWindow);if(clipboardPollWindow)DestroyWindow(clipboardPollWindow);learningReader.stop();if(session)pi_destroy_session(session);--g_objects;}
   STDMETHODIMP QueryInterface(REFIID iid,void **out)override{
     if(!out)return E_POINTER;*out=nullptr;if(iid==IID_IUnknown||iid==IID_ITfTextInputProcessor||iid==IID_ITfTextInputProcessorEx)*out=static_cast<ITfTextInputProcessorEx*>(this);
-    else if(iid==IID_ITfKeyEventSink)*out=static_cast<ITfKeyEventSink*>(this);else if(iid==IID_ITfCompositionSink)*out=static_cast<ITfCompositionSink*>(this);else if(iid==IID_ITfTextEditSink)*out=static_cast<ITfTextEditSink*>(this);if(!*out)return E_NOINTERFACE;AddRef();return S_OK;
+    else if(iid==IID_ITfKeyEventSink)*out=static_cast<ITfKeyEventSink*>(this);else if(iid==IID_ITfCompositionSink)*out=static_cast<ITfCompositionSink*>(this);else if(iid==IID_ITfTextEditSink)*out=static_cast<ITfTextEditSink*>(this);else if(iid==IID_ITfTextLayoutSink)*out=static_cast<ITfTextLayoutSink*>(this);if(!*out)return E_NOINTERFACE;AddRef();return S_OK;
   }
   STDMETHODIMP_(ULONG) AddRef()override{return ++refs;}
   STDMETHODIMP_(ULONG) Release()override{auto n=--refs;if(!n)delete this;return n;}
@@ -444,12 +470,33 @@ public:
     hr=keystrokes->AdviseKeyEventSink(client,this,TRUE);keySinkAdvised=SUCCEEDED(hr);
     if(FAILED(hr)){if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();}return hr;
   }
-  STDMETHODIMP Deactivate()override{if(clipboardPollWindow){DestroyWindow(clipboardPollWindow);clipboardPollWindow=nullptr;}retireClipboard();clipboardReader.close();detachComposition();if(keystrokes&&keySinkAdvised)keystrokes->UnadviseKeyEventSink(client);keySinkAdvised=false;if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();client=PrivateInputClientNull;return S_OK;}
+  STDMETHODIMP Deactivate()override{if(anchorLeaseWindow){DestroyWindow(anchorLeaseWindow);anchorLeaseWindow=nullptr;}if(clipboardPollWindow){DestroyWindow(clipboardPollWindow);clipboardPollWindow=nullptr;}retireClipboard();clipboardReader.close();detachComposition();if(keystrokes&&keySinkAdvised)keystrokes->UnadviseKeyEventSink(client);keySinkAdvised=false;if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();client=PrivateInputClientNull;return S_OK;}
   STDMETHODIMP OnCompositionTerminated(TfEditCookie,ITfComposition *ended)override{
     // Treat our own ending exactly like a host that never calls this sink;
     // explicit finish paths own cleanup. External termination still resets it.
     if(ownEndDepth)return S_OK;
-    if(composition.Get()==ended){contextBefore.clear();contextAfter.clear();composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();if(session)pi_clear(session);englishInput.clear();panel.hide();++revision;}return S_OK;}
+    if(composition.Get()==ended){unwatchLayout();contextBefore.clear();contextAfter.clear();composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();if(session)pi_clear(session);englishInput.clear();panel.hide();++revision;}return S_OK;}
+  STDMETHODIMP OnLayoutChange(ITfContext*ctx,TfLayoutCode code,ITfContextView*view)override{
+    if(layoutContext.Get()!=ctx)return S_OK;
+    ComPtr<IUnknown>notified,activeIdentity;ComPtr<ITfContextView>activeView;
+    if(view)view->QueryInterface(IID_PPV_ARGS(&notified));if(SUCCEEDED(ctx->GetActiveView(&activeView)))activeView.As(&activeIdentity);
+    using private_input::CandidateViewEvent;using private_input::CandidateViewAction;
+    const auto event=code==TF_LC_DESTROY?CandidateViewEvent::Destroy:code==TF_LC_CREATE?CandidateViewEvent::Create:CandidateViewEvent::Change;
+    const auto action=private_input::candidateViewAction(event,reinterpret_cast<uintptr_t>(notified.Get()),reinterpret_cast<uintptr_t>(activeIdentity.Get()),reinterpret_cast<uintptr_t>(layoutViewIdentity.Get()));
+    if(action==CandidateViewAction::Ignore)return S_OK;
+    if(action==CandidateViewAction::Retire){++layoutEpoch;layoutRefreshPending=false;layoutDestroyed=true;destroyedViewIdentity=notified?notified:activeIdentity?activeIdentity:layoutViewIdentity;clearAnchor();panel.hide();return S_OK;}
+    if(action==CandidateViewAction::Restart){++layoutEpoch;layoutRefreshPending=false;layoutDestroyed=false;destroyedViewIdentity.Reset();clearAnchor();if(activeIdentity)layoutViewIdentity=activeIdentity;else layoutViewIdentity=notified;}
+    else if(event==CandidateViewEvent::Destroy){
+      // An old view can be destroyed after the new active view's CREATE. Do
+      // not retire that new generation or cancel its already queued read job.
+      if(activeIdentity)layoutViewIdentity=activeIdentity;
+      if(anchorViewIdentity&&anchorViewIdentity.Get()==layoutViewIdentity.Get())return S_OK;
+      clearAnchor();
+    }
+    // Notification geometry is never used: this read job queries active view.
+    refreshLayout(ctx);return S_OK;
+  }
+
   STDMETHODIMP OnEndEdit(ITfContext*,TfEditCookie,ITfEditRecord*)override{if(clipboardVisible)retireClipboard();return S_OK;}
   STDMETHODIMP OnSetFocus(BOOL foreground)override{if(!foreground){shiftTap.reset();retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
   STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(!eaten)return E_POINTER;if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
