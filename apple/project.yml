@@ -106,8 +106,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.inputmethod.PrivateInput
         PRODUCT_NAME: PrivateInput
-        CURRENT_PROJECT_VERSION: "74"
-        MARKETING_VERSION: "0.35.3"
+        CURRENT_PROJECT_VERSION: "75"
+        MARKETING_VERSION: "0.35.4"
         ARCHS: arm64
         ENABLE_DEBUG_DYLIB: NO
       configs:
@@ -133,7 +133,7 @@ targets:
         TISIntendedLanguage: zh-Hans
         TICapsLockLanguageSwitchCapable: true
         tsInputMethodCharacterRepertoireKey: [Hans]
-        tsInputMethodIconFileKey: LingheCraneMenuTemplate.tiff
+        tsInputMethodIconFileKey: LingheCraneLightTemplate.tiff
         TISIconIsTemplate: true
         NSPrincipalClass: NSApplication
         tsInputMethodPrimaryInScriptKey: true
@@ -144,8 +144,8 @@ targets:
               TISInputSourceID: live.linghe.privateinput.inputmethod.PrivateInput.Hans
               TISIntendedLanguage: zh-Hans
               tsInputModeCharacterRepertoireKey: [Hans]
-              tsInputModeMenuIconFileKey: LingheCraneMenuTemplate.tiff
-              tsInputModePaletteIconFileKey: LingheCraneMenuTemplate.tiff
+              tsInputModeMenuIconFileKey: LingheCraneLightTemplate.tiff
+              tsInputModePaletteIconFileKey: LingheCraneLightTemplate.tiff
               tsInputModePaletteItemTitleKey: LingheInputModeName
               tsInputModeDefaultStateKey: true
               tsInputModeIsVisibleKey: true

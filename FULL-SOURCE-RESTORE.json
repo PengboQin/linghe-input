@@ -1,6 +1,8 @@
 {
   "schema_version": 2,
   "snapshot_kind": "release-source",
+  "complete_build_source_published": true,
+  "last_release_tag": "v0.2026.10.22-win057-preview.1",
   "excluded_files": [
     {
       "path": "android/app/src/main/res/drawable/app_icon.png",
@@ -13,18 +15,23 @@
       "reason": "binary_asset"
     },
     {
+      "path": "apple/macOS/InputMethod/LingheCraneLightTemplate.tiff",
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483",
+      "reason": "binary_asset"
+    },
+    {
       "path": "apple/macOS/InputMethod/LingheCraneMenu.tiff",
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483",
       "reason": "binary_asset"
     },
     {
       "path": "apple/macOS/InputMethod/LingheCraneMenuTemplate.tiff",
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483",
       "reason": "binary_asset"
     },
     {
       "path": "apple/macOS/InputMethod/LingheInputMenu.pdf",
-      "sha256": "bf9d0a0168970fe6663d9a1b6496c21183d362729392a2aa09110f49de8ce59e",
+      "sha256": "056ca7352f35650168d9a5dac70e72aca6469a7c8c38f56d14090515107c814a",
       "reason": "binary_asset"
     },
     {
@@ -34,12 +41,12 @@
     },
     {
       "path": "apple/macOS/InputMethod/PrivateInput.tiff",
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483",
       "reason": "binary_asset"
     },
     {
       "path": "apple/macOS/InputMethod/PrivateInputTemplate.tiff",
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5",
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483",
       "reason": "binary_asset"
     },
     {
@@ -213,12 +220,10 @@
       "reason": "binary_fixture"
     }
   ],
-  "instructions": "The browsing tree omits the listed public resources. Fetch the complete source ZIP from the matching release, verify SHA256, and fetch dependency sources listed in SOURCE-ATTACHMENTS-INDEX.json. Binary installers and source correspond to their immutable release tag; clean-room and byte-identical rebuilding are not claimed.",
-  "release_tag": "v0.2026.10.22-win056-preview.1",
-  "full_source_zip": {
-    "name": "LingheInput-Source-20261022-win056.zip",
-    "bytes": 99329853,
-    "sha256": "dc7af3bc3abb9c8589679141e4e12a562b878f5fcfd345ee6753494506238740",
-    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.22-win056-preview.1/LingheInput-Source-20261022-win056.zip"
+  "instructions": "For a complete build source, download this release source archive and the dependency source attachments listed in SOURCE-ATTACHMENTS-INDEX.json. Binary resources omitted from this browsing tree are present in the complete source archive. Installer verification and known limitations are described in the release notes.",
+  "source_archive": {
+    "name": "LingheInput-Source-20261022-win057.zip",
+    "sha256": "e54e0236202a18bdba5bb85cd99866073f06062ba830f8395c5d70b6a7fcec18",
+    "download_url": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.22-win057-preview.1/LingheInput-Source-20261022-win057.zip"
   }
 }

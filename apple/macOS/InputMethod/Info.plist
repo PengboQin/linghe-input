@@ -43,9 +43,9 @@
 				<key>tsInputModeIsVisibleKey</key>
 				<true/>
 				<key>tsInputModeMenuIconFileKey</key>
-				<string>LingheCraneMenuTemplate.tiff</string>
+				<string>LingheCraneLightTemplate.tiff</string>
 				<key>tsInputModePaletteIconFileKey</key>
-				<string>LingheCraneMenuTemplate.tiff</string>
+				<string>LingheCraneLightTemplate.tiff</string>
 				<key>tsInputModePaletteItemTitleKey</key>
 				<string>LingheInputModeName</string>
 				<key>tsInputModePrimaryInScriptKey</key>
@@ -88,7 +88,7 @@
 		<string>Hans</string>
 	</array>
 	<key>tsInputMethodIconFileKey</key>
-	<string>LingheCraneMenuTemplate.tiff</string>
+	<string>LingheCraneLightTemplate.tiff</string>
 	<key>tsInputMethodLanguages</key>
 	<array>
 		<string>zh-Hans</string>

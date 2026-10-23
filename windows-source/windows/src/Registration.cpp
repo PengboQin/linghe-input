@@ -1,4 +1,5 @@
 #include "PrivateInputTSF.h"
+#include "TsfBranding.h"
 #include <wrl/client.h>
 #include <string>
 #include <iterator>
@@ -64,6 +65,9 @@ extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID clsid, REFIID iid, void 
 extern "C" HRESULT __stdcall DllRegisterServer() {
   registrationStage=1;
   wchar_t path[32768];DWORD length=GetModuleFileNameW(g_instance,path,32768);if(!length||length>=32768)return HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE);
+  // Registration must not advertise branding without its actual DLL resource.
+  auto icon=static_cast<HICON>(LoadImageW(g_instance,MAKEINTRESOURCEW(linghe::tsf::BrandingIconResource),IMAGE_ICON,16,16,0));
+  if(!icon)return HRESULT_FROM_WIN32(GetLastError()?GetLastError():ERROR_RESOURCE_NAME_NOT_FOUND);DestroyIcon(icon);
   const auto base = classKey();
   const bool existingClass=hasKey(base);
   registrationStage=2;
@@ -94,15 +98,17 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
   if(FAILED(hr))return hr;
   registrationStage=7;
   ComPtr<IEnumGUID> list;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&list);if(FAILED(hr))return hr;
-  bool categoryBefore=false;while(list->Next(1,&item,&fetched)==S_OK&&fetched)if(item==GUID_TFCAT_TIP_KEYBOARD)categoryBefore=true;
-  bool addedService=false,addedCategory=false,addedProfile=false;
-  auto rollback=[&]{if(addedProfile){ComPtr<ITfInputProcessorProfileMgr> mgr;if(SUCCEEDED(profiles.As(&mgr)))mgr->UnregisterProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,0);}if(addedCategory)categories->UnregisterCategory(CLSID_PrivateInput,GUID_TFCAT_TIP_KEYBOARD,CLSID_PrivateInput);if(addedService)profiles->Unregister(CLSID_PrivateInput);if(!existingClass)deleteNewClass(base);};
+  bool categoryBefore=false,systrayBefore=false;while(list->Next(1,&item,&fetched)==S_OK&&fetched){if(item==GUID_TFCAT_TIP_KEYBOARD)categoryBefore=true;if(item==linghe::tsf::SystrayCategory)systrayBefore=true;}
+  bool addedService=false,addedCategory=false,addedSystray=false,addedProfile=false;
+  auto rollback=[&]{if(addedProfile){ComPtr<ITfInputProcessorProfileMgr> mgr;if(SUCCEEDED(profiles.As(&mgr)))mgr->UnregisterProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,0);}if(addedSystray)categories->UnregisterCategory(CLSID_PrivateInput,linghe::tsf::SystrayCategory,CLSID_PrivateInput);if(addedCategory)categories->UnregisterCategory(CLSID_PrivateInput,GUID_TFCAT_TIP_KEYBOARD,CLSID_PrivateInput);if(addedService)profiles->Unregister(CLSID_PrivateInput);if(!existingClass)deleteNewClass(base);};
   registrationStage=8;
   if(!existingClass){hr=setValue(base,nullptr,L"灵鹤输入法");if(SUCCEEDED(hr))hr=setValue(base+L"\\InprocServer32",nullptr,path);if(SUCCEEDED(hr))hr=setValue(base+L"\\InprocServer32",L"ThreadingModel",L"Apartment");if(FAILED(hr)){rollback();return hr;}}
   registrationStage=9;
   if(!serviceBefore){addedService=true;hr=profiles->Register(CLSID_PrivateInput);if(FAILED(hr)){rollback();return hr;}}
   registrationStage=10;
   if(!categoryBefore){addedCategory=true;hr=categories->RegisterCategory(CLSID_PrivateInput,GUID_TFCAT_TIP_KEYBOARD,CLSID_PrivateInput);if(FAILED(hr)){rollback();return hr;}}
+  registrationStage=13;
+  if(!systrayBefore){addedSystray=true;hr=categories->RegisterCategory(CLSID_PrivateInput,linghe::tsf::SystrayCategory,CLSID_PrivateInput);if(FAILED(hr)){rollback();return hr;}}
   registrationStage=11;
   {
     // An owned existing profile also needs refreshed description/icon metadata.
@@ -111,7 +117,7 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
     if(SUCCEEDED(hr)){
       addedProfile=!profileBefore;
       hr=mgr->RegisterProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,
-                             name,UINT(std::size(name)-1),path,length,0,nullptr,0,
+                             name,UINT(std::size(name)-1),path,length,linghe::tsf::BrandingProfileIconIndex,nullptr,0,
                              profileEnabledBefore,0);
     }
     // Only a newly created profile is removed by local rollback. The installer's
@@ -133,6 +139,9 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
   TF_INPUTPROCESSORPROFILE verifiedProfile{};
   if(SUCCEEDED(hr))hr=verifiedManager->GetProfile(TF_PROFILETYPE_INPUTPROCESSOR,Language,CLSID_PrivateInput,GUID_PrivateInputProfile,nullptr,&verifiedProfile);
   if(FAILED(hr)||verifiedProfile.clsid!=CLSID_PrivateInput||verifiedProfile.guidProfile!=GUID_PrivateInputProfile||verifiedProfile.langid!=Language){rollback();return FAILED(hr)?hr:E_FAIL;}
+  // Category registration, not a blanket Windows-app compatibility claim,
+  // enables branding in the desktop input indicator. Read back exact own caps.
+  registrationStage=14;ComPtr<IEnumGUID>verifiedCategories;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&verifiedCategories);if(FAILED(hr)){rollback();return hr;}bool systrayVerified=false;while(verifiedCategories->Next(1,&item,&fetched)==S_OK&&fetched)if(item==linghe::tsf::SystrayCategory)systrayVerified=true;if(!systrayVerified){rollback();return E_FAIL;}
   registrationStage=0;
   return S_OK; // User chooses this keyboard. Do not set the default input source.
 }
@@ -145,6 +154,8 @@ extern "C" HRESULT __stdcall DllUnregisterServer() {
   if(FAILED(hr))return hr;
   ComPtr<ITfCategoryMgr> categories;
   hr=CoCreateInstance(CLSID_TF_CategoryMgr,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&categories));if(FAILED(hr))return hr;
+  ComPtr<IEnumGUID>ownedCategories;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&ownedCategories);if(FAILED(hr))return hr;GUID category{};ULONG fetched=0;bool hasSystray=false;while(ownedCategories->Next(1,&category,&fetched)==S_OK&&fetched)if(category==linghe::tsf::SystrayCategory)hasSystray=true;
+  if(hasSystray){hr=categories->UnregisterCategory(CLSID_PrivateInput,linghe::tsf::SystrayCategory,CLSID_PrivateInput);if(FAILED(hr))return hr;}
   hr=categories->UnregisterCategory(CLSID_PrivateInput,GUID_TFCAT_TIP_KEYBOARD,CLSID_PrivateInput);if(FAILED(hr))return hr;
   hr=profiles->Unregister(CLSID_PrivateInput);if(FAILED(hr))return hr;
   deleteNewClass(base);return hasKey(base)?E_FAIL:S_OK;

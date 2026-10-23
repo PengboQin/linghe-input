@@ -23,10 +23,11 @@
 #include "UpgradeState.h"
 #include "PayloadManifest.h"
 #include "../src/PrivateInputTSF.h"
+#include "../src/TsfBranding.h"
 namespace fs = std::filesystem;
 namespace {
-constexpr wchar_t Version[] = L"0.5.6-win1";
-constexpr char VersionUtf8[] = "0.5.6-win1";
+constexpr wchar_t Version[] = L"0.5.7-win1";
+constexpr char VersionUtf8[] = "0.5.7-win1";
 // Use the DLL's actual COM identity for preflight, installation and rollback.
 // A second handwritten GUID previously caused a successful registration to be
 // reported as failed and left the real registration outside the snapshot.
@@ -204,14 +205,15 @@ struct Snapshot {
   error=writeTree(key,tree); RegCloseKey(key); return error==ERROR_SUCCESS;
  }
 };
-std::vector<Snapshot> snapshots() {
+std::vector<Snapshot> snapshots(bool includeSystray=false) {
  std::vector<Snapshot> result; result.emplace_back(HKEY_LOCAL_MACHINE,ClassBase);
  result.emplace_back(HKEY_LOCAL_MACHINE,UninstallKey);
  for(HKEY hive:{HKEY_LOCAL_MACHINE,HKEY_CURRENT_USER}) {
   result.emplace_back(hive,std::wstring(L"Software\\Microsoft\\CTF\\TIP\\")+OwnClass);
-  // These are the two reverse mappings used by the TSF category manager. Only this item's key is touched.
+  // Snapshot only this service's item and supported category reverse mappings.
   result.emplace_back(hive,std::wstring(L"Software\\Microsoft\\CTF\\Category\\Item\\")+OwnClass);
   result.emplace_back(hive,std::wstring(L"Software\\Microsoft\\CTF\\Category\\Category\\{34745C63-B2F0-4784-8B67-5E12C8701A31}\\")+OwnClass);
+  if(includeSystray){wchar_t systray[39]{};StringFromGUID2(linghe::tsf::SystrayCategory,systray,39);result.emplace_back(hive,std::wstring(L"Software\\Microsoft\\CTF\\Category\\Category\\")+systray+L"\\"+OwnClass);}
  }
  return result;
 }
@@ -539,7 +541,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
    else fs::copy_file(sourceExe,installer);
    dll=destination/L"AMD64"/L"PrivateInputTSF.dll";
   }
-  report.stage="snapshot"; auto before=snapshots(); bool mutated=false;
+  report.stage="snapshot"; auto before=snapshots(true); bool mutated=false;
   try {
    report.stage=remove?"unregister":"register";
    if(remove) { if(!old.empty()) { mutated=true; auto hr=registerDll(old,true); if(FAILED(hr))throw Failure(20,hr); } }

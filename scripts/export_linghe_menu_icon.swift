@@ -8,11 +8,11 @@ let root = URL(fileURLWithPath: #filePath).standardizedFileURL
     .deletingLastPathComponent().deletingLastPathComponent()
 let canvas = CGSize(width: 16, height: 16)
 
-func drawCrane(in context: CGContext) {
+func drawCrane(in context: CGContext, white: Bool = true) {
     context.saveGState()
     context.translateBy(x: 0.8, y: 0.5)
     context.scaleBy(x: 0.22, y: 0.22)
-    context.setFillColor(gray: 0, alpha: 1)
+    context.setFillColor(gray: white ? 1 : 0, alpha: 1)
     let crane = CGMutablePath()
     // Rounded body, curved upright neck and a short crane beak.
     crane.move(to: CGPoint(x: 8, y: 33))
@@ -55,9 +55,10 @@ for pixels in [16, 32] {
 let tiff=image.tiffRepresentation!
 try tiff.write(to: root.appendingPathComponent("design/brand/input-source-icon.tiff"))
 // The canonical name also carries AppKit's Template convention. Do not supply
-// the same fixed black artwork as an alternate/highlight icon: the system owns
-// the tint for a dark menu bar, including dark wallpaper in Light appearance.
-for name in ["LingheCraneMenuTemplate.tiff","LingheCraneMenu.tiff","PrivateInput.tiff","PrivateInputTemplate.tiff"] {try tiff.write(to:root.appendingPathComponent("apple/macOS/InputMethod/"+name))}
+// a fixed alternate icon: the system owns template tint. The new resource name
+// invalidates stale black artwork, and its literal pixels are light if a host
+// renders a TIS icon without applying template tint. Alpha geometry is unchanged.
+for name in ["LingheCraneLightTemplate.tiff","LingheCraneMenuTemplate.tiff","LingheCraneMenu.tiff","PrivateInput.tiff","PrivateInputTemplate.tiff"] {try tiff.write(to:root.appendingPathComponent("apple/macOS/InputMethod/"+name))}
 
 let pdf = NSMutableData()
 let consumer = CGDataConsumer(data: pdf as CFMutableData)!
@@ -65,7 +66,7 @@ var box = CGRect(origin: .zero, size: canvas)
 let context = CGContext(consumer: consumer, mediaBox: &box,
     [kCGPDFContextTitle: "Linghe compact crane template"] as CFDictionary)!
 context.beginPDFPage(nil)
-drawCrane(in: context)
+drawCrane(in: context, white: false)
 context.endPDFPage()
 context.closePDF()
 try (pdf as Data).write(to: root.appendingPathComponent("apple/macOS/InputMethod/LingheInputMenu.pdf"))

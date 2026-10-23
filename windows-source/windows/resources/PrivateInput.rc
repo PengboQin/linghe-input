@@ -1,1 +1,2 @@
-1 ICON "AppIcon.ico"
+#include "BrandingResource.h"
+LINGHE_BRANDING_ICON ICON "AppIcon.ico"

@@ -148,11 +148,11 @@ def verify_version_information(path, version=VERSION):
     return actual
 
 
-def verify_icon_resources(path,source):
+def verify_icon_resources(path,source,group_id=1):
     """Compare actual RT_GROUP_ICON/RT_ICON bytes against the current project ICO."""
     groups,_=pe_resources(path,14); images,_=pe_resources(path,3)
-    if set(groups)!={1}: raise ValueError('Missing or ambiguous icon group')
-    original=source.read_bytes(); group=groups[1]
+    if set(groups)!={group_id}: raise ValueError('Missing or ambiguous icon group')
+    original=source.read_bytes(); group=groups[group_id]
     if len(original)<6 or len(group)<6: raise ValueError('Truncated icon header')
     header=struct.unpack_from('<HHH',original); actual=struct.unpack_from('<HHH',group)
     if header!=actual or header[0]!=0 or header[1]!=1 or not 1<=header[2]<=256:

@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1792716875,
-  "member_count": 1058,
-  "uncompressed_bytes": 147549155,
+  "created_at_unix": 1792719804,
+  "member_count": 1064,
+  "uncompressed_bytes": 147570950,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -1026,8 +1026,8 @@
     },
     {
       "path": "apple/project.yml",
-      "bytes": 12385,
-      "sha256": "33c66308ec4122b444d618e6987483785a21c1629ce873cab23de63a4596ee0c"
+      "bytes": 12388,
+      "sha256": "2c8a9bd44eb196a109e011c64504270f20b6f7a618b80ddd5c1e1c489540e9a6"
     },
     {
       "path": "apple/Shared/ActivityArchiveController.swift",
@@ -1566,8 +1566,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/Info.plist",
-      "bytes": 3151,
-      "sha256": "5fcdd4dcf398faa7158066bbb69e22b1bd408a8871922e81bc479175eff8342b"
+      "bytes": 3154,
+      "sha256": "be01f56b25fe8cc9b28397fe44c0ba74c8f76e2312eac428522c64c23c2ab5d1"
     },
     {
       "path": "apple/macOS/InputMethod/InputController.swift",
@@ -1575,19 +1575,24 @@
       "sha256": "8d2e5da6b39aa039fbb77c1e64d56c8a366fa951c1eb571660dd0f9640e4dcf0"
     },
     {
+      "path": "apple/macOS/InputMethod/LingheCraneLightTemplate.tiff",
+      "bytes": 5572,
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483"
+    },
+    {
       "path": "apple/macOS/InputMethod/LingheCraneMenu.tiff",
       "bytes": 5572,
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483"
     },
     {
       "path": "apple/macOS/InputMethod/LingheCraneMenuTemplate.tiff",
       "bytes": 5572,
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483"
     },
     {
       "path": "apple/macOS/InputMethod/LingheInputMenu.pdf",
       "bytes": 1077,
-      "sha256": "bf9d0a0168970fe6663d9a1b6496c21183d362729392a2aa09110f49de8ce59e"
+      "sha256": "056ca7352f35650168d9a5dac70e72aca6469a7c8c38f56d14090515107c814a"
     },
     {
       "path": "apple/macOS/InputMethod/MacArchiveEnglishInsertion.swift",
@@ -1652,12 +1657,12 @@
     {
       "path": "apple/macOS/InputMethod/PrivateInput.tiff",
       "bytes": 5572,
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483"
     },
     {
       "path": "apple/macOS/InputMethod/PrivateInputTemplate.tiff",
       "bytes": 5572,
-      "sha256": "2cb8e52eef94ab03286a08675bd0260b4e92af8062e35a82019a9d10415122a5"
+      "sha256": "54344ae0374ad889e6b4625041ac8c2e75c380b94aca937e0aec06d91ede9483"
     },
     {
       "path": "apple/macOS/InputMethod/main.swift",
@@ -2256,8 +2261,8 @@
     },
     {
       "path": "scripts/export_linghe_menu_icon.swift",
-      "bytes": 4167,
-      "sha256": "8d888342696de06bc61cfe600bccd4bd8aff120bf9e07872c3c9ca4b802f1098"
+      "bytes": 4328,
+      "sha256": "7a40e6178b41d98c7ce8c51c2c400a8d4852eb659a9c518d0584850ad5e744e5"
     },
     {
       "path": "scripts/generate_android_shared_assets.py",
@@ -3656,8 +3661,8 @@
     },
     {
       "path": "windows-source/tools/build_offline_installer.py",
-      "bytes": 17852,
-      "sha256": "c06ebf0e4a3e9d92365e636e05a01c8a63a1252ac73734d17b612ed12e1f987f"
+      "bytes": 17877,
+      "sha256": "2737532e9f5824797e14a2280e492ee66d711e5954bbc0056ef7bfec83d00210"
     },
     {
       "path": "windows-source/tools/build_preview.py",
@@ -4070,6 +4075,11 @@
       "sha256": "e21d55617c91e39ce23ae7444c0e35c5cba3beb79bfe44def89c1a7c4496350d"
     },
     {
+      "path": "windows-source/windows/docs/BRANDING057-SOURCE-20261022.md",
+      "bytes": 4712,
+      "sha256": "21b5b184a717fb149f2562e85d4939e9124b20234b760a98f37041b9e4ed168d"
+    },
+    {
       "path": "windows-source/windows/docs/CANDIDATE-ANCHOR056-20261022.md",
       "bytes": 3301,
       "sha256": "6ca464872e469809448af3321e2cb9bc1d20bad2ac2f7abf8b9fb2e99bb78cbc"
@@ -4131,8 +4141,8 @@
     },
     {
       "path": "windows-source/windows/installer/Setup.cpp",
-      "bytes": 47811,
-      "sha256": "fb58de2393eb922d5e62afc613061c1e7349405ee40f2713a985e07bb3b87877"
+      "bytes": 48060,
+      "sha256": "0b1dcc3ea275a8d93071853dce290cb5d845945b52fca0addbd4204a6fd2ddb2"
     },
     {
       "path": "windows-source/windows/installer/UpgradeState.h",
@@ -4145,9 +4155,14 @@
       "sha256": "3909a2a6fa3368a4b2e22c6febb0f08810bc24a350815762a519b8fba39f066c"
     },
     {
+      "path": "windows-source/windows/resources/BrandingResource.h",
+      "bytes": 46,
+      "sha256": "51bf79d6dbc46f15d604827d160a357e4a9eeb8d29fa40f338b341b29afc7994"
+    },
+    {
       "path": "windows-source/windows/resources/PrivateInput.rc",
-      "bytes": 21,
-      "sha256": "b11351c17852607346f64ede0f41c0fabdf933faf9cd68bcf9c1ddcc5bea7075"
+      "bytes": 70,
+      "sha256": "83f3fa14f9095b8f79bfae4c3ab6e78ff9bb6b8f2793451a188cb3257cbed6a3"
     },
     {
       "path": "windows-source/windows/src/CandidateAdmission.h",
@@ -4226,8 +4241,8 @@
     },
     {
       "path": "windows-source/windows/src/Registration.cpp",
-      "bytes": 10352,
-      "sha256": "2bcf7f2dee713783a40f527b2321cf92ec4f24ec198da8099f674f208ba40799"
+      "bytes": 12131,
+      "sha256": "54cc2197fc72b6062af741fc973d997f76989b3a75b3188a9796e025bfa35da7"
     },
     {
       "path": "windows-source/windows/src/ShiftTapMode.h",
@@ -4243,6 +4258,11 @@
       "path": "windows-source/windows/src/TextService.cpp",
       "bytes": 65182,
       "sha256": "554249c8967d83b19f4336cb39b73f5b43788bf9ba5f54e3397ebc3b0b824d21"
+    },
+    {
+      "path": "windows-source/windows/src/TsfBranding.h",
+      "bytes": 925,
+      "sha256": "db2f5aa8af9d6d72ffa5b9a2a0866b76e4594cfa90b50814153ff5be8c419225"
     },
     {
       "path": "windows-source/windows/src/TsfLayoutSink.h",
@@ -4438,6 +4458,16 @@
       "path": "windows-source/windows/tests/test_registration_identity.py",
       "bytes": 2999,
       "sha256": "790834fa096df4572cfad13b6f3964df87c5e1b022a4097211e22cf15cfd82bf"
+    },
+    {
+      "path": "windows-source/windows/tests/test_tsf_branding.py",
+      "bytes": 2941,
+      "sha256": "5d4ae9224fe3f038fe8d7b03f6b91a4dba86cd35b9793f11d5aee773e77c680e"
+    },
+    {
+      "path": "windows-source/windows/tests/tsf_branding_probe.cpp",
+      "bytes": 5445,
+      "sha256": "c8a06146bf16872a41f479fc867e8babe483a177bb98f9858fff0ce2bb001359"
     },
     {
       "path": "windows-source/windows/tests/tsf_dll_host.cpp",
@@ -5376,8 +5406,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3085,
-      "sha256": "f030a2fc66dfe01c46dff92581887fc4ca163ccbb5fc468da57042d978146d0e"
+      "bytes": 2970,
+      "sha256": "560f33cccd2ef4567dfa362d8d9a89f6c68cba302b4cd2a3c7e7a1a6debc9cfa"
     },
     {
       "path": "LICENSE-NOTICE.md",
