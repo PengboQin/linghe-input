@@ -1,13 +1,6 @@
 {
   "schema_version": 2,
-  "snapshot_kind": "development-source-only",
-  "complete_build_source_published": false,
-  "development_archive": {
-    "name": "LingheInput-Source-20261022-development-win056-r3.zip",
-    "sha256": "5f412a139172316dc63f6543e250c942d1ebe11fef9b0e38064b74742555802a",
-    "public_download_available": false
-  },
-  "last_release_tag": "v0.2026.10.21-preview.2",
+  "snapshot_kind": "release-source",
   "excluded_files": [
     {
       "path": "android/app/src/main/res/drawable/app_icon.png",
@@ -220,5 +213,12 @@
       "reason": "binary_fixture"
     }
   ],
-  "instructions": "The development browsing tree is not a complete build source. Released installers correspond only to their immutable release tag and source attachment. The audited development archive exists locally but has not been published; do not assume the old source archive matches these new source files."
+  "instructions": "The browsing tree omits the listed public resources. Fetch the complete source ZIP from the matching release, verify SHA256, and fetch dependency sources listed in SOURCE-ATTACHMENTS-INDEX.json. Binary installers and source correspond to their immutable release tag; clean-room and byte-identical rebuilding are not claimed.",
+  "release_tag": "v0.2026.10.22-win056-preview.1",
+  "full_source_zip": {
+    "name": "LingheInput-Source-20261022-win056.zip",
+    "bytes": 99329853,
+    "sha256": "dc7af3bc3abb9c8589679141e4e12a562b878f5fcfd345ee6753494506238740",
+    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.22-win056-preview.1/LingheInput-Source-20261022-win056.zip"
+  }
 }

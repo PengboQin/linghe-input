@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "release": "v0.2026.10.21-preview.2",
+  "release": "v0.2026.10.22-win056-preview.1",
   "originalCodeLicense": "GPL-3.0-only",
   "thirdPartyLicensesUnchanged": true,
   "productSource": {
-    "name": "LingheInput-Source-20261021-preview2.zip",
-    "bytes": 85535692,
-    "sha256": "01cc27a5e027c1dd58705922bbbd3e91d7eafc00ce1d67e359a5361b6a477363",
-    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.21-preview.2/LingheInput-Source-20261021-preview2.zip"
+    "name": "LingheInput-Source-20261022-win056.zip",
+    "bytes": 99329853,
+    "sha256": "dc7af3bc3abb9c8589679141e4e12a562b878f5fcfd345ee6753494506238740",
+    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.22-win056-preview.1/LingheInput-Source-20261022-win056.zip"
   },
   "dependencySources": [
     {
@@ -70,5 +70,6 @@
     "bouncyCastleOfficialSHA256SHA512SHA1Verified": true
   },
   "buildGuide": "BUILDING.md inside product source ZIP",
-  "selfHostingGuide": "SELF-HOSTING.md inside product source ZIP"
+  "selfHostingGuide": "SELF-HOSTING.md inside product source ZIP",
+  "releaseScope": "Windows 0.5.6-win1 preview installer plus complete product source; other platform installers are not updated."
 }

@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1792715545,
+  "created_at_unix": 1792716875,
   "member_count": 1058,
-  "uncompressed_bytes": 147548551,
+  "uncompressed_bytes": 147549155,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -4071,8 +4071,8 @@
     },
     {
       "path": "windows-source/windows/docs/CANDIDATE-ANCHOR056-20261022.md",
-      "bytes": 2856,
-      "sha256": "58b381920f803c6149cebf4e9a448cda4c1a01b896ecfc1e6addb99b709a5a99"
+      "bytes": 3301,
+      "sha256": "6ca464872e469809448af3321e2cb9bc1d20bad2ac2f7abf8b9fb2e99bb78cbc"
     },
     {
       "path": "windows-source/windows/docs/CANDIDATE-ANCHOR056-SOURCE-20261022.md",
@@ -5376,8 +5376,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 2926,
-      "sha256": "1187300b76c37e6ecb3b4a968462374a02a1f3efd05259f4d8c12ea4bfdc2f5c"
+      "bytes": 3085,
+      "sha256": "f030a2fc66dfe01c46dff92581887fc4ca163ccbb5fc468da57042d978146d0e"
     },
     {
       "path": "LICENSE-NOTICE.md",
