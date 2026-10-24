@@ -7,7 +7,7 @@ import java.util.*;
 /** Clipboard sync is opt-in and separate from activity archiving. Android only
  * allows reads in the foreground or an active non-sensitive default IME. */
 final class AutoClipboardBridge {
- static final String ENABLED="automatic-clipboard",GENERATION="automatic-clipboard-generation";
+ static final String ENABLED=ClipboardSyncConsent.AUTOMATIC,GENERATION=ClipboardSyncConsent.AUTOMATIC_GENERATION;
  private static AutoClipboardBridge instance;
  static synchronized AutoClipboardBridge get(Context c){if(instance==null)instance=new AutoClipboardBridge(c.getApplicationContext());return instance;}
  static final class Incoming {
@@ -24,8 +24,16 @@ final class AutoClipboardBridge {
  void synchronizeActive(SyncClient client)throws Exception{String scope=client.automaticClipboardScope();if(scope.isEmpty())scope=client.automaticLearningScope();client.synchronizeAutomatic(cadence.learningTurn(scope,SystemClock.elapsedRealtime()));}
  long activePollDelay(boolean success){long delay=cadence.pollDelay(success);return success&&liveAvailable?15000:delay;}
  boolean enabled(){return prefs.getBoolean(ENABLED,false);}
+ boolean syncEnabled(){return ClipboardSyncConsent.enabled(prefs);}
  private boolean allowed(){return enabled()&&prefs.getBoolean("clipboard",false)&&!PersonalReset.expired(context)&&!context.getSharedPreferences("privacy-reset",0).getBoolean("pending",false);}
  void setEnabled(boolean on){synchronized(SyncClient.CONSENT_LOCK){prefs.edit().putBoolean(ENABLED,on).putLong(GENERATION,prefs.getLong(GENERATION,0)+1).commit();if(!on){liveAvailable=false;long disabled=prefs.getLong(GENERATION,0);liveWorker.execute(()->{try{if(prefs.getLong(GENERATION,0)==disabled&&!enabled())new ClipboardLiveStore(context).clearCredential();}catch(Exception unavailable){/* Preferences already fence every use. */}});}}state.reset("");observe(false);wake();}
+ // Preference IO stays on SyncTasks.worker; clipboard APIs stay on the main loop.
+ boolean setSyncEnabled(boolean on){
+  boolean saved=ClipboardSyncConsent.set(prefs,on);
+  if(!on||!saved){liveAvailable=false;long disabled=prefs.getLong(GENERATION,0);liveWorker.execute(()->{try{if(prefs.getLong(GENERATION,0)==disabled&&!enabled())new ClipboardLiveStore(context).clearCredential();}catch(Exception unavailable){/* Consent fences already reject stale work. */}});}
+  main.post(()->{state.reset("");observe(false);wake();});
+  return saved;
+ }
  void foreground(boolean on){foreground=Math.max(0,foreground+(on?1:-1));if(on)observe(false);wake();}
  void imeActive(boolean safe){imeSafe=safe;if(safe)observe(false);wake();}
  // Composition does not pause transport or writes. Only candidate presentation
@@ -54,7 +62,7 @@ final class AutoClipboardBridge {
    }
    String unavailableVersion="unsupported:"+description.getTimestamp();
    if(!description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)){state.observe(unavailableVersion,null,false);return true;}
-   PersistableBundle extra=description.getExtras();if(extra!=null&&extra.getBoolean("android.content.extra.IS_SENSITIVE",false)){state.observe(unavailableVersion,null,false);return true;}
+   PersistableBundle extra=description.getExtras(); // Provider hints do not change authorized readable-text transport.
    ClipData data=clipboard.getPrimaryClip();if(data==null||data.getItemCount()!=1){state.observe(unavailableVersion,null,false);return true;}ClipData.Item item=data.getItemAt(0);
    if(item.getUri()!=null||item.getIntent()!=null||item.getText()==null){state.observe(unavailableVersion,null,false);return true;}String text=item.getText().toString();if(!AutoClipboardState.eligible(text)){state.observe(unavailableVersion,null,false);return true;}
    long timestamp=description.getTimestamp();if(timestamp<=0&&!changed)return false;

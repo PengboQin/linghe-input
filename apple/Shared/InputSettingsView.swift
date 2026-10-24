@@ -4,7 +4,10 @@ import PrivateInputKit
 import AppKit
 #endif
 
+enum InputSettingsPane { case input, appearance, learning }
+
 struct InputSettingsView: View {
+    var pane: InputSettingsPane = .input
     @State private var layout = KeyboardPreferences.chineseLayout
     @State private var english = KeyboardPreferences.startInEnglish
     @State private var remember = KeyboardPreferences.rememberWords
@@ -26,7 +29,7 @@ struct InputSettingsView: View {
     var body: some View {
         Form {
             #if os(iOS)
-            Section {
+            if pane == .input { Section {
 
                 Picker("中文布局", selection: Binding(get: { layout }, set: { layout = $0; KeyboardPreferences.chineseLayout = $0 })) {
                     Text("中文 · 九宫格").tag("nine")
@@ -53,10 +56,10 @@ struct InputSettingsView: View {
                 }
             } header: { Text("键盘") } footer: {
                 Text("允许完全访问后，键盘可使用主 App 的自定义设置。基础打字和本地记忆无需完全访问。")
-            }
+            } }
             #endif
             #if os(iOS)
-            Section("外观") {
+            if pane == .appearance { Section("外观") {
                 Picker("明暗模式", selection: Binding(get: { appearanceTheme.mode }, set: { appearanceTheme.mode = $0; KeyboardPreferences.appearanceTheme = appearanceTheme })) {
                     ForEach(InputTheme.Mode.allCases) { Text($0.title).tag($0) }
                 }.accessibilityIdentifier("ios-theme-mode").accessibilityValue(appearanceTheme.mode.title)
@@ -65,33 +68,33 @@ struct InputSettingsView: View {
                         Label { Text(accent.title) } icon: { Image(systemName: "circle.fill").foregroundStyle(Color(uiColor: accent.color.uiColor)) }.tag(accent)
                     }
                 }.accessibilityIdentifier("ios-theme-accent").accessibilityValue(appearanceTheme.accent.title)
-            }
-            Section("按键反馈") {
+            } }
+            if pane == .input { Section("按键反馈") {
                 Picker("按键触感", selection: Binding(get: { feedback }, set: { feedback = $0; KeyboardPreferences.keyFeedback = $0 })) {
                     Text("关闭").tag("off")
                     Text("轻").tag("light")
                     Text("强").tag("strong")
                 }
-            }
+            } }
             #endif
             #if os(macOS)
-            Section("键盘") {
-                Button("在系统设置中管理输入法") {
-                    NSWorkspace.shared.open(URL(fileURLWithPath:"/System/Applications/System Settings.app"))
+            if pane == .input { Section("键盘") {
+                LabeledContent("系统键盘") {
+                    Button("打开设置") {
+                        NSWorkspace.shared.open(URL(fileURLWithPath:"/System/Applications/System Settings.app"))
+                    }.buttonStyle(.link)
                 }
                 Toggle("默认英文输入",isOn:Binding(get:{english},set:{english=$0;KeyboardPreferences.startInEnglish=$0}))
-                Toggle("Caps Lock 内部中英兼容",isOn:Binding(get:{capsLockSwitch},set:{capsLockSwitch=$0;KeyboardPreferences.macCapsLockSwitchEnabled=$0})).accessibilityIdentifier("mac-caps-lock-switch")
                 Toggle("中英混输",isOn:Binding(get:{mixedEnglish},set:{mixedEnglish=$0;KeyboardPreferences.mixedEnglish=$0}))
             }
-            MacAppearanceSettings()
             Section("候选显示") {
-                Picker("收起时的候选数",selection:Binding(get:{candidateLayout.collapsedCount},set:{candidateLayout = .init(collapsedCount:$0,expandedColumns:candidateLayout.expandedColumns,expandedRows:candidateLayout.expandedRows);KeyboardPreferences.desktopCandidateLayout=candidateLayout})) {
+                Picker("单行候选数",selection:Binding(get:{candidateLayout.collapsedCount},set:{candidateLayout = .init(collapsedCount:$0,expandedColumns:candidateLayout.expandedColumns,expandedRows:candidateLayout.expandedRows);KeyboardPreferences.desktopCandidateLayout=candidateLayout})) {
                     ForEach(DesktopCandidateLayout.allowed,id:\.self) {Text("\($0) 个").tag($0)}
                 }.accessibilityIdentifier("desktop-candidate-count")
-                Picker("展开后的列数",selection:Binding(get:{candidateLayout.expandedColumns},set:{candidateLayout = .init(collapsedCount:candidateLayout.collapsedCount,expandedColumns:$0,expandedRows:candidateLayout.expandedRows);KeyboardPreferences.desktopCandidateLayout=candidateLayout})) {
+                Picker("展开列数",selection:Binding(get:{candidateLayout.expandedColumns},set:{candidateLayout = .init(collapsedCount:candidateLayout.collapsedCount,expandedColumns:$0,expandedRows:candidateLayout.expandedRows);KeyboardPreferences.desktopCandidateLayout=candidateLayout})) {
                     ForEach(DesktopCandidateLayout.allowed,id:\.self) {Text("\($0) 列").tag($0)}
                 }.accessibilityIdentifier("desktop-candidate-columns")
-                Picker("展开后的行数",selection:Binding(get:{candidateLayout.expandedRows},set:{candidateLayout = .init(collapsedCount:candidateLayout.collapsedCount,expandedColumns:candidateLayout.expandedColumns,expandedRows:$0);KeyboardPreferences.desktopCandidateLayout=candidateLayout})) {
+                Picker("展开行数",selection:Binding(get:{candidateLayout.expandedRows},set:{candidateLayout = .init(collapsedCount:candidateLayout.collapsedCount,expandedColumns:candidateLayout.expandedColumns,expandedRows:$0);KeyboardPreferences.desktopCandidateLayout=candidateLayout})) {
                     ForEach(DesktopCandidateLayout.allowed,id:\.self) {Text("\($0) 行").tag($0)}
                 }.accessibilityIdentifier("desktop-candidate-rows")
             }
@@ -99,27 +102,30 @@ struct InputSettingsView: View {
                 Toggle("本地 MacBERT 辅助排序",isOn:Binding(get:{macSemantic},set:{macSemantic=$0;KeyboardPreferences.macSemanticEnabled=$0}))
                 Text("在本机结合附近文字辅助排序；上下文临时使用，不保存或上传。").font(.footnote).foregroundStyle(.secondary)
             }
+            Section {
+                DisclosureGroup("兼容选项") {
+                    Toggle("Caps Lock 内部中英兼容",isOn:Binding(get:{capsLockSwitch},set:{capsLockSwitch=$0;KeyboardPreferences.macCapsLockSwitchEnabled=$0})).accessibilityIdentifier("mac-caps-lock-switch")
+                }
+            }
+            }
+            if pane == .appearance { MacAppearanceSettings() }
             #endif
-            Section("符号输入") {
+            if pane == .input { Section("符号输入") {
                 Toggle("自动补全成对符号", isOn: Binding(get: { autoPairSymbols }, set: { autoPairSymbols = $0; KeyboardPreferences.autoPairSymbols = $0 }))
                     .accessibilityIdentifier("symbol-auto-pair-setting")
                 Toggle("配对后光标移入中间", isOn: Binding(get: { caretInsidePairs }, set: { caretInsidePairs = $0; KeyboardPreferences.caretInsidePairs = $0 }))
                     .accessibilityIdentifier("symbol-caret-inside-setting")
-            }
-            Section("输入记忆") {
+            } }
+            if pane == .learning { Section("输入记忆") {
                 Toggle("学习常用词", isOn: Binding(get: { remember }, set: { remember = $0; KeyboardPreferences.rememberWords = $0 }))
                 Text("离线记录选词习惯，常用词逐渐前移。关闭后暂停学习并使用基础词库，已有记忆保留。").font(.footnote).foregroundStyle(.secondary)
             }
             Section("词库") {
-                #if os(iOS)
                 NavigationLink("个人词库与快捷短语") { PersonalLexiconSettings() }.accessibilityIdentifier("open-personal-lexicon")
-                #endif
-                LabeledContent("拼音", value: "常用词 · 连续长句")
-                LabeledContent("古诗文", value: "内置常见名句")
-            }
+            } }
         }
         #if os(iOS)
-        .navigationTitle("输入设置")
+        .navigationTitle(pane == .appearance ? "外观" : pane == .learning ? "词库与学习" : "输入设置")
         #else
         .formStyle(.grouped)
         #endif

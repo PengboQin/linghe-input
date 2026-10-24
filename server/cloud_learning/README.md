@@ -48,7 +48,7 @@ Start the HTTP service explicitly. Enabling the timer is an independent operator
 step, not part of importing Python. The one-shot worker runs no earlier than ten
 minutes after its previous tick, consumes at most 1024 events per group and 16 due groups per tick (oldest first), and does
 hourly 14-day-half-life score decay; no model/watermark change means no new version.
-One group has at most 5000 shared lexeme keys, 64000 native component rows,
+The current expanded-10000/v2 profile has at most 10000 shared lexeme keys per group, 64000 native component rows,
 64 producers (up to eight local aliases per device), and 100000 accepted/rejected events; the SQLite
 page budget is 1GiB. At capacity ingestion fails closed; it does NOT erase raw
 activity or silently drop queued learning. Monitor aggregate counts/database size

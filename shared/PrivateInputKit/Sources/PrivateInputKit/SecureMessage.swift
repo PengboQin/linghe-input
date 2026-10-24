@@ -97,7 +97,7 @@ public enum SecureMessage {
     static func validatePayload(_ payload: Data, domain: SyncDomain) throws {
         switch domain {
         case .learning:
-            var model = LearningModel(); try model.merge(payload)
+            var model = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try model.merge(payload)
         case .clipboard:
             guard !payload.isEmpty, payload.count <= 65536, let text = String(data: payload, encoding: .utf8), !text.contains("\0") else { throw SyncSecurityError.invalidPayload }
         }

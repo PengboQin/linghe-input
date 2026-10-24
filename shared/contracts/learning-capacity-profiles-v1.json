@@ -1,0 +1,323 @@
+{
+  "schema": "private-input.learning-capacity-profiles",
+  "schema_version": 1,
+  "sourceRoot": "../..",
+  "default_profile": {
+    "profile_id": "legacy-5000",
+    "profile_version": 1
+  },
+  "policy": "Profiles are local controlled contracts, not network-negotiated authority. Unknown id/version rejects. Bytes and batch limits remain hard ceilings; overflow must defer without dropping evidence. Selecting expanded locally does not authorize a group/model upgrade.",
+  "field_definitions": {
+    "term_rows": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/Learning.swift",
+        "android/app/src/main/java/live/linghe/privateinput/LearningModel.java",
+        "../private-input-windows/windows/activity/ContentModel.cpp",
+        "core/src/private_input.cpp"
+      ]
+    },
+    "native_positive_rows": {
+      "unit": "positive_rows",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/RimeCheckpoint.swift",
+        "android/app/src/main/java/live/linghe/privateinput/RimeCheckpoint.java"
+      ]
+    },
+    "producer_term_rows": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "apple/Shared/AppleCloudLearningBridge.swift",
+        "server/cloud_learning/components.py"
+      ]
+    },
+    "model_term_rows": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningReplica.swift",
+        "android/app/src/main/java/live/linghe/privateinput/CloudLearningState.java",
+        "server/cloud_learning/service.py"
+      ]
+    },
+    "model_tombstone_rows": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningClient.swift",
+        "server/cloud_learning/service.py"
+      ]
+    },
+    "observed_count_keys": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/LearningImportJournal.swift"
+      ]
+    },
+    "applied_generation_keys": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/LearningImportJournal.swift"
+      ]
+    },
+    "producer_accepted_keys": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningComponents.swift",
+        "android/app/src/main/java/live/linghe/privateinput/CloudLearningState.java"
+      ]
+    },
+    "producer_represented_keys": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningComponents.swift",
+        "android/app/src/main/java/live/linghe/privateinput/CloudLearningState.java"
+      ]
+    },
+    "recent_term_rows": {
+      "unit": "keys",
+      "expands_in_v2": true,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/RecentLearning.swift",
+        "android/app/src/main/java/live/linghe/privateinput/RecentLearning.java"
+      ]
+    },
+    "cloud_fence_keys": {
+      "unit": "keys",
+      "expands_in_v2": false,
+      "source_refs": [
+        "android/app/src/main/java/live/linghe/privateinput/CloudLearningState.java"
+      ]
+    },
+    "learning_archive_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/Learning.swift",
+        "android/app/src/main/java/live/linghe/privateinput/LearningModel.java"
+      ]
+    },
+    "native_tsv_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/RimeCheckpoint.swift",
+        "core/src/private_input.cpp"
+      ]
+    },
+    "recent_archive_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/RecentLearning.swift"
+      ]
+    },
+    "journal_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/LearningImportJournal.swift"
+      ]
+    },
+    "checkpoint_state_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "android/app/src/main/java/live/linghe/privateinput/RimeCheckpoint.java"
+      ]
+    },
+    "runtime_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "apple/Shared/LocalLearningCoordinator.swift"
+      ]
+    },
+    "producer_file_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "apple/Shared/AppleCloudLearningBridge.swift"
+      ]
+    },
+    "cloud_state_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningComponents.swift"
+      ]
+    },
+    "response_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningClient.swift",
+        "server/cloud_learning/service.py"
+      ]
+    },
+    "producer_records_per_batch": {
+      "unit": "records",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningComponents.swift",
+        "server/cloud_learning/components.py"
+      ]
+    },
+    "event_records_per_batch": {
+      "unit": "records",
+      "expands_in_v2": false,
+      "source_refs": [
+        "server/cloud_learning/service.py",
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningClient.swift"
+      ]
+    },
+    "recent_components": {
+      "unit": "components",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/RecentLearning.swift",
+        "android/app/src/main/java/live/linghe/privateinput/RecentLearning.java"
+      ]
+    },
+    "producers_per_device": {
+      "unit": "producers",
+      "expands_in_v2": false,
+      "source_refs": [
+        "server/cloud_learning/components.py"
+      ]
+    },
+    "producers_per_group": {
+      "unit": "producers",
+      "expands_in_v2": false,
+      "source_refs": [
+        "server/cloud_learning/components.py"
+      ]
+    },
+    "component_rows": {
+      "unit": "rows",
+      "expands_in_v2": false,
+      "source_refs": [
+        "server/cloud_learning/components.py"
+      ]
+    },
+    "request_body_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningClient.swift",
+        "android/app/src/main/java/live/linghe/privateinput/CloudLearningSync.java"
+      ]
+    },
+    "request_wrapper_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "server/cloud_learning/service.py"
+      ]
+    },
+    "event_rows": {
+      "unit": "rows",
+      "expands_in_v2": false,
+      "source_refs": [
+        "server/cloud_learning/service.py"
+      ]
+    },
+    "pending_observation_rows": {
+      "unit": "rows",
+      "expands_in_v2": false,
+      "source_refs": [
+        "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningReplica.swift"
+      ]
+    },
+    "content_state_bytes": {
+      "unit": "bytes",
+      "expands_in_v2": false,
+      "source_refs": [
+        "../private-input-windows/windows/activity/ContentStore.cpp"
+      ]
+    }
+  },
+  "profiles": [
+    {
+      "profile_id": "legacy-5000",
+      "profile_version": 1,
+      "limits": {
+        "term_rows": 5000,
+        "native_positive_rows": 5000,
+        "producer_term_rows": 5000,
+        "model_term_rows": 5000,
+        "model_tombstone_rows": 5000,
+        "observed_count_keys": 5000,
+        "applied_generation_keys": 5000,
+        "producer_accepted_keys": 5000,
+        "producer_represented_keys": 5000,
+        "recent_term_rows": 5000,
+        "cloud_fence_keys": 10000,
+        "learning_archive_bytes": 2097152,
+        "native_tsv_bytes": 2097152,
+        "recent_archive_bytes": 2097152,
+        "journal_bytes": 8388608,
+        "checkpoint_state_bytes": 8388608,
+        "runtime_bytes": 12582912,
+        "producer_file_bytes": 4194304,
+        "cloud_state_bytes": 12582912,
+        "response_bytes": 4194304,
+        "producer_records_per_batch": 128,
+        "event_records_per_batch": 128,
+        "recent_components": 40000,
+        "producers_per_device": 8,
+        "producers_per_group": 64,
+        "component_rows": 64000,
+        "request_body_bytes": 524288,
+        "request_wrapper_bytes": 1048576,
+        "event_rows": 100000,
+        "pending_observation_rows": 8192,
+        "content_state_bytes": 8388608
+      }
+    },
+    {
+      "profile_id": "expanded-10000",
+      "profile_version": 2,
+      "limits": {
+        "term_rows": 10000,
+        "native_positive_rows": 10000,
+        "producer_term_rows": 10000,
+        "model_term_rows": 10000,
+        "model_tombstone_rows": 10000,
+        "observed_count_keys": 10000,
+        "applied_generation_keys": 10000,
+        "producer_accepted_keys": 10000,
+        "producer_represented_keys": 10000,
+        "recent_term_rows": 10000,
+        "cloud_fence_keys": 10000,
+        "learning_archive_bytes": 2097152,
+        "native_tsv_bytes": 2097152,
+        "recent_archive_bytes": 2097152,
+        "journal_bytes": 8388608,
+        "checkpoint_state_bytes": 8388608,
+        "runtime_bytes": 12582912,
+        "producer_file_bytes": 4194304,
+        "cloud_state_bytes": 12582912,
+        "response_bytes": 4194304,
+        "producer_records_per_batch": 128,
+        "event_records_per_batch": 128,
+        "recent_components": 40000,
+        "producers_per_device": 8,
+        "producers_per_group": 64,
+        "component_rows": 64000,
+        "request_body_bytes": 524288,
+        "request_wrapper_bytes": 1048576,
+        "event_rows": 100000,
+        "pending_observation_rows": 8192,
+        "content_state_bytes": 8388608
+      }
+    }
+  ]
+}

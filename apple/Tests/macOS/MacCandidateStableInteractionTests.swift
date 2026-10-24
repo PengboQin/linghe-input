@@ -5,6 +5,39 @@ import PrivateInputKit
 /// Real AppKit table/window geometry and pointer dispatch, without a live
 /// input source or access to the user's text client or learned vocabulary.
 final class MacCandidateStableInteractionTests:XCTestCase {
+    @MainActor func testFeedbackLongSentenceFitsExpandedCellAndFreezesUntilReopened()throws {
+        let panel=MacCandidatePanel(),caret=try caret(),table=try table(panel)
+        defer{panel.hide()}
+        let sentence="我看看这个到时候能有多长"
+        let short=(0..<90).map{InputCandidate(text:"合成词",comment:"",index:$0)}
+        var rows=short;rows[0]=InputCandidate(text:sentence,comment:"",index:0)
+        panel.show(items:rows,selected:0,offset:0,expanded:false,caret:caret)
+        panel.show(items:rows,selected:0,offset:0,expanded:true,caret:caret)
+        let frame=panel.frame,widths=panel.columnWidthsForAcceptance,height=table.rowHeight
+        let cell=try XCTUnwrap(table.view(atColumn:0,row:0,makeIfNecessary:true) as? NSTableCellView)
+        cell.layoutSubtreeIfNeeded()
+        let label=try XCTUnwrap(cell.subviews.compactMap{$0 as? NSTextField}.first{$0.stringValue==sentence})
+        XCTAssertGreaterThan(label.bounds.width,0)
+        let bounds=(sentence as NSString).boundingRect(with:NSSize(width:min(label.bounds.width,label.preferredMaxLayoutWidth),height:1000),options:[.usesLineFragmentOrigin,.usesFontLeading],attributes:[.font:try XCTUnwrap(label.font)])
+        XCTAssertLessThanOrEqual(ceil(bounds.height),min(40,label.bounds.height),"The actual feedback sentence must fit its displayed label, not only its AX label or tooltip")
+        print("FEEDBACK_PHRASE_FIT label=\(label.bounds.size) requiredHeight=\(ceil(bounds.height)) columns=\(widths) panel=\(frame.size)")
+        XCTAssertTrue(panel.columnsFitViewportForAcceptance)
+        XCTAssertTrue(try XCTUnwrap(NSScreen.main).visibleFrame.contains(frame))
+        XCTAssertGreaterThan(try XCTUnwrap(widths.first),try XCTUnwrap(widths.last),"Only the column needing phrase room should widen")
+        var refreshed=rows;refreshed[1]=InputCandidate(text:String(repeating:sentence,count:4),comment:"",index:1)
+        for (items,selection) in [(refreshed,7),(short,0),(rows+short,30)] {
+            panel.show(items:items,selected:selection,offset:0,expanded:true,caret:caret)
+            XCTAssertEqual(panel.frame,frame);XCTAssertEqual(panel.columnWidthsForAcceptance,widths);XCTAssertEqual(table.rowHeight,height)
+            XCTAssertFalse(try XCTUnwrap(table.enclosingScrollView).hasVerticalScroller)
+            XCTAssertFalse(try XCTUnwrap(table.enclosingScrollView).hasHorizontalScroller)
+        }
+        panel.show(items:short,selected:0,offset:0,expanded:false,caret:caret)
+        panel.show(items:short,selected:0,offset:0,expanded:true,caret:caret)
+        XCTAssertLessThan(try XCTUnwrap(panel.columnWidthsForAcceptance.first),try XCTUnwrap(widths.first),"Reopening measures the new first screen")
+        panel.hide()
+        panel.show(items:rows,selected:0,offset:0,expanded:true,caret:caret)
+        XCTAssertEqual(panel.columnWidthsForAcceptance,widths,"A new composition remeasures even if its first publication is expanded")
+    }
     @MainActor func testOrdinarySentenceIsReadableInFixedTwoLineGrid()throws {
         let panel=MacCandidatePanel(),caret=try caret(),table=try table(panel)
         defer{panel.hide()}

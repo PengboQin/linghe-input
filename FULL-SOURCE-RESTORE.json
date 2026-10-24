@@ -1,8 +1,14 @@
 {
   "schema_version": 2,
-  "snapshot_kind": "release-source",
+  "snapshot_kind": "baseline-20261024",
   "complete_build_source_published": true,
-  "last_release_tag": "v0.2026.10.22-win057-preview.1",
+  "development_archive": {
+    "name": "LingheInput-Source-20261024-baseline.zip",
+    "sha256": "e0dfa601c50ddd0bab925709555cdecafc0112037a28dbec25b6b02c249685cb",
+    "public_download_available": true,
+    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.24-baseline.1/LingheInput-Source-20261024-baseline.zip"
+  },
+  "last_release_tag": "v0.2026.10.24-baseline.1",
   "excluded_files": [
     {
       "path": "android/app/src/main/res/drawable/app_icon.png",
@@ -56,7 +62,7 @@
     },
     {
       "path": "resources/rime/private_pinyin.dict.yaml",
-      "sha256": "5d22821f4b637ad831edd65e24f85d6253a3d1969731f1166a9da3ff611fd916",
+      "sha256": "42325582c0123c707110410efcded127f372c8dda320036a629f8c8267d976e6",
       "reason": "public_data"
     },
     {
@@ -66,32 +72,32 @@
     },
     {
       "path": "resources/rime/build/private_nine.prism.bin",
-      "sha256": "a8bb04b75c7989e0e7dd39dd64cf704c387793116c3b340abd6fced186ae0b99",
+      "sha256": "8ff7308507e77c52a8dd05619d14ffcc7fc50d531303d9515b0b4d27d9a90049",
       "reason": "binary_asset"
     },
     {
       "path": "resources/rime/build/private_nine_initials.prism.bin",
-      "sha256": "1f020b9f61ea500a283515f106e6dfc02e70f3439c7c3af9cd016db068e9189a",
+      "sha256": "18a1ae625ae82e7230f26aae14087cb78b799eb6853dd3ba6079951369faadd4",
       "reason": "binary_asset"
     },
     {
       "path": "resources/rime/build/private_pinyin.prism.bin",
-      "sha256": "ab31558cfe18e97a2be6925cd6414ecb6bc08c4fdb03517dff7bd818ef465fa9",
+      "sha256": "41a20e1be8bd38ce3d3fa2fc843470a7eb2122ce6d91f4484281da680bbc7159",
       "reason": "binary_asset"
     },
     {
       "path": "resources/rime/build/private_pinyin.reverse.bin",
-      "sha256": "21b3da8eeb0aef108f42904fbc59f41c2752bdbae8e5a69d7db8fbb08f56f477",
+      "sha256": "6b78754d69f30c41d62ecdd887718a06c39faf105e74afb2afd613b548d3e30d",
       "reason": "binary_asset"
     },
     {
       "path": "resources/rime/build/private_pinyin.table.bin",
-      "sha256": "759f8e21d25b984f18e57f91ffc263ad6b1894d48fd503adf46adeb6966afa07",
+      "sha256": "29dffa4c9f41e0b05eb1b8ac5cb83474f2c9a7523cf25f61aa3e4def171dc50d",
       "reason": "binary_asset"
     },
     {
       "path": "resources/rime/build/private_pinyin_exact.prism.bin",
-      "sha256": "4c69166978301dfbdef4a52814a9328238857c36ce662d0040a868735253d6b7",
+      "sha256": "9fa0514a00487c237119b112f381c7e0b7b1b5810dc47e89ddce82337bec50da",
       "reason": "binary_asset"
     },
     {
@@ -220,10 +226,5 @@
       "reason": "binary_fixture"
     }
   ],
-  "instructions": "For a complete build source, download this release source archive and the dependency source attachments listed in SOURCE-ATTACHMENTS-INDEX.json. Binary resources omitted from this browsing tree are present in the complete source archive. Installer verification and known limitations are described in the release notes.",
-  "source_archive": {
-    "name": "LingheInput-Source-20261022-win057.zip",
-    "sha256": "e54e0236202a18bdba5bb85cd99866073f06062ba830f8395c5d70b6a7fcec18",
-    "download_url": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.22-win057-preview.1/LingheInput-Source-20261022-win057.zip"
-  }
+  "instructions": "Use the complete baseline source ZIP for build resources. Apply the platform overlay listed in BASELINE-SOURCES.json only when rebuilding that desktop baseline package. The web tree intentionally omits large public data, compiled dictionaries and binary assets."
 }

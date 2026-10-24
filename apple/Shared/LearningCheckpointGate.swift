@@ -1,5 +1,23 @@
 import Foundation
 
+/// Effective authorization state, not a renewable lease's timestamp.
+/// Each validation still computes expiry against the current wall clock.
+enum LearningRefreshConsentContext {
+    static func make(sharing:Bool,departed:String,deadline:Double,now:Double,
+                     cloud:Bool,group:String,epoch:UInt64)->String {
+        "\(sharing)|\(departed)|leased:\(deadline>0)|expired:\(deadline>0 && now>=deadline)|cloud:\(cloud)|\(group)|\(epoch)"
+    }
+}
+
+/// Process-wide UI generations are held by the keyboard controller on main.
+/// A retained hidden owner cannot commit across another controller appearing.
+/// This is an additional cancellation fence, never a maintenance grant itself.
+struct LearningPresentationFence {
+    private(set) var generation: UInt64 = 0
+    mutating func advance() { generation &+= 1 }
+    func permits(_ captured: UInt64) -> Bool { generation == captured }
+}
+
 /// Native dictionary export/import cannot be interrupted safely. An empty
 /// composition while the keyboard is visible is not a maintenance window: the
 /// next touch may already be on its way. Only a completed dismissal grants a
@@ -9,7 +27,13 @@ struct LearningMaintenanceBoundary {
     private var phase = Phase.visible
     private var generation: UInt64 = 0
     mutating func willAppear() { generation &+= 1; phase = .visible }
-    mutating func willDisappear() { generation &+= 1; phase = .dismissing }
+    /// UIKit may repeat this callback before or after didDisappear. Only an
+    /// actual visible-to-dismissing transition owns teardown; duplicates must
+    /// not invalidate a completed hidden grant or its queued preparation.
+    @discardableResult mutating func willDisappear() -> Bool {
+        guard phase == .visible else { return false }
+        generation &+= 1; phase = .dismissing; return true
+    }
     mutating func didDisappear() -> UInt64? {
         guard phase == .dismissing else {return nil}
         phase = .hidden; return generation

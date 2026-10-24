@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the pinned public LGPL dictionary; no private lexicons or installers."""
+"""Rebuild the pinned public dictionary with the audited modern carrier policy; no private lexicons or installers."""
 import argparse
 from decimal import Decimal
 import hashlib
@@ -9,6 +9,8 @@ import re
 import shutil
 import subprocess
 from mainland_lexicon_policy import candidate_allowed, candidate_tier, POLICY, DATA, SOURCE
+from dictionary_reading_projection import ReadingProjection
+import modern_reading_reference as modern_readings
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -61,14 +63,23 @@ def main():
     # or take the maximum within the same explicit weight representation.
     original=(conversion/'luna-simp.yaml').read_text()
     head,body=original.split('\n...\n',1);records={};duplicates=0;excluded_dictionary=0;tier3_rows=0
-    for line in body.splitlines():
+    raw_rows=list(modern_readings.dictionary_rows(sources['rime-luna-pinyin']/'luna_pinyin.dict.yaml'))
+    converted_rows=[line for line in body.splitlines() if line and not line.startswith('#')]
+    if len(raw_rows)!=len(converted_rows):raise SystemExit('Converted source alignment differs; no resource promoted')
+    reading_projection=ReadingProjection()
+    for source_row,line in zip(raw_rows,converted_rows):
         if not line or line.startswith('#'):continue
         fields=line.split('\t')
         if len(fields) not in [2,3] or not fields[0] or not re.fullmatch('[a-z]+(?: [a-z]+)*',fields[1]):
             raise SystemExit('Unexpected dictionary record; output not promoted')
-        if not candidate_allowed(fields[0]):
+        projected=reading_projection.project(source_row[0],fields[0],fields[1],fields[2] if len(fields)==3 else '')
+        if projected is None:
             excluded_dictionary+=1;continue
-        key=tuple(fields[:2]);weight=fields[2] if len(fields)==3 else ''
+        word,reading,weight=projected
+        if not candidate_allowed(word):
+            excluded_dictionary+=1;continue
+        fields=[word,reading]
+        key=(word,reading)
         if candidate_tier(fields[0]) == 3:
             weight='1';tier3_rows+=1
         if key in records:
@@ -78,6 +89,11 @@ def main():
                 if old.endswith('%') != weight.endswith('%'):raise SystemExit('Mixed explicit weight representations')
                 weight=max([old,weight],key=lambda x:Decimal(x.rstrip('%')))
         records[key]=weight
+    for character,readings in reading_projection.allowed.items():
+        for reading in readings:
+            key=(character,reading)
+            if key not in records:
+                records[key]='1' if candidate_tier(character)==3 else reading_projection.character_weight(character,reading)
     # Public-domain classical lines and project-authored common phrases.
     for line in (ROOT/'resources/phrases/classics.tsv').read_text().splitlines():
         if not line or line.startswith('#'): continue
@@ -85,7 +101,11 @@ def main():
         if not re.fullmatch('[a-z]+(?: [a-z]+)*', reading): raise SystemExit('Invalid supplemental reading')
         if not candidate_allowed(word):
             excluded_dictionary+=1;continue
-        records[(word, reading)] = '1' if candidate_tier(word)==3 else '100000'
+        projected=reading_projection.project(word,word,reading,'100000')
+        if projected is None:
+            excluded_dictionary+=1;continue
+        word,reading,weight=projected
+        records[(word, reading)] = '1' if candidate_tier(word)==3 else weight
     # Small project-authored recall supplement. This is availability, not a
     # forced top slot. Preserve any higher existing base-dictionary weight.
     supplement_rows=0
@@ -95,11 +115,15 @@ def main():
         if not candidate_allowed(word) or not re.fullmatch('[a-z]+(?: [a-z]+)*',reading):
             raise SystemExit('Invalid mainland public recall supplement')
         if not weight.isdigit() or not 1<=int(weight)<=500:raise SystemExit('Unexpected public recall base weight')
+        projected=reading_projection.project(word,word,reading,weight)
+        if projected is None:
+            excluded_dictionary+=1;continue
+        word,reading,weight=projected
         key=(word,reading)
         if key not in records:records[key]='1' if candidate_tier(word)==3 else weight;supplement_rows+=1
     head=head.replace('name: luna_pinyin','name: private_pinyin')
-    head=re.sub(r'version:.*',"version: '2026.10.21-mainland1'",head)
-    note='# Modified by Private Input on 2026-10-21: pinned OpenCC t2s; 8105 mainland standard-character admission; variant deduplication. LGPL-3.0.\n'
+    head=re.sub(r'version:.*',"version: '2026.10.23-modern-carriers1'",head)
+    note='# Modified by Private Input on 2026-10-23: pinned t2s and modern carrier reading/weight projection; combined GPL-3.0, original Luna portions LGPL-3.0.\n'
     with (output/'private_pinyin.dict.yaml').open('w') as stream:
         stream.write(note+head+'\n...\n')
         for (word,reading),weight in sorted(records.items()):
@@ -126,12 +150,13 @@ def main():
         for document in ['LICENSE','AUTHORS']:
             shutil.copy2(directory/document,notices/(name+'-'+document))
     shutil.copy2(ROOT/'vendor/dictionaries/licenses/GPL-3.0.txt',notices/'GPL-3.0.txt')
-    manifest={'version':1,'modifiedDate':'2026-10-21','license':'LGPL-3.0; preserve pinned upstream notices and corresponding source',
+    shutil.copy2(modern_readings.REFERENCE/'LICENSE',notices/'rime-ice-LICENSE')
+    manifest={'version':1,'modifiedDate':'2026-10-23','license':'GPL-3.0 combined reading projection; Luna/essay portions retain LGPL-3.0 notices; preserve corresponding pinned sources',
               'characterPolicy':{'id':POLICY,'source':json.loads(SOURCE.read_text()),'excludedDictionaryRows':excluded_dictionary,'excludedVocabularyWords':excluded_vocabulary,'tier3RowsCapped':tier3_rows,'tier3BaseWeightCap':1,'publicRecallRowsAdded':supplement_rows,'publicRecallSource':'resources/phrases/common-platforms.tsv'},
-              'upstream':lock,'openccCommit':opencc_sha,'conversionFiles':converter_files,
+              'upstream':lock,'readingPolicy':{'id':modern_readings.POLICY,'reference':modern_readings.reference_metadata(),'statistics':reading_projection.stats,'scope':'Only conversion-affected carriers; community reference, not an official pronunciation standard'},'openccCommit':opencc_sha,'conversionFiles':converter_files,
               'dictionaryRows':len(records),'dictionaryDuplicatesCollapsed':duplicates,
               'vocabularyWords':len(frequencies),'vocabularyDuplicatesCollapsed':essay_duplicates,
-              'policy':'t2s before compilation; only standard 8105 Chinese characters; tier3 base weight at most 1; retain other default dictionary weights or same-type maximum; vocabulary maximum for collapsed variants; no network/compilation in typing path',
+              'policy':'pinned t2s with standard original carriers restored; modern affected-carrier reading admission and normalized per-character reading priors; unambiguous public word annotations projected offline; standard8105/tier3 cap retained; vocabulary maximum for collapsed variants; never touches private data or typing path',
               'generated':[{ 'path':str(p.relative_to(output)), 'bytes':p.stat().st_size,'sha256':digest(p)} for p in sorted(output.rglob('*')) if p.is_file()]}
     (output/'SOURCE.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(json.dumps({k:manifest[k] for k in ['dictionaryRows','dictionaryDuplicatesCollapsed','vocabularyWords','vocabularyDuplicatesCollapsed']}))

@@ -192,6 +192,16 @@ class ArchiveTests(unittest.TestCase):
         self.assert_error('policy_conflict', 2, value)
         self.assert_error('fields', 3, {'device_id': self.b, 'expected_version': 0, 'enabled': True, 'providers': ['ime.commit.v1']})
 
+    def test_group_mobile_control_does_not_remove_desktop_read_access(self):
+        from activity_archive.service import RelayIdentity
+        original=self.authority.resolve
+        def desktop(group,sender,now):
+            who=original(group,sender,now)
+            return RelayIdentity(who.group,who.sender,who.public,who.permissions,who.revision,who.digest,who.members,False)
+        self.authority.resolve=desktop
+        self.assert_error('manage_permission',2,{'expected_version':0,'enabled':True,'retention_days':30,'max_group_bytes':104857600})
+        self.assertFalse(self.call(1,{})['enabled'],'Ordinary authenticated status access stays available')
+
     def test_provider_consent_version_disable_and_group_close_reject_old_queue(self):
         self.enable()
         e = self.event()
@@ -703,7 +713,8 @@ class RelayAuthorityTests(unittest.TestCase):
             fixture = decode((ROOT / 'fixtures/protocol/relay-membership-v1.json').read_bytes())
             relay = Relay(path, clock=lambda: 1000)
             relay.register(fixture['initial'])
-            relay.update(fixture['paired']['group'], fixture['paired'])
+            from test_relay import seed_existing_membership
+            seed_existing_membership(relay,fixture['paired'])
             group = fixture['paired']['group']
             device = fixture['paired']['members'][1]['device']
             authority = RelayMembershipAuthority(path)
@@ -735,7 +746,8 @@ class RelayAuthorityTests(unittest.TestCase):
             fixture = decode((ROOT / 'fixtures/protocol/relay-membership-v1.json').read_bytes())
             relay = Relay(relay_path, clock=lambda: 1000)
             relay.register(fixture['initial'])
-            relay.update(fixture['paired']['group'], fixture['paired'])
+            from test_relay import seed_existing_membership
+            seed_existing_membership(relay,fixture['paired'])
             group, member = fixture['paired']['group'], fixture['paired']['members'][1]
             device = member['device']
             public = base64.b64decode(member['signingPublic'])

@@ -17,7 +17,7 @@ def main():
   return result.stdout
  sources=sorted((ROOT/'android/app/src/main/java').rglob('*.java'));tracked=sources+[ROOT/'android/tests/cli/CliLearningDeltaPublicationCheck.java',ROOT/'android/tests/host/LearningDeltaIndexTest.java'];before={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in tracked}
  classes=BUILD/'host';classes.mkdir(exist_ok=True)
- run('host-compile',[SDK/'jdk/bin/javac','--release','8','-encoding','UTF-8','-d',classes,ROOT/'android/app/src/main/java/live/linghe/privateinput/LearningDeltaIndex.java',ROOT/'android/tests/host/LearningDeltaIndexTest.java'])
+ run('host-compile',[SDK/'jdk/bin/javac','--release','8','-encoding','UTF-8','-d',classes,ROOT/'android/app/src/main/java/live/linghe/privateinput/LearningCapacityProfiles.java',ROOT/'android/app/src/main/java/live/linghe/privateinput/LearningDeltaIndex.java',ROOT/'android/tests/host/LearningDeltaIndexTest.java'])
  print(run('pure-delta-index',[SDK/'jdk/bin/java','-cp',classes,'live.linghe.privateinput.LearningDeltaIndexTest']).strip(),flush=True)
  generated=BUILD/'generated/live/linghe/privateinput';generated.mkdir(parents=True,exist_ok=True)
  (generated/'SyncBuildConfig.java').write_text('package live.linghe.privateinput; final class SyncBuildConfig {static final String DEFAULT_ENDPOINT="";}\n')

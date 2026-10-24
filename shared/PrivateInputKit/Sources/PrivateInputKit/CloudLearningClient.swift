@@ -221,7 +221,7 @@ public struct CloudLearningClient {
         struct Body: Encodable { let generation, from_version: UInt64; let limit: Int }
         let delta: CloudLearningDelta = try await rpc(5, Body(generation: generation, from_version: fromVersion, limit: 8), group: group, identity: identity, now: now)
         guard delta.generation == generation, delta.fromVersion == fromVersion, delta.toVersion >= fromVersion,
-              ["bounded-confirmed-decay-v1", "shared-lexeme-decay-v2"].contains(delta.algorithmVersion), delta.upserts.count <= 5000, delta.tombstones.count <= 5000,
+              ["bounded-confirmed-decay-v1", "shared-lexeme-decay-v2"].contains(delta.algorithmVersion), delta.upserts.count <= LearningCapacityProfiles.expanded10000.modelTermRows, delta.tombstones.count <= LearningCapacityProfiles.expanded10000.modelTombstoneRows,
               delta.modelSHA256.utf8.count == 64 else { throw CloudLearningError.invalid }
         return delta
     }

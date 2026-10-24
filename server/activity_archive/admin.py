@@ -5,6 +5,7 @@ import shutil
 import sqlite3
 
 from .service import ArchiveStore
+from .capacity import configured_database_bytes
 
 
 def main(argv=None):
@@ -20,6 +21,7 @@ def main(argv=None):
     restore.add_argument('--snapshot', required=True)
     restore.add_argument('--ledger', required=True, help='Latest independently preserved ledger, not snapshot-era copy')
     options = parser.parse_args(argv)
+    capacity = configured_database_bytes()
     path = Path(options.database)
     if options.command == 'restore':
         source = Path(options.snapshot)
@@ -33,7 +35,7 @@ def main(argv=None):
         Path(str(path) + '.erase-ledger.jsonl').chmod(0o600)
         # Constructor validates/replays the ledger before readiness. Any corrupt
         # ledger aborts; deployer must not switch service to an unverified path.
-        store = ArchiveStore(path)
+        store = ArchiveStore(path, max_database_bytes=capacity)
         try:
             store.rotate_recovery_identity()
         finally:
@@ -42,7 +44,7 @@ def main(argv=None):
         return
     if not path.is_file():
         parser.error('existing activity database required')
-    store = ArchiveStore(path)
+    store = ArchiveStore(path, max_database_bytes=capacity)
     try:
         if options.command == 'backup':
             destination = Path(options.destination)

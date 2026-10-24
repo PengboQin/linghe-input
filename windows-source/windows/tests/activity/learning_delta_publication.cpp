@@ -18,7 +18,7 @@ int main(){
  Json disk;unsigned saves=0;int fail=0;
  ContentStore store({},[&](const Json&value){if(fail==1||(fail==2&&!value.at("outgoing").items.empty())){fail=0;throw JsonError("synthetic durable failure");}disk=value;++saves;});
  Json receiverDisk;ContentStore receiver({},[&](const Json&value){receiverDisk=value;});
- store.configure(membership.anchor().group,2,true,true);receiver.configure(membership.anchor().group,2,true,true);
+ store.configure(membership.anchor().group,2,true,true);receiver.configure(membership.anchor().group,2,true,true);store.bindLearningOwner({uuidText(newId()),uuidText(a.device),uuidText(newId()),false});
  for(const auto&pair:{std::pair{"ni hao","你好"},std::pair{"tao bao","淘宝"},std::pair{"tian mao","天猫"}})store.record(pair.first,pair.second,uuidText(a.device));
  auto open=[&](const Json&wire,uint64_t now){auto result=protocol::openOpaquePayload(decodeContentEnvelope(wire),admission.localKey,membership.trust(protocol::MembershipDomain::learning),{},now);return Json::parse(std::string(result.payload.begin(),result.payload.end()),2097152,32,262144);};
  auto take=[&](uint64_t now){auto rows=store.pending(now);check(rows.size()==1);return rows[0];};
@@ -59,8 +59,8 @@ int main(){
  // A valid long word cannot become an overlong JSON object key in the local
  // delivery ledger. Exercise actual persisted ContentStore JSON restoration.
  Json longDisk;ContentStore longWord({},[&](const Json&value){longDisk=Json::parse(value.dump(),8388608);});longWord.configure(membership.anchor().group,2,true,true);
- longWord.record("chang ci",std::string(900,'x'),uuidText(a.device));longWord.publishLearning(membership,a,admission.localKey,1000);
+ longWord.bindLearningOwner({uuidText(newId()),uuidText(a.device),uuidText(newId()),false});longWord.record("chang ci",std::string(900,'x'),uuidText(a.device));longWord.publishLearning(membership,a,admission.localKey,1000);
  check(longDisk.at("learningPublication").at("entries").fields.begin()->first.size()==44);
  ContentStore longRestart(longDisk,[&](const Json&value){longDisk=Json::parse(value.dump(),8388608);});check(longRestart.current().at("archive").at("entries").items[0].at("text").str().size()==900);
- std::cout<<"PASS "<<checks<<" actual ContentStore encrypted delta/full-repair/atomic-outbox/old-wire checks; nativeSessions=false network=false\n";
+ std::cout<<"PASS "<<checks<<" actual ContentStore encrypted delta/full-repair/atomic-outbox/current-profile-metadata checks; nativeSessions=false network=false\n";
 }

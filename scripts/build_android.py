@@ -2,6 +2,7 @@
 """Small reproducible Java/JNI APK build using official SDK tools, no Gradle daemon."""
 from pathlib import Path
 import subprocess,os,shutil,zipfile,json,secrets,hashlib,re,xml.etree.ElementTree as ET,argparse,html
+from android_build_identity import write_config
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--unsigned',action='store_true',help='Build and verify an aligned unsigned APK; never read or create signing keys')
 parser.add_argument('--evidence-dir',type=Path,help='Project-local build evidence directory')
@@ -48,11 +49,7 @@ classes.mkdir()
 run([tools/'aapt2','link','-o',B/'resources.apk','-I',sdk,'--manifest',R/'android/app/src/main/AndroidManifest.xml','--java',B/'generated','-A',B/'assets',compiled])
 relay=''
 private_config=None # One release; endpoint is saved by the user or read from QR.
-config_java=B/'generated/live/linghe/privateinput/SyncBuildConfig.java';config_java.parent.mkdir(parents=True,exist_ok=True);fingerprint=lambda rows:hashlib.sha256('\n'.join(sorted(str(p.relative_to(R))+':'+hashlib.sha256(p.read_bytes()).hexdigest() for p in rows)).encode()).hexdigest()
-core_hash=fingerprint([p for p in (R/'core').rglob('*') if p.is_file() and p.suffix in ['.h','.hpp','.c','.cpp']])
-resource_hash=fingerprint([p for p in (R/'resources/rime').rglob('*') if p.is_file()]+[R/('resources/semantic/'+name) for name in ['pinyin-syllables.txt','nine-lexicon.bin','continuation.bin']])
-policy_hash=fingerprint([R/('android/app/src/main/java/live/linghe/privateinput/'+name+'.java') for name in ['InputQuality','PinyinMatch','PinyinCorrector','CommonExpressionOrder']])
-config_java.write_text('package live.linghe.privateinput; final class SyncBuildConfig {static final String DEFAULT_ENDPOINT='+json.dumps(relay)+';static final String CORE_HASH='+json.dumps(core_hash)+';static final String RESOURCE_HASH='+json.dumps(resource_hash)+';static final String POLICY_HASH='+json.dumps(policy_hash)+';}')
+config_java=B/'generated/live/linghe/privateinput/SyncBuildConfig.java';build_identity=write_config(R,config_java)
 qr=R/'vendor/zxing/core-3.5.3.jar';bc=R/'vendor/bouncycastle/bcprov-android.jar'
 java=list((R/'android/app/src/main/java').rglob('*.java'))+list((B/'generated').rglob('*.java'))
 run([jdk/'bin/javac','-encoding','UTF-8','--release','8','-classpath',str(sdk)+os.pathsep+str(qr)+os.pathsep+str(bc),'-d',classes,*java])

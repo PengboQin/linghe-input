@@ -217,7 +217,7 @@ struct ActivityArchiveView: View {
                     Toggle("本组允许归档", isOn: Binding(get: { model.serverEnabled }, set: { value in Task { await model.setGroup(enabled: value) } }))
                         .disabled(model.busy || !model.canManageGroup)
                     Stepper("保留 \(model.retentionDays) 天", value: $model.retentionDays, in: 1...3650).disabled(model.busy || !model.canManageGroup)
-                    Stepper("组容量 \(model.groupMegabytes) MB", value: $model.groupMegabytes, in: 1...1024).disabled(model.busy || !model.canManageGroup)
+                    Stepper("组容量 \(model.groupMegabytes) MB", value: $model.groupMegabytes, in: 1...4096).disabled(model.busy || !model.canManageGroup)
                     Button("保存组策略") { Task { await model.setGroup(enabled: model.serverEnabled) } }.disabled(model.busy || !model.canManageGroup)
                 }
                 Section {
@@ -238,7 +238,7 @@ struct ActivityArchiveView: View {
                         Toggle("暂停记录", isOn: Binding(get: { model.configuration.paused }, set: { model.pause($0) })).disabled(model.busy)
                     }
                 } header: { Text("本设备") } footer: {
-                    Text("每台设备单独开启。复制记录不代表已粘贴，上屏不代表已发送。不读取密码或系统禁止内容；iOS 仅在 App 活跃或键盘实际可用且允许完全访问时工作。")
+                    Text("每台设备单独开启。复制记录不代表已粘贴，上屏不代表已发送。输入记录不采集密码与未知安全字段；剪贴板记录系统实际允许读取的文字。iOS 仅在 App 活跃或键盘实际可用且允许完全访问时工作。")
                 }
                 if let status = model.queueStatus {
                     Section("本机状态") {
@@ -254,7 +254,7 @@ struct ActivityArchiveView: View {
             }
             if !model.message.isEmpty { Section { Text(model.message).foregroundStyle(.secondary) } }
             if model.busy { ProgressView() }
-        }.formStyle(.grouped).navigationTitle("活动归档")
+        }.formStyle(.grouped).navigationTitle("隐私与归档")
             .task { await model.reload() }
             .confirmationDialog("开启本设备明文归档？", isPresented: $confirmingEnable, titleVisibility: .visible) {
                 Button("开启所选来源") { Task { await model.setEnabled(true) } }

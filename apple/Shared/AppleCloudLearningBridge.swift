@@ -9,6 +9,63 @@ struct AppleCloudProducerSnapshot: Codable {
     let personalEpoch: String
     let producer: UUID
     let entries: [LearningEntry]
+    let capacityProfile: LearningCapacityReference?
+    init(version: Int, personalEpoch: String, producer: UUID, entries: [LearningEntry],
+         capacityProfile: LearningCapacityProfile? = nil) {
+        self.version = version; self.personalEpoch = personalEpoch; self.producer = producer; self.entries = entries
+        self.capacityProfile = capacityProfile.map(LearningCapacityReference.init)
+    }
+    private enum CodingKeys: String, CodingKey { case version, personalEpoch, producer, entries, capacityProfile = "capacity_profile" }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        version = try values.decode(Int.self, forKey: .version)
+        personalEpoch = try values.decode(String.self, forKey: .personalEpoch)
+        producer = try values.decode(UUID.self, forKey: .producer)
+        entries = try values.decode([LearningEntry].self, forKey: .entries)
+        capacityProfile = try values.decodeIfPresent(LearningCapacityReference.self, forKey: .capacityProfile)
+        if version == 1 { guard capacityProfile == nil else { throw InputDataError.incompatibleSchema } }
+        else if version == 2 {
+            guard try capacityProfile?.resolved() == LearningCapacityProfiles.expanded10000 else { throw InputDataError.incompatibleSchema }
+        } else { throw InputDataError.incompatibleSchema }
+    }
+    private func validate() throws {
+        guard personalEpoch == PersonalDataReset.generation,
+              entries.count <= LearningCapacityProfiles.expanded10000.producerTermRows,
+              Set(entries.map(\.id)).count == entries.count else { throw InputDataError.invalidRecord }
+        for row in entries {
+            try row.validate()
+            guard row.counts.count == 1, row.counts[producer.uuidString] != nil else { throw InputDataError.invalidRecord }
+        }
+    }
+    /// The containing app's existing sync owner upgrades metadata under the
+    /// same producer lock as native publication; no count/control is changed.
+    static func migrateCurrent(directory: URL) throws {
+        let epoch = PersonalDataEpoch(directory: directory); try epoch.requireCurrent()
+        let folder = directory.appendingPathComponent("CloudLearningProducers", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: folder.path) else { return }
+        let descriptor = Darwin.open(folder.appendingPathComponent("producer.lock").path, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard descriptor >= 0 else { throw SnapshotStoreError.busy }; defer { Darwin.close(descriptor) }
+        guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else { throw SnapshotStoreError.busy }; defer { flock(descriptor, LOCK_UN) }
+        let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.isSymbolicLinkKey]).filter { $0.pathExtension == "json" }
+        guard files.count <= LearningCapacityProfiles.expanded10000.producersPerDevice else { throw InputDataError.oversized }
+        for file in files {
+            guard try file.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink != true else { throw InputDataError.invalidRecord }
+            let data = try Data(contentsOf: file); guard data.count <= LearningCapacityProfiles.expanded10000.producerFileBytes else { throw InputDataError.oversized }
+            let old = try JSONDecoder().decode(Self.self, from: data); try old.validate()
+            guard file.lastPathComponent == old.producer.uuidString + ".json" else { throw InputDataError.invalidRecord }
+            guard old.version == 1 else { continue }
+            let upgraded = Self(version: 2, personalEpoch: old.personalEpoch, producer: old.producer,
+                entries: old.entries, capacityProfile: LearningCapacityProfiles.expanded10000)
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+            let current = try encoder.encode(upgraded); guard current.count <= LearningCapacityProfiles.expanded10000.producerFileBytes else { throw InputDataError.oversized }
+            try epoch.requireCurrent()
+            #if os(iOS)
+            try current.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            #else
+            try current.write(to: file, options: .atomic)
+            #endif
+        }
+    }
     static func publish(_ entries: [LearningEntry], producer: UUID, directory: URL, onlyIfAbsent: Bool = false) throws {
         let epoch = PersonalDataEpoch(directory: directory); try epoch.requireCurrent()
         let folder = directory.appendingPathComponent("CloudLearningProducers", isDirectory: true)
@@ -18,7 +75,10 @@ struct AppleCloudProducerSnapshot: Codable {
         guard descriptor >= 0 else { throw SnapshotStoreError.busy }; defer { Darwin.close(descriptor) }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else { throw SnapshotStoreError.busy }; defer { flock(descriptor, LOCK_UN) }
         if onlyIfAbsent, FileManager.default.fileExists(atPath: destination.path) { return }
-        var own = entries.map { row -> LearningEntry in
+        var own = try entries.map { row -> LearningEntry in
+            // Validate before projecting away peer counters; projection must
+            // never hide an invalid source record.
+            try row.validate()
             var copy = row; copy.counts = [producer.uuidString: row.counts[producer.uuidString] ?? 0]; return copy
         }
         var previousData: Data?
@@ -28,16 +88,25 @@ struct AppleCloudProducerSnapshot: Codable {
             guard data.count <= 4 * 1024 * 1024 else { throw InputDataError.oversized }
             previousData = data
             let old = try JSONDecoder().decode(Self.self, from: data)
-            guard old.version == 1, old.producer == producer, old.personalEpoch == PersonalDataReset.generation,
-                  old.entries.count <= 5000, Set(old.entries.map(\.id)).count == old.entries.count,
+            guard (old.version == 1 || old.version == 2), old.producer == producer, old.personalEpoch == PersonalDataReset.generation,
+                  old.entries.count <= LearningCapacityProfiles.expanded10000.producerTermRows, Set(old.entries.map(\.id)).count == old.entries.count,
                   old.entries.allSatisfy({ $0.counts.count == 1 && $0.counts[producer.uuidString] != nil }) else { throw InputDataError.invalidRecord }
+            for row in old.entries { try row.validate() }
             var merged = Dictionary(uniqueKeysWithValues: old.entries.map { ($0.id, $0) })
             for row in own { merged[row.id] = try merged[row.id].map { try $0.merging(row) } ?? row }
             own = Array(merged.values)
         }
-        guard own.count <= 5000 else { throw InputDataError.oversized }
+        // A peer-only word mapped to ownCount=0 carries no producer component
+        // when every control is also at its default. Remove only that neutral
+        // projection after merging; nonzero counters and all reset/delete/pin
+        // versions remain authoritative, including an explicit unpin.
+        own.removeAll { row in
+            (row.counts[producer.uuidString] ?? 0) == 0 && row.generation == 0 &&
+                !row.deleted && !row.pinned && row.pinVersion.sequence == 0 && row.pinVersion.device.isEmpty
+        }
+        guard own.count <= LearningCapacityProfiles.expanded10000.producerTermRows else { throw InputDataError.oversized }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(Self(version: 1, personalEpoch: PersonalDataReset.generation, producer: producer, entries: own.sorted { $0.id < $1.id }))
+        let data = try encoder.encode(Self(version: 2, personalEpoch: PersonalDataReset.generation, producer: producer, entries: own.sorted { $0.id < $1.id }, capacityProfile: LearningCapacityProfiles.expanded10000))
         guard data.count <= 4 * 1024 * 1024 else { throw InputDataError.oversized }
         try epoch.requireCurrent()
         if previousData == data { return }
@@ -75,9 +144,9 @@ struct AppleCloudProducerSnapshot: Codable {
             let data = try handle.read(upToCount: 4 * 1024 * 1024 + 1) ?? Data()
             guard data.count <= 4 * 1024 * 1024 else { throw InputDataError.oversized }
             let value = try JSONDecoder().decode(Self.self, from: data)
-            guard value.version == 1, value.personalEpoch == PersonalDataReset.generation,
-                  file.lastPathComponent == value.producer.uuidString + ".json", value.entries.count <= 5000 else { throw InputDataError.invalidRecord }
-            for row in value.entries { try row.validate(); guard row.counts.count == 1, row.counts[value.producer.uuidString] != nil else { throw InputDataError.invalidRecord } }
+            guard (value.version == 1 || value.version == 2), value.personalEpoch == PersonalDataReset.generation,
+                  file.lastPathComponent == value.producer.uuidString + ".json", value.entries.count <= LearningCapacityProfiles.expanded10000.producerTermRows else { throw InputDataError.invalidRecord }
+            try value.validate()
             return value
         }
     }
@@ -109,7 +178,7 @@ struct AppleCloudLearningRankState: Codable {
               let group, let epoch, let data = try? Data(contentsOf: directory.appendingPathComponent(filename)), data.count <= 4 * 1024 * 1024,
               let state = try? JSONDecoder().decode(Self.self, from: data), state.version == 2,
               state.group == group, state.membershipEpoch == epoch, state.personalEpoch == PersonalDataReset.generation,
-              state.expiresAt > UInt64(Date().timeIntervalSince1970), state.projection.weights.count <= 5000,
+              state.expiresAt > UInt64(Date().timeIntervalSince1970), state.projection.weights.count <= LearningCapacityProfiles.expanded10000.modelTermRows,
               state.projection.represented.count <= 8 else { return nil }
         return state
     }

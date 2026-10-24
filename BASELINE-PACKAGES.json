@@ -1,0 +1,35 @@
+{
+  "baselineID": "20261024-ios101-android55r1-mac82-win062",
+  "tag": "v0.2026.10.24-baseline.1",
+  "packages": [
+    {
+      "platformBuild": "Android55",
+      "name": "LingheInput-Android-arm64-0.1.54-r1.apk",
+      "bytes": 49431616,
+      "sha256": "c984883f278a68c9dfb6b26ac531eef504c0fe7abf786ef79975de69c6e4cde7",
+      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.24-baseline.1/LingheInput-Android-arm64-0.1.54-r1.apk"
+    },
+    {
+      "platformBuild": "Mac82",
+      "name": "LingheInput-Mac0.36.5-82-signed.zip",
+      "bytes": 151225257,
+      "sha256": "5681216c2626818e640ca52795b7b1b9e036e53906c4dcbd986d9125bc2461d4",
+      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.24-baseline.1/LingheInput-Mac0.36.5-82-signed.zip"
+    },
+    {
+      "platformBuild": "Windows062",
+      "name": "LingheInput-Windows11-x64-0.6.2-offline-preview.exe",
+      "bytes": 40765440,
+      "sha256": "2d1a3d727ae7cd14ec68b76cb70670b2141517a1ee3f0ad855d4fd05aafecd75",
+      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.24-baseline.1/LingheInput-Windows11-x64-0.6.2-offline-preview.exe"
+    }
+  ],
+  "iOS": {
+    "build": 101,
+    "sourceOnly": true,
+    "developmentIPAExcluded": true
+  },
+  "privateServerConfigurationIncluded": false,
+  "privateRecordsIncluded": false,
+  "sourceRebuildByteIdentityClaimed": false
+}

@@ -8,7 +8,7 @@ struct DeviceSyncInfo:Equatable {
     var quickInvitation: URL?
     var quickJoining = false
     var configured = false
-    var owner = false
+    var canManage = false
     var count = 0
     var endpoint = ""
     var invitation: URL?
@@ -34,6 +34,7 @@ private struct SyncConfiguration: Codable {
     var clipboard = false
     var automaticClipboard:Bool?
     var automaticClipboardGeneration:String?
+    var newGroupSharingDefaultsPending:Bool?
     var joining: DeviceInvitation?
     var request: PairRequest?
     var challenge: PairingChallenge?
@@ -131,6 +132,25 @@ actor DeviceSyncSession {
         if configuration.cloudMigrationRequested == true { cloudPhase = "待同步" }
     }
     private var now: UInt64 { UInt64(Date().timeIntervalSince1970) }
+    private var permitsGroupControl:Bool {
+        #if os(iOS)
+        return true
+        #else
+        // Offline phones still own control until server-reported departure.
+        return !deviceStatuses.isEmpty && deviceStatuses.allSatisfy {
+            $0.inactive || $0.kind == "macos" || $0.kind == "windows"
+        }
+        #endif
+    }
+    private func applyNewGroupSharingDefaults() throws {
+        // This entry runs only after creation/acceptance of a new group, never
+        // while loading an existing session or refreshing its preferences.
+        guard configuration.newGroupSharingDefaultsPending == true else {return}
+        try consent(learning:true,clipboard:true,newGroupDefault:true)
+        try setAutomaticClipboard(true,newGroupDefault:true)
+        configuration.newGroupSharingDefaultsPending=nil
+        try save()
+    }
     private func context(create: Bool = false) throws -> (DeviceIdentityVault, SecureReplicaStore, DeviceIdentity) {
         if vault == nil {
             #if os(iOS)
@@ -208,15 +228,15 @@ actor DeviceSyncSession {
             if let ticket=configuration.ticket, ticket.expiresAt<=now || configuration.ticketEpoch != setup.membership.statement.epoch {
                 configuration.ticket=nil;configuration.quickQR=nil;configuration.ticketEpoch=nil;try save()
             }
-            info.owner = setup.membership.anchor.ownerID == identity.ownerID
-            if info.owner, let endpoint = configuration.endpoint { info.invitation = try DeviceInvitation(endpoint: endpoint, anchor: setup.membership.anchor).link(allowLoopbackHTTP: Self.loopback) }
+            info.canManage = (try setup.membership.member(identity.device).permissions == .all) && permitsGroupControl
+            if info.canManage, let endpoint = configuration.endpoint { info.invitation = try DeviceInvitation(endpoint: endpoint, anchor: setup.membership.anchor).link(allowLoopbackHTTP: Self.loopback) }
             if configuration.clipboard {
                 let legacy=try store.clipboard(group:group,now:now)
                 let snapshot=try? AppleClipboardLiveStorage.store().snapshot(now:now)
                 let live=snapshot?.configuration.certificate.group==group && snapshot?.configuration.certificate.epoch==setup.membership.statement.epoch ? snapshot?.received ?? []:[]
                 info.clips=ClipboardLiveProjection.merge(legacy,live,group:group,epoch:setup.membership.statement.epoch,now:now)
             }
-            if let request = configuration.ownerRequest {
+            if permitsGroupControl, let request = configuration.ownerRequest {
                 info.ownerPending = true; info.code = try? store.pendingApproval(session: request.session, now: now).code
             }
         }
@@ -227,7 +247,7 @@ actor DeviceSyncSession {
                 info.code = try DevicePairing.authenticationCode(challenge, request: request, recipient: identity, now: now)
             }
         }
-        if let ticket=configuration.ticket,ticket.expiresAt>now,let qr=configuration.quickQR {
+        if permitsGroupControl,let ticket=configuration.ticket,ticket.expiresAt>now,let qr=configuration.quickQR {
             info.ticket=ticket;info.quickInvitation=try qr.link()
         }
         info.devices=deviceStatuses;info.departed=configuration.departed
@@ -240,16 +260,21 @@ actor DeviceSyncSession {
         guard let endpoint = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)) else { throw RelayClientError.invalidEndpoint }
         let client = try RelayClient(endpoint: endpoint, allowLoopbackHTTP: Self.loopback)
         let (_, store, identity) = try context(create: true)
-        if configuration.group == nil {
+        let newGroup = configuration.group == nil
+        if newGroup {
             let setup = try GroupSetup.create(owner: identity); try store.initializeGroup(setup)
             configuration.group = setup.membership.anchor.group
+            configuration.newGroupSharingDefaultsPending=true
         }
         configuration.endpoint = endpoint; try save()
         guard let group = configuration.group else { throw ReplicaStoreError.missingGroup }
         try await client.register(store.group(group).membership)
+        try applyNewGroupSharingDefaults()
     }
     func makeQuickInvitation() async throws {
         guard let group=configuration.group else { throw ReplicaStoreError.missingGroup }
+        try await refreshDeviceStatus()
+        guard configuration.group==group,permitsGroupControl else {throw MembershipError.notMember}
         let (_,store,identity)=try context()
         let setup=try store.group(group)
         guard let endpoint=configuration.endpoint else { throw RelayClientError.invalidEndpoint }
@@ -260,6 +285,9 @@ actor DeviceSyncSession {
     }
     func closeQuickInvitation() async throws {
         guard let ticket=configuration.ticket,let group=configuration.group else {return}
+        if !permitsGroupControl {
+            configuration.ticket=nil;configuration.quickQR=nil;configuration.ticketEpoch=nil;try save();return
+        }
         let (_,_,identity)=try context()
         try await client().cancelTicket(ticket.ticket,group:group,identity:identity,now:now)
         if configuration.ticket?.ticket==ticket.ticket {configuration.ticket=nil;configuration.quickQR=nil;configuration.ticketEpoch=nil;try save()}
@@ -302,7 +330,7 @@ actor DeviceSyncSession {
         let (_,store,identity)=try context()
         try await refreshMembership()
         var setup=try store.group(group)
-        guard try setup.membership.member(identity.device).permissions == .all else {return}
+        guard try setup.membership.member(identity.device).permissions == .all,permitsGroupControl else {return}
         let expired=Set(deviceStatuses.filter{$0.inactive && !$0.isSelf}.map(\.device))
         if !expired.isEmpty {
             let change=try store.prepareMemberChange(group:group,members:setup.membership.statement.members.filter{!expired.contains($0.device)},now:now)
@@ -385,6 +413,8 @@ actor DeviceSyncSession {
             try store.acceptPairing(package, challenge: challenge, request: request, confirmedCode: code, now: now)
             configuration.profileRegistered=nil;configuration.personalEpoch=PersonalDataReset.generation;configuration.departed=nil
             configuration.group = invitation.anchor.group; configuration.joining = nil; configuration.request = nil; configuration.challenge = nil; configuration.quickJoining=nil;configuration.pendingQuickCode=nil;configuration.pendingQuickURL=nil
+            configuration.newGroupSharingDefaultsPending=true
+            try applyNewGroupSharingDefaults()
         } else { throw PairingError.malformed }
         try save()
     }
@@ -417,6 +447,7 @@ actor DeviceSyncSession {
         }
         let status=try await client().deviceStatus(group:group,identity:identity,now:now)
         if status.departed {try resetForDeparture(reason:status.reason ?? "removed");return}
+        try applyNewGroupSharingDefaults()
         deviceStatuses=status.devices
         let persist=configuration.lastActivity==nil || now<(configuration.lastActivity ?? now) || now-(configuration.lastActivity ?? now)>=60 || configuration.idleDays != status.devices.first(where:{$0.isSelf})?.idleDays
         if persist {configuration.lastActivity=now}
@@ -435,6 +466,7 @@ actor DeviceSyncSession {
     func removeDevice(_ device:UUID) async throws {
         guard let group=configuration.group else {throw ReplicaStoreError.missingGroup}
         try await refreshDeviceStatus();guard configuration.group==group else {return}
+        guard permitsGroupControl else {throw MembershipError.notMember}
         let (_,store,identity)=try context()
         guard let target=deviceStatuses.first(where:{$0.device==device}) else {throw MembershipError.notMember}
         if platformKind=="ios",device != identity.device,target.kind != "macos" && target.kind != "windows" {throw MembershipError.notMember}
@@ -478,7 +510,7 @@ actor DeviceSyncSession {
         configuration=SyncConfiguration();configuration.endpoint=endpoint;configuration.departed=reason
         configuration.personalEpoch=PersonalDataReset.generation;deviceStatuses=[];try save()
     }
-    func consent(learning: Bool, clipboard: Bool) throws {
+    func consent(learning: Bool, clipboard: Bool,newGroupDefault:Bool=false) throws {
         if !clipboard {
             let liveIdentity=try? context().2
             try? AppleClipboardLiveStorage.revokeAndClear(identity:liveIdentity,now:now)
@@ -489,6 +521,7 @@ actor DeviceSyncSession {
         #endif
         let previous = configuration
         try authorization.update(.init(learning: learning, clipboard: clipboard)) {
+            if !newGroupDefault {configuration.newGroupSharingDefaultsPending=nil}
             if !learning, configuration.cloudMigrationRequested == true {
                 configuration.cloudMigrationRequested = false; configuration.cloudRevocationPending = true
                 configuration.lastCloudModelVerifiedAt = nil
@@ -536,7 +569,9 @@ actor DeviceSyncSession {
             }
         }
         if configuration.learning, let shared = LocalLearningCoordinator.sharedDirectory() {
-            var outgoing=LearningModel()
+            try store.migrateLearningCapacity(group: group)
+            var outgoing=try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
+            try outgoing.merge(store.learningArchive(group: group))
             if let archive=try SharedLearningSnapshot(directory:shared).read() { try outgoing.merge(archive) }
             if let directory=PersonalLexiconLocation.directory {
                 try outgoing.mergePersonalLexicon(PersonalLexiconStore(directory:directory).syncSnapshot())
@@ -727,7 +762,22 @@ actor DeviceSyncSession {
             }
         }
     }
-    func setAutomaticClipboard(_ enabled:Bool) throws {
+    /// One user-facing choice, retaining the two existing authorization layers.
+    /// A legacy manual-sharing grant alone is never upgraded merely by viewing UI.
+    func setClipboardSynchronization(_ enabled: Bool) throws {
+        let learning = configuration.learning
+        if !enabled { try consent(learning: learning, clipboard: false); return }
+        if configuration.clipboard && configuration.automaticClipboard == true { return }
+        try setAutomaticClipboard(false)
+        try consent(learning: learning, clipboard: true)
+        do { try setAutomaticClipboard(true) }
+        catch {
+            // An incomplete enable must not leave automatic observation authorized.
+            try? consent(learning: learning, clipboard: false)
+            throw error
+        }
+    }
+    func setAutomaticClipboard(_ enabled:Bool,newGroupDefault:Bool=false) throws {
         guard !enabled || configuration.clipboard else {throw ReplicaStoreError.sharingDisabled}
         if !enabled {
             let liveIdentity=try? context().2
@@ -735,6 +785,7 @@ actor DeviceSyncSession {
             Task {await AppleClipboardLiveStorage.sendPendingRevocations()}
         }
         let previous=configuration
+        if !newGroupDefault {configuration.newGroupSharingDefaultsPending=nil}
         configuration.automaticClipboard=enabled
         configuration.automaticClipboardGeneration=enabled ? UUID().uuidString:nil
         if enabled {UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.removeObject(forKey:"automatic-clipboard-read-paused")}
@@ -926,6 +977,7 @@ actor DeviceSyncSession {
             _ = try AppleCloudMigrationSeed.consume(inbox: base.appendingPathComponent("CloudMigrationSeeds", isDirectory: true),
                 group: group, device: identity.device, personalEpoch: personalEpoch, shared: directory, policy: policy)
             try AppleCloudProducerSnapshot.seedCommittedProducer(base: base.deletingLastPathComponent(), directory: directory)
+            try AppleCloudProducerSnapshot.migrateCurrent(directory: directory)
             let snapshots = try AppleCloudProducerSnapshot.read(directory: directory)
             func persist() throws {
                 try check()

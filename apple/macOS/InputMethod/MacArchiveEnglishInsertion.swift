@@ -53,4 +53,6 @@ final class MacArchiveMutationTrackingClient: MacInputClient {
     func mark(_ text: String, cursor: Int) { marked = true; base.mark(text, cursor: cursor) }
     func surroundingText() -> SurroundingText? { base.surroundingText() }
     func correctionAnchor(expectedSuffix: String) -> MacInputAnchor? { base.correctionAnchor(expectedSuffix: expectedSuffix) }
+    func symbolPairContext() -> SymbolPairing.EditContext? { base.symbolPairContext() }
+    func deleteSymbolPair(_ plan: SymbolPairing.DeletionPlan) -> Bool { base.deleteSymbolPair(plan) }
 }

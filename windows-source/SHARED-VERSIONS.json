@@ -8,9 +8,21 @@
       "same_bytes": false
     },
     {
+      "path": "core/include/learning_capacity_profiles.h",
+      "main_sha256": "2960cf8c424dfd24fbd13eae7bfdac9bec803028bc44afab598af89971083c59",
+      "windows_sha256": "9f28d1fd486a6e5fb1bb389c50ee61ae6fd736f840cacdf97bcc5016c7400259",
+      "same_bytes": false
+    },
+    {
       "path": "core/include/mainland_candidate_policy.h",
       "main_sha256": "050d617ef603056d8fd844f90c3b4cc3754135e7284721bafd3dec87728fad65",
       "windows_sha256": "64683a54ed33e3983880974c0b40a404c4bc6b108d1f7fc98247754f953f0b45",
+      "same_bytes": false
+    },
+    {
+      "path": "core/include/modern_candidate_reading_policy.h",
+      "main_sha256": "954b52d373eb3651df579e93ab637acc1df0da460a325154d293c871906d1546",
+      "windows_sha256": "33fbdd573654d4bbbd31c496e464ab781fa14aa22fba5a90ed12cbe625a86bc5",
       "same_bytes": false
     },
     {
@@ -21,14 +33,20 @@
     },
     {
       "path": "core/include/pinyin_text.h",
-      "main_sha256": "3a13328518383e1687d0e0f3d7226e6e403241e3c0bd9b3301b518444401ceaa",
+      "main_sha256": "e94229cbd2c32c4526a594eb6fb569c2b61438ba7d6bf8ee9af7fb3ae846baf4",
       "windows_sha256": "03761a000abb4f7e0fdcb693ddfbecc7b38de8ac8deb3528d65178d9547dcb47",
       "same_bytes": false
     },
     {
       "path": "core/include/private_input.h",
-      "main_sha256": "ff2e8556cef8602b6dd6f6566070b66f90f0ec15eb4cb3f370f39079ab96a984",
+      "main_sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190",
       "windows_sha256": "918566fe2b50b363df29c47e72ae5e45ec66f4af2e7fcbdcbfa4f066f6dab17c",
+      "same_bytes": false
+    },
+    {
+      "path": "core/include/private_modern_readings.h",
+      "main_sha256": "a2fff6fe61470d94170cf190bd883019c836642915c4332c152000fce562fcd9",
+      "windows_sha256": "d1d2810e7b6e1dcaf04edff6009d8d7c339d14fefdbe65682d702b06e6966c3d",
       "same_bytes": false
     },
     {
@@ -51,8 +69,20 @@
     },
     {
       "path": "core/src/private_input.cpp",
-      "main_sha256": "b3e0e32328e19d311046c27debc1d2b4c1f5e814e1712e1a0ece62034d0709d5",
+      "main_sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e",
       "windows_sha256": "09dcc2126bf32ffa2f7cb7d30b25528ec6718fd3440ecc9fc08395ac48c4b744",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/candidate_batch_budget.cpp",
+      "main_sha256": "2206c6bff2b52a4a81e8c2013d58e5e19a72aac0ded1139f4ba2e2ba9b879e60",
+      "windows_sha256": "df5209760e836bf1c5cd0444d9725f93f5eb2216aa09c35b613a94060185ca03",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/candidate_batch_budget_native.cpp",
+      "main_sha256": "412ad9c8746c8e84abd1a430e0103025c63898b2785ae66a07617638acd6a6e4",
+      "windows_sha256": "fde609faf6f9dd774358f0c5605dfd7d5782a9b86a1fa473bf81c206c87ba2ce",
       "same_bytes": false
     },
     {
@@ -86,9 +116,27 @@
       "same_bytes": false
     },
     {
+      "path": "core/tests/learning_capacity_native.cpp",
+      "main_sha256": "e6c089c92a22845f37c491857f200183a23c1720bf2d7d886f69d993d4cf0e81",
+      "windows_sha256": "5b03b6350e443421f570597b4cb7ac6add768174bab051ddf1f5f8ce1283fd94",
+      "same_bytes": false
+    },
+    {
       "path": "core/tests/mainland_candidate_policy.cpp",
       "main_sha256": "0a94cce952f6b5889f2826fd6f4331060f2badc3f7736d74c36b2a700b5c65b6",
       "windows_sha256": "bdb77d6bf4b217090f1823fc5780fd5518b2f9c71a2d0dc0ed7f2e54ebe73506",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/modern_reading_native.cpp",
+      "main_sha256": "e3a796b0198a805978003015a9625a6e29e71d19b884f1fe82d6f8d3f93a04e2",
+      "windows_sha256": "5f7f08180341669812f8ebf2ff724f2b4fc698a6dc49c6584ec22d4cc2848c90",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/modern_reading_policy.cpp",
+      "main_sha256": "32fc9264f01fbee495f1f146eb8ec02425a8b159cacc10d765bf2f3975343041",
+      "windows_sha256": "52a8e350ed2aa0fd9dddf3407b188e1fd944b4d2ed4f57f24e37da93457d4eff",
       "same_bytes": false
     },
     {
@@ -146,8 +194,14 @@
       "same_bytes": false
     },
     {
+      "path": "core/tests/fixtures/legacy_candidate_batch_20261023.inc",
+      "main_sha256": "e5adddc9c17e2603cd7018fe729b184ad7b10ffbbc64ac09000344808adee2bb",
+      "windows_sha256": "3f3e2a249d268ab5ba5386fd583cdd6a9c45cd32e5800e004085de48d831a054",
+      "same_bytes": false
+    },
+    {
       "path": "resources/rime/SOURCE.json",
-      "main_sha256": "14c2ef6bc50b30d4473ffefef68753785579f9e8dbf629d1a288f4f31caded2e",
+      "main_sha256": "0b158a8e2085a944fd76b2c024be3cc457bc1d07b4fba0a2d8dfa338669968e8",
       "windows_sha256": "62d7ceb7cd86deb610813b4df6b77297be9c0401615749fc24a9ae6c4e6737ce",
       "same_bytes": false
     },
@@ -183,7 +237,7 @@
     },
     {
       "path": "resources/rime/private_pinyin.dict.yaml",
-      "main_sha256": "5d22821f4b637ad831edd65e24f85d6253a3d1969731f1166a9da3ff611fd916",
+      "main_sha256": "42325582c0123c707110410efcded127f372c8dda320036a629f8c8267d976e6",
       "windows_sha256": "6513fdcab3add2bb7d30c868a3b50cbf3fdf040ed2b6a32a49250a80c2140e93",
       "same_bytes": false
     },
@@ -219,7 +273,7 @@
     },
     {
       "path": "resources/rime/build/private_nine.prism.bin",
-      "main_sha256": "a8bb04b75c7989e0e7dd39dd64cf704c387793116c3b340abd6fced186ae0b99",
+      "main_sha256": "8ff7308507e77c52a8dd05619d14ffcc7fc50d531303d9515b0b4d27d9a90049",
       "windows_sha256": "94457b39a0610ee9683e76ebf6bedd68283b6a5868dd7f153ff25a93809e7ffe",
       "same_bytes": false
     },
@@ -231,7 +285,7 @@
     },
     {
       "path": "resources/rime/build/private_nine_initials.prism.bin",
-      "main_sha256": "1f020b9f61ea500a283515f106e6dfc02e70f3439c7c3af9cd016db068e9189a",
+      "main_sha256": "18a1ae625ae82e7230f26aae14087cb78b799eb6853dd3ba6079951369faadd4",
       "windows_sha256": "f0c3eae7434f83d4e176eda2cce684b1b6bb02e97bb6321babb1b2831cfabe21",
       "same_bytes": false
     },
@@ -249,13 +303,13 @@
     },
     {
       "path": "resources/rime/build/private_pinyin.prism.bin",
-      "main_sha256": "ab31558cfe18e97a2be6925cd6414ecb6bc08c4fdb03517dff7bd818ef465fa9",
+      "main_sha256": "41a20e1be8bd38ce3d3fa2fc843470a7eb2122ce6d91f4484281da680bbc7159",
       "windows_sha256": "13d974875eb4de9145ad11e9d9c529ffdd0c83debaeffde821da08224a634f49",
       "same_bytes": false
     },
     {
       "path": "resources/rime/build/private_pinyin.reverse.bin",
-      "main_sha256": "21b3da8eeb0aef108f42904fbc59f41c2752bdbae8e5a69d7db8fbb08f56f477",
+      "main_sha256": "6b78754d69f30c41d62ecdd887718a06c39faf105e74afb2afd613b548d3e30d",
       "windows_sha256": "456214e6a6f0355a38ff26d538863463286b97f52a245803c20968c62afbcbfa",
       "same_bytes": false
     },
@@ -267,13 +321,13 @@
     },
     {
       "path": "resources/rime/build/private_pinyin.table.bin",
-      "main_sha256": "759f8e21d25b984f18e57f91ffc263ad6b1894d48fd503adf46adeb6966afa07",
+      "main_sha256": "29dffa4c9f41e0b05eb1b8ac5cb83474f2c9a7523cf25f61aa3e4def171dc50d",
       "windows_sha256": "021d5593c6b8b1c80dd0016c2cf079cee28aca93acb62a4d8738e2a9bfa7ab3d",
       "same_bytes": false
     },
     {
       "path": "resources/rime/build/private_pinyin_exact.prism.bin",
-      "main_sha256": "4c69166978301dfbdef4a52814a9328238857c36ce662d0040a868735253d6b7",
+      "main_sha256": "9fa0514a00487c237119b112f381c7e0b7b1b5810dc47e89ddce82337bec50da",
       "windows_sha256": "1733dcdbdfb0431b43c4b603a5ee24b9cbede7a8d0269b9da087a6dfa3d71cda",
       "same_bytes": false
     },

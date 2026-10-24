@@ -26,7 +26,8 @@ final class CloudLearningSync {
  private CloudLearningState state(JSONObject status)throws Exception{
   BigInteger generation=SyncCrypto.u(status,"generation"),consent=SyncCrypto.u(status.getJSONObject("consent"),"version");JSONObject old=store.read();CloudLearningState current;
   if(old==null||!owner.equals(old.optString("owner"))||!generation.equals(SyncCrypto.u(old,"generation"))){store.invalidateRank();current=CloudLearningState.fresh(owner,producer,installation,generation,consent);}
-  else{current=new CloudLearningState(old);current.validate(policy);if(!producer.equals(old.getString("producer"))||old.getInt("version")!=1)throw new IOException("cloud state owner");if(!consent.equals(SyncCrypto.u(old,"consent"))||!installation.equals(old.getString("installation"))){store.invalidateRank();current.value.put("consent",consent).put("installation",installation).put("recovered",false).put("ready",false);}}
+  else{current=new CloudLearningState(old);current.validate(policy);if(!producer.equals(old.getString("producer")))throw new IOException("cloud state owner");if(!consent.equals(SyncCrypto.u(old,"consent"))||!installation.equals(old.getString("installation"))){store.invalidateRank();current.value.put("consent",consent).put("installation",installation).put("recovered",false).put("ready",false);}}
+  if(current.capacityProfile()!=LearningCapacityProfiles.EXPANDED_10000){current.upgradeCapacity(policy);store.write(current.value);}
   return current;
  }
  void synchronize(boolean explicit)throws Exception{
@@ -35,7 +36,7 @@ final class CloudLearningSync {
   try{
    JSONObject status=status();try{validateStatus(status);}catch(Exception inactive){store.invalidateRank();throw inactive;}allowed(true);CloudLearningState state=state(status);
    if(!state.value.optBoolean("recovered")){JSONObject body=new JSONObject().put("generation",state.value.get("generation")).put("consent_version",state.value.get("consent")).put("installation_id",installation).put("producer_id",producer);CloudLearningState recovered=state.copy();recovered.recover(call(7,body,true),policy);store.write(recovered.value);state=recovered;}
-   LearningCoordinator coordinator=new LearningCoordinator(context.getFilesDir(),new File(context.getFilesDir(),"Shared"));if(coordinator.requiresPrivateRecovery())return;List<LearningModel.Entry> local=coordinator.entries();JSONObject projected=CloudLearningState.project(local,producer,policy,state.value.getJSONObject("accepted"));int limit=explicit?40:4;
+   LearningCoordinator coordinator=new LearningCoordinator(context.getFilesDir(),new File(context.getFilesDir(),"Shared"));if(coordinator.requiresPrivateRecovery())return;LearningModel source=new LearningModel(LearningCapacityProfiles.EXPANDED_10000);source.merge(coordinator.legacySnapshot());List<LearningModel.Entry> local=source.entries();JSONObject projected=CloudLearningState.project(local,producer,policy,state.value.getJSONObject("accepted"));int limit=explicit?40:4;
    for(int i=0;i<limit;i++){CloudLearningState prepared=state.copy();JSONObject pending=prepared.prepare(projected);store.write(prepared.value);state=prepared;if(pending==null)break;JSONObject receipt=call(6,pending,true);CloudLearningState accepted=state.copy();accepted.receive(receipt);store.write(accepted.value);state=accepted;}
    // Mark complete only after all current own components are acknowledged.
    CloudLearningState checked=state.copy();JSONObject remaining=checked.prepare(projected);store.write(checked.value);state=checked;

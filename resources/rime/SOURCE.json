@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "modifiedDate": "2026-10-21",
-  "license": "LGPL-3.0; preserve pinned upstream notices and corresponding source",
+  "modifiedDate": "2026-10-23",
+  "license": "GPL-3.0 combined reading projection; Luna/essay portions retain LGPL-3.0 notices; preserve corresponding pinned sources",
   "characterPolicy": {
     "id": "mainland-simplified-v1",
     "source": {
@@ -20,9 +20,9 @@
       ],
       "scope": "Automatic Chinese dictionary/candidate admission only; never literal input, clipboard, or archive rewriting"
     },
-    "excludedDictionaryRows": 36425,
+    "excludedDictionaryRows": 37341,
     "excludedVocabularyWords": 13128,
-    "tier3RowsCapped": 3001,
+    "tier3RowsCapped": 2849,
     "tier3BaseWeightCap": 1,
     "publicRecallRowsAdded": 54,
     "publicRecallSource": "resources/phrases/common-platforms.tsv"
@@ -95,6 +95,45 @@
       }
     ]
   },
+  "readingPolicy": {
+    "id": "modern-collapsed-carriers-v1",
+    "reference": {
+      "version": 1,
+      "repository": "https://github.com/iDvel/rime-ice",
+      "revision": "da1fbe602e38f26db846fa10120ee64c2b0324c0",
+      "commitDate": "2026-10-05T13:37:01Z",
+      "license": "GPL-3.0 repository license; preserve upstream header/source notices",
+      "scope": "Single-character reading reference only, restricted to affected standard-character carriers; not an official linguistic standard and not a full dictionary import",
+      "files": [
+        {
+          "path": "cn_dicts/8105.dict.yaml",
+          "url": "https://raw.githubusercontent.com/iDvel/rime-ice/da1fbe602e38f26db846fa10120ee64c2b0324c0/cn_dicts/8105.dict.yaml",
+          "bytes": 115728,
+          "sha256": "1f9a42b91dea6982baee2551981780271aeffd78876662b9c9f324e56b37b120"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/iDvel/rime-ice/da1fbe602e38f26db846fa10120ee64c2b0324c0/LICENSE",
+          "bytes": 35149,
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+        }
+      ],
+      "referenceCaveat": "The source header explicitly notes differences against modern dictionaries; includes79 characters outside project8105 and omits\u5463 (placed in upstream custom_phrase.txt).",
+      "opencc": {
+        "revision": "556ed22496d650bd0b13b6c163be9814637970ae",
+        "path": "vendor/librime/deps/opencc/data/dictionary/TSCharacters.txt",
+        "sha256": "6b5a0a799bea2bb22c001f635eaa3fc2904310f0c08addbff275477a80ecf09a"
+      }
+    },
+    "statistics": {
+      "restoredOriginalCarriers": 20,
+      "filteredSingleReadings": 849,
+      "correctedUnambiguousWords": 540,
+      "unresolvedAmbiguousWords": 70,
+      "normalizedCharacterPriors": 5863
+    },
+    "scope": "Only conversion-affected carriers; community reference, not an official pronunciation standard"
+  },
   "openccCommit": "556ed22496d650bd0b13b6c163be9814637970ae",
   "conversionFiles": [
     {
@@ -108,11 +147,11 @@
       "compiledSHA256": "eea69e525e01b8475a1b1ad45f78f25e5aa78986305f185ef6f85e11f5325387"
     }
   ],
-  "dictionaryRows": 31310,
-  "dictionaryDuplicatesCollapsed": 3071,
+  "dictionaryRows": 30355,
+  "dictionaryDuplicatesCollapsed": 3143,
   "vocabularyWords": 424858,
   "vocabularyDuplicatesCollapsed": 4702,
-  "policy": "t2s before compilation; only standard 8105 Chinese characters; tier3 base weight at most 1; retain other default dictionary weights or same-type maximum; vocabulary maximum for collapsed variants; no network/compilation in typing path",
+  "policy": "pinned t2s with standard original carriers restored; modern affected-carrier reading admission and normalized per-character reading priors; unambiguous public word annotations projected offline; standard8105/tier3 cap retained; vocabulary maximum for collapsed variants; never touches private data or typing path",
   "generated": [
     {
       "path": "charset/MIT-LICENSE.txt",
@@ -155,6 +194,11 @@
       "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
     },
     {
+      "path": "licenses/rime-ice-LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
       "path": "licenses/rime-luna-pinyin-AUTHORS",
       "bytes": 273,
       "sha256": "dbf21183999dcd06d4b0f0fe08f7396fcb47cc6f734fd97c3dd851777f1b28f8"
@@ -181,8 +225,8 @@
     },
     {
       "path": "private_pinyin.dict.yaml",
-      "bytes": 549682,
-      "sha256": "5d22821f4b637ad831edd65e24f85d6253a3d1969731f1166a9da3ff611fd916"
+      "bytes": 551647,
+      "sha256": "42325582c0123c707110410efcded127f372c8dda320036a629f8c8267d976e6"
     },
     {
       "path": "private_pinyin.schema.yaml",
@@ -268,7 +312,7 @@
     }
   },
   "compiledFormat": "Rime::Table/4.0",
-  "compiledEntries": 531595,
+  "compiledEntries": 455247,
   "compiledFiles": [
     {
       "path": "build/default.yaml",
@@ -277,8 +321,8 @@
     },
     {
       "path": "build/private_nine.prism.bin",
-      "bytes": 53416,
-      "sha256": "a8bb04b75c7989e0e7dd39dd64cf704c387793116c3b340abd6fced186ae0b99"
+      "bytes": 53216,
+      "sha256": "8ff7308507e77c52a8dd05619d14ffcc7fc50d531303d9515b0b4d27d9a90049"
     },
     {
       "path": "build/private_nine.schema.yaml",
@@ -287,8 +331,8 @@
     },
     {
       "path": "build/private_nine_initials.prism.bin",
-      "bytes": 66800,
-      "sha256": "1f020b9f61ea500a283515f106e6dfc02e70f3439c7c3af9cd016db068e9189a"
+      "bytes": 66536,
+      "sha256": "18a1ae625ae82e7230f26aae14087cb78b799eb6853dd3ba6079951369faadd4"
     },
     {
       "path": "build/private_nine_initials.schema.yaml",
@@ -302,13 +346,13 @@
     },
     {
       "path": "build/private_pinyin.prism.bin",
-      "bytes": 22128,
-      "sha256": "ab31558cfe18e97a2be6925cd6414ecb6bc08c4fdb03517dff7bd818ef465fa9"
+      "bytes": 22048,
+      "sha256": "41a20e1be8bd38ce3d3fa2fc843470a7eb2122ce6d91f4484281da680bbc7159"
     },
     {
       "path": "build/private_pinyin.reverse.bin",
-      "bytes": 59636,
-      "sha256": "21b3da8eeb0aef108f42904fbc59f41c2752bdbae8e5a69d7db8fbb08f56f477"
+      "bytes": 58600,
+      "sha256": "6b78754d69f30c41d62ecdd887718a06c39faf105e74afb2afd613b548d3e30d"
     },
     {
       "path": "build/private_pinyin.schema.yaml",
@@ -317,13 +361,13 @@
     },
     {
       "path": "build/private_pinyin.table.bin",
-      "bytes": 14427060,
-      "sha256": "759f8e21d25b984f18e57f91ffc263ad6b1894d48fd503adf46adeb6966afa07"
+      "bytes": 12579712,
+      "sha256": "29dffa4c9f41e0b05eb1b8ac5cb83474f2c9a7523cf25f61aa3e4def171dc50d"
     },
     {
       "path": "build/private_pinyin_exact.prism.bin",
-      "bytes": 14424,
-      "sha256": "4c69166978301dfbdef4a52814a9328238857c36ce662d0040a868735253d6b7"
+      "bytes": 14376,
+      "sha256": "9fa0514a00487c237119b112f381c7e0b7b1b5810dc47e89ddce82337bec50da"
     },
     {
       "path": "build/private_pinyin_exact.schema.yaml",

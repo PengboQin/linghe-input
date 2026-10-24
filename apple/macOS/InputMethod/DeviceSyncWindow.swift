@@ -5,13 +5,14 @@ import UniformTypeIdentifiers
 import Vision
 
 enum MacSettingsPage: String, CaseIterable, Identifiable {
-    case input, lexicon, sharedText, devices, archive, help
+    case input, appearance, lexicon, sharedText, devices, archive, help
+    static var allCases: [Self] { [.input, .appearance, .lexicon, .devices, .archive, .help] }
     var id: Self { self }
     var title: String {
-        switch self { case .input: return "输入"; case .lexicon: return "个人词库"; case .sharedText: return "共享文本"; case .devices: return "设备与同步"; case .archive: return "活动归档"; case .help: return "帮助" }
+        switch self { case .input: return "输入设置"; case .appearance: return "外观"; case .lexicon: return "词库与学习"; case .sharedText: return "设备与同步"; case .devices: return "设备与同步"; case .archive: return "隐私与归档"; case .help: return "帮助与关于" }
     }
     var icon: String {
-        switch self { case .input: return "keyboard"; case .lexicon: return "character.book.closed"; case .sharedText: return "doc.on.clipboard"; case .devices: return "arrow.triangle.2.circlepath"; case .archive: return "archivebox"; case .help: return "questionmark.circle" }
+        switch self { case .input: return "keyboard"; case .appearance: return "paintpalette"; case .lexicon: return "character.book.closed"; case .sharedText: return "doc.on.clipboard"; case .devices: return "arrow.triangle.2.circlepath"; case .archive: return "archivebox"; case .help: return "questionmark.circle" }
     }
 }
 @MainActor final class MacSettingsNavigation: ObservableObject { @Published var selection: MacSettingsPage? = .input }
@@ -29,7 +30,7 @@ enum MacSettingsPage: String, CaseIterable, Identifiable {
     }
     deinit {if let themeObserver {NotificationCenter.default.removeObserver(themeObserver)}}
     func show(_ page: MacSettingsPage? = nil) {
-        if let page { navigation.selection = page }
+        if let page { navigation.selection = page == .sharedText ? .devices : page }
         if let window { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
         let window = MacSettingsWindowLayout.makeWindow(rootView: MacSettingsView(navigation:navigation))
         window.delegate = self
@@ -60,7 +61,15 @@ struct MacDeviceSyncView: View {
             if model.info.configured {
                 Section("我的设备") {
                     LabeledContent("设备组", value: "\(model.info.count) 台设备")
-                    Button("接入新设备") {model.run {try await $0.makeQuickInvitation()};showingInvitation=true}
+                    if model.info.canManage {
+                        Button("接入新设备") {model.run {try await $0.makeQuickInvitation()};showingInvitation=true}
+                    } else if model.info.devices.contains(where: { !$0.inactive && $0.kind == "unknown" }) {
+                        Text("请先在待更新设备上打开灵鹤 App，完成设备信息更新").foregroundStyle(.secondary)
+                    } else if model.info.devices.isEmpty {
+                        Text("正在读取设备信息…").foregroundStyle(.secondary)
+                    } else {
+                        Text("请在组内手机或平板上管理设备").foregroundStyle(.secondary)
+                    }
                     Button("退出设备组") { disconnecting = true }
                 }.disabled(model.busy)
                 Section("同步") {
@@ -68,8 +77,7 @@ struct MacDeviceSyncView: View {
                     Toggle("按组优化词频", isOn: Binding(get: { model.info.cloudLearning }, set: { model.setCloudLearning($0) })).disabled(model.busy || !model.info.learning).accessibilityIdentifier("sync-cloud-learning")
                     Text("已选词条和词频由所设服务器按组整理，服务器管理员可读。").font(.footnote).foregroundStyle(.secondary)
                     if model.info.cloudLearning { Text(model.info.cloudPhase).font(.footnote).foregroundStyle(.secondary) }
-                    Toggle("共享文本", isOn: Binding(get: { model.info.clipboard }, set: { model.consent(learning: model.info.learning, clipboard: $0) })).disabled(model.savingConsent)
-                    Toggle("自动同步系统剪贴板",isOn:Binding(get:{model.info.automaticClipboard},set:{model.setAutomaticClipboard($0)})).disabled(model.savingConsent || !model.info.clipboard).accessibilityIdentifier("sync-automatic-clipboard")
+                    Toggle("剪贴板同步", isOn: Binding(get: { model.info.clipboard && model.info.automaticClipboard }, set: { model.setClipboardSynchronization($0) })).disabled(model.busy || model.savingConsent).accessibilityIdentifier("sync-clipboard")
                     if model.info.automaticClipboard && model.automaticClipboardPreparing {Text("正在接收已有记录；准备完成后自动接收新的剪贴板文字。").font(.footnote).foregroundStyle(.secondary)}
                     Button("立即同步") { model.run { _ = try await $0.synchronize() } }.disabled(model.busy || model.savingConsent || (!model.info.learning && !model.info.clipboard))
                 }
@@ -115,7 +123,6 @@ struct MacDeviceSyncView: View {
 struct MacSettingsView: View {
     @ObservedObject var navigation: MacSettingsNavigation
     @ObservedObject private var model = DeviceSyncModel.shared
-    @State private var draft = ""
     @State private var theme=MacThemePreferences.current
     @Environment(\.colorScheme) private var colorScheme
     var body: some View {
@@ -127,9 +134,10 @@ struct MacSettingsView: View {
         } detail: {
             Group {
                 switch navigation.selection ?? .input {
-                case .input: InputSettingsView()
-                case .lexicon: PersonalLexiconSettings()
-                case .sharedText: MacSharedTextView(model:model,draft:$draft,openDevices:{navigation.selection = .devices})
+                case .input: InputSettingsView(pane: .input)
+                case .appearance: InputSettingsView(pane: .appearance)
+                case .lexicon: NavigationStack { InputSettingsView(pane: .learning) }
+                case .sharedText: MacDeviceSyncView(model:model)
                 case .devices: MacDeviceSyncView(model:model)
                 case .archive: ActivityArchiveView()
                 case .help: InputHelpView()

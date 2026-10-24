@@ -62,7 +62,7 @@ and an unused local port, and never publish your private deployment files.
 install -d -m 0700 /var/lib/private-input-activity
 export PRIVATE_INPUT_ACTIVITY_DATABASE=/var/lib/private-input-activity/activity.sqlite
 export PRIVATE_INPUT_ACTIVITY_RELAY_DATABASE=/var/lib/private-input-relay/relay.sqlite
-export PRIVATE_INPUT_ACTIVITY_MAX_DATABASE_BYTES=1073741824
+export PRIVATE_INPUT_ACTIVITY_MAX_DATABASE_BYTES=17179869184
 # Working directory contains private_input_relay.py and activity_archive/.
 gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8039 \
   --access-logfile /dev/null --error-logfile - \
@@ -117,11 +117,21 @@ Use a dedicated unit with `UMask=0077`, `NoNewPrivileges=true`, `PrivateTmp=true
 `WorkingDirectory` containing these verified server sources. Do not put keys in
 unit files or command-line arguments. Set `PYTHONDONTWRITEBYTECODE=1` if source is
 read-only. Keep one Gunicorn worker with threads for the bounded single-writer
-SQLite store with explicit `synchronous=FULL`. Main database defaults to 1GiB hard page limit; WAL journal limit is
-8MiB after checkpoints, each group defaults to 100MiB raw event allowance and
-100,000 live events, and erasure ledger is capped at 128MiB. Metadata, WAL and
+SQLite store with explicit `synchronous=FULL`. Main database defaults to a 16GiB hard page limit; WAL journal limit is
+8MiB after checkpoints. New groups default to a 4GiB raw event allowance, remain
+disabled, and retain the existing 30-day policy. There is no separate live-event
+count quota; group bytes and the database page limit bound storage. The permanent
+erasure ledger is capped at 1GiB and is never discarded to reclaim capacity. Metadata, WAL and
 backup copies have additional disk cost; monitor free space and stop capture on
-quota errors instead of blocking keyboard input. No model/runtime download occurs.
+quota errors instead of blocking keyboard input. Raw event quota is not a disk
+reservation: indexes and metadata also consume the database budget, so the global
+limit can be reached first. The HTTP process and maintenance CLI read the same
+`PRIVATE_INPUT_ACTIVITY_MAX_DATABASE_BYTES` setting (16MiB..16GiB, default16GiB);
+keep the expiry unit on that same value so opening for retention cannot lower the
+configured page ceiling. Existing group quotas do not change when new defaults
+change: an authorized current mobile manager must sign op2 with the latest
+`expected_version`; server administrators must not rewrite group policy rows.
+No model/runtime download occurs.
 
 ## Retention, backup and restore
 

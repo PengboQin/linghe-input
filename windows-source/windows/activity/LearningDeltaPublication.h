@@ -9,12 +9,13 @@ struct LearningDeltaPublication {
 
 // Keep the existing LearningArchive/MAX-counter wire. This checkpoint is local
 // delivery metadata and is advanced only with the encrypted durable outbox.
-inline LearningDeltaPublication prepareLearningDelta(const Json&archive,const Id&group,uint64_t epoch,uint64_t now,const Json*previous){
- validateLearning(archive);require(epoch>0,"learning delta epoch");
+inline LearningDeltaPublication prepareLearningDelta(const Json&archive,const Id&group,uint64_t epoch,uint64_t now,const Json*previous,const LearningCapacity&reader=CurrentLearningCapacity){
+ validateLearning(archive,reader);const auto&profile=learningArchiveProfile(archive,reader);require(epoch>0,"learning delta epoch");
  Json prior;bool valid=false;
  if(previous)try{
-  const auto&p=*previous;require(p.at("version").num()==1&&parseId(p.at("group").str())==group&&p.at("epoch").num()==epoch,"learning delta scope");
-  require(p.at("entries").kind==Json::Kind::object&&p.at("entries").fields.size()<=5000&&p.at("personal").kind==Json::Kind::object&&p.at("personal").fields.size()<=4000,"learning delta checkpoint bounds");
+  const auto&p=*previous;require(p.at("version").num()==profile.version&&parseId(p.at("group").str())==group&&p.at("epoch").num()==epoch,"learning delta scope");
+  require(profile.version==1?!p.has("capacity_profile"):(p.has("capacity_profile")&&p.at("capacity_profile").dump()==learningProfileMetadata(profile).dump()),"learning delta profile");
+  require(p.at("entries").kind==Json::Kind::object&&p.at("entries").fields.size()<=profile.term_rows&&p.at("personal").kind==Json::Kind::object&&p.at("personal").fields.size()<=4000,"learning delta checkpoint bounds");
   (void)p.at("lastFullAt").num();(void)p.at("personalPresent").boolean();
   for(const auto*name:{"entries","personal"})for(const auto&row:p.at(name).fields){(void)unbase64(row.second.str(),32);if(std::string(name)=="entries")(void)unbase64(row.first,32);}
   prior=p;valid=true;
@@ -36,12 +37,13 @@ inline LearningDeltaPublication prepareLearningDelta(const Json&archive,const Id
  }
  const bool full=!valid||now<prior.at("lastFullAt").num()||now-prior.at("lastFullAt").num()>=86400;
  LearningDeltaPublication result;result.bootstrap=!valid;result.fullRepair=full;result.changedEntries=changed.items.size();result.changedPersonalRecords=personalDelta.fields.size();
- result.checkpoint=Json::object({{"version",1},{"group",uuidText(group)},{"epoch",epoch},{"entries",hashes},{"personal",personalHashes},{"personalPresent",hasPersonal},{"lastFullAt",full?now:prior.at("lastFullAt").num()}});
+ result.checkpoint=Json::object({{"version",uint64_t(profile.version)},{"group",uuidText(group)},{"epoch",epoch},{"entries",hashes},{"personal",personalHashes},{"personalPresent",hasPersonal},{"lastFullAt",full?now:prior.at("lastFullAt").num()}});
+ if(profile.version!=1)result.checkpoint["capacity_profile"]=learningProfileMetadata(profile);
  if(full){result.payload=archive;result.hasPayload=true;return result;}
  const bool personalChanged=!personalDelta.fields.empty()||hasPersonal!=prior.at("personalPresent").boolean();
  if(changed.items.empty()&&!personalChanged)return result;
- result.payload=emptyLearning();result.payload["entries"]=changed;
+ result.payload=emptyLearning(profile);result.payload["entries"]=changed;
  if(personalChanged&&hasPersonal)result.payload["personalLexicon"]=Json::object({{"version",1},{"records",personalDelta}});
- validateLearning(result.payload);result.hasPayload=true;return result;
+ validateLearning(result.payload,reader);result.hasPayload=true;return result;
 }
 }

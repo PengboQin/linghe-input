@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from .service import ArchiveApplication, ArchiveStore, RelayMembershipAuthority
+from .capacity import configured_database_bytes
 
 
 class LocalArchiveProxy:
@@ -30,7 +31,5 @@ def create_app():
     # Directory must exist and be provisioned by deployment; no anonymous auth fallback.
     if not database.parent.is_dir():
         raise ValueError('provision archive database parent first')
-    capacity = int(os.environ.get('PRIVATE_INPUT_ACTIVITY_MAX_DATABASE_BYTES', '1073741824'))
-    if not 16777216 <= capacity <= 10737418240:
-        raise ValueError('database capacity must be 16MiB..10GiB')
+    capacity = configured_database_bytes()
     return LocalArchiveProxy(ArchiveApplication(ArchiveStore(database, max_database_bytes=capacity), RelayMembershipAuthority(relay, activity_database=database)))

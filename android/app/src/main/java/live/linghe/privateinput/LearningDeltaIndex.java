@@ -11,7 +11,7 @@ final class LearningDeltaIndex {
   final String context;final Map<String,String> entries,personal;final long fullRepairAt;
   Checkpoint(String context,Map<String,String> entries,Map<String,String> personal,long fullRepairAt)throws Exception{
    if(context==null||context.isEmpty()||fullRepairAt<0)throw new IOException("Invalid delta checkpoint context");
-   this.context=context;this.entries=checked(entries,5000);this.personal=personal==null?null:checked(personal,4000);this.fullRepairAt=fullRepairAt;
+   this.context=context;this.entries=checked(entries,LearningCapacityProfiles.EXPANDED_10000.termRows);this.personal=personal==null?null:checked(personal,4000);this.fullRepairAt=fullRepairAt;
   }
  }
  static Map<String,String> checked(Map<String,String> values,int limit)throws Exception{
@@ -27,7 +27,7 @@ final class LearningDeltaIndex {
   boolean hasPayload(){return full||!entries.isEmpty()||personal!=null;}
  }
  static Prepared prepare(String context,Map<String,String> entries,Map<String,String> personal,Checkpoint previous,long now,boolean repairRequired)throws Exception{
-  if(now<0||entries.size()>5000||personal!=null&&personal.size()>4000)throw new IOException("Delta publication bounds");
+  if(now<0||entries.size()>LearningCapacityProfiles.EXPANDED_10000.termRows||personal!=null&&personal.size()>4000)throw new IOException("Delta publication bounds");
   Checkpoint prior=previous!=null&&previous.context.equals(context)?previous:null;
   Map<String,String> nextHashes=hashes(entries),nextPersonal=personal==null?null:hashes(personal);
   if(prior!=null&&(!nextHashes.keySet().containsAll(prior.entries.keySet())||prior.personal!=null&&(nextPersonal==null||!nextPersonal.keySet().containsAll(prior.personal.keySet()))))throw new IOException("Missing explicit learning tombstone");

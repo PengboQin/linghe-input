@@ -77,6 +77,36 @@ final class MacInputSessionTests: XCTestCase {
         XCTAssertFalse(engine.learningRefreshWasSkipped,"Legacy/default Mac call remains a real checkpoint")
     }
 
+    func testLearningPreparationSurvivesOnlyPresentationContextChanges() throws {
+        let engine=try engine();defer{engine.clear();engine.finish()}
+        _ = engine.privacy(false);_ = engine.nineKey(false)
+        func prepare()->LearningRefreshPreparation {
+            let done=expectation(description:"Read-only learning preparation")
+            var value:LearningRefreshPreparation?
+            engine.prepareLearningRefresh(publish:nil) {value=$0;done.fulfill()}
+            wait(for:[done],timeout:5)
+            return value!
+        }
+        try engine.synchronizeLearning(preparation:prepare())
+        let contextOnly=prepare(),revision=engine.revision
+        engine.setHostContext(SurroundingText(before:"合成前文",after:"合成后文"))
+        engine.resetPredictionContext()
+        XCTAssertGreaterThan(engine.revision,revision)
+        XCTAssertTrue(engine.isCurrentLearningRefreshPreparation(contextOnly,publish:nil),"Presentation context does not mutate native learning")
+        XCTAssertNoThrow(try engine.synchronizeLearning(preparation:contextOnly))
+
+        let beforeInput=prepare()
+        _ = engine.key(Int32(Character("n").asciiValue!))
+        XCTAssertFalse(engine.isCurrentLearningRefreshPreparation(beforeInput,publish:nil),"Real input still invalidates the native preparation")
+        XCTAssertThrowsError(try engine.synchronizeLearning(preparation:beforeInput))
+        XCTAssertEqual(engine.rawInput,"n","Rejected maintenance preserves the draft")
+        engine.clear()
+        let beforePrivacyChange=prepare()
+        _ = engine.privacy(true)
+        XCTAssertFalse(engine.isCurrentLearningRefreshPreparation(beforePrivacyChange,publish:nil),"Consent changes remain protected")
+        XCTAssertThrowsError(try engine.synchronizeLearning(preparation:beforePrivacyChange))
+    }
+
     func testNineCommonCrossSyllablePrefixDoesNotGetTrappedInShortExactParse() throws {
         let engine=try engine();defer{engine.clear();engine.finish()}
         _ = engine.privacy(true);_ = engine.nineKey(true)
@@ -293,61 +323,66 @@ final class MacInputSessionTests: XCTestCase {
         XCTAssertEqual(first.rawInput,"ni");XCTAssertEqual(second.rawInput,"ha")
         XCTAssertTrue(first.candidates.contains("你"));XCTAssertTrue(second.candidates.contains("哈"))
     }
-    // Lexical policy on systems where all test characters are renderable;
-    // real missing-glyph exclusion is covered by MacCandidateVisibilityTests.
-    func testRareExactSyllableKeepsWordAndRecallsCommonPrefixWithStableSelection() throws {
+    // A permissive font callback cannot override the mainland character
+    // inventory. Missing-glyph admission is tested independently as well.
+    func testFilteredRareSyllableRecallsCommonPrefixWithStableSelection() throws {
         let engine=try engine(displayable:{_ in true});defer{engine.clear();engine.finish()};_ = engine.privacy(true)
         for key in "din".utf8 {_ = engine.key(Int32(key))}
         let rows=engine.candidateBatch(offset:0,limit:64)
         XCTAssertEqual(rows.first?.text,"定","Preserve native frequency order within the completed reading")
-        let rareIndex=try XCTUnwrap(rows.firstIndex{$0.text=="𨈖"})
-        for text in ["定","顶","丁"] {XCTAssertLessThan(try XCTUnwrap(rows.firstIndex{$0.text==text}),rareIndex)}
-        XCTAssertEqual(engine.rawInput,"din");XCTAssertEqual(rows[rareIndex].comment,"din")
-        XCTAssertEqual(rows[rareIndex].text.unicodeScalars.map(\.value),[0x28216])
+        XCTAssertFalse(rows.contains{$0.text=="𨈖"},"Even a renderable historical exact match is outside the approved inventory")
+        for text in ["定","顶","丁"] {XCTAssertTrue(rows.contains{$0.text==text},text)}
+        XCTAssertEqual(engine.rawInput,"din")
         XCTAssertEqual((engine.candidateBatch(offset:0,limit:2)+engine.candidateBatch(offset:2,limit:4)).map(\.text),Array(rows.prefix(6)).map(\.text))
         let completion=try XCTUnwrap(rows.first{$0.text=="定"})
         XCTAssertTrue(completion.prefixCompletion);XCTAssertNil(completion.pinyinRepair)
         XCTAssertEqual(engine.chooseCandidate(completion),"定");XCTAssertEqual(engine.chooseCandidate(completion),"")
         XCTAssertTrue(engine.rawInput.isEmpty)
         engine.clear();for key in "din".utf8 {_ = engine.key(Int32(key))}
-        let rare=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="𨈖"})
-        XCTAssertEqual(engine.chooseCandidate(rare),"𨈖","The valid uncommon character remains selectable")
+        let rare=InputCandidate(text:"𨈖",comment:"din",index:0,sourceInput:engine.rawInput,generation:engine.revision)
+        XCTAssertEqual(engine.chooseCandidate(rare),"","A forged historical row cannot bypass inventory admission")
+        XCTAssertEqual(engine.rawInput,"din","Rejecting a hidden row must preserve the editable draft")
         let mixed=NativeEngine(sharedResources:try XCTUnwrap(Bundle(for:Self.self).url(forResource:"rime",withExtension:nil)),storageBase:Self.storage,mixedEnglishProvider:{_ in ["dinner"]},candidateIsDisplayable:{_ in true})
         defer{mixed.clear();mixed.finish()};_ = mixed.privacy(true);_ = mixed.setMixedEnglishEnabled(true)
         for key in "din".utf8 {_ = mixed.key(Int32(key))}
         let mixedRows=mixed.candidateBatch(offset:0,limit:64)
-        XCTAssertEqual(mixedRows.first?.text,"定");XCTAssertTrue(mixedRows.contains{$0.text=="dinner"});XCTAssertTrue(mixedRows.contains{$0.text=="𨈖"})
+        XCTAssertEqual(mixedRows.first?.text,"定");XCTAssertTrue(mixedRows.contains{$0.text=="dinner"});XCTAssertFalse(mixedRows.contains{$0.text=="𨈖"})
         print("SYNTHETIC_DIN54 default=\(rows.map{($0.text,$0.comment,$0.index)}) mixed=\(mixedRows.map(\.text))")
     }
-    func testRareExactSyllableManualPinAndLearningRemainAuthoritative() throws {
+    func testAdmittedPrefixPinAndHistoricalLearningRespectMainlandInventory() throws {
         let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),saved=try? Data(contentsOf:file)
         defer {if let saved {try? saved.write(to:file,options:.atomic)} else {try? FileManager.default.removeItem(at:file)}}
         try FileManager.default.createDirectory(at:Self.storage,withIntermediateDirectories:true)
-        try JSONEncoder().encode(NineKeyChoiceMemory()).write(to:file,options:.atomic)
+        var historical=NineKeyChoiceMemory()
+        for _ in 0..<8 {try historical.record(code:"346",reading:"din",text:"𨈖",context:"",strength:3)}
+        try JSONEncoder().encode(historical).write(to:file,options:.atomic)
         let engine=try engine(displayable:{_ in true});defer{engine.clear();engine.finish()};_ = engine.privacy(false)
         for key in "din".utf8 {_ = engine.key(Int32(key))}
-        let rare=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="𨈖"})
+        XCTAssertFalse(engine.candidateBatch(offset:0,limit:64).contains{$0.text=="𨈖"},"Historical learning cannot reintroduce filtered characters")
+        let rare=InputCandidate(text:"𨈖",comment:"din",index:0,sourceInput:engine.rawInput,generation:engine.revision)
         let ding=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="丁"})
         try engine.manage(ding,pinned:true);defer{try? engine.manage(ding,pinned:false)}
         XCTAssertEqual(engine.candidateBatch(offset:0,limit:64).first?.text,"丁","Pins also apply to newly recalled prefix choices")
         try engine.manage(ding,pinned:false)
         try engine.manage(rare,pinned:true);defer{try? engine.manage(rare,pinned:false)}
-        XCTAssertEqual(engine.candidateBatch(offset:0,limit:64).first?.text,"𨈖")
+        XCTAssertTrue(engine.isPinned(rare),"A stored pin may remain in user data without being admitted as a candidate")
+        XCTAssertFalse(engine.candidateBatch(offset:0,limit:64).contains{$0.text=="𨈖"})
+        let freshRare=InputCandidate(text:"𨈖",comment:"din",index:0,sourceInput:engine.rawInput,generation:engine.revision)
+        XCTAssertEqual(engine.chooseCandidate(freshRare),"");XCTAssertEqual(engine.rawInput,"din")
         try engine.manage(rare,pinned:false)
         XCTAssertEqual(engine.candidateBatch(offset:0,limit:64).first?.text,"定")
         let completion=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="定"})
         XCTAssertEqual(engine.chooseCandidate(completion),"定")
         let afterCompletion=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file))
-        XCTAssertTrue(afterCompletion.entries.isEmpty,"A valid prefix selection must not teach din as a misspelling of ding")
+        XCTAssertEqual(afterCompletion.entries,historical.entries,"A valid prefix selection must not teach din as a misspelling of ding or erase unrelated history")
         engine.clear();engine.resetPredictionContext();for key in "din".utf8 {_ = engine.key(Int32(key))}
-        let fresh=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="𨈖"})
-        XCTAssertEqual(engine.chooseCandidate(fresh),"𨈖")
-        engine.clear();engine.resetPredictionContext();for key in "din".utf8 {_ = engine.key(Int32(key))}
-        XCTAssertEqual(engine.candidateBatch(offset:0,limit:64).first?.text,"𨈖","An intentional selection overrides public default")
+        let reopened=engine.candidateBatch(offset:0,limit:64)
+        XCTAssertEqual(reopened.first?.text,"定");XCTAssertFalse(reopened.contains{$0.text=="𨈖"})
+        XCTAssertEqual(try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file)).entries,historical.entries,"Admission filters suggestions, not persisted source records")
     }
     func testRareExactSyllablePolicyLeavesCommonCompleteSpellingsAlone() throws {
         let engine=try engine(displayable:{_ in true});defer{engine.clear();engine.finish()};_ = engine.privacy(true)
-        let expected=["di":"地","ding":"定","dian":"点","die":"跌","diu":"丢","dia":"嗲","den":"㩐","dei":"得","kei":"克","nun":"嫩"]
+        let expected=["di":"地","ding":"定","dian":"点","die":"跌","diu":"丢","dia":"嗲","dei":"得","kei":"克","nun":"嫩"]
         for raw in expected.keys.sorted() {
             engine.clear();for key in raw.utf8 {_ = engine.key(Int32(key))}
             let rows=engine.candidateBatch(offset:0,limit:64)
@@ -355,6 +390,14 @@ final class MacInputSessionTests: XCTestCase {
             XCTAssertFalse(rows.contains{$0.prefixCompletion},raw)
             print("SYNTHETIC_DIN54 protection raw=\(raw) head=\(rows.prefix(6).map(\.text))")
         }
+    }
+    func testFilteredRareBmpExactReadingKeepsDraftWithoutHiddenCommit() throws {
+        let engine=try engine(displayable:{_ in true});defer{engine.clear();engine.finish()};_ = engine.privacy(true)
+        for key in "den".utf8 {_ = engine.key(Int32(key))}
+        let rows=engine.candidateBatch(offset:0,limit:64)
+        XCTAssertFalse(rows.contains{$0.text=="㩐"},"The inventory applies to rare BMP characters as well as supplementary ideographs")
+        let hidden=InputCandidate(text:"㩐",comment:"den",index:0,sourceInput:engine.rawInput,generation:engine.revision)
+        XCTAssertEqual(engine.chooseCandidate(hidden),"");XCTAssertEqual(engine.rawInput,"den")
     }
     func testCommonExpressionCandidateBaseline() throws {
         let engine=try engine();defer{engine.clear();engine.finish()};_ = engine.privacy(true)

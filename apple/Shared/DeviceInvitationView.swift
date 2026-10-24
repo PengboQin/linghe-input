@@ -25,7 +25,7 @@ struct DeviceInvitationView:View {
                 Text("在新设备的 App 内扫码，或输入六位接入码").font(.callout).foregroundStyle(.secondary)
             } else if model.busy {ProgressView("生成接入码…")} else {Text("尚无可用接入码").foregroundStyle(.secondary)}
             HStack {
-                Button("重新生成") {model.run {try await $0.makeQuickInvitation()}}.disabled(model.busy)
+                Button("重新生成") {model.run {try await $0.makeQuickInvitation()}}.disabled(model.busy || !model.info.canManage)
                 Button("取消邀请",role:.cancel) {model.run {try await $0.closeQuickInvitation()};dismiss()}
                 Button("完成") {dismiss()}
             }

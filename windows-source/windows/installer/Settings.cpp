@@ -6,10 +6,12 @@
 #include <stdexcept>
 #include "DesktopPreferences.h"
 #include "NativeWindowTheme.h"
+#include "NativeSettingsChrome.h"
 namespace fs=std::filesystem;
 namespace {
-HWND fields[5]{}, labels[5]{}, pairBox=nullptr, insideBox=nullptr, saveButton=nullptr, statusLabel=nullptr, archiveButton=nullptr;
-HFONT font=nullptr; UINT dpi=96; fs::path file; bool fixture=false;
+HWND fields[5]{}, labels[5]{}, pairBox=nullptr, insideBox=nullptr, saveButton=nullptr, statusLabel=nullptr, brand=nullptr,navigation[5]{};
+HFONT font=nullptr,titleFont=nullptr,sectionFont=nullptr; UINT dpi=96; fs::path file; bool fixture=false;
+HWND heading=nullptr,sectionTitles[3]{};int selectedPage=0;
 NativeWindowTheme windowTheme;constexpr int SaveId=1;
 int px(int value) { return MulDiv(value,int(dpi),96); }
 fs::path folder(REFKNOWNFOLDERID id) {
@@ -27,26 +29,38 @@ bool inside(const fs::path& path,const fs::path& root) {
  auto p=fs::absolute(path).lexically_normal().wstring(),r=fs::absolute(root).lexically_normal().wstring()+L"\\";
  return p.size()>r.size()&&CompareStringOrdinal(p.data(),int(r.size()),r.data(),int(r.size()),TRUE)==CSTR_EQUAL;
 }
+void selectPage(HWND window,int page) {
+ selectedPage=page==1?1:0;SetWindowTextW(heading,settingsSectionName(selectedPage));
+ for(int i=0;i<5;i++){const bool show=(i<3)==(selectedPage==0);ShowWindow(labels[i],show?SW_SHOW:SW_HIDE);ShowWindow(fields[i],show?SW_SHOW:SW_HIDE);}
+ ShowWindow(pairBox,selectedPage?SW_HIDE:SW_SHOW);ShowWindow(insideBox,selectedPage?SW_HIDE:SW_SHOW);
+ ShowWindow(sectionTitles[0],selectedPage?SW_HIDE:SW_SHOW);ShowWindow(sectionTitles[1],selectedPage?SW_SHOW:SW_HIDE);ShowWindow(sectionTitles[2],selectedPage?SW_HIDE:SW_SHOW);
+ for(auto nav:navigation)InvalidateRect(nav,nullptr,TRUE);
+}
 void layout(HWND window) {
- dpi=GetDpiForWindow(window); if(!dpi)dpi=96;
- NONCLIENTMETRICSW metrics{}; metrics.cbSize=sizeof(metrics);
- HFONT replacement=nullptr;
- if(SystemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS,sizeof(metrics),&metrics,0,dpi))replacement=CreateFontIndirectW(&metrics.lfMessageFont);
- if(!replacement)replacement=CreateFontW(-px(12),0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");
- for(int i=0;i<5;i++) {
-  SetWindowPos(labels[i],nullptr,px(20),px(23+i*44),px(180),px(24),SWP_NOZORDER);
-  SetWindowPos(fields[i],nullptr,px(214),px(20+i*44),px(92),px(220),SWP_NOZORDER);
-  SendMessageW(labels[i],WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
-  SendMessageW(fields[i],WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
+ dpi=GetDpiForWindow(window);if(!dpi)dpi=96;auto replacement=settingsBodyFont(dpi);auto section=settingsHeadingFont(dpi);
+ for(int i=0;i<5;i++){
+  int row=i<3?112+i*44:112+(i-3)*44;
+  SetWindowPos(labels[i],nullptr,px(188),px(row+5),px(288),px(26),SWP_NOZORDER);
+  SetWindowPos(fields[i],nullptr,px(512),px(row),px(180),px(220),SWP_NOZORDER);
+  SendMessageW(labels[i],WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);SendMessageW(fields[i],WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
+  SendMessageW(fields[i],CB_SETITEMHEIGHT,WPARAM(-1),px(24));SendMessageW(fields[i],CB_SETITEMHEIGHT,0,px(24));
  }
- SetWindowPos(saveButton,nullptr,px(214),px(314),px(92),px(30),SWP_NOZORDER);
- SetWindowPos(statusLabel,nullptr,px(20),px(355),px(286),px(26),SWP_NOZORDER);
- SendMessageW(saveButton,WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
- SendMessageW(statusLabel,WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
- SetWindowPos(archiveButton,nullptr,px(20),px(394),px(286),px(30),SWP_NOZORDER);
- SendMessageW(archiveButton,WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
- SetWindowPos(pairBox,nullptr,px(20),px(244),px(286),px(24),SWP_NOZORDER);SetWindowPos(insideBox,nullptr,px(20),px(276),px(286),px(24),SWP_NOZORDER);SendMessageW(pairBox,WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);SendMessageW(insideBox,WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
- if(font)DeleteObject(font); font=replacement;
+ RECT area{};GetClientRect(window,&area);const int height=MulDiv(area.bottom,96,int(dpi));
+ SetWindowPos(saveButton,nullptr,px(568),px(height-94),px(124),px(34),SWP_NOZORDER);SetWindowPos(statusLabel,nullptr,px(188),px(height-50),px(504),px(38),SWP_NOZORDER);
+ for(auto control:{saveButton,statusLabel,pairBox,insideBox})SendMessageW(control,WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
+ SetWindowPos(pairBox,nullptr,px(188),px(296),px(504),px(32),SWP_NOZORDER);SetWindowPos(insideBox,nullptr,px(188),px(338),px(504),px(32),SWP_NOZORDER);
+ SetWindowPos(brand,nullptr,px(28),px(32),px(136),px(28),SWP_NOZORDER);SendMessageW(brand,WM_SETFONT,reinterpret_cast<WPARAM>(section),TRUE);
+ for(int i=0;i<5;i++){SetWindowPos(navigation[i],nullptr,px(16),px(88+48*i),px(148),px(42),SWP_NOZORDER);SendMessageW(navigation[i],WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);}
+ SetWindowPos(heading,nullptr,px(188),px(26),px(504),px(36),SWP_NOZORDER);
+ for(int i=0;i<3;i++){SetWindowPos(sectionTitles[i],nullptr,px(188),px(i==2?256:78),px(504),px(26),SWP_NOZORDER);SendMessageW(sectionTitles[i],WM_SETFONT,reinterpret_cast<WPARAM>(section),TRUE);}
+ if(titleFont)DeleteObject(titleFont);titleFont=settingsHeadingFont(dpi,true);SendMessageW(heading,WM_SETFONT,reinterpret_cast<WPARAM>(titleFont),TRUE);
+ if(sectionFont)DeleteObject(sectionFont);sectionFont=section;if(font)DeleteObject(font);font=replacement;
+}
+void openActivity(HWND window,int page){
+ if(fixture)return;wchar_t path[32768]{};DWORD n=GetModuleFileNameW(nullptr,path,32768);if(!n||n>=32768)return;
+ const auto exe=fs::path(path).parent_path()/L"LingheInputActivity.exe";
+ const wchar_t*argument=page==2?L"--settings --page learning":page==4?L"--settings --page privacy":L"--settings --page devices";
+ if(reinterpret_cast<INT_PTR>(ShellExecuteW(window,L"open",exe.c_str(),argument,exe.parent_path().c_str(),SW_SHOWNORMAL))<=32)MessageBoxW(window,L"设备与同步组件暂时无法打开，请确认安装完整。",L"灵鹤输入法",MB_OK|MB_ICONERROR);
 }
 void save() {
  int values[3]; for(int i=0;i<3;i++) { auto index=SendMessageW(fields[i],CB_GETCURSEL,0,0); if(index<0||index>6)throw std::runtime_error("selection"); values[i]=int(index)+3; }
@@ -71,6 +85,11 @@ void save() {
 LRESULT CALLBACK procedure(HWND window,UINT message,WPARAM w,LPARAM l) {
  switch(message) {
  case WM_CREATE: {
+  settingsWindowIcon(window);if(!fixture)SetPropW(window,L"LingheInput.Settings.Live",reinterpret_cast<HANDLE>(1));
+  brand=CreateWindowW(L"STATIC",L"灵鹤输入法",WS_CHILD|WS_VISIBLE,0,0,0,0,window,nullptr,nullptr,nullptr);
+  for(int i=0;i<5;i++){navigation[i]=CreateWindowW(L"BUTTON",settingsSectionName(i),WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,0,0,window,reinterpret_cast<HMENU>(INT_PTR(201+i)),nullptr,nullptr);if(fixture&&i>=2)EnableWindow(navigation[i],FALSE);}
+  heading=CreateWindowW(L"STATIC",L"输入设置",WS_CHILD|WS_VISIBLE,0,0,0,0,window,nullptr,nullptr,nullptr);
+  const wchar_t* sections[]={L"候选词",L"外观",L"符号与光标"};for(int i=0;i<3;i++)sectionTitles[i]=CreateWindowW(L"STATIC",sections[i],WS_CHILD|WS_VISIBLE,0,0,0,0,window,nullptr,nullptr,nullptr);
   auto state=fixture?private_input::DesktopCandidates{}:readDesktopLayout(file);
   auto preferences=fixture?DesktopInputPreferences{}:readDesktopInputPreferences(file);const wchar_t* names[]={L"单行候选数(&C)",L"展开列数(&L)",L"展开行数(&R)",L"明暗外观",L"主题色"}; int values[]={state.collapsed,state.columns,state.rows,preferences.theme.mode+3,preferences.theme.accent+3};
   for(int i=0;i<5;i++) {
@@ -81,37 +100,39 @@ LRESULT CALLBACK procedure(HWND window,UINT message,WPARAM w,LPARAM l) {
   }
   saveButton=CreateWindowW(L"BUTTON",L"保存(&S)",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,0,0,0,0,window,reinterpret_cast<HMENU>(SaveId),nullptr,nullptr);
   statusLabel=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE|SS_LEFT,0,0,0,0,window,nullptr,nullptr,nullptr);
-  archiveButton=CreateWindowW(L"BUTTON",L"设备组与活动归档…",WS_CHILD|WS_VISIBLE|WS_TABSTOP,0,0,0,0,window,reinterpret_cast<HMENU>(9),nullptr,nullptr);
   pairBox=CreateWindowW(L"BUTTON",L"自动输入成对符号",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,0,0,0,0,window,reinterpret_cast<HMENU>(110),nullptr,nullptr);insideBox=CreateWindowW(L"BUTTON",L"输入成对符号后光标居中",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,0,0,0,0,window,reinterpret_cast<HMENU>(111),nullptr,nullptr);SendMessageW(pairBox,BM_SETCHECK,preferences.pairSymbols?BST_CHECKED:BST_UNCHECKED,0);SendMessageW(insideBox,BM_SETCHECK,preferences.caretInside?BST_CHECKED:BST_UNCHECKED,0);
-  windowTheme.apply(window,preferences.theme);layout(window); EnableWindow(saveButton,fixture?TRUE:FALSE); return 0;
+  for(HWND control:fields)settingsControlTheme(control);for(HWND control:{pairBox,insideBox,saveButton})settingsControlTheme(control);
+  windowTheme.apply(window,preferences.theme);settingsFitWindow(window,GetDpiForWindow(window));layout(window);selectPage(window,selectedPage);EnableWindow(insideBox,preferences.pairSymbols);EnableWindow(saveButton,fixture?TRUE:FALSE); return 0;
  }
  case WM_DPICHANGED: {
   const auto* bounds=reinterpret_cast<const RECT*>(l);
-  SetWindowPos(window,nullptr,bounds->left,bounds->top,bounds->right-bounds->left,bounds->bottom-bounds->top,SWP_NOZORDER|SWP_NOACTIVATE); layout(window); return 0;
+  SetWindowPos(window,nullptr,bounds->left,bounds->top,bounds->right-bounds->left,bounds->bottom-bounds->top,SWP_NOZORDER|SWP_NOACTIVATE); settingsFitWindow(window,GetDpiForWindow(window));layout(window); return 0;
  }
  case WM_ERASEBKGND:{RECT area;GetClientRect(window,&area);auto dc=reinterpret_cast<HDC>(w);FillRect(dc,&area,windowTheme.paint(dc));return 1;}
  case WM_CTLCOLORSTATIC:case WM_CTLCOLOREDIT:case WM_CTLCOLORLISTBOX:case WM_CTLCOLORBTN:return reinterpret_cast<LRESULT>(windowTheme.paint(reinterpret_cast<HDC>(w)));
  case WM_SETTINGCHANGE:windowTheme.apply(window,readDesktopInputPreferences(file).theme);layout(window); return 0;
+ case WM_DRAWITEM:{const auto*item=reinterpret_cast<DRAWITEMSTRUCT*>(l);if(item&&item->CtlID>=201&&item->CtlID<=205){settingsDrawNavigation(*item,windowTheme,int(item->CtlID-201)==selectedPage);return TRUE;}break;}
  case WM_COMMAND:
-  if(LOWORD(w)==9) {wchar_t path[32768];DWORD n=GetModuleFileNameW(nullptr,path,32768);if(!n||n>=32768)return 0;auto exe=fs::path(path).parent_path()/L"LingheInputActivity.exe";if(!fixture&&reinterpret_cast<INT_PTR>(ShellExecuteW(window,L"open",exe.c_str(),L"--settings",exe.parent_path().c_str(),SW_SHOWNORMAL))<=32)MessageBoxW(window,L"活动归档组件未安装。请更新到包含该组件的版本。",L"灵鹤输入法",MB_OK|MB_ICONINFORMATION);return 0;}
+  if(LOWORD(w)>=201&&LOWORD(w)<=205){int page=LOWORD(w)-201;if(page<2)selectPage(window,page);else openActivity(window,page);return 0;}
   if(LOWORD(w)>=100&&LOWORD(w)<105&&HIWORD(w)==CBN_SELCHANGE) { EnableWindow(saveButton,TRUE); SetWindowTextW(statusLabel,L""); return 0; }
-  if(LOWORD(w)==110||LOWORD(w)==111){EnableWindow(saveButton,TRUE);SetWindowTextW(statusLabel,L"");return 0;}
+  if(LOWORD(w)==110||LOWORD(w)==111){EnableWindow(insideBox,SendMessageW(pairBox,BM_GETCHECK,0,0)==BST_CHECKED);EnableWindow(saveButton,TRUE);SetWindowTextW(statusLabel,L"");return 0;}
   if(LOWORD(w)==SaveId&&IsWindowEnabled(saveButton)) {
-   try { save();windowTheme.apply(window,readDesktopInputPreferences(file).theme); SetWindowTextW(statusLabel,L"已保存，下次输入时生效。"); EnableWindow(saveButton,FALSE); SetFocus(fields[0]); }
+   try { save();windowTheme.apply(window,readDesktopInputPreferences(file).theme); SetWindowTextW(statusLabel,L"已保存，下次输入时生效。"); EnableWindow(saveButton,FALSE); SetFocus(fields[selectedPage?3:0]); }
    catch(...) { MessageBoxW(window,L"设置未能保存。请关闭其他设置窗口后重试。",L"灵鹤输入法",MB_OK|MB_ICONERROR); }
    return 0;
   }
   break;
- case WM_DESTROY:if(font) { DeleteObject(font); font=nullptr; } PostQuitMessage(0); return 0;
+ case WM_DESTROY:RemovePropW(window,L"LingheInput.Settings.Live");if(sectionFont){DeleteObject(sectionFont);sectionFont=nullptr;}if(font) { DeleteObject(font); font=nullptr; }if(titleFont){DeleteObject(titleFont);titleFont=nullptr;} PostQuitMessage(0); return 0;
  }
  return DefWindowProcW(window,message,w,l);
 }
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
  try {
+  NativeSettingsRuntime nativeRuntime;
   SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
   int count=0; auto arguments=CommandLineToArgvW(GetCommandLineW(),&count); if(!arguments)return 2;
-  bool valid=count==1;
+  bool valid=count==1;if(count==2&&std::wstring(arguments[1])==L"--appearance"){selectedPage=1;valid=true;}
   if(count==3&&std::wstring(arguments[1])==L"--fixture") { file=arguments[2]; fixture=true; valid=true; }
   LocalFree(arguments); if(!valid)return 2;
   if(fixture) {
@@ -119,18 +140,20 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
    if(!file.is_absolute()||file.extension()!=L".json"||!inside(file,root))return 2;
    normalPath(file); if(fs::exists(file))return 2;
   } else file=folder(FOLDERID_LocalAppData)/L"PrivateInput/desktop-candidate-layout-v1.json";
+  if(!fixture){HWND previous=nullptr;while((previous=FindWindowExW(nullptr,previous,L"LingheInput.Settings",nullptr))){if(GetPropW(previous,L"LingheInput.Settings.Live")){SendMessageW(previous,WM_COMMAND,201+selectedPage,0);ShowWindow(previous,SW_SHOWNORMAL);SetForegroundWindow(previous);return 0;}}}
   WNDCLASSW cls{}; cls.lpfnWndProc=procedure; cls.hInstance=instance; cls.lpszClassName=L"LingheInput.Settings"; cls.hCursor=LoadCursor(nullptr,IDC_ARROW); cls.hbrBackground=GetSysColorBrush(COLOR_WINDOW);
   if(!RegisterClassW(&cls))return 1;
   dpi=GetDpiForSystem(); if(!dpi)dpi=96;
-  DWORD style=WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU; RECT bounds{0,0,px(326),px(440)}; AdjustWindowRectExForDpi(&bounds,style,FALSE,WS_EX_CONTROLPARENT,dpi);
-  HWND window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,fixture?L"灵鹤输入法 · 输入设置 · 测试":L"灵鹤输入法 · 输入设置",style,CW_USEDEFAULT,CW_USEDEFAULT,bounds.right-bounds.left,bounds.bottom-bounds.top,nullptr,nullptr,instance,nullptr);
-  if(!window)return 1; ShowWindow(window,SW_SHOWNORMAL); UpdateWindow(window); SetFocus(fields[0]);
+  DWORD style=WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU; RECT bounds{0,0,px(732),px(520)}; AdjustWindowRectExForDpi(&bounds,style,FALSE,WS_EX_CONTROLPARENT,dpi);
+  HWND window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,fixture?L"灵鹤输入法 · 设置 · 测试":L"灵鹤输入法 · 设置",style,CW_USEDEFAULT,CW_USEDEFAULT,bounds.right-bounds.left,bounds.bottom-bounds.top,nullptr,nullptr,instance,nullptr);
+  if(!window)return 1; ShowWindow(window,SW_SHOWNORMAL);UpdateWindow(window);SetFocus(fields[selectedPage?3:0]);
   MSG message{}; int result;
   while((result=GetMessageW(&message,nullptr,0,0))>0) {
    if(message.message==WM_KEYDOWN&&message.wParam==VK_ESCAPE) { DestroyWindow(window); continue; }
    if(message.message==WM_KEYDOWN&&message.wParam==VK_RETURN) {
     // Preserve Enter's normal selection behavior while a dropdown is open.
     bool dropped=false; for(HWND field:fields)if(SendMessageW(field,CB_GETDROPPEDSTATE,0,0))dropped=true;
+    bool navFocused=false;for(auto nav:navigation)if(GetFocus()==nav){SendMessageW(nav,BM_CLICK,0,0);navFocused=true;break;}if(navFocused)continue;
     if(!dropped) { SendMessageW(window,WM_COMMAND,SaveId,0); continue; }
    }
    if(!IsDialogMessageW(window,&message)) { TranslateMessage(&message); DispatchMessageW(&message); }

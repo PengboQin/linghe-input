@@ -79,11 +79,15 @@ protocol MacInputClient {
     func mark(_ text:String,cursor:Int)
     func surroundingText()->SurroundingText?
     func correctionAnchor(expectedSuffix:String)->MacInputAnchor?
+    func symbolPairContext()->SymbolPairing.EditContext?
+    func deleteSymbolPair(_ plan:SymbolPairing.DeletionPlan)->Bool
 }
 extension MacInputClient {
     func insertPair(_ text:String,caretBack:Int) {insert(text)}
     func surroundingText()->SurroundingText? {nil}
     func correctionAnchor(expectedSuffix:String)->MacInputAnchor? {nil}
+    func symbolPairContext()->SymbolPairing.EditContext? {nil}
+    func deleteSymbolPair(_ plan:SymbolPairing.DeletionPlan)->Bool {false}
     func mark(_ text:String,cursor:Int) {mark(text)}
 }
 
@@ -106,6 +110,7 @@ final class MacInputSession {
     private let ranker:MacSemanticRanker?
     private let capsLockSwitchOverride:Bool?
     private let symbolPairingSettings:()->(autoPair:Bool,caretInside:Bool)
+    private let emptySymbolPair=SymbolPairing.EmptyPairDeletion()
     private var observedCapsLock=false
     private var numericLiteralTail=""
     private struct OwnCommit {
@@ -126,6 +131,7 @@ final class MacInputSession {
         // Reset notifications must discard own text immediately, even when no
         // more keys arrive. Epoch checks also cover delayed notifications.
         observedPersonalEpoch=personalEpoch();ownCommit=nil
+        emptySymbolPair.invalidate()
         rankWork?.cancel();ranker?.cancel();rows=[];rowRevision = -1
         candidateOffset=0;selectedIndex=0;expanded=false;navigationLocked=false;numericLiteralTail=""
         for menu in managementMenus.allObjects {menu.cancelTracking();menu.removeAllItems()}
@@ -137,7 +143,7 @@ final class MacInputSession {
     private let now:()->TimeInterval
     // Only a confirmed different choice teaches a correction. Deletion alone
     // and quick repeated typing never change the bounded choice memory.
-    private func forgetCorrection() {ownCommit=nil;engine.resetPredictionContext()}
+    private func forgetCorrection() {ownCommit=nil;emptySymbolPair.invalidate();engine.resetPredictionContext()}
     func invalidateCorrection() {forgetCorrection()}
     private func validateCorrection(client:MacInputClient)->Bool {
         guard var c=ownCommit else{return false}
@@ -276,7 +282,7 @@ final class MacInputSession {
 
     func input(_ text: String?, keyCode: Int, flags: Int, client: MacInputClient) -> Bool {
         refreshPersonalEpoch()
-        guard engine.ready else { return false }
+        guard engine.ready else { emptySymbolPair.invalidate();return false }
         let shortcuts = NSEvent.ModifierFlags([.command, .control, .option]).rawValue
         guard flags & Int(shortcuts) == 0 else {forgetCorrection();return false}
         let caps=flags & Int(NSEvent.ModifierFlags.capsLock.rawValue) != 0
@@ -291,6 +297,7 @@ final class MacInputSession {
             if keyCode==57 {return true}
             if caps,english,let text,text.unicodeScalars.count==1,
                text.utf8.allSatisfy({(65...90).contains($0) || (97...122).contains($0)}) {
+                emptySymbolPair.invalidate()
                 let shifted=flags & Int(NSEvent.ModifierFlags.shift.rawValue) != 0
                 client.insert(shifted ? text.uppercased():text.lowercased())
                 return true
@@ -313,6 +320,11 @@ final class MacInputSession {
             code = Int32(scalar.value)
         }
         let previous = engine.preedit
+        if code==0xff08,previous.isEmpty,engine.rawInput.isEmpty,emptySymbolPair.isArmed,
+           let plan=emptySymbolPair.consume(client.symbolPairContext()),client.deleteSymbolPair(plan) {
+            forgetCorrection();candidateOffset=0;refreshRows();return true
+        }
+        if code != 0xff08 || !previous.isEmpty || !engine.rawInput.isEmpty {emptySymbolPair.invalidate()}
         if code == 0xff0d, !previous.isEmpty, !english {
             // Physical Return commits typed Latin spelling, preserving an
             // already selected Chinese prefix. Space still selects a word.
@@ -344,9 +356,13 @@ final class MacInputSession {
             let settings=symbolPairingSettings()
             let plan=SymbolPairing.plan(for:text,autoPair:settings.autoPair,caretInside:settings.caretInside)
             finishComposition(client:client)
+            let before=client.symbolPairContext()
             // Own mapped opening symbols even with pairing disabled, so the
             // native punctuator cannot independently pair or rewrite them.
-            engine.noteLiteralInput(plan.insertedText);client.insertPair(plan.insertedText,caretBack:plan.caretBack)
+            let token=emptySymbolPair.performOwnMutation {
+                engine.noteLiteralInput(plan.insertedText);client.insertPair(plan.insertedText,caretBack:plan.caretBack)
+            }
+            emptySymbolPair.arm(opening:text,insertion:plan,before:before,token:token)
             if plan.caretBack>0 {engine.resetPredictionContext()}
             refreshRows();return true
         }

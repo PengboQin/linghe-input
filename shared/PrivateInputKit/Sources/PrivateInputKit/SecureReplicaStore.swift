@@ -25,7 +25,7 @@ private struct StoredGroup: Codable {
     var anchor: MembershipAnchor
     var membership: SignedMembership
     var master: Data
-    var learning = LearningModel()
+    var learning = try! LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
     var ledger = ReplayLedger()
     var clipboard: [ReceivedClipboard] = []
     var setup: GroupSetup { get throws {
@@ -153,7 +153,7 @@ public final class SecureReplicaStore {
         guard let data = try blobs("SELECT sealed FROM groups WHERE id=?", [.text(id.uuidString)]).first else { throw ReplicaStoreError.missingGroup }
         let value = try open(StoredGroup.self, data: data, id: id, kind: "group")
         guard value.anchor.group == id else { throw ReplicaStoreError.corrupt }
-        _ = try value.setup; var model = LearningModel(); try model.merge(value.learning.export())
+        _ = try value.setup; var model = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try model.merge(value.learning.export())
         return value
     }
     private func writeGroup(_ value: StoredGroup) throws {
@@ -296,7 +296,12 @@ public final class SecureReplicaStore {
                                                   sender: identity.device, event: event, sequence: reserved.sequence, issuedAt: now, expiresAt: expiry)
             let wire = try message.encoded()
             guard try integer("SELECT coalesce(sum(length(wire)),0) FROM outbox") + Int64(wire.count) <= 32 * 1024 * 1024 else { throw ReplicaStoreError.quota }
-            if domain == .learning { try state.learning.merge(payload); try writeGroup(state) }
+            if domain == .learning {
+                if state.learning.capacityProfile != LearningCapacityProfiles.expanded10000 {
+                    try state.learning.upgradeCapacity(to: LearningCapacityProfiles.expanded10000)
+                }
+                try state.learning.merge(payload); try writeGroup(state)
+            }
             try execute("INSERT INTO outbox(event,group_id,sender,epoch,sequence,expires,wire) VALUES(?,?,?,?,?,?,?)", [.text(message.event.uuidString), .text(id.uuidString), .text(identity.device.uuidString), .text(String(message.epoch)), .text(String(message.sequence)), .number(try timestamp(message.expiresAt)), .blob(wire)])
             return message
         }
@@ -336,7 +341,12 @@ public final class SecureReplicaStore {
             guard receipt == nil else { throw SyncSecurityError.invalidEnvelope }
             state.clipboard.removeAll { $0.expiresAt <= now }
             if message.sender != identity.device {
-                if message.domain == .learning { try state.learning.merge(opened.payload) }
+                if message.domain == .learning {
+                    if state.learning.capacityProfile != LearningCapacityProfiles.expanded10000 {
+                        try state.learning.upgradeCapacity(to: LearningCapacityProfiles.expanded10000)
+                    }
+                    try state.learning.merge(opened.payload)
+                }
                 else {
                     guard let text = String(data: opened.payload, encoding: .utf8) else { throw SyncSecurityError.invalidPayload }
                     state.clipboard.append(ReceivedClipboard(id: message.event, sender: message.sender, text: text, expiresAt: message.expiresAt))
@@ -350,7 +360,25 @@ public final class SecureReplicaStore {
             return message.sender == identity.device ? .ignoredOwnMessage : .applied
         }
     }
-    public func learningArchive(group: UUID) throws -> Data { try transaction { try loadGroup(group).learning.export() } }
+    /// The app's sync owner upgrades one group atomically before publication.
+    /// No outbox event, sequence, cipher or acknowledgment is rewritten.
+    public func migrateLearningCapacity(group id: UUID) throws {
+        try transaction {
+            var state = try loadGroup(id)
+            guard state.learning.capacityProfile != LearningCapacityProfiles.expanded10000 else { return }
+            try state.learning.upgradeCapacity(to: LearningCapacityProfiles.expanded10000)
+            try writeGroup(state)
+        }
+    }
+    public func learningArchive(group: UUID) throws -> Data {
+        try transaction {
+            var model = try loadGroup(group).learning
+            if model.capacityProfile != LearningCapacityProfiles.expanded10000 {
+                try model.upgradeCapacity(to: LearningCapacityProfiles.expanded10000)
+            }
+            return try model.export()
+        }
+    }
     public func clipboard(group: UUID, now: UInt64) throws -> [ReceivedClipboard] {
         try transaction { var state = try loadGroup(group); state.clipboard.removeAll { $0.expiresAt <= now }; try writeGroup(state); return state.clipboard }
     }

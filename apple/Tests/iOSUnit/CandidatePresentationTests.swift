@@ -16,6 +16,19 @@ import XCTest
         }}
         button.isHidden=true;XCTAssertFalse(host.hitTest(CGPoint(x:28,y:22),with:nil) === button)
     }
+    func testBudgetYieldKeepsToggleUsableWithoutChangingItsFrame() {
+        let button=CandidateExpansionButton(type:.custom)
+        button.frame=CGRect(x:337,y:0,width:56,height:44)
+        let frame=button.frame
+        button.isEnabled=CandidateExpansionButton.canToggle(expanded:false,choicesAvailable:false,hasComposition:true,deferred:true,english:false)
+        XCTAssertTrue(button.isEnabled)
+        XCTAssertTrue(button.point(inside:CGPoint(x:55,y:43),with:nil))
+        XCTAssertTrue(CandidateExpansionButton.canToggle(expanded:true,choicesAvailable:false,hasComposition:false,deferred:false,english:false),"An empty final page must still allow collapse")
+        XCTAssertFalse(CandidateExpansionButton.canToggle(expanded:false,choicesAvailable:false,hasComposition:false,deferred:true,english:false))
+        XCTAssertFalse(CandidateExpansionButton.canToggle(expanded:false,choicesAvailable:false,hasComposition:true,deferred:true,english:true))
+        button.isEnabled=CandidateExpansionButton.canToggle(expanded:true,choicesAvailable:true,hasComposition:true,deferred:false,english:false)
+        XCTAssertEqual(button.frame,frame)
+    }
     func testExpansionOwnsRightGutterWithoutStealingCandidateScroll() {
         let host=KeyboardInputView(frame:CGRect(x:0,y:0,width:393,height:100),inputViewStyle:.keyboard)
         let strip=UIScrollView(frame:CGRect(x:4,y:20,width:329,height:60))
@@ -52,6 +65,43 @@ import XCTest
                 XCTAssertGreaterThanOrEqual(phrase.height,ceil(needed.height)+16)
                 XCTAssertLessThanOrEqual(font.pointSize,26)
             }
+        }
+    }
+    func testExpandedPanelKeepsNativeActionsAndFooterInsteadOfDisablingTheirAncestor() {
+        let host=UIView(frame:CGRect(x:0,y:0,width:393,height:300))
+        let letters=UIView(frame:CGRect(x:52,y:44,width:281,height:200)),rail=UIView(frame:CGRect(x:337,y:44,width:48,height:200)),footer=UIView(frame:CGRect(x:4,y:248,width:381,height:48))
+        let delete=UIButton(type:.system);delete.frame=CGRect(x:0,y:0,width:48,height:64);rail.addSubview(delete)
+        [letters,rail,footer].forEach(host.addSubview)
+        let original=delete.convert(delete.bounds,to:host),footerFrame=footer.frame
+        KeyboardCandidatePanelGeometry.apply(expanded:true,keyRegions:[letters,rail],retainedActions:rail,delete:delete,footer:footer)
+        XCTAssertEqual(letters.alpha,0);XCTAssertFalse(letters.isUserInteractionEnabled)
+        XCTAssertEqual(rail.alpha,1);XCTAssertTrue(rail.isUserInteractionEnabled)
+        XCTAssertEqual(footer.alpha,1);XCTAssertTrue(footer.isUserInteractionEnabled)
+        XCTAssertEqual(delete.convert(delete.bounds,to:host),original);XCTAssertEqual(footer.frame,footerFrame)
+        XCTAssertTrue(host.hitTest(CGPoint(x:original.midX,y:original.midY),with:nil) === delete)
+        KeyboardCandidatePanelGeometry.apply(expanded:false,keyRegions:[letters,rail],retainedActions:rail,delete:delete,footer:footer)
+        XCTAssertEqual(letters.alpha,1);XCTAssertTrue(letters.isUserInteractionEnabled)
+    }
+    func testExpandedLettersKeepTheirOriginalThirdRowDeleteAndStableHeaderHeight() {
+        let region=UIView(frame:CGRect(x:0,y:44,width:393,height:190)),row=UIStackView(frame:CGRect(x:0,y:132,width:393,height:58))
+        let letter=UIButton(type:.system),delete=UIButton(type:.system);row.addArrangedSubview(letter);row.addArrangedSubview(delete);region.addSubview(row)
+        row.distribution = .fillEqually;row.layoutIfNeeded()
+        let footer=UIView(frame:CGRect(x:0,y:238,width:393,height:44)),original=delete.convert(delete.bounds,to:region)
+        for _ in 0..<20 {
+            KeyboardCandidatePanelGeometry.apply(expanded:true,keyRegions:[region],retainedActions:nil,delete:delete,footer:footer)
+            XCTAssertEqual(letter.alpha,0);XCTAssertEqual(delete.alpha,1);XCTAssertTrue(delete.isUserInteractionEnabled)
+            XCTAssertEqual(delete.convert(delete.bounds,to:region),original)
+            KeyboardCandidatePanelGeometry.apply(expanded:false,keyRegions:[region],retainedActions:nil,delete:delete,footer:footer)
+            XCTAssertEqual(letter.alpha,1)
+        }
+        XCTAssertEqual(KeyboardCandidatePanelGeometry.headerHeight(inline:true),44)
+        XCTAssertEqual(KeyboardCandidatePanelGeometry.headerHeight(inline:false),62)
+        XCTAssertEqual(KeyboardCandidatePanelGeometry.candidateTop(inline:true),0)
+        XCTAssertEqual(KeyboardCandidatePanelGeometry.candidateTop(inline:false),18)
+        for width:CGFloat in [320,393,720,1024] {
+            let frame=CGRect(x:width-92,y:180,width:88,height:48)
+            let reserve=KeyboardCandidatePanelGeometry.trailingReserve(width:width,deleteFrame:frame)
+            XCTAssertGreaterThanOrEqual(reserve,60);XCTAssertLessThanOrEqual(width-reserve,frame.minX-4)
         }
     }
 }

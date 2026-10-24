@@ -12,6 +12,14 @@ int main() {
  assert(!recognizedSetupHash(std::string(64,'f'),std::string(64,'a')));
  assert(recognizedSetupHash("d617c9572e89a92890689679c1ff6ea3d3333bd28e59e4fd6b522aa2159310ba",std::string(64,'a')));
  assert(recognizedSetupHash(std::string(64,'a'),std::string(64,'a')));
+ for(const std::string pinned:{"41924eba956d0d51221afa89ea59b99399736f9cc007518865bc5c2e2777414e",
+                              "82afe64c935d8c22536bd3c529c61ed4e5a9fdd55a76923188c52c95bf95465c",
+                              "914a3c6a2f690a862caac4622d1fae2d951225e080638b8028b9720b97eb01b2",
+                              "b20ee4911fc7f9f4f895fa93f874b332a6dc47e7e3661949aaff53cebbd600ab"}){
+   assert(recognizedSetupHash(pinned,std::string(64,'a')));
+   auto changed=pinned;changed[0]=changed[0]=='0'?'1':'0';
+   assert(!recognizedSetupHash(changed,std::string(64,'a')));
+ }
 
  auto reject=[&](const std::string& manifest) { bool failed=false; try{parseManifest(manifest,"0.2.3-win1");}catch(const std::runtime_error&){failed=true;} assert(failed);++count; };
  assert(parseManifest(base,"0.2.3-win1").size()==3);

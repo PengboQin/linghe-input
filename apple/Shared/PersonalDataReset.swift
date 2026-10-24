@@ -58,13 +58,15 @@ enum PersonalDataReset {
     static func applyLocal(base:URL,epoch:String?=nil,shared:URL?=directory) throws {
         let current=epoch ?? generation
         if current != "initial",needsApply(base:base,epoch:current) {
-            let names=["Rime","nine-choice-memory-v1.json","nine-choice-memory-v2.json","nine-choice-memory-v3.json","learning-checkpoint-v1.json","learning-import-pending-v1.json","learning-runtime-v2.json","learning-recency-v2.json","learning-recency-anchor-v2.json","cloud-learning-replica-v1.json","cloud-learning-components-v1.json","cloud-learning-ranking-v1.json","CloudLearningProducers","local-replica-id.txt","Shared","personal-lexicon-v1.json","personal-replica-id.txt","symbol-usage-v1.json"]
+            try LocalLearningCoordinator.withAuthorityLock(base: base, wait: true) {
+            let names=["Rime","nine-choice-memory-v1.json","nine-choice-memory-v2.json","nine-choice-memory-v3.json","learning-checkpoint-v1.json","learning-import-pending-v1.json","learning-runtime-v2.json","hidden-native-maintenance-v1.txt","learning-native-phase-v2.txt","learning-recency-v2.json","learning-recency-anchor-v2.json","cloud-learning-replica-v1.json","cloud-learning-components-v1.json","cloud-learning-ranking-v1.json","CloudLearningProducers","local-replica-id.txt","Shared","personal-lexicon-v1.json","personal-replica-id.txt","symbol-usage-v1.json"]
             for name in names {try remove(base.appendingPathComponent(name))}
             for item in (try? FileManager.default.contentsOfDirectory(at:base,includingPropertiesForKeys:nil)) ?? [] {
                 if item.lastPathComponent.hasPrefix("Checkpoint-"),UUID(uuidString:String(item.lastPathComponent.dropFirst(11))) != nil {try remove(item)}
             }
             UserDefaults.standard.removeObject(forKey:"symbol-usage-v1")
             if let shared {try removeSharedData(shared)}
+            }
         }
         try FileManager.default.createDirectory(at:base,withIntermediateDirectories:true)
         try Data(current.utf8).write(to:base.appendingPathComponent("privacy-applied-v1.txt"),options:.atomic)

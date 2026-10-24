@@ -73,7 +73,7 @@ enum LearningRefreshReader {
                         let state=try JSONDecoder().decode(AppleRecencyBridge.State.self,from:data)
                         guard state.version==1 else {throw InputDataError.incompatibleSchema}
                         let policy=try state.policy
-                        if let archive=state.archive {var model=RecentLearningModel();try model.merge(archive,policy:policy)}
+                        if let archive=state.archive {var model=try RecentLearningModel(capacityProfile: LearningCapacityProfiles.expanded10000);try model.merge(archive,policy:policy)}
                         let uptime=ProcessInfo.processInfo.systemUptime
                         var valid=false
                         if let anchor=state.anchor,let boot=AppleRecencyBridge.bootSession,boot==anchor.boot,

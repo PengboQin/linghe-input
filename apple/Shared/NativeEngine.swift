@@ -3,6 +3,26 @@ import Combine
 import NaturalLanguage
 import PrivateInputKit
 
+/// Native product admission is independent of the system-font renderer.
+/// Keep the C ABI here so font/layout-only targets do not acquire Rime.
+/// Automatic suggestions only; never rewrite literal input or stored records.
+enum AppleCandidateAdmission {
+    static func allows(_ text:String,displayable:(String)->Bool)->Bool {
+        text.withCString {pi_candidate_text_allowed($0) != 0} && displayable(text)
+    }
+    static func allows(_ candidate:InputCandidate,candidateIsDisplayable:(String)->Bool)->Bool {
+        guard candidateIsDisplayable(candidate.text) else{return false}
+        // Explicit aliases/shortcuts, English and continuation text are not
+        // automatic pinyin claims. Ordinary, learned and assembled candidates
+        // all use the same pure reading policy, without a pin/frequency bypass.
+        if candidate.personalID != nil || candidate.supplementaryTrigger != nil ||
+            candidate.latinInput != nil || candidate.continuationContext != nil {return true}
+        return candidate.text.withCString { text in
+            candidate.comment.withCString {pi_candidate_reading_allowed(text,$0) != 0}
+        }
+    }
+}
+
 struct InputCandidate {
     let text: String; let comment: String; let index: Int
     var replacementInput: String? = nil
@@ -20,6 +40,8 @@ struct InputCandidate {
     var initialsSuffix:Int = 0
     var prefixCompletion=false
     var learnedPreference=false
+    var preservedNinePath=false
+    var preservedNinePrefix=false
 }
 
 enum EngineFailure: Error { case resourceMissing, initializeFailed, sessionFailed }
@@ -100,6 +122,11 @@ final class NativeEngine: ObservableObject {
     private var visibilityPage=CandidateVisibilityPage<InputCandidate>()
     private var visibilityRevision = -1
     private var visibilityPredictionComplete=false
+    private var incrementalCandidateRead=false
+    private var candidateScanRemaining=0
+    private var nativeCandidateReadPending=false
+    private(set) var candidateBatchCanContinue=false
+    private(set) var candidateBatchWasDeferred=false
     private var mixedRevision = -1
     private var mixedRows:[InputCandidate]=[]
     private var mixedLeads=false
@@ -114,6 +141,15 @@ final class NativeEngine: ObservableObject {
     private let learningRefreshOwner = UUID()
     private var learningCheckpointGate = LearningCheckpointGate()
     private let learningRefreshQueue = DispatchQueue(label:"live.linghe.privateinput.learning-preflight",qos:.utility)
+    private var fullLearningPreparationID: UUID?
+    private(set) var lastCompletedLearningPreparation: LearningRefreshPreparation?
+    private var pendingLearningMetadata: (entries: [LearningEntry], epoch: String)?
+    private func adoptPendingLearningMetadataIfIdle() {
+        guard let pending = pendingLearningMetadata else { return }
+        guard pending.epoch == personalEpoch, pending.epoch == currentPersonalEpoch else { pendingLearningMetadata = nil; return }
+        guard ready, rawInput.isEmpty, preedit.isEmpty else { return }
+        managedEntries = pending.entries; pendingLearningMetadata = nil; cloudCommittedVersion &+= 1
+    }
     private(set) var learningRefreshWasSkipped = false
     private(set) var learningCheckpointRuns = 0
     private func markNativeLearningChanged() { learningCheckpointGate.changed() }
@@ -328,6 +364,7 @@ final class NativeEngine: ObservableObject {
         }
         CandidateGlyphSupport.clearCache()
         predictionProbe=0;session=0
+        pendingLearningMetadata = nil
         choiceMemory=NineKeyChoiceMemory();choiceMemoryWritable=true;coordinator=nil;personalStore=nil
         resetPredictionContext();ownContext=""
         do {
@@ -392,7 +429,8 @@ final class NativeEngine: ObservableObject {
             KeyboardRuntimeDiagnostics.record(.nativeInitializeBegin)
             let initialized = pi_initialize(shared.path, user.path, 0) != 0
             KeyboardRuntimeDiagnostics.record(.nativeInitializeEnd, [.ready: initialized ? 1 : 0])
-            guard initialized else { throw EngineFailure.initializeFailed }
+            let currentProfile = LearningCapacityProfiles.expanded10000
+            guard initialized, pi_set_learning_capacity_profile(currentProfile.id, UInt32(currentProfile.version)) == 1 else { throw EngineFailure.initializeFailed }
             Self.initialized = true; Self.initializedPath = user.path; Self.initializedSharedPath = shared.path;Self.initializedEpoch=personalEpoch
         } else if Self.initializedPath != user.path || Self.initializedSharedPath != shared.path {
             // Rime is process-global; reject a request for another database.
@@ -421,7 +459,7 @@ final class NativeEngine: ObservableObject {
     func key(_ code: Int32, modifiers: Int32 = 0) -> (handled: Bool, commit: String) {
         guard refreshResetBarrier() else { return (false, "") }
         if !privateInput, rawInput.isEmpty, preedit.isEmpty,
-           (65...90).contains(code) || (97...122).contains(code) || (50...57).contains(code) { coordinator?.beginComposition() }
+           (65...90).contains(code) || (97...122).contains(code) || (50...57).contains(code) { adoptPendingLearningMetadataIfIdle(); coordinator?.beginComposition() }
 
         if rawInput.isEmpty { refreshPersonalLexicon() }
         markNativeLearningChanged()
@@ -435,18 +473,81 @@ final class NativeEngine: ObservableObject {
         markNativeLearningChanged()
         let commit = String(cString: pi_take_commit(session));observeCommit(commit);reload(); return commit
     }
-    func candidateBatch(offset:Int,limit:Int)->[InputCandidate] {
+    func candidateBatch(offset:Int,limit:Int,incremental:Bool = false,maximumScannedRows:Int = 256)->[InputCandidate] {
+        let started=ProcessInfo.processInfo.systemUptime
+        defer {KeyboardRuntimeDiagnostics.recordSlow(.candidateBatchSlow,startedUptime:started)}
+        candidateBatchCanContinue=false;candidateBatchWasDeferred=false
         guard refreshResetBarrier(),offset>=0,limit>0 else{return []}
         if visibilityRevision != revision || visibilityPredictionComplete != predictionComplete {
             visibilityRevision=revision;visibilityPredictionComplete=predictionComplete;visibilityPage = .init()
         }
         // Use a local page to avoid overlapping inout access while the source
         // adapter updates other native caches. Candidate IDs never get renumbered.
+        incrementalCandidateRead=incremental;candidateScanRemaining=max(0,min(256,maximumScannedRows));nativeCandidateReadPending=false
+        defer {incrementalCandidateRead=false}
         var page=visibilityPage
-        let rows=page.slice(offset:offset,limit:limit,accept:{self.candidateIsDisplayable($0.text)},source:{self.orderedCandidateBatch(offset:$0,limit:$1)})
-        visibilityPage=page;return rows
+        let rows=page.slice(offset:offset,limit:limit,maximumBatches:incremental ? 1:.max,
+            sourceMayContinue:{self.nativeCandidateReadPending},accept:{AppleCandidateAdmission.allows($0,candidateIsDisplayable:self.candidateIsDisplayable)},source:{self.orderedCandidateBatch(offset:$0,limit:$1)})
+        if nativeCandidateReadPending {
+            // Provisional short heads must not poison revision caches or be
+            // mistaken for EOF. Core cursors retain their completed scan work;
+            // the visible page is committed only after its source completed.
+            commonRevision = -1;preferenceNativeRevision = -1;preferencePredictionRevision = -1
+            mixedRevision = -1;prefixCompletionRevision = -1;rareCompletionRevision = -1
+            initialsRevision = -1;pinyinRevision = -1;recoveryRevision = -1
+            candidateBatchCanContinue=true;candidateBatchWasDeferred=true
+            return Array(visibilityPage.rows.dropFirst(offset).prefix(limit))
+        }
+        visibilityPage=page
+        candidateBatchCanContinue = !page.exhausted || page.rows.count>offset+rows.count
+        candidateBatchWasDeferred = incremental && rows.count<limit && !page.exhausted
+        if offset==0,let first=rows.first {_ = rememberPublishedNineCandidate(first)}
+        return rows
+    }
+    /// Called only with an actual final publication, after platform revision and
+    /// visibility admission. Shared core rechecks raw/prefix and bounded mapping.
+    @discardableResult func rememberPublishedNineCandidate(_ first:InputCandidate)->Bool {
+        guard ready,nineKeyInput,!englishInput,first.generation==revision,candidateIsDisplayable(first.text),
+              first.sourceInput==nil || first.sourceInput==rawInput else{return false}
+        let prefix=String(cString:pi_selected_prefix(session)),active=Int(pi_unselected_input_start(session))
+        if let replacement=first.replacementInput,first.sourceInput==rawInput,active>=0,active<=replacement.count,
+           let canonical=NineKeySpelling.rawCode(String(replacement.dropFirst(active))) {
+            return pi_nine_remember_visible_candidate_path(session,rawInput,prefix,first.text,first.comment,canonical) != 0
+        }
+        if let initial=first.initialsInput,first.sourceInput==rawInput,active>=0,active<=rawInput.count,
+           initial==String(rawInput.dropFirst(active)),let canonical=NineKeySpelling.encode(first.comment) {
+            return pi_nine_remember_visible_candidate_path(session,rawInput,prefix,first.text,first.comment,canonical) != 0
+        }
+        return pi_nine_remember_visible_candidate_path(session,rawInput,prefix,first.text,first.comment,nil) != 0
     }
     private func orderedCandidateBatch(offset:Int,limit:Int)->[InputCandidate] {
+        guard nineKeyInput,ready else{return baseOrderedCandidateBatch(offset:offset,limit:limit)}
+        let preferred=String(cString:pi_nine_preferred_reading(session))
+        guard !preferred.isEmpty else{return baseOrderedCandidateBatch(offset:offset,limit:limit)}
+        let base=baseOrderedCandidateBatch(offset:0,limit:64)
+        let text=String(cString:pi_nine_preferred_text(session))
+        var carried:[InputCandidate]=[]
+        if !text.isEmpty {
+            carried.append(InputCandidate(text:text,comment:preferred,index:-69000,sourceInput:rawInput,generation:revision,preservedNinePath:true))
+            let parts=readingParts(preferred)
+            if parts.count>1,let first=parts.first {
+                carried.append(InputCandidate(text:String(text.prefix(1)),comment:first,index:-69001,sourceInput:rawInput,generation:revision,preservedNinePrefix:true))
+            }
+        }
+        let head=carried+base.filter{row in !carried.contains(where:{$0.text==row.text && $0.comment==row.comment})}
+        func tier(_ row:InputCandidate)->Int {
+            if isPinned(row){return 0}
+            return 1+Int(pi_nine_candidate_path_priority(session,row.comment))
+        }
+        let ordered=head.enumerated().sorted {a,b in
+            let x=tier(a.element),y=tier(b.element);return x==y ? a.offset<b.offset:x<y
+        }.map(\.element)
+        if offset>=head.count {return base.count==64 ? baseOrderedCandidateBatch(offset:64+offset-head.count,limit:limit):[]}
+        let result=Array(ordered.dropFirst(offset).prefix(limit))
+        guard base.count==64,result.count<limit else{return result}
+        return result+baseOrderedCandidateBatch(offset:64,limit:limit-result.count)
+    }
+    private func baseOrderedCandidateBatch(offset:Int,limit:Int)->[InputCandidate] {
         guard ready,offset>=0,limit>0,!englishInput,(rawInput.count>=4 || coordinator?.scoreSnapshot.isCurrent()==true),commonWords != nil else {
             return unrankedCandidateBatch(offset:offset,limit:limit)
         }
@@ -500,10 +601,11 @@ final class NativeEngine: ObservableObject {
     func acceptAuthenticatedRecency(policy:RecentLearningPolicy,unixSeconds:Double,uptime:Double=ProcessInfo.processInfo.systemUptime) throws {
         guard let coordinator else{throw LearningSyncFailure.engineUnavailable}
         try coordinator.acceptAuthenticatedRecency(policy:policy,unixSeconds:unixSeconds,uptime:uptime)
+        learningCheckpointGate.invalidate()
         // No visible-candidate refresh during composition; use the next revision.
         if preedit.isEmpty {commonRevision = -1}
     }
-    func suspendRecency() {coordinator?.suspendRecency()}
+    func suspendRecency() {learningCheckpointGate.invalidate();coordinator?.suspendRecency()}
     private func commonExpressionOrder(_ rows:[InputCandidate])->[InputCandidate] {
         guard let commonWords,let code=NineKeySpelling.rawCode(rawInput) else{return rows}
         // An explicit delete-and-retype correction overrides the public prior,
@@ -679,6 +781,10 @@ final class NativeEngine: ObservableObject {
     }
     private func coreCandidateBatch(offset:Int,limit:Int) -> [InputCandidate] {
         if !nineKeyInput,!pinyinRepairCandidates().isEmpty {return rawCoreCandidateBatch(offset:offset,limit:limit)}
+        // A historical homophone preference can refer to a now-filtered word.
+        // Its native-only head must not discard verified syllable completions;
+        // that would make an unavailable old word suppress every usable choice.
+        if !nineKeyInput,!rareFullSpellingCompletions().isEmpty {return rawCoreCandidateBatch(offset:offset,limit:limit)}
         if nativeBatch(offset:0,limit:1).isEmpty {return rawCoreCandidateBatch(offset:offset,limit:limit)}
         guard hasHomophonePreference else { return rawCoreCandidateBatch(offset:offset,limit:limit) }
         let head:[InputCandidate]
@@ -800,9 +906,8 @@ final class NativeEngine: ObservableObject {
     /// Every candidate records its consumed prefix; untouched tails stay editable.
     private var rareCompletionRevision = -1
     private var rareCompletionRows:[InputCandidate]=[]
-    /// A legitimate but unattested supplementary Han character can monopolize
-    /// Rime's exact match and suppress every ordinary prefix completion.
-    /// Preserve it, but offer common dictionary-validated continuations first.
+    /// An unavailable exact character must not suppress an ordinary, verified
+    /// syllable continuation. Admitted exact spellings still take precedence.
     private func rareFullSpellingCompletions()->[InputCandidate] {
         guard ready,!nineKeyInput,!englishInput,pi_cursor_at_end(session) != 0,
               String(cString:pi_selected_prefix(session)).isEmpty else{return []}
@@ -813,7 +918,7 @@ final class NativeEngine: ObservableObject {
               let commonWords,let code=NineKeySpelling.rawCode(raw) else{return []}
         let ordinary=nativeBatch(offset:0,limit:32)
         let exact=ordinary.filter{PinyinInputMatch.isFullSpelling(raw,reading:$0.comment)}
-        guard !exact.isEmpty,exact.allSatisfy({row in
+        guard exact.isEmpty || exact.allSatisfy({row in
             if !candidateIsDisplayable(row.text) {return true}
             return row.text.unicodeScalars.count==1 && row.text.unicodeScalars.allSatisfy({$0.value>0xFFFF && $0.properties.isIdeographic}) &&
             commonWords.frequency(row.text)==0 && !isPinned(row) &&
@@ -1002,10 +1107,11 @@ final class NativeEngine: ObservableObject {
             let unfinished=PinyinInputMatch.canonicalSyllable(String(tail.dropFirst(consumed)))
             return !completeSyllables.contains(unfinished) && completeSyllables.contains(where:{$0.hasPrefix(unfinished)})
         }.map(\.text))
-        // Exact paths are protected by presentation tiers, not by deleting
-        // correction recall. Short exact drafts retain eight bounded probes.
-        let bytes=Array(tail.utf8),hasDuplicate=zip(bytes,bytes.dropFirst()).contains{$0==$1}
-        let probeLimit=tail.count<10 && !hasDuplicate && ordinary.contains(where:{fullySpelled($0.comment) && PinyinInputMatch.isFullSpelling(tail,reading:$0.comment)}) ? 8:64
+        // Physical/26-key spelling is explicit. A complete admitted native
+        // match needs no speculative edits; long correct sentences otherwise
+        // pay for dozens of private decode probes on every revision.
+        guard !ordinary.contains(where:{fullySpelled($0.comment) && PinyinInputMatch.isFullSpelling(tail,reading:$0.comment)}) else{return []}
+        let probeLimit=64
         let probe=pi_create_session();guard probe != 0 else {return []};defer {pi_destroy_session(probe)}
         guard pi_set_private(probe,1) != 0,pi_set_nine_key(probe,0) != 0,pi_set_ascii_mode(probe,0) != 0 else {return []}
         var ranked:[(row:InputCandidate,score:Double)]=[]
@@ -1101,7 +1207,10 @@ final class NativeEngine: ObservableObject {
         if !nineKeyInput {
             let context=modelContext
             let sentenceHasHan=(selected+context.before+context.after).unicodeScalars.contains{$0.properties.isIdeographic}
-            let chinese=coreCandidateBatch(offset:0,limit:32)
+            // Display eligibility must not construct typo/initials candidates.
+            // Reading the marked text and caret can occur before candidate UI
+            // refresh, so keep this classifier on the native evidence path.
+            let chinese=nativeBatch(offset:0,limit:32)
             let supported=chinese.contains { row in
                 row.latinInput==nil && row.pinyinRepair==nil && row.text.unicodeScalars.contains{$0.properties.isIdeographic} &&
                 PinyinInputMatch.covers(pending,reading:row.comment,maxAbbreviations:1)
@@ -1162,7 +1271,15 @@ final class NativeEngine: ObservableObject {
         reload();return true
     }
     private func nativeBatch(offset:Int,limit:Int) -> [InputCandidate] {
-        let count = Int(pi_load_candidate_batch(session, offset, limit))
+        let started=ProcessInfo.processInfo.systemUptime
+        defer {KeyboardRuntimeDiagnostics.recordSlow(.nativeBatchSlow,startedUptime:started)}
+        if incrementalCandidateRead && nativeCandidateReadPending {return []}
+        let count:Int
+        if incrementalCandidateRead {
+            count=Int(pi_load_candidate_batch_bounded(session,offset,limit,candidateScanRemaining))
+            candidateScanRemaining=max(0,candidateScanRemaining-Int(pi_candidate_batch_scanned(session)))
+            nativeCandidateReadPending=pi_candidate_batch_pending(session) != 0
+        } else {count=Int(pi_load_candidate_batch(session,offset,limit))}
         let code=NineKeySpelling.rawCode(rawInput) ?? ""
         let remembered = !nineKeyInput && !privateInput ? choiceMemory.entries.filter{$0.code==code}:[]
         return (0..<count).map { i in
@@ -1804,6 +1921,20 @@ final class NativeEngine: ObservableObject {
         guard refreshResetBarrier(),candidateIsDisplayable(candidate.text) else{return ""}
         markNativeLearningChanged()
         if let generation=candidate.generation,generation != revision { return "" }
+        if candidate.preservedNinePath || candidate.preservedNinePrefix {
+            guard nineKeyInput,!englishInput,candidate.sourceInput==rawInput else{return ""}
+            let raw=rawInput,prefix=String(cString:pi_selected_prefix(session)),active=Int(pi_unselected_input_start(session))
+            if candidate.preservedNinePrefix {
+                guard pi_select_nine_preferred_prefix(session,raw,prefix,candidate.text,candidate.comment) != 0 else{return ""}
+                reload();return ""
+            }
+            let commit=String(cString:pi_commit_nine_preferred_candidate(session,raw,prefix,candidate.text,candidate.comment))
+            guard !commit.isEmpty else{return ""}
+            if active>=0,active<=raw.count,let code=NineKeySpelling.rawCode(String(raw.dropFirst(active))) {
+                rememberChoice(code:code,candidate:candidate,context:SentenceContextWindow.append(prefix,to:ownContext),corrected:NineKeySpelling.encode(candidate.comment) != code)
+            }
+            observeCommit(commit);reload();return commit
+        }
         if let code=candidate.initialsInput {
             guard candidate.sourceInput==rawInput,
                   (initialsCandidates()+ninePrefixCompletions()).contains(where:{$0.text==candidate.text && $0.comment==candidate.comment && $0.initialsInput==code}) else{return ""}
@@ -2054,6 +2185,7 @@ final class NativeEngine: ObservableObject {
         markNativeLearningChanged()
         try coordinator.manage(reading: reading, text: candidate.text, pinned: pinned)
         if pinned == nil,choiceMemoryWritable { var next=choiceMemory;next.reset(text:candidate.text,reading:reading);try saveChoiceMemory(next);choiceMemory=next }
+        pendingLearningMetadata = nil
         managedEntries = try coordinator.entries(); cloudCommittedVersion &+= 1; managementPending = true
         applyPins(); reload()
     }
@@ -2090,15 +2222,19 @@ final class NativeEngine: ObservableObject {
     }
     var learningCheckpointMetrics:LearningCheckpointMetrics {coordinator?.lastCheckpointMetrics ?? LearningCheckpointMetrics()}
     private func learningRefreshContext(publish: SnapshotPublisher?) -> String {
+        let wallNow=Date().timeIntervalSince1970
         let publisher: String
         switch publish {case .containingApp?:publisher="app";case .keyboard(let access)?:publisher="keyboard-\(access)";case nil:publisher="local"}
         let consent: String
         if originalStorageBase == nil {
             let prefs=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
             let deadline=prefs?.double(forKey:"mobile-group-expiry") ?? 0
-            consent="\(prefs?.bool(forKey:"learning-sharing-enabled") == true)|\(prefs?.string(forKey:"privacy-departed-reason") ?? "")|\(deadline)|expired:\(deadline>0 && Date().timeIntervalSince1970>=deadline)"
+            consent=LearningRefreshConsentContext.make(sharing:prefs?.bool(forKey:"learning-sharing-enabled") == true,
+                departed:prefs?.string(forKey:"privacy-departed-reason") ?? "",deadline:deadline,now:wallNow,
+                cloud:prefs?.bool(forKey:"cloud-learning-enabled") == true,group:prefs?.string(forKey:"cloud-learning-group") ?? "",
+                epoch:(prefs?.object(forKey:"cloud-learning-epoch") as? NSNumber)?.uint64Value ?? 0)
         } else {consent="isolated"}
-        return "\(personalEpoch)|\(publisher)|\(privateInput)|\(Int(Date().timeIntervalSince1970/86400))|\(consent)"
+        return "\(personalEpoch)|\(publisher)|\(privateInput)|\(Int(wallNow/86400))|\(consent)"
     }
     private func learningRefreshRequest(publish: SnapshotPublisher?) -> LearningRefreshRequest {
         .init(owner:learningRefreshOwner,generation:learningCheckpointGate.mutation,validationGeneration:learningCheckpointGate.validationGeneration,context:learningRefreshContext(publish:publish),sources:coordinator?.learningRefreshSources ?? [])
@@ -2158,11 +2294,364 @@ final class NativeEngine: ObservableObject {
         }
     }
     #endif
-    func prepareLearningRefresh(publish: SnapshotPublisher?, completion:@escaping (LearningRefreshPreparation)->Void) {
+    private static func maintenanceFailureClass(_ error: Error) -> KeyboardRuntimeDiagnostics.MaintenanceFailure {
+        switch error {
+        case LearningSyncFailure.busy, SnapshotStoreError.busy: return .busy
+        case LearningSyncFailure.engineUnavailable: return .engineUnavailable
+        case LearningSyncFailure.exportFailed: return .exportFailed
+        case LearningSyncFailure.importFailed: return .importFailed
+        case is InputDataError: return .invalidData
+        default:
+            return (error as NSError).domain == NSCocoaErrorDomain ? .filesystem : .other
+        }
+    }
+    /// Full native maintenance has two short main batches separated by utility
+    /// preparation. No native owner or live composition is touched by utility.
+    func synchronizeLearningInBackground(publish: SnapshotPublisher?, preparation: LearningRefreshPreparation,
+        diagnosticOwner: UInt64 = 0, mayCommit: @escaping () -> Bool,
+        maintenancePermitted: @escaping () -> Bool = { true },
+        nativeWillBegin: @escaping () -> Bool = { true }, nativeDidEnd: @escaping () -> Void = {},
+        completion: @escaping (Result<Bool, Error>) -> Void) {
+        guard fullLearningPreparationID == nil, ready, let coordinator,
+              rawInput.isEmpty, preedit.isEmpty, mayCommit(), maintenancePermitted(),
+              isCurrentLearningRefreshPreparation(preparation, publish: publish) else {
+            completion(.failure(LearningSyncFailure.busy)); return
+        }
+        let identifier = UUID(), detached = coordinator.detachedObservationOwner(), capturedEpoch = personalEpoch
+        detached.restrictMaintenance(to: maintenancePermitted)
+        let publisher = privateInput ? nil : publish, allowDated = !privateInput
+        var expectedRevision = revision, nativeImports = 0, nativeResets = 0
+        let started = ProcessInfo.processInfo.systemUptime
+        fullLearningPreparationID = identifier; lastCompletedLearningPreparation = nil; learningRefreshWasSkipped = false
+        func restoreSession() {
+            session = pi_create_session(); ready = session != 0
+            if ready {
+                _ = pi_set_nine_key(session, nineKeyInput ? 1 : 0)
+                _ = pi_set_private(session, privateInput ? 1 : 0)
+                _ = pi_set_ascii_mode(session, englishInput ? 1 : 0); reload()
+            }
+            expectedRevision = revision
+        }
+        func current() -> Bool {
+            maintenancePermitted() && fullLearningPreparationID == identifier && ready && personalEpoch == capturedEpoch &&
+                currentPersonalEpoch == capturedEpoch && rawInput.isEmpty && preedit.isEmpty &&
+                revision == expectedRevision && mayCommit() &&
+                isCurrentLearningRefreshPreparation(preparation, publish: publish)
+        }
+        detached.synchronizeNativeCheckpoint(queue: learningRefreshQueue, allowDatedLearning: allowDated,
+            mayCommit: current, stage: { stage in
+                // Immutable metadata only: the preparing event can run on IO.
+                switch stage {
+                case .preparing:
+                    KeyboardRuntimeDiagnostics.record(.checkpointPreflight,
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan))
+                case .prepared:
+                    KeyboardRuntimeDiagnostics.record(.checkpointPreflightEnd,
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan))
+                case .applying, .committed: break
+                }
+            }, exportNative: { [self] output in
+                guard current(), nativeWillBegin() else { throw LearningSyncFailure.busy }
+                defer { nativeDidEnd() }
+                releasePredictionProbe()
+                guard pi_active_session_count() == 1 else { throw LearningSyncFailure.busy }
+                let nativeStart = ProcessInfo.processInfo.systemUptime
+                pi_destroy_session(session); session = 0
+                defer { restoreSession() }
+                guard pi_export_learning(output.path) >= 0 else { throw LearningSyncFailure.exportFailed }
+                KeyboardRuntimeDiagnostics.recordSlow(.checkpointSlow, startedUptime: nativeStart)
+            }, applyNative: { [self] plan, begin, done in
+                guard current(), nativeWillBegin() else { throw LearningSyncFailure.busy }
+                defer { nativeDidEnd() }
+                releasePredictionProbe()
+                guard pi_active_session_count() == 1 else { throw LearningSyncFailure.busy }
+                let nativeStart = ProcessInfo.processInfo.systemUptime
+                pi_destroy_session(session); session = 0
+                defer { restoreSession() }
+                try begin() // <=128B durable start, after admission, before mutation.
+                learningCheckpointGate.invalidate()
+                KeyboardRuntimeDiagnostics.record(.checkpointBegin,
+                    KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .nativeCheckpoint, nativeSessionCount: 1))
+                for row in plan.resets {
+                    nativeResets += 1
+                    guard pi_reset_word_frequency(row.reading, row.text, row.frequency) >= 0 else { throw LearningSyncFailure.importFailed }
+                }
+                if plan.requiresImport {
+                    nativeImports += 1
+                    guard pi_import_learning(plan.importFile.path) >= 0 else { throw LearningSyncFailure.importFailed }
+                }
+                // Pins are part of this admitted native batch, never a late UI refresh.
+                for row in appliedPins { _ = pi_set_word_pinned(row.reading, row.text, 0) }
+                appliedPins = plan.pins
+                for row in appliedPins { _ = pi_set_word_pinned(row.reading, row.text, 1) }
+                guard pi_export_learning(plan.actualFile.path) >= 0 else { throw LearningSyncFailure.exportFailed }
+                try done() // immutable actual+done BEFORE normal session/D resumes.
+                KeyboardRuntimeDiagnostics.recordSlow(.checkpointSlow, startedUptime: nativeStart)
+            }, completion: { [self] result in
+                guard fullLearningPreparationID == identifier else { completion(.failure(LearningSyncFailure.busy)); return }
+                guard maintenancePermitted() else { fullLearningPreparationID = nil; learningCheckpointGate.invalidate(); completion(.failure(LearningSyncFailure.busy)); return }
+                switch result {
+                case .failure(let error):
+                    fullLearningPreparationID = nil; learningCheckpointGate.invalidate()
+                    KeyboardRuntimeDiagnostics.record(KeyboardRuntimeDiagnostics.maintenanceFailurePhase(Self.maintenanceFailureClass(error)),
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .nativeCheckpoint, failure: Self.maintenanceFailureClass(error)))
+                    completion(.failure(error))
+                case .success(let value):
+                    let adopted: Bool
+                    do {
+                        if self.coordinator === coordinator && personalEpoch == capturedEpoch { adopted = try coordinator.adoptCompletedNative(value) }
+                        else { adopted = false }
+                    }
+                    catch { fullLearningPreparationID = nil; learningCheckpointGate.invalidate(); completion(.failure(error)); return }
+                    if adopted {
+                        pendingLearningMetadata = (value.entries, capturedEpoch)
+                        if revision == expectedRevision, rawInput.isEmpty, preedit.isEmpty { adoptPendingLearningMetadataIfIdle() }
+                    }
+                    let fullyCurrent = adopted && learningRefreshIdentityIsCurrent(preparation, publish: publish) && mayCommit()
+                    learningCheckpointRuns += 1
+                    if fullyCurrent {
+                        managementPending = false
+                        #if os(iOS)
+                        observationNeedsNativeMaintenance = false
+                        #endif
+                    }
+                    let request = learningRefreshRequest(publish: publish)
+                    learningRefreshQueue.async { [self] in
+                        var failure: Error?
+                        do {
+                            try detached.completeHiddenNativeMaintenance()
+                            if fullyCurrent { try detached.publishCompletedNative(value, by: publisher) }
+                        } catch { failure = error }
+                        let after = LearningRefreshReader.evaluate(request)
+                        DispatchQueue.main.async { [self] in
+                            fullLearningPreparationID = nil
+                            if let failure { learningCheckpointGate.invalidate(); completion(.failure(failure)); return }
+                            let certified = fullyCurrent && isCurrentLearningRefreshPreparation(after, publish: publish) &&
+                                !after.pending && preparation.externalFingerprint != nil && preparation.externalFingerprint == after.externalFingerprint
+                            if certified {
+                                lastCompletedLearningPreparation = after
+                                learningCheckpointGate.checkpointSucceeded(generation: request.generation, validation: request.validationGeneration,
+                                    beforeExternal: preparation.externalFingerprint, afterExternal: after.externalFingerprint,
+                                    afterFingerprint: after.fingerprint, pending: after.pending)
+                            }
+                            KeyboardRuntimeDiagnostics.record(.checkpointEnd,
+                                [.owner: Double(diagnosticOwner), .elapsedMilliseconds: (ProcessInfo.processInfo.systemUptime - started) * 1000,
+                                 .persistedBytes: Double(value.metrics.persistedBytes), .skippedWriteBytes: Double(value.metrics.skippedWriteBytes),
+                                 .nativeImports: Double(nativeImports), .nativeResets: Double(nativeResets), .failureClass: 0,
+                                 .failureStage: Double(KeyboardRuntimeDiagnostics.MaintenanceStage.sharedPublication.rawValue)])
+                            completion(.success(certified))
+                        }
+                    }
+                }
+            })
+    }
+
+    #if os(iOS)
+    private var observationPreparationID: UUID?
+    private var observationNeedsNativeMaintenance = false
+    /// Native ownership never leaves main. After one quiescent export the
+    /// session immediately resumes; JSON, CRDT planning and encoding are read-only
+    /// utility work. A revealed/changed keyboard discards the plan without writes.
+    func synchronizeHiddenLearning(publish: SnapshotPublisher?, preparation: LearningRefreshPreparation, diagnosticOwner: UInt64 = 0,
+                                   mayCommit: @escaping () -> Bool, maintenancePermitted: @escaping () -> Bool = { true }, completion: @escaping (Result<Bool, Error>) -> Void) {
+        guard maintenancePermitted(), observationPreparationID == nil, fullLearningPreparationID == nil, ready, let coordinator, let baseURL,
+              rawInput.isEmpty, preedit.isEmpty, mayCommit(),
+              isCurrentLearningRefreshPreparation(preparation, publish: publish) else {
+            KeyboardRuntimeDiagnostics.record(.checkpointSkipped,
+                KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .hiddenAdmission, failure: .busy))
+            completion(.failure(LearningSyncFailure.busy)); return
+        }
+        do {
+            let persistedNativeRetry = try coordinator.requiresHiddenNativeMaintenance()
+            if observationNeedsNativeMaintenance || managementPending || persistedNativeRetry {
+                // Preserve the original preparation. Forcing only bypasses the
+                // clean-snapshot cache, never lifecycle/source validation.
+                synchronizeLearningInBackground(publish: publish, preparation: preparation, diagnosticOwner: diagnosticOwner,
+                    mayCommit: mayCommit, maintenancePermitted: maintenancePermitted, completion: completion)
+                return
+            }
+        } catch {
+            KeyboardRuntimeDiagnostics.record(KeyboardRuntimeDiagnostics.maintenanceFailurePhase(Self.maintenanceFailureClass(error)),
+                KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .hiddenAdmission, failure: Self.maintenanceFailureClass(error)))
+            completion(.failure(error)); return
+        }
+        let initialSessionCount = UInt64(pi_active_session_count())
+        if initialSessionCount == 1,
+           learningCheckpointGate.canReuse(fingerprint: preparation.fingerprint, generation: preparation.request.generation,
+                                          pending: preparation.pending, forced: false) {
+            KeyboardRuntimeDiagnostics.record(.checkpointSkipped,
+                KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .hiddenAdmission,
+                    nativeSessionCount: initialSessionCount))
+            learningRefreshWasSkipped = true; completion(.success(true)); return
+        }
+        let identifier = UUID(), detached = coordinator.detachedObservationOwner()
+        detached.restrictMaintenance(to: maintenancePermitted)
+        let directory = baseURL.appendingPathComponent("Checkpoint-" + UUID().uuidString, isDirectory: true)
+        let output = directory.appendingPathComponent("engine.tsv")
+        let started = ProcessInfo.processInfo.systemUptime
+        var diagnosticStage = KeyboardRuntimeDiagnostics.MaintenanceStage.directoryCreation
+        var diagnosticSessionCount = initialSessionCount
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            releasePredictionProbe()
+            diagnosticStage = .nativeSessionAdmission
+            diagnosticSessionCount = UInt64(pi_active_session_count())
+            guard diagnosticSessionCount == 1 else { throw LearningSyncFailure.busy }
+            KeyboardRuntimeDiagnostics.record(.checkpointBegin,
+                KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .nativeExport,
+                    nativeSessionCount: diagnosticSessionCount))
+            let nativeStart = ProcessInfo.processInfo.systemUptime
+            diagnosticStage = .nativeExport
+            pi_destroy_session(session); session = 0
+            let exported = pi_export_learning(output.path)
+            diagnosticStage = exported >= 0 ? .nativeRestore : .nativeExport
+            session = pi_create_session(); ready = session != 0
+            if ready {
+                _ = pi_set_nine_key(session, nineKeyInput ? 1 : 0)
+                _ = pi_set_private(session, privateInput ? 1 : 0)
+                _ = pi_set_ascii_mode(session, englishInput ? 1 : 0); reload()
+            }
+            KeyboardRuntimeDiagnostics.recordSlow(.checkpointSlow, startedUptime: nativeStart)
+            guard exported >= 0, ready else { throw LearningSyncFailure.exportFailed }
+        } catch {
+            let failure = Self.maintenanceFailureClass(error)
+            KeyboardRuntimeDiagnostics.record(KeyboardRuntimeDiagnostics.maintenanceFailurePhase(failure),
+                KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: diagnosticStage,
+                    failure: failure, nativeSessionCount: diagnosticSessionCount))
+            try? FileManager.default.removeItem(at: directory); completion(.failure(error)); return
+        }
+        observationPreparationID = identifier
+        let allowDated = !privateInput
+        // This is the last verified admission count, not a new native query in
+        // a utility callback. Diagnostics must not add another Rime lock wait.
+        let admittedSessionCount = diagnosticSessionCount
+        let observationRevision = revision, observationEpoch = personalEpoch
+        learningRefreshQueue.async { [weak self] in
+            let result: Result<LocalLearningCoordinator.PreparedObservation?, Error>
+            do { result = .success(try detached.prepareObservation(exported: Data(contentsOf: output), allowDatedLearning: allowDated)) }
+            catch { result = .failure(error) }
+            try? FileManager.default.removeItem(at: directory)
+            DispatchQueue.main.async {
+                // Losing the owner is cancellation, not an uncompleted job.
+                // Report with captured numeric metadata only. The caller may
+                // retain its owner until completion; this branch never grants
+                // permission to publish a stale plan.
+                guard let self else {
+                    KeyboardRuntimeDiagnostics.record(.checkpointSkipped,
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .lifecycleCancellation,
+                            failure: .busy, nativeSessionCount: admittedSessionCount))
+                    completion(.failure(LearningSyncFailure.busy)); return
+                }
+                guard self.observationPreparationID == identifier else {
+                    KeyboardRuntimeDiagnostics.record(.checkpointSkipped,
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .lifecycleCancellation,
+                            failure: .busy, nativeSessionCount: admittedSessionCount))
+                    completion(.failure(LearningSyncFailure.busy)); return
+                }
+                guard maintenancePermitted(), mayCommit(), self.revision == observationRevision, self.isCurrentLearningRefreshPreparation(preparation, publish: publish),
+                      self.rawInput.isEmpty, self.preedit.isEmpty else {
+                    self.observationPreparationID = nil
+                    KeyboardRuntimeDiagnostics.record(.checkpointSkipped,
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .sourceValidation,
+                            failure: .busy, nativeSessionCount: admittedSessionCount))
+                    completion(.failure(LearningSyncFailure.busy)); return
+                }
+                switch result {
+                case .failure(let error):
+                    self.observationPreparationID = nil
+                    let failure = Self.maintenanceFailureClass(error)
+                    KeyboardRuntimeDiagnostics.record(KeyboardRuntimeDiagnostics.maintenanceFailurePhase(failure),
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan,
+                            failure: failure, nativeSessionCount: admittedSessionCount))
+                    completion(.failure(error))
+                case .success(nil):
+                    self.observationPreparationID = nil
+                    // Leave pending. A later complete dismissal can run the
+                    // native transaction; never chain it after this callback.
+                    KeyboardRuntimeDiagnostics.record(.checkpointSkipped,
+                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan,
+                            nativeSessionCount: admittedSessionCount))
+                    do {
+                        try coordinator.requireHiddenNativeMaintenance()
+                        self.observationNeedsNativeMaintenance = true; completion(.success(false))
+                    } catch {
+                        KeyboardRuntimeDiagnostics.record(.checkpointFailed,
+                            KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan, failure: Self.maintenanceFailureClass(error)))
+                        completion(.failure(error))
+                    }
+                case .success(let prepared?):
+                    // Admission is main-only; large atomic replacements and
+                    // publication now stay on the detached utility owner.
+                    self.learningCheckpointGate.invalidate()
+                    let request = self.learningRefreshRequest(publish: publish)
+                    self.learningRefreshQueue.async { [self] in
+                        let committed: Result<LocalLearningCoordinator.CompletedObservation, Error>
+                        var publicationFailure: Error?
+                        do {
+                            let receipt = try detached.persistObservation(prepared)
+                            committed = .success(receipt)
+                            do { try detached.publishObservation(prepared, by: publish) }
+                            catch { publicationFailure = error }
+                        } catch { committed = .failure(error) }
+                        let after = LearningRefreshReader.evaluate(request)
+                        DispatchQueue.main.async { [self] in
+                            guard self.observationPreparationID == identifier else { completion(.failure(LearningSyncFailure.busy)); return }
+                            self.observationPreparationID = nil
+                            guard maintenancePermitted() else { self.learningCheckpointGate.invalidate(); completion(.failure(LearningSyncFailure.busy)); return }
+                            switch committed {
+                            case .failure(let error):
+                                let failure = Self.maintenanceFailureClass(error)
+                                KeyboardRuntimeDiagnostics.record(KeyboardRuntimeDiagnostics.maintenanceFailurePhase(failure),
+                                    KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationCommit,
+                                        failure: failure, nativeSessionCount: admittedSessionCount))
+                                self.learningCheckpointGate.invalidate(); completion(.failure(error))
+                            case .success(let receipt):
+                                let adopted: Bool
+                                do {
+                                    if self.coordinator === coordinator, self.personalEpoch == observationEpoch {
+                                        adopted = try coordinator.adoptObservation(receipt)
+                                    } else { adopted = false }
+                                } catch { self.learningCheckpointGate.invalidate(); completion(.failure(error)); return }
+                                if adopted {
+                                    self.pendingLearningMetadata = (receipt.entries, observationEpoch)
+                                    if self.revision == observationRevision, self.rawInput.isEmpty, self.preedit.isEmpty, mayCommit() {
+                                        self.adoptPendingLearningMetadataIfIdle()
+                                    }
+                                }
+                                self.learningCheckpointRuns += 1; self.learningRefreshWasSkipped = false
+                                let certified = adopted && publicationFailure == nil && mayCommit() && self.revision == observationRevision &&
+                                    self.rawInput.isEmpty && self.preedit.isEmpty && self.isCurrentLearningRefreshPreparation(after, publish: publish) && !after.pending
+                                if certified {
+                                    self.learningCheckpointGate.checkpointSucceeded(generation: request.generation,
+                                        validation: request.validationGeneration, beforeExternal: preparation.externalFingerprint,
+                                        afterExternal: after.externalFingerprint, afterFingerprint: after.fingerprint, pending: after.pending)
+                                }
+                                if let error = publicationFailure {
+                                    let failure = Self.maintenanceFailureClass(error)
+                                    KeyboardRuntimeDiagnostics.record(KeyboardRuntimeDiagnostics.maintenanceFailurePhase(failure),
+                                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .sharedPublication, failure: failure))
+                                }
+                                KeyboardRuntimeDiagnostics.record(.checkpointEnd,
+                                    [.elapsedMilliseconds: (ProcessInfo.processInfo.systemUptime - started) * 1000,
+                                     .persistedBytes: Double(receipt.metrics.persistedBytes), .skippedWriteBytes: Double(receipt.metrics.skippedWriteBytes),
+                                     .nativeImports: 0, .nativeResets: 0, .ready: self.ready ? 1 : 0,
+                                     .owner: Double(diagnosticOwner), .nativeSessionCount: Double(admittedSessionCount),
+                                     .failureStage: Double(KeyboardRuntimeDiagnostics.MaintenanceStage.observationCommit.rawValue), .failureClass: 0])
+                                completion(.success(certified))
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+    #endif
+    func prepareLearningRefresh(publish: SnapshotPublisher?, maintenancePermitted: @escaping () -> Bool = { true }, completion:@escaping (LearningRefreshPreparation)->Void) {
         let request=learningRefreshRequest(publish:publish)
         learningRefreshQueue.async {
-            let preparation=LearningRefreshReader.evaluate(request)
-            DispatchQueue.main.async {completion(preparation)}
+            let preparation = maintenancePermitted() ? LearningRefreshReader.evaluate(request) : .unavailable(request)
+            DispatchQueue.main.async { completion(maintenancePermitted() ? preparation : .unavailable(request)) }
         }
     }
     private func learningRefreshIdentityIsCurrent(_ preparation:LearningRefreshPreparation,publish:SnapshotPublisher?) -> Bool {
@@ -2170,44 +2659,67 @@ final class NativeEngine: ObservableObject {
         preparation.request.context==learningRefreshContext(publish:publish) && personalEpoch==currentPersonalEpoch
     }
     func isCurrentLearningRefreshPreparation(_ preparation:LearningRefreshPreparation,publish:SnapshotPublisher?) -> Bool {
-        learningRefreshIdentityIsCurrent(preparation,publish:publish) &&
-        preparation.request.validationGeneration==learningCheckpointGate.validationGeneration &&
-        (preparation.validUntilUptime.map{ProcessInfo.processInfo.systemUptime <= $0} ?? true) &&
-        (preparation.stamps == nil || LearningRefreshReader.unchangedFiles(preparation))
+        learningRefreshInvalidationReason(preparation,publish:publish)==0
     }
-    func synchronizeLearning(publish: SnapshotPublisher? = nil, preparation:LearningRefreshPreparation? = nil) throws {
-        KeyboardRuntimeDiagnostics.record(.checkpointBegin)
+    /// Fixed categories only, preserving the original short-circuit order and
+    /// file-read count. No source names, context values or document text.
+    func learningRefreshInvalidationReason(_ preparation:LearningRefreshPreparation,publish:SnapshotPublisher?) -> UInt64 {
+        guard learningRefreshIdentityIsCurrent(preparation,publish:publish) else {return 16}
+        guard preparation.request.validationGeneration==learningCheckpointGate.validationGeneration else {return 32}
+        guard preparation.validUntilUptime.map({ProcessInfo.processInfo.systemUptime <= $0}) ?? true else {return 64}
+        guard preparation.stamps == nil || LearningRefreshReader.unchangedFiles(preparation) else {return 128}
+        return 0
+    }
+    func synchronizeLearning(publish: SnapshotPublisher? = nil, preparation:LearningRefreshPreparation? = nil, diagnosticOwner: UInt64 = 0, forceNativeMaintenance: Bool = false) throws {
+        KeyboardRuntimeDiagnostics.record(.checkpointBegin,
+            KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .hiddenAdmission))
         let diagnosticStarted = ProcessInfo.processInfo.systemUptime
         var checkpointSucceeded=false
         var diagnosticNativeTransactionStarted=false
+        var diagnosticStage = KeyboardRuntimeDiagnostics.MaintenanceStage.hiddenAdmission
+        var diagnosticFailure = KeyboardRuntimeDiagnostics.MaintenanceFailure.other
+        var diagnosticSessionCount: UInt64?
         defer {
+            KeyboardRuntimeDiagnostics.recordSlow(.checkpointSlow,startedUptime:diagnosticStarted)
             if !checkpointSucceeded {learningCheckpointGate.invalidate()}
             let metrics = diagnosticNativeTransactionStarted ? learningCheckpointMetrics : LearningCheckpointMetrics()
-            KeyboardRuntimeDiagnostics.record(checkpointSucceeded ? (learningRefreshWasSkipped ? .checkpointSkipped : .checkpointEnd) : .checkpointFailed,
-                [.elapsedMilliseconds: (ProcessInfo.processInfo.systemUptime - diagnosticStarted) * 1000,
+            var diagnosticMetrics = KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner,
+                stage: diagnosticStage, failure: checkpointSucceeded ? .none : diagnosticFailure,
+                nativeSessionCount: diagnosticSessionCount)
+            diagnosticMetrics.merge([.elapsedMilliseconds: (ProcessInfo.processInfo.systemUptime - diagnosticStarted) * 1000,
                  .persistedBytes: Double(learningRefreshWasSkipped ? 0 : metrics.persistedBytes),
                  .skippedWriteBytes: Double(learningRefreshWasSkipped ? 0 : metrics.skippedWriteBytes),
                  .nativeImports: Double(learningRefreshWasSkipped ? 0 : metrics.nativeImports),
                  .nativeResets: Double(learningRefreshWasSkipped ? 0 : metrics.nativeResets),
-                 .ready: ready ? 1 : 0])
+                 .ready: ready ? 1 : 0], uniquingKeysWith: { _, latest in latest })
+            KeyboardRuntimeDiagnostics.record(checkpointSucceeded ? (learningRefreshWasSkipped ? .checkpointSkipped : .checkpointEnd) :
+                KeyboardRuntimeDiagnostics.maintenanceFailurePhase(diagnosticFailure), diagnosticMetrics)
         }
+        do {
         guard ready, let coordinator, let baseURL else { throw LearningSyncFailure.engineUnavailable }
-        guard preedit.isEmpty else { throw LearningSyncFailure.busy }
+        guard fullLearningPreparationID == nil, try coordinator.nativeCheckpointPhase() == nil else { throw LearningSyncFailure.busy }
+        guard rawInput.isEmpty, preedit.isEmpty else { throw LearningSyncFailure.busy }
         learningRefreshWasSkipped=false
         // A supplied preflight is a permission to run THIS prepared transaction,
         // not a hint. Falling back to an unprepared full export when it became
         // stale can start long work after the lifecycle owner cancelled it.
         if let preparation, !isCurrentLearningRefreshPreparation(preparation,publish:publish) { throw LearningSyncFailure.busy }
         let validPreparation=preparation
-        if let preparation=validPreparation,pi_active_session_count()==1,
-           learningCheckpointGate.canReuse(fingerprint:preparation.fingerprint,generation:preparation.request.generation,pending:preparation.pending,forced:managementPending) {
-            learningRefreshWasSkipped=true;checkpointSucceeded=true;return
+        diagnosticStage = .nativeSessionAdmission
+        if let preparation=validPreparation {
+            diagnosticSessionCount = UInt64(pi_active_session_count())
+            if diagnosticSessionCount == 1,
+               learningCheckpointGate.canReuse(fingerprint:preparation.fingerprint,generation:preparation.request.generation,pending:preparation.pending,forced:managementPending || forceNativeMaintenance) {
+                learningRefreshWasSkipped=true;checkpointSucceeded=true;return
+            }
         }
         learningCheckpointGate.invalidate()
         // iOS63 keeps a private query probe warm. It is not an independent
         // learner, but must close before quiescent native checkpoint export.
         releasePredictionProbe()
-        guard pi_active_session_count() == 1 else { throw LearningSyncFailure.busy }
+        diagnosticSessionCount = UInt64(pi_active_session_count())
+        guard diagnosticSessionCount == 1 else { throw LearningSyncFailure.busy }
+        diagnosticStage = .directoryCreation
         let directory = baseURL.appendingPathComponent("Checkpoint-" + UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -2224,6 +2736,7 @@ final class NativeEngine: ObservableObject {
         }
         // Never export a running DB or clear an unfinished composition.
         diagnosticNativeTransactionStarted=true
+        diagnosticStage = .nativeCheckpoint
         managedEntries = try coordinator.checkpoint(exportFile: directory.appendingPathComponent("engine.tsv"), importFile: directory.appendingPathComponent("incoming.tsv"), publish: privateInput ? nil : publish,
             engineExport: { pi_export_learning($0.path) }, engineImport: { pi_import_learning($0.path) }, engineReset: { pi_reset_word_frequency($0.reading, $0.text, $0.frequency) },allowDatedLearning: !privateInput)
         cloudCommittedVersion &+= 1
@@ -2244,6 +2757,10 @@ final class NativeEngine: ObservableObject {
                 }
             }
         }
+        } catch {
+            diagnosticFailure = Self.maintenanceFailureClass(error)
+            throw error
+        }
     }
     private func reload() {
         mixedRevision = -1;mixedRows=[];mixedLeads=false;mixedChinesePriority=false;mixedLatinDisplayAllowed=false
@@ -2253,6 +2770,36 @@ final class NativeEngine: ObservableObject {
         if preedit.isEmpty {hostContext=nil}
         page = Int(pi_page_number(session)); hasNextPage = pi_has_next_page(session) != 0
         candidates = (0..<Int(pi_candidate_count(session))).map { String(cString: pi_candidate_text(session, $0)) }.filter(candidateIsDisplayable)
+    }
+    private var hiddenNativeSuspended = false
+    /// Release this hidden owner's native DB/session handles before its finite
+    /// background assertion ends. No process-global finalize or dirty reset.
+    func suspendHiddenNative() -> Bool {
+        guard Thread.isMainThread, rawInput.isEmpty, preedit.isEmpty else { return false }
+        releasePredictionProbe()
+        if session != 0, personalEpoch == Self.initializedEpoch { pi_destroy_session(session) }
+        session = 0; ready = false; hiddenNativeSuspended = true
+        return true
+    }
+    /// The same controller may be shown again. Restore only native session and
+    /// in-memory modes/pins; no model decode, migration or network on appearance.
+    func resumeHiddenNative() -> Bool {
+        guard Thread.isMainThread else { return false }
+        guard hiddenNativeSuspended else { return ready }
+        hiddenNativeSuspended = false
+        if personalEpoch != currentPersonalEpoch { return refreshResetBarrier() }
+        session = pi_create_session(); ready = session != 0
+        if ready {
+            _ = pi_set_nine_key(session, nineKeyInput ? 1 : 0)
+            _ = pi_set_private(session, privateInput ? 1 : 0)
+            _ = pi_set_ascii_mode(session, englishInput ? 1 : 0)
+            for row in appliedPins { _ = pi_set_word_pinned(row.reading, row.text, 1) }
+            reload()
+        }
+        return ready
+    }
+    func afterLearningWork(_ completion: @escaping () -> Void) {
+        learningRefreshQueue.async { DispatchQueue.main.async(execute: completion) }
     }
     func finish() { markNativeLearningChanged();hostContext=nil;invalidatePrediction();releasePredictionProbe();if session != 0 {if personalEpoch==Self.initializedEpoch {pi_destroy_session(session)};session=0};ready=false }
     deinit { if let resetObserver {PersonalDataReset.unobserve(resetObserver)};if personalEpoch==Self.initializedEpoch {if predictionProbe != 0 {pi_destroy_session(predictionProbe)};if session != 0 {pi_destroy_session(session)}} }

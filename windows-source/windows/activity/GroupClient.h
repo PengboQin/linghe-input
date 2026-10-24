@@ -21,6 +21,7 @@ class GroupClient {
  Id activeContentGroup()const{return connected()?group():identity.device;}
  void loadRecent();void saveRecent(const Json&);std::optional<uint64_t> recentDay();Json recentRPC(uint8_t,const Json&,const protocol::VerifiedMembership&);void syncRecent(const protocol::VerifiedMembership&,const Key&);
  std::unique_ptr<ContentStore> content;ContentStore& contentStore();protocol::VerifiedMembership verified()const;Key master()const;
+ bool recentLearningRepairPending=false;
  void save();Json rpc(const Id&,uint8_t,const Json&body=Json());
 public:
  explicit GroupClient(const std::filesystem::path&root);
@@ -34,6 +35,7 @@ public:
  std::function<void()>willReset;std::function<bool(bool)>allowClipboardPublication;ContentSyncObservation lastContentSyncObservation;
  void importLegacyLearning(const std::string&nativeTSV,const std::string&expectedPersonalEpoch);
  bool clipboardLiveAuthorityMatches(const Json&);Json clipboardLiveAuthority(const std::string&scope,uint64_t issuedAt);Json clipboardLiveRevocation(const Json&certificate,uint64_t now);void sendClipboardCompatibility(const std::string&text,const Id&event,uint64_t expiresAt);
+ Json learningIntentAuthority();LearningIntentResult recordLearningIntent(const LearningIntent&,uint64_t now);size_t retryLearningIntents(uint64_t now);void setLocalLearningEnabled(bool);
  void consentContent(bool learning,bool clipboard);void syncContent(std::function<void()> transportComplete={});void changeCandidate(const std::string&reading,const std::string&text,unsigned action);void recordContent(const std::string&reading,const std::string&text);void sendSharedText(const std::string&,bool automatic=false);void cancelAutomaticSharedText(){contentStore().cancelAutomaticText();}Json contentSnapshot();
  Json makeTicket();void cancelTicket();bool pollAdmissions();
  // Explicit opt-in; shadow only until validated platform cutover. Other groups default off.

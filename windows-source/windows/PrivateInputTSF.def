@@ -1,6 +1,7 @@
 LIBRARY PrivateInputTSF
 EXPORTS
     DllGetRegistrationDiagnostic
+    DllGetRegistrationEnumerationDiagnostic
   DllCanUnloadNow PRIVATE
   DllGetClassObject PRIVATE
   DllRegisterServer PRIVATE

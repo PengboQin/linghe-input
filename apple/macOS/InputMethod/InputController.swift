@@ -42,6 +42,15 @@ private struct IMKClient: MacInputClient {
         guard let before=text(ranges.before),let after=text(ranges.after) else{return nil}
         return SurroundingText(before:before,after:after)
     }
+    func symbolPairContext()->SymbolPairing.EditContext? {
+        guard !IsSecureEventInputEnabled() else{return nil}
+        return MacSymbolInsertion.context(document:String(describing:ObjectIdentifier(client as AnyObject)),selection:client.selectedRange(),marked:client.markedRange(),length:client.length()) {range in
+            guard let value=client.attributedSubstring(from:range),value.length==range.length else{return nil};return value.string
+        }
+    }
+    func deleteSymbolPair(_ plan:SymbolPairing.DeletionPlan)->Bool {
+        MacSymbolInsertion.delete(plan,context:symbolPairContext) {range in client.insertText("",replacementRange:range)}
+    }
     func mark(_ text:String) {mark(text,cursor:text.utf16.count)}
     func mark(_ text:String,cursor:Int) {client.setMarkedText(text,selectionRange:NSRange(location:max(0,min(cursor,text.utf16.count)),length:0),replacementRange:NSRange(location:NSNotFound,length:0))}
 }
@@ -124,23 +133,24 @@ private final class MacHiddenCheckpointCoordinator {
             guard self.gate.needsCheckpoint(token,fingerprint:preparation.externalFingerprint,pending:preparation.pending) else {
                 self.retirePreparation(worker);return
             }
-            guard self.gate.beginNative(token,nativeSessions:Int(pi_active_session_count())) else {
-                self.retirePreparation(worker);return
-            }
-            do {try worker.synchronizeLearning(publish:context.publisher,preparation:preparation)}
-            catch {self.gate.endedNative();self.retirePreparation(worker);return}
-            self.gate.endedNative()
-            // Publication can change external files. Record a postflight token,
-            // never certify the pre-checkpoint fingerprint as already current.
-            worker.prepareLearningRefresh(publish:context.publisher) { [weak self,weak worker] after in
-                guard let self,let worker else{return}
-                if self.engine === worker,self.gate.current(token),self.policy==context,
-                   worker.isCurrentLearningRefreshPreparation(after,publish:context.publisher),!after.pending {
-                    self.gate.completed(token,fingerprint:after.externalFingerprint)
-                    self.completedRequest=after.request;self.completedPolicy=context
-                }
-                self.retirePreparation(worker)
-            }
+            worker.synchronizeLearningInBackground(publish: context.publisher, preparation: preparation,
+                mayCommit: { [weak self, weak worker] in
+                    guard let self, let worker else { return false }
+                    return self.engine === worker && self.gate.current(token) && self.policy == context && !IsSecureEventInputEnabled()
+                }, nativeWillBegin: { [weak self, weak worker] in
+                    guard let self, let worker, self.engine === worker else { return false }
+                    return self.gate.beginNative(token, nativeSessions: Int(pi_active_session_count()))
+                }, nativeDidEnd: { [weak self] in self?.gate.endedNative() },
+                completion: { [weak self, weak worker] result in
+                    guard let self, let worker else { return }
+                    if case .success(true) = result, self.engine === worker, self.gate.current(token), self.policy == context,
+                       let after = worker.lastCompletedLearningPreparation,
+                       worker.isCurrentLearningRefreshPreparation(after, publish: context.publisher), !after.pending {
+                        self.gate.completed(token, fingerprint: after.externalFingerprint)
+                        self.completedRequest = after.request; self.completedPolicy = context
+                    }
+                    self.retirePreparation(worker)
+                })
         }
     }
 }
@@ -214,10 +224,7 @@ private final class MacHiddenCheckpointCoordinator {
         return value
     }
     private func checkpoint(_ input:MacInputSession) {
-        guard input.engine.preedit.isEmpty else { return }
-        let sharing=UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.bool(forKey:"learning-sharing-enabled") == true
-        do { try input.engine.synchronizeLearning(publish:Self.acceptanceStorage == nil && sharing && KeyboardPreferences.rememberWords ? .containingApp:nil) }
-        catch { trace("checkpoint-deferred") }
+        MacHiddenCheckpointCoordinator.shared.changed()
     }
     private func trace(_ event:String) {
         // Explicit synthetic acceptance mode; no key, host or candidate content.
@@ -225,6 +232,7 @@ private final class MacHiddenCheckpointCoordinator {
     }
     override func inputText(_ string:String!,key keyCode:Int,modifiers flags:Int,client sender:Any!) -> Bool {
         guard let client=sender as? IMKTextInput else { return false }
+        if let activeClient,ObjectIdentifier(activeClient as AnyObject) != ObjectIdentifier(client as AnyObject) {input?.invalidateCorrection()}
         activeClient=client
         if !activated {activated=true;focusGeneration &+= 1;if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.activate(focusOwner)}}
         // An empty session must not initialize Rime just for a host shortcut.
@@ -330,7 +338,7 @@ private final class MacHiddenCheckpointCoordinator {
         menu.autoenablesItems=false
         let mode=NSMenuItem(title:"英文输入",action:#selector(toggleEnglish(_:)),keyEquivalent:"");mode.target=self;mode.state=input?.english == true ? .on:.off;menu.addItem(mode)
         let learning=NSMenuItem(title:"更新词库",action:#selector(refreshLearning(_:)),keyEquivalent:"");learning.target=self;learning.isEnabled=input?.engine.ready == true && input?.engine.preedit.isEmpty == true;menu.addItem(learning)
-        for (title,action) in [("共享文本…",#selector(openSharedText(_:))),("个人词库…",#selector(openLexicon(_:))),("输入设置…",#selector(openSettings(_:)))] {
+        for (title,action) in [("剪贴板同步…",#selector(openSharedText(_:))),("个人词库…",#selector(openLexicon(_:))),("输入设置…",#selector(openSettings(_:)))] {
             let item=NSMenuItem(title:title,action:action,keyEquivalent:"");item.target=self;menu.addItem(item)
         }
         let help=NSMenuItem(title:"候选词频用法…",action:#selector(frequencyHelp(_:)),keyEquivalent:"");help.target=self;menu.addItem(help)

@@ -132,11 +132,11 @@ public struct ActivityArchiveClient {
     }
     /// Explicit user action only; observing remote status never grants local permission.
     public func setGroupPolicy(group: UUID, identity: DeviceIdentity, expectedVersion: UInt64, enabled: Bool,
-                               retentionDays: Int = 30, maxGroupBytes: Int64 = 104857600, now: UInt64) async throws -> ActivityGroupPolicy {
+                               retentionDays: Int = 30, maxGroupBytes: Int64 = 4294967296, now: UInt64) async throws -> ActivityGroupPolicy {
         struct Body: Encodable {
             let expected_version: UInt64; let enabled: Bool; let retention_days: Int; let max_group_bytes: Int64
         }
-        guard (1...3650).contains(retentionDays), (1048576...1073741824).contains(maxGroupBytes) else { throw ActivityError.invalidConfiguration }
+        guard (1...3650).contains(retentionDays), (1048576...4294967296).contains(maxGroupBytes) else { throw ActivityError.invalidConfiguration }
         let body = try JSONEncoder().encode(Body(expected_version: expectedVersion, enabled: enabled, retention_days: retentionDays, max_group_bytes: maxGroupBytes))
         return try await rpc(group: group, identity: identity, operation: .groupPolicy, body: body, now: now, result: ActivityGroupPolicy.self)
     }

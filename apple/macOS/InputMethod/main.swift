@@ -2,6 +2,57 @@ import AppKit
 import InputMethodKit
 import Carbon
 import CryptoKit
+#if DEBUG
+import SwiftUI
+
+// A development-only visual host: no IMK server, pairing, clipboard or archive.
+@MainActor final class SettingsVisualState: ObservableObject {
+    @Published var pane: InputSettingsPane = .input
+}
+private struct SettingsVisualRoot: View {
+    @ObservedObject var state: SettingsVisualState
+    var body: some View {
+        MacSettingsShell(title: state.pane == .appearance ? "外观" : state.pane == .learning ? "词库与学习" : "输入设置") {
+            List {
+                Label("输入设置",systemImage:"keyboard")
+                Label("外观",systemImage:"paintpalette")
+                Label("词库与学习",systemImage:"character.book.closed")
+                Label("设备与同步",systemImage:"arrow.triangle.2.circlepath")
+                Label("隐私与归档",systemImage:"lock.doc")
+                Label("帮助与关于",systemImage:"questionmark.circle")
+            }.listStyle(.sidebar)
+        } detail: {
+            NavigationStack { InputSettingsView(pane: state.pane) }
+        }
+    }
+}
+if let index=CommandLine.arguments.firstIndex(of:"--settings-layout-snapshots"),index+1<CommandLine.arguments.count {
+    let destination=URL(fileURLWithPath:CommandLine.arguments[index+1],isDirectory:true)
+    guard destination.path.hasPrefix(NSHomeDirectory()+"/Projects/private-input/evidence/") else { exit(2) }
+    try FileManager.default.createDirectory(at:destination,withIntermediateDirectories:true)
+    NSApplication.shared.setActivationPolicy(.prohibited)
+    NSApp.appearance=NSAppearance(named:.aqua)
+    NSApp.finishLaunching()
+    try MainActor.assumeIsolated {
+    let state=SettingsVisualState()
+    let window=MacSettingsWindowLayout.makeWindow(rootView:SettingsVisualRoot(state:state))
+    window.appearance=NSAppearance(named:.aqua)
+    for (name,pane) in [("input",InputSettingsPane.input),("appearance",.appearance),("learning",.learning)] {
+        state.pane=pane
+        RunLoop.main.run(until:Date().addingTimeInterval(0.3))
+        window.contentView?.layoutSubtreeIfNeeded()
+        guard let content=window.contentView,
+              let bitmap=content.bitmapImageRepForCachingDisplay(in:content.bounds) else { exit(3) }
+        content.cacheDisplay(in:content.bounds,to:bitmap)
+        guard let data=bitmap.representation(using:.png,properties:[:]) else { exit(3) }
+        try data.write(to:destination.appendingPathComponent("mac-"+name+".png"))
+    }
+    window.close()
+    }
+    print("Settings visual snapshots complete; no input service or synchronization started")
+    exit(0)
+}
+#endif
 
 if CommandLine.arguments.contains("--register-own-input-source") {
     let identifier = "live.linghe.privateinput.inputmethod.PrivateInput"

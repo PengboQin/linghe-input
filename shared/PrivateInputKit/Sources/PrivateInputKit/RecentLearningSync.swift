@@ -52,7 +52,7 @@ public struct RecentLearningEnvelope: Codable {
         guard now <= UInt64.max - 604800 else { throw RecentLearningSyncError.invalidTime }
         let trust = group.membership.trust(for: .learning)
         guard trust.members[identity.device] == identity.signingKey.publicKey.rawRepresentation else { throw RecentLearningSyncError.wrongContext }
-        var check = RecentLearningModel(); try check.merge(payload, policy: policy)
+        var check = try RecentLearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try check.merge(payload, policy: policy)
         var message = Self(group: trust.group, sender: identity.device, event: UUID(), epoch: trust.epoch,
                            issuedAt: now, expiresAt: now + 604800, sealed: Data(), signature: Data())
         let header = try message.header(), key = try message.key(master: group.key, publicKey: identity.signingKey.publicKey.rawRepresentation)
@@ -67,7 +67,7 @@ public struct RecentLearningEnvelope: Codable {
         let key = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey)
         guard signature.count == 64, sealed.count >= 28, key.isValidSignature(signature, for: header + sealed) else { throw RecentLearningSyncError.invalidWire }
         let payload = try ChaChaPoly.open(ChaChaPoly.SealedBox(combined: sealed), using: self.key(master: setup.key, publicKey: publicKey), authenticating: header)
-        var check = RecentLearningModel(); try check.merge(payload, policy: policy); return payload
+        var check = try RecentLearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try check.merge(payload, policy: policy); return payload
     }
 }
 

@@ -3,6 +3,8 @@
 #include "pinyin_repair.h"
 #include "pinyin_text.h"
 #include "mainland_candidate_policy.h"
+#include "modern_candidate_reading_policy.h"
+#include "learning_capacity_profiles.h"
 #include "rime_api.h"
 #include "rime_levers_api.h"
 #include <map>
@@ -22,12 +24,20 @@
 namespace {
 struct StreamCandidate { std::string text, comment; size_t index; };
 struct Syllable { std::string text; size_t start, consumed; bool complete = true; };
-struct SyllableUndo { std::string before, after; };
+struct SyllableUndo { std::string before, after; private_input::pinyin::NinePath path; std::string path_prefix; bool path_active=false; };
 struct RepairRow { std::string text, reading, spelling; size_t absolute = SIZE_MAX; int edits = 0; };
-struct Snapshot { std::vector<Syllable> syllables; std::vector<SyllableUndo> syllable_undo; std::vector<StreamCandidate> batch, ranked, admitted; size_t admitted_cursor = 0; bool admitted_end = false; std::vector<RepairRow> repairs; bool absolute_page = false; bool ranked_ready = false; std::string preedit, input, commit, display_preedit, active_reading,selected_prefix; std::vector<std::string> candidates; std::vector<size_t> indices; int page = 0; bool next_page = false; bool nine_key = false, private_mode = false, exact_probe = false; };
+struct PathSelectionUndo { std::string raw,before_prefix,after_prefix; private_input::pinyin::NinePath path; };
+struct CandidateBatchProgress {
+  bool started=false, pins_done=false, path_done=false, path_enabled=false, pending=false;
+  size_t pin_cursor=0, path_cursor=0, path_rows=0, scanned=0;
+  std::set<std::string> pending_pins;
+  std::vector<StreamCandidate> compatible[2];
+};
+struct Snapshot { CandidateBatchProgress candidate_progress; std::vector<PathSelectionUndo> path_selections; std::string preferred_commit; private_input::pinyin::NinePath path; std::string path_prefix; bool path_active=false; std::vector<Syllable> syllables; std::vector<SyllableUndo> syllable_undo; std::vector<StreamCandidate> batch, ranked, admitted; size_t admitted_cursor = 0; bool admitted_end = false; std::vector<RepairRow> repairs; bool absolute_page = false; bool ranked_ready = false; std::string preedit, input, commit, display_preedit, active_reading,selected_prefix; std::vector<std::string> candidates; std::vector<size_t> indices; int page = 0; bool next_page = false; bool nine_key = false, private_mode = false, exact_probe = false; };
 std::recursive_mutex gate;
 std::map<PI_Session, Snapshot> sessions;
 RimeApi *api = nullptr;
+const private_input::learning_capacity::Profile *learning_profile = &private_input::learning_capacity::legacy_5000;
 std::string shared_path, user_path;
 bool exact_probe_available=false;
 const char *empty = "";
@@ -104,7 +114,7 @@ bool read_preferences(const char *file, Preferences &next) {
   std::ifstream stream(file, std::ios::binary);
   if (!stream) return false;
   stream.seekg(0, std::ios::end); const auto size = stream.tellg();
-  if (size < 0 || size > 2 * 1024 * 1024) return false;
+  if (size < 0 || size > learning_profile->native_tsv_bytes) return false;
   stream.seekg(0); std::string line; size_t records = 0;
   while (std::getline(stream, line)) {
     if (!line.empty() && line.back() == '\r') line.pop_back(); // Native Windows TSV line endings.
@@ -113,7 +123,7 @@ bool read_preferences(const char *file, Preferences &next) {
     if (first == std::string::npos || first == last || line.find('\t', first + 1) != last) return false;
     const auto text = line.substr(0, first), reading = normalized_reading(line.substr(first + 1, last - first - 1));
     const auto number = line.substr(last + 1);
-    if (text.empty() || text.size() > 1024 || text.find('\0') != std::string::npos || text.find('\r') != std::string::npos || reading.empty() || reading.size() > 128 || ++records > 5000) return false;
+    if (text.empty() || text.size() > 1024 || text.find('\0') != std::string::npos || text.find('\r') != std::string::npos || reading.empty() || reading.size() > 128 || ++records > learning_profile->term_rows) return false;
     long long count = 0; size_t consumed = 0;
     try { count = std::stoll(number, &consumed); } catch (...) { return false; }
     if (consumed != number.size() || count < -1 || count > 1000000000) return false;
@@ -161,23 +171,26 @@ void refresh(PI_Session id) {
   auto it = sessions.find(id);
   if (!api || it == sessions.end()) return;
   auto &s = it->second;
-  s.preedit.clear(); s.active_reading.clear();s.selected_prefix.clear(); s.candidates.clear(); s.indices.clear(); s.batch.clear(); s.ranked.clear(); s.ranked_ready = false; s.admitted.clear(); s.admitted_cursor = 0; s.admitted_end = false; s.absolute_page = false; s.repairs.clear();
+  s.preedit.clear(); s.active_reading.clear();s.selected_prefix.clear(); s.candidates.clear(); s.indices.clear(); s.batch.clear(); s.ranked.clear(); s.ranked_ready = false; s.candidate_progress = {}; s.admitted.clear(); s.admitted_cursor = 0; s.admitted_end = false; s.absolute_page = false; s.repairs.clear();
   const char *raw = api->get_input(id); s.input = raw ? raw : ""; s.page = 0; s.next_page = false;
   s.syllables.clear();
-  if (s.input.empty()) s.syllable_undo.clear();
+  if (s.input.empty()) {s.syllable_undo.clear();s.path.clear();s.path_prefix.clear();s.path_active=false;s.path_selections.clear();}
   RimeContext context{}; RIME_STRUCT_INIT(RimeContext, context);
   if (api->get_context(id, &context)) {
     if (context.composition.preedit) s.preedit = context.composition.preedit;
     s.page = context.menu.page_no; s.next_page = !context.menu.is_last_page && context.menu.num_candidates > 0;
-    for (int i = 0; i < context.menu.num_candidates; ++i)
+    std::vector<std::string> comments;
+    for (int i = 0; i < context.menu.num_candidates; ++i) {
       s.candidates.emplace_back(context.menu.candidates[i].text ? context.menu.candidates[i].text : "");
+      comments.emplace_back(context.menu.candidates[i].comment ? context.menu.candidates[i].comment : "");
+    }
     const auto selected = static_cast<size_t>(std::max(0, context.composition.sel_start));
     s.active_reading = selected <= s.preedit.size() ? s.preedit.substr(selected) : "";
     if (selected<=s.preedit.size()) s.selected_prefix=s.preedit.substr(0,selected);
     api->free_context(&context);
     std::vector<StreamCandidate> page;
     for (size_t i = 0; i < s.candidates.size(); ++i)
-      if (private_input::mainland::candidate_allowed(s.candidates[i])) page.push_back({s.candidates[i], "", i});
+      if (private_input::mainland::candidate_reading_allowed(s.candidates[i],comments[i])) page.push_back({s.candidates[i], comments[i], i});
     // A legacy native page can consist entirely of rejected rows. The visible
     // fallback still needs working space/digit selection with absolute IDs.
     if (page.empty() && !s.candidates.empty()) {
@@ -187,7 +200,8 @@ void refresh(PI_Session id) {
         while (page.size() < 7 && api->candidate_list_next(&iterator)) {
           if (iterator.index < 0) break;
           const std::string text = iterator.candidate.text ? iterator.candidate.text : "";
-          if (private_input::mainland::candidate_allowed(text)) page.push_back({text, "", static_cast<size_t>(iterator.index)});
+          const std::string reading=iterator.candidate.comment ? iterator.candidate.comment:"";
+          if (private_input::mainland::candidate_reading_allowed(text,reading)) page.push_back({text, reading, static_cast<size_t>(iterator.index)});
         }
         api->candidate_list_end(&iterator);
       }
@@ -204,6 +218,44 @@ void refresh(PI_Session id) {
     s.candidates.clear();
     for (const auto &row : page) { s.candidates.push_back(row.text); s.indices.push_back(row.index); }
   }
+}
+// A UI publication may supply a custom full sentence; otherwise seed only
+// from a real complete native head, never from a guessed abbreviation.
+std::string pending_nine_code(PI_Session id) {
+  const auto start=pi_unselected_input_start(id);const auto &s=sessions.at(id);
+  return start<=s.input.size() ? nine_reading(s.input.substr(start)):"";
+}
+void seed_nine_path(PI_Session id) {
+  auto &s=sessions.at(id);if (!s.nine_key) return;
+  if(s.path_prefix!=s.selected_prefix){s.path.clear();s.path_active=false;}
+  s.path.adapt(pending_nine_code(id));
+  if(!s.path.reading.empty())return;
+  RimeCandidateListIterator rows{};
+  if(api->candidate_list_begin(id,&rows)){
+    if(api->candidate_list_next(&rows)&&rows.candidate.comment){
+      if(!rows.candidate.text||!pi_nine_remember_visible_candidate_path(id,s.input.c_str(),s.selected_prefix.c_str(),rows.candidate.text,rows.candidate.comment,nullptr))
+        pi_nine_remember_candidate_path(id,s.input.c_str(),s.selected_prefix.c_str(),rows.candidate.comment);
+    }
+    api->candidate_list_end(&rows);
+  }
+}
+int select_with_nine_path(PI_Session id,size_t index,bool absolute) {
+  auto &s=sessions.at(id);seed_nine_path(id);
+  const auto before=pending_nine_code(id),prefix=s.selected_prefix;
+  auto path=s.path;const auto path_before=path;const auto raw_before=s.input;
+  const auto result=absolute ? api->select_candidate(id,index):api->select_candidate_on_current_page(id,index);
+  if(result)s.syllable_undo.clear();refresh(id);
+  if(result && s.nine_key && !s.input.empty() && s.selected_prefix.size()>prefix.size() &&
+     s.selected_prefix.compare(0,prefix.size(),prefix)==0){
+    const auto remaining=pending_nine_code(id);
+    if(!remaining.empty()&&remaining.size()<before.size()&&before.compare(before.size()-remaining.size(),remaining.size(),remaining)==0){
+      if(s.path_selections.size()>=128)s.path_selections.erase(s.path_selections.begin());
+      s.path_selections.push_back({raw_before,prefix,s.selected_prefix,path_before});
+      path.consume(before.size()-remaining.size());path.adapt(remaining);
+      s.path=std::move(path);s.path_prefix=s.selected_prefix;s.path_active=!s.path.reading.empty();
+    }else{s.path.clear();s.path_active=false;}
+  }
+  return result;
 }
 RimeLeversApi *levers() {
   if (!api) return nullptr;
@@ -239,10 +291,19 @@ int pi_initialize(const char *shared_dir, const char *user_dir, int deploy) {
   if (deploy && api->start_maintenance(True)) api->join_maintenance_thread();
   return 1;
 }
+int pi_set_learning_capacity_profile(const char *profile_id, uint32_t version) {
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if (!profile_id) return 0;
+  const auto *selected = private_input::learning_capacity::require_profile(profile_id, version);
+  if (!selected) return 0;
+  if (!sessions.empty() && (selected->id != learning_profile->id || selected->version != learning_profile->version)) return -2;
+  learning_profile = selected;
+  return 1;
+}
 void pi_finalize() {
   std::lock_guard<std::recursive_mutex> lock(gate);
   if (api) api->finalize();
-  sessions.clear(); preferences.clear(); pinned_words.clear(); std::atomic_store(&repair_resources,std::shared_ptr<const RepairResources>{}); api = nullptr; shared_path.clear(); user_path.clear();
+  sessions.clear(); preferences.clear(); pinned_words.clear(); std::atomic_store(&repair_resources,std::shared_ptr<const RepairResources>{}); api = nullptr; shared_path.clear(); user_path.clear();learning_profile = &private_input::learning_capacity::legacy_5000;
 }
 PI_Session pi_create_session() {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -278,12 +339,21 @@ int pi_process_key(PI_Session id, int keycode, int mask) {
   if (mask == 0 && !snapshot.indices.empty() && ((!snapshot.nine_key && keycode >= '1' && keycode <= '9') || keycode == ' ')) {
     const auto visible = keycode == ' ' ? size_t(0) : size_t(keycode - '1');
     if (visible < snapshot.indices.size()) {
-      auto handled = snapshot.absolute_page ? api->select_candidate(id, snapshot.indices[visible]) : api->select_candidate_on_current_page(id, snapshot.indices[visible]); refresh(id); return handled;
+      return select_with_nine_path(id,snapshot.indices[visible],snapshot.absolute_page);
     }
   }
   if (mask == 0 && !snapshot.input.empty() &&
       ((!snapshot.nine_key && keycode >= '1' && keycode <= '9') || keycode == ' ')) return 1;
-  auto handled = api->process_key(id, keycode, mask); refresh(id); return handled;
+  const auto raw_before=snapshot.input,prefix_before=snapshot.selected_prefix;
+  auto handled = api->process_key(id, keycode, mask); refresh(id);
+  if(snapshot.nine_key && handled && !snapshot.path_selections.empty()){
+    const auto undo=snapshot.path_selections.back();
+    if(mask==0&&keycode==0xff08&&prefix_before==undo.after_prefix&&snapshot.selected_prefix==undo.before_prefix&&snapshot.input==raw_before){
+      if(snapshot.input!=undo.raw){api->set_input(id,undo.raw.c_str());refresh(id);}
+      snapshot.path=undo.path;snapshot.path_prefix=undo.before_prefix;snapshot.path_active=!undo.path.reading.empty();snapshot.path_selections.pop_back();
+    }else if(snapshot.input!=raw_before||snapshot.selected_prefix!=prefix_before)snapshot.path_selections.clear();
+  }
+  return handled;
 }
 int pi_cursor_at_end(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -345,6 +415,129 @@ size_t pi_prediction_input_start(PI_Session id) {
 const char *pi_selected_prefix(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);auto it=sessions.find(id);
   return it==sessions.end() ? empty:it->second.selected_prefix.c_str();
+}
+int pi_nine_remember_mapped_candidate_path(PI_Session id,const char *expected,const char *prefix,const char *reading,const char *canonical_code) {
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if(!api||!sessions.count(id)||!expected||!prefix||!reading)return 0;
+  auto &s=sessions.at(id);const std::string value(reading);
+  if(!s.nine_key||s.input!=expected||s.selected_prefix!=prefix||!pi_cursor_at_end(id)||value.empty()||value.size()>512)return 0;
+  std::string canonical;
+  for(const auto &part:private_input::pinyin::reading_parts(value)){
+    if(std::find_if(std::begin(private_input::pinyin_syllables),std::end(private_input::pinyin_syllables),[&](const char *p){return part==p;})==std::end(private_input::pinyin_syllables))return 0;
+    canonical+=(canonical.empty()?"":" ")+part;
+  }
+  const auto source=pending_nine_code(id),target=nine_reading(canonical);
+  if(source.empty())return 0;
+  if(canonical_code){
+    const std::string proposed(canonical_code);
+    const auto start=pi_unselected_input_start(id);
+    if(proposed!=target||proposed.empty()||proposed.size()>130||start>s.input.size()||
+       !std::all_of(s.input.begin()+start,s.input.end(),[](char c){return c>='2'&&c<='9';})||
+       private_input::pinyin::NinePath::distance(source,target)>2)return 0;
+  }else if(target!=source)return 0;
+  if(s.path_active && s.path_prefix==s.selected_prefix){
+    s.path.adapt(source);
+    // A temporary native head while async correction is preparing is not a
+    // new user decision. Do not let it overwrite an already preserved path.
+    const auto known=private_input::pinyin::reading_parts(s.path.reading),proposed=private_input::pinyin::reading_parts(canonical);
+    const bool extends=proposed.size()>known.size()&&std::equal(known.begin(),known.end(),proposed.begin());
+    if(!s.path.reading.empty() && s.path.priority(canonical)==2 && !extends)return 0;
+  }
+  if(s.path.reading!=canonical||s.path.input!=source)s.path.text.clear();
+  s.path.reading=canonical;s.path.input=source;s.path_prefix=s.selected_prefix;return 1;
+}
+int pi_nine_remember_candidate_path(PI_Session id,const char *expected,const char *prefix,const char *reading){
+  return pi_nine_remember_mapped_candidate_path(id,expected,prefix,reading,nullptr);
+}
+const char *pi_nine_preferred_reading(PI_Session id) {
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if(!api||!sessions.count(id))return empty;
+  auto &s=sessions.at(id);
+  if(!s.nine_key||!s.path_active||!pi_cursor_at_end(id))return empty;
+  if(s.path_prefix!=s.selected_prefix){s.path.clear();s.path_active=false;return empty;}
+  s.path.adapt(pending_nine_code(id));return s.path.reading.c_str();
+}
+int pi_nine_candidate_path_priority(PI_Session id,const char *reading){
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if(!reading||!*pi_nine_preferred_reading(id))return 2;
+  const auto &s=sessions.at(id);const auto current=pending_nine_code(id);
+  auto tier=s.path.priority(reading);
+  if(tier==0 && current.size()>s.path.input.size())return 1;
+  const auto expected=private_input::pinyin::reading_parts(s.path.reading),actual=private_input::pinyin::reading_parts(reading);
+  if(tier==2&&actual.size()>expected.size()&&std::equal(expected.begin(),expected.end(),actual.begin())&&nine_reading(reading)==current)return 0;
+  return tier;
+}
+int pi_nine_remember_visible_candidate_path(PI_Session id,const char *expected,const char *prefix,const char *text,const char *reading,const char *canonical_code){
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if(!api||!sessions.count(id)||!text||!reading)return 0;
+  const std::string actual(text);const auto chars=private_input::pinyin::NinePath::characters(actual),parts=private_input::pinyin::reading_parts(reading);
+  if(actual.empty()||actual.size()>1024||chars.size()!=parts.size()||!private_input::mainland::candidate_allowed(actual))return 0;
+  for(const auto &ch:chars){
+    if(ch.size()<3)return 0;uint32_t code=static_cast<unsigned char>(ch[0])&(ch.size()==3?15:7);
+    for(size_t i=1;i<ch.size();++i)code=(code<<6)|(static_cast<unsigned char>(ch[i])&63);
+    if(!private_input::mainland::character_tier(code))return 0;
+  }
+  auto &s=sessions.at(id);const auto before=s.path;
+  if(!pi_nine_remember_mapped_candidate_path(id,expected,prefix,reading,canonical_code))return 0;
+  // The actual earlier text remains stable when an async homophone head changes.
+  if(!(s.path_active&&!before.text.empty()&&before.reading==s.path.reading&&before.input==s.path.input))s.path.text=actual;
+  return 1;
+}
+const char *pi_nine_preferred_text(PI_Session id){
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if(!*pi_nine_preferred_reading(id))return empty;
+  const auto &s=sessions.at(id);
+  return !s.path.text.empty()&&s.path.input==pending_nine_code(id)?s.path.text.c_str():empty;
+}
+int pi_select_nine_preferred_prefix(PI_Session id,const char *expected,const char *prefix,const char *text,const char *reading){
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if(!api||!sessions.count(id)||!expected||!prefix||!text||!reading)return 0;
+  auto &s=sessions.at(id);const std::string full=pi_nine_preferred_text(id),chosen(text);
+  if(full.empty()||s.input!=expected||s.selected_prefix!=prefix)return 0;
+  const auto parts=private_input::pinyin::reading_parts(s.path.reading),selected=private_input::pinyin::reading_parts(reading),chars=private_input::pinyin::NinePath::characters(full);
+  if(selected.empty()||selected.size()>=parts.size()||selected.size()>chars.size()||!std::equal(selected.begin(),selected.end(),parts.begin()))return 0;
+  std::string start_text;for(size_t i=0;i<selected.size();++i)start_text+=chars[i];if(start_text!=chosen)return 0;
+  const auto target=s.path.code(),consumed=nine_reading(reading);const auto before=s.input,oldprefix=s.selected_prefix;const auto oldpath=s.path;const auto oldhistory=s.path_selections;
+  auto locate=[&](PI_Session session)->size_t{
+    RimeCandidateListIterator rows{};size_t found=SIZE_MAX;
+    if(api->candidate_list_begin(session,&rows)){for(size_t i=0;i<128&&api->candidate_list_next(&rows);++i)
+      if(rows.index>=0&&rows.candidate.text&&chosen==rows.candidate.text&&private_input::pinyin::reading_parts(rows.candidate.comment?rows.candidate.comment:"")==selected){found=size_t(rows.index);break;}api->candidate_list_end(&rows);}return found;
+  };
+  // Prove that this actual native prefix leaves the entire canonical tail
+  // editable before touching the live composition.
+  const auto probe=pi_create_session();if(!probe)return 0;bool verified=false;
+  if(pi_set_private(probe,1)&&pi_set_nine_key(probe,1)&&pi_set_prediction_input(probe,target.c_str())){
+    const auto candidate=locate(probe);
+    if(candidate!=SIZE_MAX&&pi_select_candidate_absolute(probe,candidate))verified=std::string(pi_take_commit(probe)).empty()&&sessions.at(probe).selected_prefix==chosen&&pending_nine_code(probe)==target.substr(consumed.size());
+  }
+  pi_destroy_session(probe);if(!verified)return 0;
+  const auto active=pi_unselected_input_start(id);if(active>before.size())return 0;
+  const auto next=before.substr(0,active)+target;
+  const bool replaced=before!=next;
+  if(replaced&&!pi_replace_pending_input(id,before.c_str(),next.c_str()))return 0;
+  s.path=oldpath;s.path.input=target;s.path_prefix=oldprefix;s.path_active=true;
+  const auto candidate=locate(id);
+  if(candidate!=SIZE_MAX&&pi_select_candidate_absolute(id,candidate)&&s.selected_prefix==oldprefix+chosen&&pending_nine_code(id)==target.substr(consumed.size())){
+    // Undo restores both the pre-correction raw and the actual published text.
+    if(!s.path_selections.empty()){s.path_selections.back().raw=before;s.path_selections.back().path=oldpath;}
+    return 1;
+  }
+  // Native selection is validated above, but retain a bounded rollback for
+  // ordinary selection failure. No failed path may emit host text.
+  if(s.selected_prefix!=oldprefix&&!s.input.empty()){api->process_key(id,0xff08,0);refresh(id);}
+  if(replaced&&s.input==next&&s.selected_prefix==oldprefix)pi_replace_pending_input(id,next.c_str(),before.c_str());
+  s.path=oldpath;s.path_prefix=oldprefix;s.path_active=true;s.path_selections=oldhistory;
+  return 0;
+}
+const char *pi_commit_nine_preferred_candidate(PI_Session id,const char *expected,const char *prefix,const char *text,const char *reading){
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if(!api||!sessions.count(id)||!expected||!prefix||!text||!reading)return empty;
+  auto &s=sessions.at(id);
+  const std::string tail=pi_nine_preferred_text(id);
+  if(tail.empty()||s.input!=expected||s.selected_prefix!=prefix||tail!=text||s.path.reading!=reading)return empty;
+  const std::string result=s.selected_prefix+tail;
+  api->clear_composition(id);refresh(id);s.commit.clear();s.preferred_commit=result;
+  return s.preferred_commit.c_str();
 }
 int pi_replace_pending_input(PI_Session id,const char *expected,const char *replacement) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -411,61 +604,109 @@ int pi_select_candidate(PI_Session id, size_t index) {
   if (!api || !sessions.count(id)) return 0;
   const auto &indices = sessions.at(id).indices;
   if (index >= indices.size()) return 0;
-  auto result = sessions.at(id).absolute_page ? api->select_candidate(id, indices[index]) : api->select_candidate_on_current_page(id, indices[index]); refresh(id); return result;
+  return select_with_nine_path(id,indices[index],sessions.at(id).absolute_page);
 }
-size_t pi_load_candidate_batch(PI_Session id, size_t offset, size_t limit) {
+size_t pi_load_candidate_batch_bounded(PI_Session id, size_t offset, size_t limit, size_t maximum_scanned_rows) {
   std::lock_guard<std::recursive_mutex> lock(gate);
-  if (!api || !sessions.count(id) || offset > 100000 || limit == 0 || limit > 128) return 0;
-  auto &s = sessions.at(id); s.batch.clear();
-  const auto input_reading = s.nine_key ? nine_reading(s.active_reading) : normalized_reading(s.active_reading);
-  std::set<std::string> pinned;
-  if (!s.private_mode) for (const auto &p : pinned_words)
-    if (!input_reading.empty()) {
-      const auto code = s.nine_key ? nine_reading(p.first) : p.first;
-      if (code.compare(0, input_reading.size(), input_reading) == 0 || input_reading.compare(0, code.size(), code) == 0) pinned.insert(p.second);
-    }
-  // Build an incrementally cached logical stream of admitted rows. Offsets
-  // refer to visible rows, while selection retains original native indices.
-  // Filtering cannot duplicate/skip a later page or hide all valid rows behind
-  // a native page made entirely of obsolete traditional/rare user entries.
+  auto found=sessions.find(id);
+  if (found==sessions.end()) return 0;
+  auto &s=found->second; auto &progress=s.candidate_progress;
+  s.batch.clear(); progress.scanned=0; progress.pending=false;
+  if (!api || offset>100000 || limit==0 || limit>128) return 0;
+  const auto budget_available=[&] { return progress.scanned<maximum_scanned_rows; };
+  // Preparation is resumable but unpublished. A late pin or compatible path
+  // must never appear in front of an already exposed logical offset.
   if (!s.ranked_ready) {
-    if (!pinned.empty()) {
-      RimeCandidateListIterator all{};
-      if (api->candidate_list_begin(id, &all)) {
-        while (!pinned.empty() && api->candidate_list_next(&all)) {
-          if (all.index < 0) break;
-          const std::string text = all.candidate.text ? all.candidate.text : "";
-          if (pinned.erase(text) && private_input::mainland::candidate_allowed(text))
-            s.ranked.push_back({text, all.candidate.comment ? all.candidate.comment : "", static_cast<size_t>(all.index)});
-        }
-        api->candidate_list_end(&all);
+    if (!progress.started) {
+      progress.started=true;
+      const auto input_reading=s.nine_key ? nine_reading(s.active_reading):normalized_reading(s.active_reading);
+      if (!s.private_mode && !input_reading.empty()) for (const auto &p:pinned_words) {
+        const auto code=s.nine_key ? nine_reading(p.first):p.first;
+        if (code.compare(0,input_reading.size(),input_reading)==0 || input_reading.compare(0,code.size(),code)==0)
+          progress.pending_pins.insert(p.second);
       }
+      progress.pins_done=progress.pending_pins.empty();
+      progress.path_enabled=s.nine_key && *pi_nine_preferred_reading(id);
+      progress.path_done=!progress.path_enabled;
     }
-    s.admitted = s.ranked; s.ranked_ready = true;
+    if (!progress.pins_done && budget_available()) {
+      RimeCandidateListIterator iterator{};
+      if (api->candidate_list_from_index(id,&iterator,static_cast<int>(progress.pin_cursor))) {
+        while (!progress.pending_pins.empty() && budget_available()) {
+          if (!api->candidate_list_next(&iterator)) {progress.pins_done=true;break;}
+          ++progress.scanned;
+          if (iterator.index<0) {progress.pins_done=true;break;}
+          progress.pin_cursor=static_cast<size_t>(iterator.index)+1;
+          const std::string text=iterator.candidate.text ? iterator.candidate.text:"";
+          if (progress.pending_pins.erase(text) && private_input::mainland::candidate_reading_allowed(text,iterator.candidate.comment ? iterator.candidate.comment:""))
+            s.ranked.push_back({text,iterator.candidate.comment ? iterator.candidate.comment:"",static_cast<size_t>(iterator.index)});
+        }
+        api->candidate_list_end(&iterator);
+      } else progress.pins_done=true;
+      if (progress.pending_pins.empty()) progress.pins_done=true;
+    }
+    if (!progress.pins_done) {progress.pending=true;return 0;}
+    if (!progress.path_done && budget_available()) {
+      std::set<size_t> existing;for (const auto &row:s.ranked) existing.insert(row.index);
+      RimeCandidateListIterator iterator{};
+      if (api->candidate_list_from_index(id,&iterator,static_cast<int>(progress.path_cursor))) {
+        while (progress.path_rows<128 && budget_available()) {
+          if (!api->candidate_list_next(&iterator)) {progress.path_done=true;break;}
+          ++progress.scanned; ++progress.path_rows;
+          if (iterator.index<0) {progress.path_done=true;break;}
+          progress.path_cursor=static_cast<size_t>(iterator.index)+1;
+          const std::string text=iterator.candidate.text ? iterator.candidate.text:"",reading=iterator.candidate.comment ? iterator.candidate.comment:"";
+          const auto priority=pi_nine_candidate_path_priority(id,reading.c_str());
+          if (priority<2 && !existing.count(static_cast<size_t>(iterator.index)) && private_input::mainland::candidate_reading_allowed(text,reading))
+            progress.compatible[priority].push_back({text,reading,static_cast<size_t>(iterator.index)});
+        }
+        api->candidate_list_end(&iterator);
+      } else progress.path_done=true;
+      if (progress.path_rows>=128) progress.path_done=true;
+    }
+    if (!progress.path_done) {progress.pending=true;return 0;}
+    for (auto &group:progress.compatible) {s.ranked.insert(s.ranked.end(),group.begin(),group.end());group.clear();}
+    progress.pending_pins.clear();
+    s.admitted=s.ranked; s.ranked_ready=true;
   }
-  if (s.admitted.size() < offset + limit && !s.admitted_end) {
-    std::set<size_t> promoted;
-    for (const auto &row : s.ranked) promoted.insert(row.index);
+  if (s.admitted.size()<offset+limit && !s.admitted_end && budget_available()) {
+    std::set<size_t> promoted;for (const auto &row:s.ranked) promoted.insert(row.index);
     RimeCandidateListIterator iterator{};
-    if (api->candidate_list_from_index(id, &iterator, static_cast<int>(s.admitted_cursor))) {
-      while (s.admitted.size() < offset + limit) {
-        if (!api->candidate_list_next(&iterator) || iterator.index < 0) { s.admitted_end = true; break; }
-        const auto native_index = static_cast<size_t>(iterator.index);
-        s.admitted_cursor = native_index + 1;
-        const std::string text = iterator.candidate.text ? iterator.candidate.text : "";
-        if (!promoted.count(native_index) && private_input::mainland::candidate_allowed(text))
-          s.admitted.push_back({text, iterator.candidate.comment ? iterator.candidate.comment : "", native_index});
+    if (api->candidate_list_from_index(id,&iterator,static_cast<int>(s.admitted_cursor))) {
+      while (s.admitted.size()<offset+limit && budget_available()) {
+        if (!api->candidate_list_next(&iterator)) {s.admitted_end=true;break;}
+        ++progress.scanned;
+        if (iterator.index<0) {s.admitted_end=true;break;}
+        const auto native_index=static_cast<size_t>(iterator.index);
+        s.admitted_cursor=native_index+1;
+        const std::string text=iterator.candidate.text ? iterator.candidate.text:"";
+        if (!promoted.count(native_index) && private_input::mainland::candidate_reading_allowed(text,iterator.candidate.comment ? iterator.candidate.comment:""))
+          s.admitted.push_back({text,iterator.candidate.comment ? iterator.candidate.comment:"",native_index});
       }
       api->candidate_list_end(&iterator);
-    } else s.admitted_end = true;
+    } else s.admitted_end=true;
   }
-  for (size_t i = offset; i < s.admitted.size() && s.batch.size() < limit; ++i) s.batch.push_back(s.admitted[i]);
+  progress.pending=s.admitted.size()<offset+limit && !s.admitted_end;
+  for (size_t i=offset;i<s.admitted.size() && s.batch.size()<limit;++i) s.batch.push_back(s.admitted[i]);
   const auto reading = s.nine_key ? nine_reading(s.active_reading) : normalized_reading(s.active_reading);
   std::map<std::string, unsigned long long> scores;
   if (!s.private_mode) for (const auto &p : preferences) if ((s.nine_key ? nine_reading(p.first.first) : p.first.first) == reading) scores[p.first.second] = std::max(scores[p.first.second], p.second);
   auto score = [&](const StreamCandidate &c) { auto p = scores.find(c.text); return p == scores.end() ? 0ULL : p->second; };
-  std::stable_sort(s.batch.begin(), s.batch.end(), [&](const auto &a, const auto &b) { const bool ap = std::any_of(s.ranked.begin(), s.ranked.end(), [&](const auto &row) { return row.index == a.index; }); const bool bp = std::any_of(s.ranked.begin(), s.ranked.end(), [&](const auto &row) { return row.index == b.index; }); if (ap != bp) return ap; return score(a) > score(b); });
+  std::set<size_t> promoted;
+  for (const auto &row:s.ranked) promoted.insert(row.index);
+  std::stable_sort(s.batch.begin(), s.batch.end(), [&](const auto &a, const auto &b) { const bool ap = promoted.count(a.index) != 0; const bool bp = promoted.count(b.index) != 0; if (ap != bp) return ap; return score(a) > score(b); });
   return s.batch.size();
+}
+size_t pi_load_candidate_batch(PI_Session id, size_t offset, size_t limit) {
+  return pi_load_candidate_batch_bounded(id,offset,limit,SIZE_MAX);
+}
+int pi_candidate_batch_pending(PI_Session id) {
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  const auto found=sessions.find(id);return found!=sessions.end() && found->second.candidate_progress.pending;
+}
+size_t pi_candidate_batch_scanned(PI_Session id) {
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  const auto found=sessions.find(id);return found==sessions.end() ? 0:found->second.candidate_progress.scanned;
 }
 const char *pi_batch_candidate_text(PI_Session id, size_t index) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -486,11 +727,11 @@ int pi_select_candidate_absolute(PI_Session id, size_t index) {
   RimeCandidateListIterator selected{}; bool allowed = false;
   if (api->candidate_list_from_index(id, &selected, static_cast<int>(index))) {
     allowed = api->candidate_list_next(&selected) && selected.index == static_cast<int>(index) &&
-      selected.candidate.text && private_input::mainland::candidate_allowed(selected.candidate.text);
+      selected.candidate.text && private_input::mainland::candidate_reading_allowed(selected.candidate.text,selected.candidate.comment ? selected.candidate.comment:"");
     api->candidate_list_end(&selected);
   }
   if (!allowed) return 0;
-  auto result = api->select_candidate(id, index); sessions.at(id).syllable_undo.clear(); refresh(id); return result;
+  return select_with_nine_path(id,index,true);
 }
 size_t pi_nine_syllable_count(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -602,7 +843,7 @@ int pi_nine_select_syllable(PI_Session id, size_t index) {
   const auto next = s.input.substr(0, option.start) + option.text + (option.complete ? "'" : "") + tail;
   if (!api->set_input(id, next.c_str())) return 0;
   api->process_key(id, 0xff57, 0); // End begins editing after a partial selection.
-  s.syllable_undo.push_back({before, next}); refresh(id); return 1;
+  s.syllable_undo.push_back({before,next,s.path,s.path_prefix,s.path_active});s.path.clear();s.path_active=false; refresh(id); return 1;
 }
 int pi_nine_can_undo_syllable(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -616,7 +857,7 @@ int pi_nine_undo_syllable(PI_Session id) {
   auto &s = sessions.at(id); const auto undo = s.syllable_undo.back();
   const auto restored = undo.before + s.input.substr(undo.after.size());
   if (!api->set_input(id, restored.c_str())) return 0;
-  api->process_key(id, 0xff57, 0); s.syllable_undo.pop_back(); refresh(id); return 1;
+  api->process_key(id, 0xff57, 0); s.syllable_undo.pop_back();s.path=undo.path;s.path_prefix=undo.path_prefix;s.path_active=undo.path_active; refresh(id); return 1;
 }
 int pi_delete_candidate(PI_Session id, size_t index) {
   std::lock_guard<std::recursive_mutex> lock(gate);
@@ -664,6 +905,12 @@ static const char *nine_display_preedit(PI_Session id, const char *reading, bool
   if (selected > s.preedit.size()) return s.display_preedit.c_str();
   const auto pending = s.preedit.substr(selected), digits = nine_reading(pending);
   std::string hint = reading ? reading : "";
+  if(!s.path.text.empty()&&s.path_prefix==s.selected_prefix&&s.path.input==pending_nine_code(id)&&normalized_reading(hint)==normalized_reading(s.path.reading)){
+    std::string visible;for(char c:s.path.reading)visible+=c=='v'?"ü":std::string(1,c);
+    s.display_preedit=s.preedit.substr(0,selected);
+    if(!s.display_preedit.empty())s.display_preedit+=' ';
+    s.display_preedit+=visible;return s.display_preedit.c_str();
+  }
   std::replace(hint.begin(), hint.end(), '\'', ' ');
   const auto code = nine_reading(hint);
   std::string result;
@@ -740,6 +987,9 @@ int pi_set_ascii_mode(PI_Session id, int enabled) {
 int pi_candidate_text_allowed(const char *text) {
   return text && private_input::mainland::candidate_allowed(text);
 }
+int pi_candidate_reading_allowed(const char *text,const char *reading) {
+  return text && reading && private_input::mainland::candidate_reading_allowed(text,reading);
+}
 size_t pi_candidate_count(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);
   auto it = sessions.find(id); return it == sessions.end() ? 0 : it->second.candidates.size();
@@ -799,7 +1049,11 @@ size_t pi_load_repair_candidates(PI_Session id, size_t limit) {
   bool exact_native_spelling = false;
   RimeCandidateListIterator ordinary{};
   if (api->candidate_list_begin(id, &ordinary)) {
-    for (size_t i = 0; i < 32 && api->candidate_list_next(&ordinary); ++i) {
+    for (size_t i = 0,admitted = 0; i < 128 && admitted < 32 && api->candidate_list_next(&ordinary); ++i) {
+      const std::string text=ordinary.candidate.text ? ordinary.candidate.text:"";
+      const std::string reading=ordinary.candidate.comment ? ordinary.candidate.comment:"";
+      if (!private_input::mainland::candidate_reading_allowed(text,reading)) continue;
+      ++admitted;
       if (ordinary.candidate.comment && private_input::pinyin::is_full_spelling(tail, ordinary.candidate.comment))
         exact_native_spelling = true;
       if (ordinary.candidate.text && ordinary.candidate.comment &&
@@ -828,7 +1082,7 @@ size_t pi_load_repair_candidates(PI_Session id, size_t limit) {
       for (size_t i = 0; i < count; ++i) {
         const std::string text = pi_batch_candidate_text(probe, i);
         const std::string reading = pi_batch_candidate_comment(probe, i);
-        if (text.empty() || protected_native_texts.count(text) || joined_repair_reading(reading) != proposal.spelling) continue;
+        if (text.empty() || protected_native_texts.count(text) || joined_repair_reading(reading) != proposal.spelling || !private_input::mainland::candidate_reading_allowed(text,reading)) continue;
         double score = -proposal.cost * 3.0 - double(i) * 0.8;
         if (const auto weight = resources->weights.find(text); weight != resources->weights.end())
           score += std::min(4.0, std::log1p(double(weight->second)) * 0.5);

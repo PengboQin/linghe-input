@@ -8,6 +8,7 @@ User=private-input-activity
 Group=private-input-activity
 WorkingDirectory=/opt/private-input-activity/current/server
 Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PRIVATE_INPUT_ACTIVITY_MAX_DATABASE_BYTES=17179869184
 ExecStart=/opt/private-input-activity/venv/bin/python -m activity_archive.admin expire --database /var/lib/private-input-activity/activity.sqlite
 UMask=0077
 NoNewPrivileges=true

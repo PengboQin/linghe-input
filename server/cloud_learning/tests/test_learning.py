@@ -20,6 +20,17 @@ def uid(): return str(uuid.uuid4()).upper()
 
 
 class LearningTests(unittest.TestCase):
+    def test_group_mobile_control_preserves_normal_device_policy(self):
+        from activity_archive.service import RelayIdentity
+        original=self.authority.resolve
+        def desktop(group,sender,now):
+            who=original(group,sender,now)
+            return RelayIdentity(who.group,who.sender,who.public,who.permissions,who.revision,who.digest,who.members,False)
+        self.authority.resolve=desktop
+        with self.assertRaises(ArchiveError) as denied:self.call(2,{'expected_version':0,'enabled':True})
+        self.assertEqual(denied.exception.code,'learning_admin_permission')
+        self.assertFalse(self.call(1,{})['enabled'])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='learning-synthetic-')
         self.now = 1792600000
@@ -251,6 +262,9 @@ class LearningTests(unittest.TestCase):
         path = Path(self.temp.name) / 'synthetic-relay.sqlite'
         db = sqlite3.connect(path)
         db.execute('CREATE TABLE groups(id TEXT PRIMARY KEY,root BLOB,revision TEXT,digest BLOB,state BLOB)')
+        db.execute('CREATE TABLE device_profiles(group_id TEXT,device TEXT,kind TEXT,idle_days INTEGER,last_seen INTEGER,signing BLOB)')
+        for device in (self.a,self.b):
+            db.execute('INSERT INTO device_profiles VALUES(?,?,?,?,?,?)',(self.group,device,'macos',30,self.now,self.members[device][0]))
         def save(state):
             group, root, digest = membership_bytes(state)
             db.execute('INSERT OR REPLACE INTO groups VALUES(?,?,?,?,?)', (group, root, str(state['revision']), digest, encode(state))); db.commit()

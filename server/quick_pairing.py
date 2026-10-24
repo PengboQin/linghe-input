@@ -18,6 +18,16 @@ def initialize(db):
 def owner_rpc(relay, group, sender, operation, body, now):
     from private_input_relay import strict_json, shape, identifier, number, b64, encoded, reject
     state = relay.state(group)
+    if operation==9 and body:reject()
+    if operation in (8,9,10):
+        from device_administration import require_group_control
+        from private_input_relay import RelayError
+        try:require_group_control(relay,group,sender,now,state=state,allow_owner_root=operation==9)
+        except RelayError as error:
+            # Old clients poll before synchronizing ordinary data. An empty
+            # read grants no control and must not abort their clipboard sync.
+            if operation==9 and error.status==403:return {'claims':[]}
+            raise
     if operation == 8:
         member = relay.member(state, sender)
         if member['permissions'] != 3:
@@ -72,16 +82,25 @@ def claim(relay, value, peer):
         if 'code' in value:
             code=value['code']
             if type(code) is not str or len(code)!=6 or not code.isascii() or not code.isdecimal(): reject('pair_unavailable',404)
-            row=relay.db.execute('SELECT id,group_id,secret_hash,invitation,claim FROM pairing_tickets WHERE code=?',(code,)).fetchone()
+            row=relay.db.execute('SELECT id,group_id,secret_hash,invitation,claim,sponsor FROM pairing_tickets WHERE code=?',(code,)).fetchone()
         else:
             ticket=identifier(value['ticket'])[0]
-            row=relay.db.execute('SELECT id,group_id,secret_hash,invitation,claim FROM pairing_tickets WHERE id=?',(ticket,)).fetchone()
+            row=relay.db.execute('SELECT id,group_id,secret_hash,invitation,claim,sponsor FROM pairing_tickets WHERE id=?',(ticket,)).fetchone()
             secret=b64(value['secret'],32,32)
             if row and not secrets.compare_digest(hashlib.sha256(secret).digest(),row[2]): row=None
         if not row: reject('pair_unavailable',404)
-        ticket,group,_,invitation,old=row
+        ticket,group,_,invitation,old,sponsor=row
         if old and pair_request_bytes(strict_json(old),now)[3]!=digest: reject('pair_unavailable',404)
         state=relay.state(group)
+        # A desktop ticket issued before a phone joined cannot retain authority.
+        from device_administration import require_group_control
+        from private_input_relay import RelayError
+        admitted=old and relay.db.execute('SELECT 1 FROM admissions WHERE group_id=? AND session=?',(group,session)).fetchone()
+        recipient=next((m for m in state['members'] if identifier(m['device'])[0]==sender and m['signingPublic']==request['member']['signingPublic'] and m['exchangePublic']==request['member']['exchangePublic']),None)
+        if not (admitted and recipient):
+            try:require_group_control(relay,group,identifier(sponsor)[0],now,state=state)
+            except RelayError:reject('pair_unavailable',404)
+        elif relay.db.execute('SELECT 1 FROM departed_devices WHERE group_id=? AND device=?',(group,sender)).fetchone():reject('pair_unavailable',404)
         if not old and any(identifier(m['device'])[0]==sender for m in state['members']): reject('already_member',409)
         if relay.db.execute('SELECT count(*) FROM pair_sessions WHERE group_id=?',(group,)).fetchone()[0]>=8 and not relay.db.execute('SELECT 1 FROM pair_sessions WHERE group_id=? AND session=?',(group,session)).fetchone(): reject('quota',429)
         existing=relay.db.execute('SELECT request FROM pair_sessions WHERE group_id=? AND session=?',(group,session)).fetchone()

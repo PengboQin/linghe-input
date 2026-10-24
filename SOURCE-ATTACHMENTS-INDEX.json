@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "release": "v0.2026.10.22-win056-preview.1",
+  "release": "v0.2026.10.24-baseline.1",
   "originalCodeLicense": "GPL-3.0-only",
   "thirdPartyLicensesUnchanged": true,
   "productSource": {
-    "name": "LingheInput-Source-20261022-win056.zip",
-    "bytes": 99329853,
-    "sha256": "dc7af3bc3abb9c8589679141e4e12a562b878f5fcfd345ee6753494506238740",
-    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.22-win056-preview.1/LingheInput-Source-20261022-win056.zip"
+    "name": "LingheInput-Source-20261024-baseline.zip",
+    "bytes": 99231119,
+    "sha256": "e0dfa601c50ddd0bab925709555cdecafc0112037a28dbec25b6b02c249685cb",
+    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.24-baseline.1/LingheInput-Source-20261024-baseline.zip"
   },
   "dependencySources": [
     {
@@ -71,5 +71,6 @@
   },
   "buildGuide": "BUILDING.md inside product source ZIP",
   "selfHostingGuide": "SELF-HOSTING.md inside product source ZIP",
-  "releaseScope": "Windows 0.5.6-win1 preview installer plus complete product source; other platform installers are not updated."
+  "releaseScope": "Windows 0.5.6-win1 preview installer plus complete product source; other platform installers are not updated.",
+  "baselineSourceVariants": "BASELINE-SOURCES.json inside the product source ZIP"
 }

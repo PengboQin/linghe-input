@@ -10,7 +10,7 @@ WorkingDirectory=/opt/private-input-activity/current/server
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PRIVATE_INPUT_ACTIVITY_DATABASE=/var/lib/private-input-activity/activity.sqlite
 Environment=PRIVATE_INPUT_ACTIVITY_RELAY_DATABASE=/var/lib/private-input-relay/relay.sqlite
-Environment=PRIVATE_INPUT_ACTIVITY_MAX_DATABASE_BYTES=1073741824
+Environment=PRIVATE_INPUT_ACTIVITY_MAX_DATABASE_BYTES=17179869184
 ExecStart=/opt/private-input-activity/venv/bin/gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8039 --access-logfile /dev/null --error-logfile - activity_archive.production:create_app()
 Restart=on-failure
 RestartSec=5

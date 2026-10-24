@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse,xml.etree.ElementTree as ET
 import subprocess,zipfile,shutil,os,json,hashlib
+from android_build_identity import write_config
 r=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--base-apk',type=Path,required=True,help='Existing reviewed APK providing unchanged public resources')
@@ -20,7 +21,7 @@ assert out.parent in [r/'artifacts',r/'build'], 'Write a new project-owned candi
 assert args.source_release_url.startswith('https://') and '\n' not in args.source_release_url
 baseDigest=hashlib.sha256(base.read_bytes()).hexdigest()
 if args.reuse_native_from_base:assert args.expected_base_sha256 and baseDigest==args.expected_base_sha256,'Reviewed native base identity changed'
-sourcePaths=sorted((r/'android/app/src/main/java').rglob('*.java'))+sorted((r/'android/app/src/main/res').rglob('*'))+[r/'android/app/src/main/AndroidManifest.xml']
+sourcePaths=sorted((r/'android/app/src/main/java').rglob('*.java'))+sorted((r/'android/app/src/main/res').rglob('*'))+[r/'android/app/src/main/AndroidManifest.xml',r/'scripts/android_build_identity.py',Path(__file__)]
 sourceFreeze={str(p.relative_to(r)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sourcePaths if p.is_file()}
 
 env=os.environ.copy();env["JAVA_HOME"]=str(t/"jdk");env["PATH"]=str(t/"jdk/bin")+os.pathsep+env.get("PATH","")
@@ -44,7 +45,7 @@ generated=b/'generated'
 if generated.exists():shutil.rmtree(generated)
 generated.mkdir()
 run([tools/'aapt2','link','-o',b/'resources.apk','-I',t/'platforms/android-36/android.jar','--manifest',r/'android/app/src/main/AndroidManifest.xml','--java',generated,b/'res.zip'],'android37-res-link')
-config=generated/'live/linghe/privateinput/SyncBuildConfig.java';config.parent.mkdir(exist_ok=True,parents=True);config.write_text('package live.linghe.privateinput; final class SyncBuildConfig { static final String DEFAULT_ENDPOINT=""; }\n')
+config=generated/'live/linghe/privateinput/SyncBuildConfig.java';build_identity=write_config(r,config)
 classes=b/'classes'
 if classes.exists():shutil.rmtree(classes)
 classes.mkdir();jars=[r/'vendor/zxing/core-3.5.3.jar',r/'vendor/bouncycastle/bcprov-android.jar'];sources=list((r/'android/app/src/main/java').rglob('*.java'))+list(generated.rglob('*.java'))

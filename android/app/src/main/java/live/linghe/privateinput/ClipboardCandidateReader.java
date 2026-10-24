@@ -27,7 +27,6 @@ final class ClipboardCandidateReader {
    String selected=Settings.Secure.getString(context.getContentResolver(),Settings.Secure.DEFAULT_INPUT_METHOD);if(selected==null||!selected.startsWith(context.getPackageName()+"/"))return null;
    ClipboardManager clipboard=(ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);if(clipboard==null)return null;
    ClipDescription description=clipboard.getPrimaryClipDescription();if(description==null||!description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN))return null;
-   PersistableBundle extras=description.getExtras();if(extras!=null&&extras.getBoolean("android.content.extra.IS_SENSITIVE",false))return null;
    // Re-check the returned snapshot: another app may replace the board
    // between reading its metadata and obtaining the ClipData.
    return decode(clipboard.getPrimaryClip());
@@ -35,7 +34,7 @@ final class ClipboardCandidateReader {
  }
  static ClipboardCandidateState.Value decode(ClipData data){
   if(data==null||data.getItemCount()!=1)return null;ClipDescription description=data.getDescription();if(description==null||!description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN))return null;
-  PersistableBundle extras=description.getExtras();if(extras!=null&&extras.getBoolean("android.content.extra.IS_SENSITIVE",false))return null;
+  PersistableBundle extras=description.getExtras(); // Retain snapshot metadata; the marker does not reject readable text.
   ClipData.Item item=data.getItemAt(0);if(item.getUri()!=null||item.getIntent()!=null||item.getText()==null)return null;
   return ClipboardCandidateState.Value.create(item.getText().toString(),description.getTimestamp(),extras!=null&&extras.getBoolean("live.linghe.clipboard.auto.incoming",false));
  }

@@ -25,7 +25,7 @@ struct AppleCloudMigrationSeed: Codable {
             let seed = try JSONDecoder().decode(Self.self, from: data)
             guard seed.version == 1, seed.group == group, seed.device == device,
                   seed.personalEpoch == personalEpoch, personalEpoch == PersonalDataReset.generation,
-                  file.lastPathComponent == seed.producer.uuidString + ".json", seed.entries.count <= 5000,
+                  file.lastPathComponent == seed.producer.uuidString + ".json", seed.entries.count <= LearningCapacityProfiles.expanded10000.producerTermRows,
                   Set(seed.entries.map(\.id)).count == seed.entries.count,
                   try CloudLearningComponents.digest(producer: seed.producer, records: seed.entries) == seed.componentDigest else { throw InputDataError.invalidRecord }
             for row in seed.entries {

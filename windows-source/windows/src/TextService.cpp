@@ -1,4 +1,5 @@
 #include "PrivateInputTSF.h"
+#include "learning_capacity_profiles.h"
 #include "CandidateWindow.h"
 #include "CandidateAnchorPolicy.h"
 #include "TsfLayoutSink.h"
@@ -11,6 +12,7 @@
 #include "DesktopPreferences.h"
 #include "EnglishSuggestions.h"
 #include "SymbolPairing.h"
+#include "TechnicalInputScope.h"
 #include "GlyphFilter.h"
 #include "pinyin_text.h"
 #include "private_input.h"
@@ -66,6 +68,35 @@ uint32_t archiveFieldType(ITfContext*ctx,TfEditCookie cookie){
  TF_SELECTION selected{};ULONG fetched=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&fetched))||!fetched||!selected.range)return 0;ComPtr<ITfRange>range;range.Attach(selected.range);ComPtr<ITfReadOnlyProperty>property;if(FAILED(ctx->GetAppProperty(GUID_PROP_INPUTSCOPE,&property)))return 0;VARIANT value;VariantInit(&value);uint32_t result=0;
  if(SUCCEEDED(property->GetValue(cookie,range.Get(),&value))&&value.vt==VT_UNKNOWN&&value.punkVal){ComPtr<ITfInputScope>scope;if(SUCCEEDED(value.punkVal->QueryInterface(IID_ITfInputScope,reinterpret_cast<void**>(scope.GetAddressOf())))){InputScope*items=nullptr;UINT count=0;if(SUCCEEDED(scope->GetInputScopes(&items,&count))&&items&&count==1){switch(items[0]){case IS_DEFAULT:case IS_TEXT:case IS_CHAT:case IS_CHAT_WITHOUT_EMOJI:result=1;break;case IS_EMAIL_USERNAME:case IS_EMAIL_SMTPEMAILADDRESS:case IS_EMAILNAME_OR_ADDRESS:result=2;break;case IS_URL:result=3;break;case IS_DIGITS:case IS_NUMBER:case IS_NUMBER_FULLWIDTH:result=4;break;case IS_TELEPHONE_FULLTELEPHONENUMBER:case IS_TELEPHONE_COUNTRYCODE:case IS_TELEPHONE_AREACODE:case IS_TELEPHONE_LOCALNUMBER:result=5;break;case IS_SEARCH:case IS_SEARCH_INCREMENTAL:result=6;break;default:break;}}CoTaskMemFree(items);}}VariantClear(&value);return result;
 }
+bool technicalInputField(ITfContext*ctx,TfEditCookie cookie){
+  TF_SELECTION selected{};ULONG fetched=0;
+  if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&fetched))||fetched!=1||!selected.range)return false;
+  ComPtr<ITfRange>range;range.Attach(selected.range);ComPtr<ITfReadOnlyProperty>property;
+  if(FAILED(ctx->GetAppProperty(GUID_PROP_INPUTSCOPE,&property)))return false;
+  VARIANT value;VariantInit(&value);bool literal=false;
+  if(SUCCEEDED(property->GetValue(cookie,range.Get(),&value))&&value.vt==VT_UNKNOWN&&value.punkVal){
+    ComPtr<ITfInputScope>scope;
+    if(SUCCEEDED(value.punkVal->QueryInterface(IID_PPV_ARGS(&scope)))){
+      InputScope*items=nullptr;UINT count=0;
+      if(SUCCEEDED(scope->GetInputScopes(&items,&count))&&items&&count&&count<=128){
+        private_input::PhysicalFieldScope fields[128]{};
+        for(UINT i=0;i<count;++i){using Field=private_input::PhysicalFieldScope;
+          switch(items[i]){
+            case IS_URL:fields[i]=Field::url;break;
+            case IS_EMAIL_USERNAME:case IS_EMAIL_SMTPEMAILADDRESS:case IS_EMAILNAME_OR_ADDRESS:fields[i]=Field::email;break;
+            case IS_DIGITS:fields[i]=Field::digits;break;
+            case IS_PRIVATE:fields[i]=Field::privateField;break;
+            case IS_PASSWORD:case IS_NUMERIC_PASSWORD:fields[i]=Field::password;break;
+            default:fields[i]=Field::ordinary;break;
+          }
+        }
+        literal=private_input::literalTechnicalScope(fields,count);
+      }
+      CoTaskMemFree(items);
+    }
+  }
+  VariantClear(&value);return literal;
+}
 bool disabled(ITfContext *ctx){
   TF_STATUS status{};if(SUCCEEDED(ctx->GetStatus(&status))&&(status.dwDynamicFlags&TF_SD_READONLY))return true;
   ComPtr<ITfCompartmentMgr> mgr;if(FAILED(ctx->QueryInterface(IID_ITfCompartmentMgr,reinterpret_cast<void**>(mgr.GetAddressOf()))))return false;
@@ -95,6 +126,46 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
 
   bool secure=false,english=false,privateSchema=false,degraded=false,finishPending=false,keySinkAdvised=false;
   private_input::ShiftTapMode shiftTap;
+  private_input::AutomaticPairReceipt automaticPair;
+  ComPtr<ITfContext>pairContext;ComPtr<ITfRange>pairRange,pairCaret;DWORD pairEditCookie=TF_INVALID_COOKIE;
+  bool pairOwnRequest=false,pairPendingArm=false;std::wstring pairInserted;
+  void clearAutomaticPair(){automaticPair.invalidate();pairPendingArm=false;pairInserted.clear();auto ctx=pairContext;auto cookie=pairEditCookie;pairEditCookie=TF_INVALID_COOKIE;pairContext.Reset();pairRange.Reset();pairCaret.Reset();if(ctx&&cookie!=TF_INVALID_COOKIE){ComPtr<ITfSource>source;if(SUCCEEDED(ctx.As(&source)))source->UnadviseSink(cookie);}}
+  void completeAutomaticPairRequest(bool success){if(pairPendingArm&&success&&pairContext&&pairRange&&pairCaret)automaticPair.record(reinterpret_cast<uintptr_t>(pairContext.Get()),pairInserted);else if(pairPendingArm)clearAutomaticPair();pairPendingArm=false;pairOwnRequest=false;}
+  void rememberAutomaticPair(ITfContext*ctx,TfEditCookie cookie,const private_input::SymbolPlan&plan,const std::wstring&symbol){
+    if(plan.text.size()<=symbol.size()||finishPending||scopeOf(ctx,cookie)!=FieldScope::normal)return;
+    TF_SELECTION selected{};ULONG count=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))||count!=1||!selected.range)return;
+    ComPtr<ITfRange>end;end.Attach(selected.range);BOOL empty=FALSE;if(FAILED(end->IsEmpty(cookie,&empty))||!empty)return;
+    // Caret placement remains available even when the host refuses a text
+    // read or sink subscription. Those only revoke the deletion capability.
+    LONG moved=0;ComPtr<ITfRange>caret;if(FAILED(end->Clone(&caret)))return;
+    if(plan.caretBack&&(FAILED(caret->ShiftStart(cookie,-plan.caretBack,&moved,nullptr))||moved!= -plan.caretBack||FAILED(caret->Collapse(cookie,TF_ANCHOR_START))))return;
+    TF_SELECTION inside{caret.Get(),{TF_AE_NONE,FALSE}};if(FAILED(ctx->SetSelection(cookie,1,&inside)))return;
+    ComPtr<ITfRange>span;if(FAILED(end->Clone(&span)))return;if(FAILED(span->ShiftStart(cookie,-LONG(plan.text.size()),&moved,nullptr))||moved!= -LONG(plan.text.size()))return;
+    wchar_t actual[8]{};ULONG length=0;if(FAILED(span->GetText(cookie,0,actual,8,&length))||std::wstring(actual,length)!=plan.text)return;
+    ComPtr<ITfSource>source;DWORD token=TF_INVALID_COOKIE;if(FAILED(ctx->QueryInterface(IID_PPV_ARGS(&source)))||FAILED(source->AdviseSink(IID_ITfTextEditSink,static_cast<ITfTextEditSink*>(this),&token)))return;
+    pairContext=ctx;pairEditCookie=token;pairRange=span;pairCaret=caret;pairInserted=plan.text;pairPendingArm=true;
+  }
+  HRESULT eraseAutomaticPair(ITfContext*ctx,TfEditCookie cookie,bool*eaten){
+    if(!automaticPair.active())return S_FALSE;
+    TF_SELECTION selected{};ULONG count=0;ComPtr<ITfRange>caret;BOOL empty=FALSE;LONG start=1,end=1;
+    if(ctx!=pairContext.Get()||!focusedContext(ctx)||scopeOf(ctx,cookie)!=FieldScope::normal||FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))||count!=1||!selected.range){clearAutomaticPair();return S_FALSE;}
+    caret.Attach(selected.range);wchar_t buffer[8]{};ULONG size=0;
+    const bool exactCaret=SUCCEEDED(caret->IsEmpty(cookie,&empty))&&empty&&SUCCEEDED(caret->CompareStart(cookie,pairCaret.Get(),TF_ANCHOR_START,&start))&&SUCCEEDED(caret->CompareEnd(cookie,pairCaret.Get(),TF_ANCHOR_END,&end))&&!start&&!end;
+    const bool readable=pairRange&&SUCCEEDED(pairRange->GetText(cookie,0,buffer,8,&size));
+    if(!readable||!automaticPair.permits(reinterpret_cast<uintptr_t>(ctx),std::wstring(buffer,size),exactCaret)){clearAutomaticPair();return S_FALSE;}
+    auto range=pairRange;clearAutomaticPair();auto hr=range->SetText(cookie,0,L"",0);if(FAILED(hr))return hr;
+    *eaten=true; // A later selection failure must never replay this deletion.
+    if(SUCCEEDED(range->Collapse(cookie,TF_ANCHOR_START))){TF_SELECTION after{range.Get(),{TF_AE_NONE,FALSE}};ctx->SetSelection(cookie,1,&after);}return S_OK;
+  }
+  HRESULT insertPhysicalSymbol(ITfContext*ctx,TfEditCookie cookie,WPARAM key,bool*eaten){
+    if(finishPending)return S_FALSE;auto symbol=literalSymbol(key);if(symbol.empty())return S_FALSE;readContext(ctx,cookie);
+    const auto field=archiveFieldType(ctx,cookie);const bool asciiField=field>=2&&field<=5;
+    const bool digit=!contextBefore.empty()&&contextBefore.back()>='0'&&contextBefore.back()<='9';
+    symbol=private_input::punctuationSymbol(symbol,!english,asciiField,digit);
+    auto plan=private_input::symbolPlan(symbol,inputPreferences.pairSymbols,inputPreferences.caretInside);
+    clearAutomaticPair();auto hr=setOwnText(ctx,cookie,plan.text,true);if(FAILED(hr))return hr;*eaten=true;rememberAutomaticPair(ctx,cookie,plan,symbol);return S_OK;
+  }
+
   std::shared_ptr<const CachedDesktopPreferences>desktopCache=std::make_shared<CachedDesktopPreferences>();
   unsigned ownEndDepth=0;std::string contextBefore,contextAfter;std::filesystem::path publicContextPath;
   private_input::activity::CaptureEmitter archiveEmitter;
@@ -165,7 +236,6 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   // Literal keys never block typing: they end the composition with the readable
   // raw spelling and are then handled by the host exactly as without this IME.
   std::wstring literalSymbol(WPARAM key)const{if(key<VK_SPACE||key>VK_OEM_102)return {};BYTE state[256]{};if(!GetKeyboardState(state))return {};wchar_t text[8]{};auto result=ToUnicodeEx(UINT(key),MapVirtualKeyW(UINT(key),MAPVK_VK_TO_VSC),state,text,8,4,GetKeyboardLayout(0));return result==1?std::wstring(text,1):std::wstring{};}
-  bool pairKey(WPARAM key)const{if(!std::atomic_load(&desktopCache)->input.pairSymbols)return false;auto symbol=literalSymbol(key);return !symbol.empty()&&private_input::symbolPlan(symbol).text.size()>symbol.size();}
   bool endingLiteral(WPARAM key)const{
     return key==VK_OEM_1||key==VK_OEM_2||key==VK_OEM_3||key==VK_OEM_4||key==VK_OEM_5||key==VK_OEM_6||key==VK_OEM_7||
            key==VK_OEM_102||key==VK_OEM_COMMA||key==VK_OEM_PERIOD||key==VK_OEM_MINUS||key==VK_OEM_PLUS||
@@ -173,10 +243,24 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
            (key>=VK_NUMPAD0&&key<=VK_DIVIDE)||key==VK_TAB;
   }
   bool printable(WPARAM key)const{auto value=literalSymbol(key);return value.size()==1&&value[0]>=32&&value[0]!=127;}
+  bool modifiedBackspace(WPARAM key)const{return key==VK_BACK&&!private_input::plainPairBackspace(GetKeyState(VK_SHIFT)<0,GetKeyState(VK_CONTROL)<0,GetKeyState(VK_MENU)<0,GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0);}
   bool accepts(ITfContext *ctx,WPARAM key)const{
-    if(!session||secure||!ctx||disabled(ctx))return false;if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld)return true;if(modeKey(key))return true;
+    if(!session||secure||!ctx||disabled(ctx)||modifiedBackspace(key))return false;if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld)return true;if(modeKey(key))return true;
     if(GetKeyState(VK_CONTROL)<0||GetKeyState(VK_MENU)<0||GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0)return false;
+    if(key==VK_BACK&&automaticPair.active())return true;
     return finishPending||!pendingCommit.empty()||(key>='A'&&key<='Z')||(!composing()&&printable(key))||(composing()&&(key==VK_SPACE||key==VK_RETURN||key==VK_BACK||key==VK_ESCAPE||key==VK_LEFT||key==VK_RIGHT||key==VK_UP||key==VK_DOWN||key==VK_PRIOR||key==VK_NEXT||(key>='1'&&key<='9')||endingLiteral(key)));
+  }
+  bool technicalIdlePassThrough(ITfContext*ctx){
+    // A positive preflight is unnecessary when the host has explicitly marked
+    // an idle address/code field. Ask only for a synchronous read cookie: a
+    // refused read keeps the existing guarded OnKeyDown fallback, never an
+    // asynchronous callback into these stack locals or a guessed field type.
+    if(!ctx||secure||!session||composition||composing()||finishPending||!pendingCommit.empty()||disabled(ctx))return false;
+    ComPtr<ITfContext>retained=ctx;bool literal=false;HRESULT result=E_FAIL;
+    auto hr=request(ctx,TF_ES_SYNC|TF_ES_READ,[this,retained,&literal](TfEditCookie cookie){
+      literal=focusedContext(retained.Get())&&scopeOf(retained.Get(),cookie)==FieldScope::normal&&technicalInputField(retained.Get(),cookie);return S_OK;
+    },&result);
+    return SUCCEEDED(hr)&&SUCCEEDED(result)&&literal;
   }
   bool startEngine(){
     std::filesystem::path shared,user;
@@ -186,10 +270,11 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
       PWSTR data=nullptr;if(FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&data)))return false;FILETIME created{},ended{},kernel{},userTime{};if(!GetProcessTimes(GetCurrentProcess(),&created,&ended,&kernel,&userTime)){CoTaskMemFree(data);return false;}ULARGE_INTEGER stamp{};stamp.LowPart=created.dwLowDateTime;stamp.HighPart=created.dwHighDateTime;user=std::filesystem::path(data)/L"PrivateInput"/L"RimeSessions"/(std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(stamp.QuadPart));CoTaskMemFree(data);
     }
     for(auto path=std::filesystem::absolute(user).lexically_normal();!path.empty();path=path.parent_path()){auto attributes=GetFileAttributesW(path.c_str());if(attributes!=INVALID_FILE_ATTRIBUTES&&(attributes&FILE_ATTRIBUTE_REPARSE_POINT))return false;if(path==path.parent_path())break;}std::error_code e;std::filesystem::create_directories(user,e);if(e)return false;if(!enginePaths){auto marker=user/L"linghe-generated-session-v1";if(!std::filesystem::exists(marker)){FILETIME created{},ended{},kernel{},userTime{};if(!GetProcessTimes(GetCurrentProcess(),&created,&ended,&kernel,&userTime))return false;ULARGE_INTEGER stamp{};stamp.LowPart=created.dwLowDateTime;stamp.HighPart=created.dwHighDateTime;std::ofstream output(marker,std::ios::binary);output<<"LingheInput generated stateless native session v1\n"<<GetCurrentProcessId()<<"\n"<<stamp.QuadPart<<"\n";if(!output)return false;}}
-    if(!pi_initialize(utf8(shared.wstring()).c_str(),utf8(user.wstring()).c_str(),0))return false;session=pi_create_session();if(session&&!enginePaths&&!pi_set_private(session,1)){pi_destroy_session(session);session=0;}publicContextPath=shared.parent_path()/L"semantic"/L"continuation.bin";return session!=0;
+    const auto&learningProfile=private_input::learning_capacity::expanded_10000;if(!pi_initialize(utf8(shared.wstring()).c_str(),utf8(user.wstring()).c_str(),0)||pi_set_learning_capacity_profile(learningProfile.id.data(),learningProfile.version)!=1)return false;session=pi_create_session();if(session&&!enginePaths&&!pi_set_private(session,1)){pi_destroy_session(session);session=0;}publicContextPath=shared.parent_path()/L"semantic"/L"continuation.bin";return session!=0;
   }
   HRESULT request(ITfContext *ctx,DWORD flags,std::function<HRESULT(TfEditCookie)> action,HRESULT *result,std::function<void()>completed={}){auto *job=new EditJob(identity(),std::move(action),std::move(completed));HRESULT hr=ctx->RequestEditSession(client,job,flags,result);job->Release();return hr;}
   void detachComposition(){
+    clearAutomaticPair();
     unwatchLayout();auto old=composition;auto ctx=compositionContext;composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();panel.hide();contextBefore.clear();contextAfter.clear();englishInput.clear();learningSelections.clear();if(session)pi_clear(session);++revision;
     if(old&&ctx){HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,[old](TfEditCookie cookie){return old->EndComposition(cookie);},&result);}
   }
@@ -297,6 +382,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   // Native rows select their absolute engine index; repair rows replay their
   // spelling in a private probe and replace only the unselected suffix.
   HRESULT applyCandidate(ITfContext *ctx,TfEditCookie cookie,size_t index){
+    clearAutomaticPair();
     if(index>=words.size()||index>=candidates.rows.size()||!candidateDisplayable(candidates.rows[index].text))return E_FAIL;readContext(ctx,cookie);auto currentLearning=learningReader.read();if(sessionLearning&&currentLearning->scopeGeneration!=sessionLearning->scopeGeneration&&candidates.rows[index].custom){sessionLearning=currentLearning;reloadCandidates();updatePanel(ctx,cookie);return S_FALSE;}
     if(english){
       const auto committed=words[index];learningSelections.push_back({wide(englishInput.c_str()),committed});HRESULT hr=setOwnText(ctx,cookie,committed,true);
@@ -342,11 +428,29 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     if(finishPending){HRESULT hr=finishComposition(cookie);if(FAILED(hr))return hr;}
     if(composition&&!selectionInside(ctx,cookie))detachComposition();readContext(ctx,cookie);
     if(!pendingCommit.empty()){HRESULT result=deliverPending(ctx,cookie);if(result!=S_OK)return result;degraded=false;if(finishPending)return S_OK;}
+    // Address/code fields belong to their host: do not turn https into a
+    // Chinese/English candidate, select that candidate before ':' or pair '/' .
+    // Keep the global language mode unchanged. If a host changes its declared
+    // scope while we own a draft, finish that draft literally before releasing
+    // this key; never replace a visible draft with an inferred candidate.
+    if(scope==FieldScope::normal&&focusedContext(ctx)&&technicalInputField(ctx,cookie)){
+      clearAutomaticPair();panel.hide();
+      if(composing()){
+        const std::string raw=pi_raw_input(session),prefix=pi_selected_prefix(session);
+        const auto start=pi_unselected_input_start(session);
+        const auto literal=english?englishInput:(prefix.empty()?raw:prefix+(start<=raw.size()?raw.substr(start):raw));
+        auto hr=setOwnText(ctx,cookie,wide(literal.c_str()),true);
+        if(FAILED(hr)){detachComposition();return hr;}
+        pi_clear(session);englishInput.clear();learningSelections.clear();words.clear();candidates.rows.clear();++revision;
+      }
+      *eaten=false;return S_OK;
+    }
     // Draining a failed commit can be the only reason this key was routed.
     // Let the host handle literals and navigation once that work has finished.
     sessionLearning=private_input::freezeLearningSnapshot(learningReader.read(),sessionLearning,!composing());
     if(!composing()){auto cached=std::atomic_load(&desktopCache);inputPreferences=cached->input;panel.setTheme(inputPreferences.theme);navigation.configure(cached->layout.collapsed,cached->layout.columns,cached->layout.rows);}
     if(!accepts(ctx,key))return S_OK;
+    if(key==VK_BACK&&!composing()&&automaticPair.active()){auto hr=eraseAutomaticPair(ctx,cookie,eaten);if(hr!=S_FALSE)return hr;}
     // Return explicitly commits the typed spelling, never the highlighted
     // completion. Space and digits remain candidate-selection actions.
     if(key==VK_RETURN&&composing()){
@@ -357,10 +461,9 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
       if(SUCCEEDED(hr)){pi_clear(session);englishInput.clear();++revision;panel.hide();*eaten=true;}
       return hr;
     }
-    if(!composing()&&pairKey(key)){auto plan=private_input::symbolPlan(literalSymbol(key),inputPreferences.pairSymbols,inputPreferences.caretInside);auto hr=setOwnText(ctx,cookie,plan.text,true);if(FAILED(hr))return hr;if(plan.caretBack){TF_SELECTION selected{};ULONG count=0;if(SUCCEEDED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))&&count==1&&selected.range){ComPtr<ITfRange>caret;caret.Attach(selected.range);LONG moved=0;if(SUCCEEDED(caret->ShiftStart(cookie,-plan.caretBack,&moved,nullptr))&&moved== -plan.caretBack&&SUCCEEDED(caret->Collapse(cookie,TF_ANCHOR_START))){TF_SELECTION inside{caret.Get(),{TF_AE_NONE,FALSE}};ctx->SetSelection(cookie,1,&inside);}}}*eaten=true;return S_OK;}
-    if(!composing()&&printable(key)&&!(key>='A'&&key<='Z')){if(scope==FieldScope::normal&&focusedContext(ctx)){auto text=literalSymbol(key);auto hr=setOwnText(ctx,cookie,text,true);if(SUCCEEDED(hr))*eaten=true;return hr;}return S_OK;}
+    if(!composing()&&printable(key)&&!(key>='A'&&key<='Z')){if(scope==FieldScope::normal&&focusedContext(ctx))return insertPhysicalSymbol(ctx,cookie,key,eaten);return S_OK;}
     if(composing()&&endingLiteral(key)){
-      if(scope==FieldScope::normal&&!words.empty()&&navigation.selected<candidates.rows.size()){const auto&choice=candidates.rows[navigation.selected];auto raw=std::string(pi_raw_input(session));auto start=pi_unselected_input_start(session);auto tail=start<=raw.size()?raw.substr(start):raw;if(english||choice.custom||private_input::pinyin::covers(tail,choice.reading)){auto hr=applyCandidate(ctx,cookie,navigation.selected);if(FAILED(hr))return hr;if(!composing()){if(!finishPending&&printable(key)){auto literal=literalSymbol(key);hr=setOwnText(ctx,cookie,literal,true);if(SUCCEEDED(hr))*eaten=true;return hr;}*eaten=false;return S_OK;}}}
+      if(scope==FieldScope::normal&&!words.empty()&&navigation.selected<candidates.rows.size()){const auto&choice=candidates.rows[navigation.selected];auto raw=std::string(pi_raw_input(session));auto start=pi_unselected_input_start(session);auto tail=start<=raw.size()?raw.substr(start):raw;if(english||choice.custom||private_input::pinyin::covers(tail,choice.reading)){auto hr=applyCandidate(ctx,cookie,navigation.selected);if(FAILED(hr))return hr;if(!composing()){if(!finishPending&&printable(key))return insertPhysicalSymbol(ctx,cookie,key,eaten);*eaten=false;return S_OK;}}}
       // An incomplete spelling keeps every readable remaining key before the
       // host receives its original punctuation or shortcut.
       const std::string rawInput=pi_raw_input(session),prefix=pi_selected_prefix(session);const auto start=pi_unselected_input_start(session);
@@ -370,7 +473,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
       // literal through. Queuing raw text here could later overwrite that key
       // or insert the spelling twice after the host has moved its selection.
       if(FAILED(hr)){detachComposition();return hr;}
-      pi_clear(session);englishInput.clear();++revision;*eaten=false;return S_OK;
+      pi_clear(session);englishInput.clear();++revision;if(!finishPending&&printable(key))return insertPhysicalSymbol(ctx,cookie,key,eaten);*eaten=false;return S_OK;
     }
     if(degraded){detachComposition();degraded=false;}
     if(modeKey(key)){if(composition){HRESULT hr=setOwnText(ctx,cookie,markedText(),true);if(FAILED(hr))return hr;pi_clear(session);englishInput.clear();}english=!english;++revision;reloadCandidates();panel.hide();*eaten=true;return S_OK;}
@@ -474,7 +577,7 @@ public:
   STDMETHODIMP OnCompositionTerminated(TfEditCookie,ITfComposition *ended)override{
     // Treat our own ending exactly like a host that never calls this sink;
     // explicit finish paths own cleanup. External termination still resets it.
-    if(ownEndDepth)return S_OK;
+    if(ownEndDepth)return S_OK;clearAutomaticPair();
     if(composition.Get()==ended){unwatchLayout();contextBefore.clear();contextAfter.clear();composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();if(session)pi_clear(session);englishInput.clear();panel.hide();++revision;}return S_OK;}
   STDMETHODIMP OnLayoutChange(ITfContext*ctx,TfLayoutCode code,ITfContextView*view)override{
     if(layoutContext.Get()!=ctx)return S_OK;
@@ -497,13 +600,15 @@ public:
     refreshLayout(ctx);return S_OK;
   }
 
-  STDMETHODIMP OnEndEdit(ITfContext*,TfEditCookie,ITfEditRecord*)override{if(clipboardVisible)retireClipboard();return S_OK;}
+  STDMETHODIMP OnEndEdit(ITfContext*ctx,TfEditCookie,ITfEditRecord*)override{if(pairContext.Get()==ctx&&!pairOwnRequest)clearAutomaticPair();if(clipboardVisible)retireClipboard();return S_OK;}
   STDMETHODIMP OnSetFocus(BOOL foreground)override{if(!foreground){shiftTap.reset();retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
-  STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(!eaten)return E_POINTER;if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
+  STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(!eaten)return E_POINTER;if(key!=VK_BACK||modifiedBackspace(key))clearAutomaticPair();if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}if(key!=VK_SHIFT&&technicalIdlePassThrough(ctx)){*eaten=FALSE;return S_OK;}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
   STDMETHODIMP OnTestKeyUp(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();if(!eaten)return E_POINTER;const bool toggle=key==VK_SHIFT&&shiftTap.ready(reinterpret_cast<uintptr_t>(ctx))&&!secure;if(key==VK_SHIFT&&!toggle)shiftTap.reset();*eaten=toggle;return S_OK;}
   STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{
-    if(!eaten)return E_POINTER;*eaten=FALSE;if(key==VK_SHIFT){shiftTap.press(reinterpret_cast<uintptr_t>(ctx),secure||GetKeyState(VK_CONTROL)<0||GetKeyState(VK_MENU)<0||GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0);return S_OK;}shiftTap.otherKey();if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld){clipboardPolicy.hideForDelete(clipboardOffer.sequence);retireClipboard();*eaten=TRUE;return S_OK;}if(key!=VK_DELETE&&key!=VK_BACK){retireClipboard(GetClipboardSequenceNumber());}if(!accepts(ctx,key))return S_OK;ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
+    if(!eaten)return E_POINTER;*eaten=FALSE;if(modifiedBackspace(key)){clearAutomaticPair();return S_OK;}if(key==VK_SHIFT){shiftTap.press(reinterpret_cast<uintptr_t>(ctx),secure||GetKeyState(VK_CONTROL)<0||GetKeyState(VK_MENU)<0||GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0);return S_OK;}shiftTap.otherKey();if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld){clipboardPolicy.hideForDelete(clipboardOffer.sequence);retireClipboard();*eaten=TRUE;return S_OK;}if(key!=VK_DELETE&&key!=VK_BACK){retireClipboard(GetClipboardSequenceNumber());}if(!accepts(ctx,key))return S_OK;ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
+    pairOwnRequest=true;
     HRESULT hr=request(ctx,TF_ES_SYNC|TF_ES_READWRITE,[this,retained,key,&handled](TfEditCookie cookie){return handleArchivedKey(retained.Get(),cookie,key,&handled);},&result);
+    completeAutomaticPairRequest(SUCCEEDED(hr)&&SUCCEEDED(result)&&handled);
     if(FAILED(hr)||FAILED(result)){degraded=true;*eaten=handled?TRUE:FALSE;return S_OK;}*eaten=handled?TRUE:FALSE;return S_OK;
   }
   STDMETHODIMP OnKeyUp(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{

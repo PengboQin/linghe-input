@@ -207,6 +207,89 @@ inline bool preserves_native_consumption(const std::string &input, const std::st
   const auto next = syllables.lower_bound(pending);
   return next != syllables.end() && next->compare(0, pending.size(), pending) == 0;
 }
+/* Soft continuity of one observed full nine-key reading. It never rewrites raw
+   input or locks alternatives. A partial choice may consume whole syllables
+   only; an ambiguous boundary drops the hint instead of guessing. */
+struct NinePath {
+  std::string reading, input, text;
+  void clear() { reading.clear(); input.clear(); text.clear(); }
+  static std::vector<std::string> characters(const std::string &value) {
+    std::vector<std::string> out;
+    for(size_t i=0;i<value.size();){const auto c=static_cast<unsigned char>(value[i]);const size_t n=c<0x80?1:c>=0xc2&&c<=0xdf?2:c>=0xe0&&c<=0xef?3:c>=0xf0&&c<=0xf4?4:0;
+      if(!n||i+n>value.size())return{};for(size_t j=1;j<n;++j)if((static_cast<unsigned char>(value[i+j])&0xc0)!=0x80)return{};
+      out.push_back(value.substr(i,n));i+=n;
+    }return out;
+  }
+  static size_t distance(const std::string &a,const std::string &b) {
+    if(a.size()>128||b.size()>130)return 131;
+    std::vector<size_t> row(b.size()+1);for(size_t j=0;j<row.size();++j)row[j]=j;
+    for(size_t i=1;i<=a.size();++i){size_t previous=row[0];row[0]=i;for(size_t j=1;j<=b.size();++j){const auto old=row[j];row[j]=std::min({row[j]+1,row[j-1]+1,previous+(a[i-1]!=b[j-1])});previous=old;}}
+    return row.back();
+  }
+  std::string code() const { return encode_nine(reading); }
+  void adapt(const std::string &current) {
+    const auto known = input.empty() ? code():input;
+    if (known.empty() || current.empty()) { clear(); return; }
+    if (current.compare(0, known.size(), known) == 0) return;
+    if (known.compare(0, current.size(), current) != 0) { clear(); return; }
+    // Deleting inside an edited mapping cannot prove the original syllable
+    // boundary cheaply. Drop this optional hint; leave every real key intact.
+    if (known != code()) { clear(); return; }
+    std::string kept; size_t length = 0;
+    for (const auto &part : reading_parts(reading)) {
+      length += encode_nine(part).size();
+      if (length > current.size()) break;
+      kept += (kept.empty() ? "" : " ") + part;
+    }
+    if(!text.empty()){
+      const auto chars=characters(text);const auto count=reading_parts(kept).size();
+      if(chars.size()!=reading_parts(reading).size())text.clear();
+      else{std::string shortened;for(size_t i=0;i<count;++i)shortened+=chars[i];text=std::move(shortened);}
+    }
+    reading = kept;input=encode_nine(kept);
+  }
+  void consume(size_t keys) {
+    const auto raw=input.empty()?code():input,canonical=code();
+    if(keys>raw.size()){clear();return;}
+    const auto rest_input=raw.substr(keys);
+    if(raw!=canonical){
+      // Accept a mapping boundary only when *all* optimal edit paths agree on
+      // its canonical position. A repeated digit can otherwise eat the tail.
+      const size_t n=raw.size(),m=canonical.size();
+      if(n>128||m>130){clear();return;}
+      std::vector<std::vector<size_t>> f(n+1,std::vector<size_t>(m+1)),r=f;
+      for(size_t i=0;i<=n;++i)f[i][0]=i;
+      for(size_t j=0;j<=m;++j)f[0][j]=j;
+      for(size_t i=1;i<=n;++i)for(size_t j=1;j<=m;++j)f[i][j]=std::min({f[i-1][j]+1,f[i][j-1]+1,f[i-1][j-1]+size_t(raw[i-1]!=canonical[j-1])});
+      for(size_t i=0;i<=n;++i)r[i][m]=n-i;
+      for(size_t j=0;j<=m;++j)r[n][j]=m-j;
+      for(size_t i=n;i-->0;)for(size_t j=m;j-->0;)r[i][j]=std::min({r[i+1][j]+1,r[i][j+1]+1,r[i+1][j+1]+size_t(raw[i]!=canonical[j])});
+      size_t mapped=0,count=0;
+      for(size_t j=0;j<=m;++j)if(f[keys][j]+r[keys][j]==f[n][m]){mapped=j;++count;}
+      if(count!=1){clear();return;}keys=mapped;
+    }
+    std::string rest; size_t length = 0; bool boundary = keys == 0;
+    for (const auto &part : reading_parts(reading)) {
+      if (length >= keys) rest += (rest.empty() ? "" : " ") + part;
+      length += encode_nine(part).size();
+      if (length == keys) boundary = true;
+    }
+    if(!text.empty()){
+      const auto chars=characters(text);const auto count=reading_parts(reading).size(),remaining=reading_parts(rest).size();
+      if(!boundary||chars.size()!=count)text.clear();
+      else{std::string suffix;for(size_t i=count-remaining;i<count;++i)suffix+=chars[i];text=std::move(suffix);}
+    }
+    reading = boundary ? rest : "";input=reading.empty()?"":rest_input;
+  }
+  // Exact remaining path, compatible shorter word, unrelated/unknown.
+  int priority(const std::string &candidate) const {
+    const auto expected = reading_parts(reading), actual = reading_parts(candidate);
+    if (expected.empty() || actual.empty()) return 2;
+    const auto n = std::min(expected.size(), actual.size());
+    for (size_t i = 0; i < n; ++i) if (expected[i] != actual[i]) return 2;
+    return actual.size() == expected.size() ? 0 : actual.size() < expected.size() ? 1 : 2;
+  }
+};
 }  // namespace pinyin
 }  // namespace private_input
 #endif

@@ -3,6 +3,7 @@ from contextlib import closing
 import hashlib
 from pathlib import Path
 import sqlite3
+from .capacity import MAX_DATABASE_BYTES
 import time
 from urllib.parse import quote
 import uuid
@@ -21,7 +22,7 @@ def latest_authorized_activity(database, group, device, current_member_public, *
         if path.is_symlink() or not path.is_file():
             return None
         resolved = path.resolve()
-        if resolved.stat().st_size > 10737418240:
+        if resolved.stat().st_size > MAX_DATABASE_BYTES:
             return None
         group_id, device_id = str(uuid.UUID(group)).upper(), str(uuid.UUID(device)).upper()
         if not isinstance(current_member_public, bytes) or len(current_member_public) != 32:

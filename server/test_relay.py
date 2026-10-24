@@ -18,6 +18,13 @@ from expire_relay import expire_existing
 
 ROOT = Path(__file__).resolve().parents[1]
 
+def seed_existing_membership(relay,state):
+    """Load a verified pre-policy transport snapshot, not an admission test."""
+    import device_administration
+    group,root,digest=membership_bytes(state)
+    relay.db.execute('UPDATE groups SET root=?,revision=?,digest=?,state=? WHERE id=?',(root,str(state['revision']),digest,encoded(state),group))
+    device_administration.remember_members(relay,state)
+
 
 class RelayTests(unittest.TestCase):
     def setUp(self):
@@ -29,7 +36,10 @@ class RelayTests(unittest.TestCase):
         self.message = json.loads((ROOT / "fixtures/protocol/secure-message-v1.json").read_text())["envelope"]
         self.group = self.fixture["paired"]["group"]
         self.recipient = self.fixture["paired"]["members"][1]["device"]
-        self.app.register(self.fixture["initial"]); self.app.update(self.group, self.fixture["paired"])
+        self.app.register(self.fixture["initial"]);seed_existing_membership(self.app,self.fixture['paired'])
+        # Protocol vectors model two classified desktop nodes. Device-kind and
+        # mobile-admission cases explicitly start unclassified in their suite.
+        self.app.db.execute("UPDATE device_profiles SET kind='macos',last_seen=? WHERE group_id=?",(self.now,self.group))
 
     def tearDown(self):
         self.app.db.close(); self.temp.cleanup()
@@ -180,7 +190,10 @@ class RelayTests(unittest.TestCase):
         self.assertEqual(self.wsgi("POST", "/v1/groups/" + self.group + "/rpc", request)[0], 409)
 
     def testOwnerStateCannotRollbackOrBeChangedByRelay(self):
-        self.assertEqual(self.wsgi("PUT", "/v1/groups/" + self.group + "/membership", self.fixture["initial"])[0], 409)
+        # Classified groups require the atomic v2 path before considering any
+        # legacy revision change, including a rollback. Rejection is now403.
+        self.assertEqual(self.wsgi("PUT", "/v1/groups/" + self.group + "/membership", self.fixture["initial"])[0], 403)
+        self.assertEqual(self.app.state(self.group),self.fixture['paired'])
         forged = copy.deepcopy(self.fixture["paired"]); forged["members"][1]["permissions"] = 1
         self.assertEqual(self.wsgi("PUT", "/v1/groups/" + self.group + "/membership", forged)[0], 401)
 

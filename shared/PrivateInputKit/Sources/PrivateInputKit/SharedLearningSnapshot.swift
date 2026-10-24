@@ -28,13 +28,13 @@ public struct SharedLearningSnapshot {
             data.append(chunk)
         }
         guard data.count <= maximum else { throw InputDataError.oversized }
-        var validation = LearningModel(); try validation.merge(data)
+        var validation = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try validation.merge(data)
         return data
     }
     public func publish(_ data: Data, by publisher: SnapshotPublisher) throws {
         try epoch.requireCurrent()
         guard publisher.canWrite else { throw SnapshotStoreError.fullAccessRequired }
-        var validation = LearningModel(); try validation.merge(data)
+        var validation = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try validation.merge(data)
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         let lock = file.deletingLastPathComponent().appendingPathComponent("learning-publication.lock")
         let descriptor = Darwin.open(lock.path, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)

@@ -8,7 +8,14 @@ using namespace private_input::activity;
 void check(bool ok){if(!ok)throw std::runtime_error("core policy check failed");}
 template<class F>void reject(F f){bool threw=false;try{f();}catch(...){threw=true;}check(threw);}
 int main(int argc,char**argv){check(sodium_init()>=0);check(argc==2);auto path=std::filesystem::path(argv[1]);std::filesystem::remove(path);EventContext c;c.group=newId();c.device=newId();c.installation=newId();c.consent=1;c.session=uuidText(newId());c.editor=uuidText(newId());
- check(clipboardMayObserve(true,true,false,false,true,false));check(!clipboardMayObserve(false,true,false,false,true,false));check(!clipboardMayObserve(true,false,false,false,true,false));check(!clipboardMayObserve(true,true,true,false,true,false));check(!clipboardMayObserve(true,true,false,true,false,false));check(!clipboardMayObserve(true,true,false,true,true,true));
+ // Current user policy supersedes provider-hint exclusions. Consent, the
+ // real input desktop and a known password signal remain independent gates.
+ for(bool present:{false,true})for(bool readable:{false,true})for(bool excluded:{false,true}){
+  check(clipboardMayObserve(true,true,false,present,readable,excluded));
+  check(!clipboardMayObserve(false,true,false,present,readable,excluded));
+  check(!clipboardMayObserve(true,false,false,present,readable,excluded));
+  check(!clipboardMayObserve(true,true,true,present,readable,excluded));
+ }
  for(const char*bad:{"{\"a\":1,\"\\u0061\":2}","{\"n\":-1}","{\"n\":01}","{\"n\":1.0}","{\"n\":18446744073709551616}","\"\\ud800\"","true false","[1,]"})reject([&]{Json::parse(bad);});check(Json::parse("{\"x\":\"\\ud83d\\ude00\"}").at("x").str()=="😀");
  auto protect=[](const std::string&s){return base64(bytes(s));};auto unprotect=[](const std::string&s){auto b=unbase64(s);return std::string(b.begin(),b.end());};
  Queue q(path,protect,unprotect);check(!q.enqueue(c,"ime.commit.v1","input_commit","not enabled",unixTime()));q.configure(uuidText(c.group),1,true);check(q.enqueue(c,"ime.commit.v1","input_commit","我们",unixTime()));auto b=q.batch();check(b.size()==1&&b[0].event.at("content").at("text").str()=="我们");check(b[0].event.at("commit_confirmation").str()=="editor_acknowledged"&&b[0].event.at("delivery_state").str()=="draft_unknown"&&b[0].event.at("source_app").kind==Json::Kind::null&&b[0].event.at("links").items.empty()&&b[0].event.at("time_quality").str()=="device_clock_unverified"&&b[0].event.at("timezone_id").str()=="UTC"&&b[0].event.at("utc_offset_minutes").num()==0&&b[0].event.at("extensions").at("org.linghe.time.v1").at("local_timezone_unknown").boolean());std::string id=uuidText(newId());Json ack=Json::object({{"version",1},{"operation",4},{"result",Json::object({{"batch_id",id},{"accepted_event_ids",Json::array({b[0].id})},{"duplicate_event_ids",Json::array()}})}});auto wrong=ack;wrong["result"]["accepted_event_ids"]=Json::array({uuidText(newId())});reject([&]{q.acknowledge(b,wrong,id);});check(q.count()==1);auto tampered=b;tampered[0].event["content"]["text"]="modified";reject([&]{q.acknowledge(tampered,ack,id);});check(q.count()==1);q.acknowledge(b,ack,id);check(q.count()==0);

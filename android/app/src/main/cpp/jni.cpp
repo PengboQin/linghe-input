@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <mutex>
 #include "private_input.h"
+#include "learning_capacity_profiles.h"
 namespace {
 struct Config { bool nine=false, private_mode=false; PI_Session probe=0; bool probe_nine=false; };
 std::unordered_map<PI_Session,Config> configs;
@@ -35,14 +36,28 @@ jobjectArray strings(JNIEnv* e,const std::vector<std::string>& values) {
 }
 extern "C" {
 JNIEXPORT jlong JNICALL Java_live_linghe_privateinput_NativeCore_create(JNIEnv*e,jclass,jstring shared,jstring user){
- std::lock_guard<std::recursive_mutex> lock(wrappers);auto a=utf8(e,shared),b=utf8(e,user);if(!pi_initialize(a.c_str(),b.c_str(),0))return 0;auto session=pi_create_session();if(session)configs.emplace(session,Config{});return session;
+ std::lock_guard<std::recursive_mutex> lock(wrappers);auto a=utf8(e,shared),b=utf8(e,user);const auto&profile=private_input::learning_capacity::expanded_10000;if(!pi_initialize(a.c_str(),b.c_str(),0)||pi_set_learning_capacity_profile(profile.id.data(),profile.version)!=1)return 0;auto session=pi_create_session();if(session)configs.emplace(session,Config{});return session;
 }
 JNIEXPORT void JNICALL Java_live_linghe_privateinput_NativeCore_destroy(JNIEnv*,jclass,jlong session){std::lock_guard<std::recursive_mutex> lock(wrappers);if(session)destroy(session);if(!pi_active_session_count())pi_finalize();}
 JNIEXPORT void JNICALL Java_live_linghe_privateinput_NativeCore_key(JNIEnv*,jclass,jlong s,jint k){pi_process_key(s,k,0);}
 JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_moveCursor(JNIEnv*,jclass,jlong s,jint direction){return pi_move_pinyin_cursor(s,direction)!=0;}
 JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_atEnd(JNIEnv*,jclass,jlong s){return pi_cursor_at_end(s)!=0;}
 JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_candidateTextAllowed(JNIEnv*e,jclass,jstring input){if(!input)return false;auto text=utf8(e,input);return pi_candidate_text_allowed(text.c_str())!=0;}
+JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_candidateReadingAllowed(JNIEnv*e,jclass,jstring input,jstring reading){if(!input)return false;auto text=utf8(e,input),code=utf8(e,reading);return pi_candidate_reading_allowed(text.c_str(),code.c_str())!=0;}
 JNIEXPORT jobjectArray JNICALL Java_live_linghe_privateinput_NativeCore_draft(JNIEnv*e,jclass,jlong s){auto result=e->NewObjectArray(2,e->FindClass("java/lang/String"),nullptr);std::string values[]={pi_raw_input(s),pi_selected_prefix(s)};for(int i=0;i<2;i++){auto value=str(e,values[i].c_str());e->SetObjectArrayElement(result,i,value);e->DeleteLocalRef(value);}return result;}
+JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_rememberNinePath(JNIEnv*e,jclass,jlong s,jstring raw,jstring prefix,jstring reading){auto r=utf8(e,raw),p=utf8(e,prefix),v=utf8(e,reading);return pi_nine_remember_candidate_path(s,r.c_str(),p.c_str(),v.c_str())!=0;}
+JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_rememberMappedNinePath(JNIEnv*e,jclass,jlong s,jstring raw,jstring prefix,jstring reading,jstring code){auto r=utf8(e,raw),p=utf8(e,prefix),v=utf8(e,reading),c=utf8(e,code);return pi_nine_remember_mapped_candidate_path(s,r.c_str(),p.c_str(),v.c_str(),c.c_str())!=0;}
+JNIEXPORT jstring JNICALL Java_live_linghe_privateinput_NativeCore_preferredNineReading(JNIEnv*e,jclass,jlong s){return str(e,pi_nine_preferred_reading(s));}
+JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_rememberVisibleNinePath(JNIEnv*e,jclass,jlong s,jstring raw,jstring prefix,jstring text,jstring reading,jstring code){auto r=utf8(e,raw),p=utf8(e,prefix),t=utf8(e,text),v=utf8(e,reading),c=code?utf8(e,code):std::string();return pi_nine_remember_visible_candidate_path(s,r.c_str(),p.c_str(),t.c_str(),v.c_str(),code?c.c_str():nullptr)!=0;}
+JNIEXPORT jstring JNICALL Java_live_linghe_privateinput_NativeCore_preferredNineText(JNIEnv*e,jclass,jlong s){return str(e,pi_nine_preferred_text(s));}
+JNIEXPORT jstring JNICALL Java_live_linghe_privateinput_NativeCore_commitPreferredNine(JNIEnv*e,jclass,jlong s,jstring raw,jstring prefix,jstring text,jstring reading){auto r=utf8(e,raw),p=utf8(e,prefix),t=utf8(e,text),v=utf8(e,reading);return str(e,pi_commit_nine_preferred_candidate(s,r.c_str(),p.c_str(),t.c_str(),v.c_str()));}
+JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_selectPreferredNinePrefix(JNIEnv*e,jclass,jlong s,jstring raw,jstring prefix,jstring text,jstring reading){auto r=utf8(e,raw),p=utf8(e,prefix),t=utf8(e,text),v=utf8(e,reading);return pi_select_nine_preferred_prefix(s,r.c_str(),p.c_str(),t.c_str(),v.c_str())!=0;}
+JNIEXPORT jintArray JNICALL Java_live_linghe_privateinput_NativeCore_ninePathPriorities(JNIEnv*e,jclass,jlong s,jobjectArray readings){
+ if(!readings)return nullptr;const auto count=e->GetArrayLength(readings);if(count>512)return nullptr;
+ std::vector<jint> priorities(count,2);
+ for(jsize i=0;i<count;++i){auto item=static_cast<jstring>(e->GetObjectArrayElement(readings,i));if(item){auto value=utf8(e,item);priorities[i]=pi_nine_candidate_path_priority(s,value.c_str());e->DeleteLocalRef(item);}}
+ auto result=e->NewIntArray(count);if(result&&count)e->SetIntArrayRegion(result,0,count,priorities.data());return result;
+}
 JNIEXPORT jstring JNICALL Java_live_linghe_privateinput_NativeCore_readableDraft(JNIEnv*e,jclass,jlong s,jstring reading){auto value=utf8(e,reading);return str(e,pi_nine_readable_preedit(s,value.c_str()));}
 JNIEXPORT jboolean JNICALL Java_live_linghe_privateinput_NativeCore_hasPending(JNIEnv*,jclass,jlong s){const char* raw=pi_raw_input(s);return raw&&raw[0];}
 JNIEXPORT void JNICALL Java_live_linghe_privateinput_NativeCore_clear(JNIEnv*,jclass,jlong s){pi_clear(s);}
@@ -53,7 +68,7 @@ JNIEXPORT void JNICALL Java_live_linghe_privateinput_NativeCore_filter(JNIEnv*,j
 JNIEXPORT void JNICALL Java_live_linghe_privateinput_NativeCore_delete(JNIEnv*,jclass,jlong s){if(pi_nine_can_undo_syllable(s))pi_nine_undo_syllable(s);else pi_process_key(s,0xff08,0);}
 JNIEXPORT jobjectArray JNICALL Java_live_linghe_privateinput_NativeCore_syllables(JNIEnv*e,jclass,jlong s){size_t n=pi_nine_syllable_count(s);auto result=e->NewObjectArray(n,e->FindClass("java/lang/String"),nullptr);for(size_t i=0;i<n;i++){auto value=str(e,pi_nine_syllable_text(s,i));e->SetObjectArrayElement(result,i,value);e->DeleteLocalRef(value);}return result;}
 JNIEXPORT jobjectArray JNICALL Java_live_linghe_privateinput_NativeCore_more(JNIEnv*e,jclass,jlong s,jint offset){size_t n=offset<0?0:pi_load_candidate_batch(s,static_cast<size_t>(offset),96);auto strings=e->FindClass("java/lang/String"),rows=e->FindClass("[Ljava/lang/String;");auto out=e->NewObjectArray(n,rows,nullptr);for(size_t i=0;i<n;i++){auto row=e->NewObjectArray(3,strings,nullptr);std::string id=std::to_string(pi_batch_candidate_index(s,i)),text=pi_batch_candidate_text(s,i),reading=pi_batch_candidate_comment(s,i);std::string values[]={id,text,reading};for(int j=0;j<3;j++){auto value=str(e,values[j].c_str());e->SetObjectArrayElement(row,j,value);e->DeleteLocalRef(value);}e->SetObjectArrayElement(out,i,row);e->DeleteLocalRef(row);}return out;}
-JNIEXPORT jobjectArray JNICALL Java_live_linghe_privateinput_NativeCore_snapshot(JNIEnv*e,jclass,jlong s){size_t n=pi_load_candidate_batch(s,0,96);std::string pre=pi_preedit(s),raw=pi_raw_input(s),commit=pi_take_commit(s);std::string reading=n?pi_batch_candidate_comment(s,0):"";std::string display=pi_nine_readable_preedit(s,reading.c_str());
+JNIEXPORT jobjectArray JNICALL Java_live_linghe_privateinput_NativeCore_snapshot(JNIEnv*e,jclass,jlong s){size_t n=pi_load_candidate_batch(s,0,96);std::string pre=pi_preedit(s),raw=pi_raw_input(s),commit=pi_take_commit(s);std::string reading=n?pi_batch_candidate_comment(s,0):"";if(*pi_nine_preferred_text(s))reading=pi_nine_preferred_reading(s);std::string display=pi_nine_readable_preedit(s,reading.c_str());
  auto result=e->NewObjectArray(n+1,e->FindClass("[Ljava/lang/String;"),nullptr);auto stringClass=e->FindClass("java/lang/String");
  auto row=[&](size_t index,std::vector<std::string> values){auto arr=e->NewObjectArray(values.size(),stringClass,nullptr);for(size_t i=0;i<values.size();i++){auto v=str(e,values[i].c_str());e->SetObjectArrayElement(arr,i,v);e->DeleteLocalRef(v);}e->SetObjectArrayElement(result,index,arr);e->DeleteLocalRef(arr);};
  auto prefix=pre.substr(0,std::min(pre.size(),pi_preedit_cursor_utf8(s)));auto caretText=str(e,prefix.c_str());auto caret=e->GetStringLength(caretText);e->DeleteLocalRef(caretText);

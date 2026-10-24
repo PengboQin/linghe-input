@@ -37,7 +37,7 @@ public extension CloudLearningClient {
         struct Body: Encodable { let generation, consent_version: UInt64; let installation_id, producer_id: UUID }
         let snapshot: CloudLearningComponentSnapshot = try await rpc(7, Body(generation: generation, consent_version: consentVersion,
             installation_id: installation, producer_id: producer), group: group, identity: identity, now: now)
-        guard snapshot.producerID == producer, snapshot.records.count <= 5000,
+        guard snapshot.producerID == producer, snapshot.records.count <= LearningCapacityProfiles.expanded10000.producerTermRows,
               snapshot.exists ? snapshot.producerRevision > 0 : (snapshot.producerRevision == 0 && snapshot.records.isEmpty),
               try CloudLearningComponents.digest(producer: producer, records: snapshot.records) == snapshot.componentDigest else { throw CloudLearningError.badHash }
         return snapshot
@@ -99,7 +99,7 @@ public struct CloudLearningComponentMigration: Codable {
     public init(model: CloudLearningReplica) { self.model = model }
     public mutating func bootstrap(_ snapshot: CloudLearningComponentSnapshot) throws {
         guard producers[snapshot.producerID.uuidString] == nil,
-              snapshot.records.count <= 5000, Set(snapshot.records.map(\.id)).count == snapshot.records.count,
+              snapshot.records.count <= LearningCapacityProfiles.expanded10000.producerTermRows, Set(snapshot.records.map(\.id)).count == snapshot.records.count,
               try CloudLearningComponents.digest(producer: snapshot.producerID, records: snapshot.records) == snapshot.componentDigest else { throw CloudLearningError.invalid }
         var state = Producer()
         for row in snapshot.records {
@@ -178,9 +178,9 @@ public struct CloudLearningComponentMigration: Codable {
         guard data.count <= 12 * 1024 * 1024 else { throw CloudLearningError.oversized }
         let state = try JSONDecoder().decode(Self.self, from: data)
         _ = try CloudLearningReplica.restore(state.model.persistedData())
-        guard state.producers.count <= 8 else { throw CloudLearningError.invalid }
+        guard state.producers.count <= LearningCapacityProfiles.expanded10000.producersPerDevice else { throw CloudLearningError.invalid }
         for (key, value) in state.producers {
-            guard UUID(uuidString: key)?.uuidString == key, value.accepted.count <= 5000, value.represented.count <= 5000 else { throw CloudLearningError.invalid }
+            guard UUID(uuidString: key)?.uuidString == key, value.accepted.count <= LearningCapacityProfiles.expanded10000.producerAcceptedKeys, value.represented.count <= LearningCapacityProfiles.expanded10000.producerRepresentedKeys else { throw CloudLearningError.invalid }
             for row in value.accepted.values { try row.validate(); guard row.counts.count == 1, row.counts[key] != nil else { throw CloudLearningError.invalid } }
             if let receipt = value.receipt { guard receipt.producerID.uuidString == key, try CloudLearningComponents.digest(producer: receipt.producerID, records: Array(value.accepted.values)) == receipt.componentDigest else { throw CloudLearningError.badHash } }
         }

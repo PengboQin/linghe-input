@@ -105,6 +105,7 @@ final class MacCandidatePanel:NSObject,NSTableViewDataSource,NSTableViewDelegate
     private var items:[InputCandidate]=[],selected=0,offset=0,reloading=false,opened=false
     private var layout=DesktopCandidateLayout(),clipboardMode=false
     private var desiredSize=NSSize.zero,referenceHeight:CGFloat=0
+    private var expandedNaturalWidths:[CGFloat]?
     private var columns:Int {clipboardMode ? 1:layout.columns(expanded:opened)}
     private var dataOffset:Int {opened ? 0:offset}
     var choose:((InputCandidate)->Void)?,highlight:((InputCandidate)->Void)?,toggle:(()->Void)?,loadMore:(()->Void)?
@@ -112,6 +113,7 @@ final class MacCandidatePanel:NSObject,NSTableViewDataSource,NSTableViewDelegate
     // Stable two-line cells expose ordinary sentence candidates directly. All
     // rows keep this height, independent of the highlighted word or async work.
     private let expandedRowHeight:CGFloat=46
+    private let expandedLabelHeight:CGFloat=40
     private var rowHeight:CGFloat {opened ? expandedRowHeight:28}
     private var candidateFont:NSFont {.systemFont(ofSize:15)}
     override init() {
@@ -195,11 +197,31 @@ final class MacCandidatePanel:NSObject,NSTableViewDataSource,NSTableViewDelegate
         try data.write(to:url)
     }
     #endif
-    func hide() {table.cancelCandidatePress();window.orderOut(nil)}
+    func hide() {table.cancelCandidatePress();expandedNaturalWidths=nil;window.orderOut(nil)}
+    private func expandedWidth(for text:String)->CGFloat {
+        // Measure both selection weights so moving the highlight never needs
+        // more room. Include the shortcut slot, label insets and table padding.
+        let fonts=[candidateFont,NSFont.systemFont(ofSize:15,weight:.medium)]
+        func fits(_ width:Int)->Bool {
+            fonts.allSatisfy { font in
+                let bounds=(text as NSString).boundingRect(with:NSSize(width:CGFloat(width),height:1000),options:[.usesLineFragmentOrigin,.usesFontLeading],attributes:[.font:font])
+                return ceil(bounds.height)<=expandedLabelHeight
+            }
+        }
+        if fits(62) {return 88}
+        guard fits(298) else{return 324}
+        var low=63,high=298
+        while low<high {
+            let middle=(low+high)/2
+            if fits(middle) {high=middle} else{low=middle+1}
+        }
+        return CGFloat(low)+26
+    }
     func show(items:[InputCandidate],selected:Int,offset:Int,expanded:Bool,caret:NSRect,layout:DesktopCandidateLayout = .init(),clipboard:Bool=false) {
         guard !items.isEmpty else{hide();return}
         reloading=true;defer{reloading=false}
         let wasOpen=opened,oldColumns=columns
+        let measureExpanded = !wasOpen || self.layout != layout || clipboardMode != clipboard || expandedNaturalWidths == nil
         let moveToSelection = !window.isVisible || self.selected != selected || opened != expanded || self.layout != layout
         let origin=scroll.contentView.bounds.origin
         self.items=items;self.selected=selected;self.offset=offset
@@ -207,9 +229,17 @@ final class MacCandidatePanel:NSObject,NSTableViewDataSource,NSTableViewDelegate
         if oldColumns != columns {rebuildColumns()}
         // Collapsed candidates use the same text measurement in every slot:
         // a short first word stays compact, while a phrase gets more room.
-        // The expanded grid remains uniform and independent of its contents.
+        // Measure only the first screen when opening, then freeze the grid
+        // through highlight changes, async replacements and lazy tail loading.
         let visible=Array(items.dropFirst(dataOffset).prefix(columns))
-        let naturalWidths:[CGFloat]=opened ? Array(repeating:84,count:columns):
+        if opened,measureExpanded {
+            var widths=Array(repeating:CGFloat(84),count:columns)
+            for (index,item) in items.prefix(columns*layout.expandedRows).enumerated() {
+                widths[index%columns]=max(widths[index%columns],expandedWidth(for:item.text))
+            }
+            expandedNaturalWidths=widths
+        } else if !opened {expandedNaturalWidths=nil}
+        let naturalWidths:[CGFloat]=opened ? (expandedNaturalWidths ?? Array(repeating:84,count:columns)):
             (0..<columns).map { index in
                 guard index<visible.count else{return 42}
                 let measured=ceil((visible[index].text as NSString).size(withAttributes:[.font:NSFont.systemFont(ofSize:15,weight:.medium)]).width+28)
@@ -312,7 +342,7 @@ final class MacCandidatePanel:NSObject,NSTableViewDataSource,NSTableViewDelegate
         label.lineBreakMode=opened ? .byWordWrapping:.byTruncatingTail
         if opened {label.preferredMaxLayoutWidth=max(1,c.width-22)}
         for v in [number,label] {v.translatesAutoresizingMaskIntoConstraints=false;cell.addSubview(v)}
-        NSLayoutConstraint.activate([number.leadingAnchor.constraint(equalTo:cell.leadingAnchor,constant:4),number.widthAnchor.constraint(equalToConstant:10),number.centerYAnchor.constraint(equalTo:cell.centerYAnchor),label.leadingAnchor.constraint(equalTo:number.trailingAnchor,constant:4),label.trailingAnchor.constraint(equalTo:cell.trailingAnchor,constant:-4),label.centerYAnchor.constraint(equalTo:cell.centerYAnchor),label.heightAnchor.constraint(lessThanOrEqualToConstant:opened ? 40:22)])
+        NSLayoutConstraint.activate([number.leadingAnchor.constraint(equalTo:cell.leadingAnchor,constant:4),number.widthAnchor.constraint(equalToConstant:10),number.centerYAnchor.constraint(equalTo:cell.centerYAnchor),label.leadingAnchor.constraint(equalTo:number.trailingAnchor,constant:4),label.trailingAnchor.constraint(equalTo:cell.trailingAnchor,constant:-4),label.centerYAnchor.constraint(equalTo:cell.centerYAnchor),label.heightAnchor.constraint(lessThanOrEqualToConstant:opened ? expandedLabelHeight:22)])
         cell.toolTip=items[index].text;cell.setAccessibilityHelp(items[index].index == -2 ? "点击粘贴；删除键隐藏":"右键管理候选词频");cell.setAccessibilityLabel("第\(row+1)行，第\(column+1)列，\(items[index].text)")
         return cell
     }

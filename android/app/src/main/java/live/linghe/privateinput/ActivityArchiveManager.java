@@ -99,6 +99,9 @@ final class ActivityArchiveManager {
   private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference){
     emit(provider,type,text,sourceKind,source,session,epoch,confirmation,origin,reference,null,null,null);
   }
+  private void emitClipboard(String text,String origin,String reference,boolean providerDeclaredSensitive){
+    emit("clipboard.observed.v1","clipboard_observed",text,"clipboard",null,null,null,"observed_match",origin,reference,null,null,null,null,null,null,null,0,ActivityArchiveRules.id(),providerDeclaredSensitive?"provider_declared_sensitive":"personal");
+  }
   private JSONObject sourceContext(String source,String fieldType,String returnKey,String layout)throws Exception{
     String version=null,build=null,name=null;
     try{android.content.pm.PackageInfo own=context.getPackageManager().getPackageInfo(context.getPackageName(),0);version=own.versionName;build=String.valueOf(Build.VERSION.SDK_INT>=28?own.getLongVersionCode():own.versionCode);}catch(Exception unavailable){}
@@ -114,6 +117,9 @@ final class ActivityArchiveManager {
   }
   private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout,JSONObject diagnostic,InputDecisionEvidence decision,InputDecisionEvidence link,InputProvider guard,long expected){emit(provider,type,text,sourceKind,source,session,epoch,confirmation,origin,reference,fieldType,returnKey,layout,diagnostic,decision,link,guard,expected,ActivityArchiveRules.id());}
   private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout,JSONObject diagnostic,InputDecisionEvidence decision,InputDecisionEvidence link,InputProvider guard,long expected,String event){
+    emit(provider,type,text,sourceKind,source,session,epoch,confirmation,origin,reference,fieldType,returnKey,layout,diagnostic,decision,link,guard,expected,event,"personal");
+  }
+  private void emit(String provider,String type,String text,String sourceKind,String source,String session,String epoch,String confirmation,String origin,String reference,String fieldType,String returnKey,String layout,JSONObject diagnostic,InputDecisionEvidence decision,InputDecisionEvidence link,InputProvider guard,long expected,String event,String sensitivity){
     if(!enabled()||!privacyCurrent())return;
     if(!type.equals("coverage_gap")&&!((diagnostic!=null||decision!=null)&&text!=null&&text.isEmpty())&&!ActivityArchiveRules.acceptedText(text)){gap("正文过大或Unicode无效");return;}
     if(captureInFlight.incrementAndGet()>64){captureInFlight.decrementAndGet();gap("归档写入暂时繁忙，存在覆盖缺口");return;}
@@ -130,7 +136,7 @@ final class ActivityArchiveManager {
           .put("source_kind",sourceKind).put("source_app",source==null?JSONObject.NULL:source).put("input_session",session==null?JSONObject.NULL:session)
           .put("editor_epoch",epoch==null?JSONObject.NULL:epoch).put("span_id",event).put("edit_op",new JSONObject().put("kind","unknown").put("anchor",JSONObject.NULL))
           .put("document_id",JSONObject.NULL).put("delivery_state","draft_unknown").put("commit_confirmation",confirmation).put("consent_version",prefs.getLong("consentVersion",0))
-          .put("sensitivity","personal").put("time_quality","device_clock_unverified").put("links",new JSONArray());
+          .put("sensitivity",sensitivity).put("time_quality","device_clock_unverified").put("links",new JSONArray());
         JSONObject extensions=new JSONObject().put(ActivitySourceContext.KEY,sourceContext(source,fieldType,returnKey,layout));
         extensions.put("org.linghe.device.v1",new JSONObject().put("platform","android").put("device_type","mobile_device").put("brand",Build.BRAND).put("manufacturer",Build.MANUFACTURER).put("model",Build.MODEL).put("os_version",Build.VERSION.RELEASE));
         if(diagnostic!=null)extensions.put("org.linghe.input.v1",diagnostic);
@@ -174,20 +180,19 @@ final class ActivityArchiveManager {
     if(foreground==0&&!imeSafe){status="剪贴板只在应用前台或安全键盘会话中观察";return;}
     try{
       android.content.ClipDescription description=clipboard.getPrimaryClipDescription();PersistableBundle declared=description==null?null:description.getExtras();
-      if(declared!=null&&declared.getBoolean("android.content.extra.IS_SENSITIVE",false)){status="敏感剪贴板已跳过";return;}
       ClipData data=clipboard.getPrimaryClip();if(data==null||data.getItemCount()==0)return;
-      PersistableBundle extras=data.getDescription().getExtras();if(extras!=null&&extras.getBoolean("android.content.extra.IS_SENSITIVE",false)){status="敏感剪贴板已跳过";return;}
+      PersistableBundle extras=data.getDescription().getExtras();boolean providerDeclaredSensitive=(declared!=null&&declared.getBoolean("android.content.extra.IS_SENSITIVE",false))||(extras!=null&&extras.getBoolean("android.content.extra.IS_SENSITIVE",false));
       long timestamp=data.getDescription().getTimestamp();String key=Long.toString(timestamp)+":"+data.getItemCount();
       if(!changed&&timestamp>0&&key.equals(prefs.getString("clipboardVersion","")))return;
       if(timestamp<=0&&!changed)return; // cannot prove a new observed version on foreground re-entry.
       String origin=extras!=null&&clipboardOriginToken.equals(extras.getString("live.linghe.archive.origin",""))&&!clipboardOriginToken.isEmpty()?"sync_received":"unknown";
-      for(int i=0;i<data.getItemCount();i++){CharSequence text=data.getItemAt(i).getText();if(text!=null&&!text.toString().isEmpty())emit("clipboard.observed.v1","clipboard_observed",text.toString(),"clipboard",null,null,null,"observed_match",origin,origin.equals("sync_received")?clipboardOriginReference:null);}
+      for(int i=0;i<data.getItemCount();i++){CharSequence text=data.getItemAt(i).getText();if(text!=null&&!text.toString().isEmpty())emitClipboard(text.toString(),origin,origin.equals("sync_received")?clipboardOriginReference:null,providerDeclaredSensitive);}
       if(timestamp>0)prefs.edit().putString("clipboardVersion",key).apply();
     }catch(SecurityException blocked){status="系统未允许读取当前剪贴板";}catch(RuntimeException failure){status="当前剪贴板无法读取；输入不受影响";}
   }
   boolean pasteAllowed(){
     if(!clipboardEnabled()||!privacyCurrent())return false;
-    try{android.content.ClipDescription description=clipboard==null?null:clipboard.getPrimaryClipDescription();PersistableBundle extras=description==null?null:description.getExtras();return extras==null||!extras.getBoolean("android.content.extra.IS_SENSITIVE",false);}catch(RuntimeException unavailable){return false;}
+    try{if(clipboard!=null)clipboard.getPrimaryClipDescription();return true;}catch(RuntimeException unavailable){return false;}
   }
   void explicitPaste(String text,boolean safeField){if(safeField&&pasteAllowed())emit("app.paste.v1","paste_action",text,"app_paste",context.getPackageName(),ActivityArchiveRules.id(),ActivityArchiveRules.id(),"editor_acknowledged",null,null);}
   void retry(){if(enabled()){prefs.edit().putBoolean("transportBlocked",false).apply();schedule(0);}}

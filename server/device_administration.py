@@ -1,7 +1,7 @@
 """Device metadata and admission policy. No typing, content or private keys."""
 DAY=86400
 KINDS={'ios','android','macos','windows','unknown'}
-MOBILE={'ios','android'}
+from group_control_policy import MOBILE,management_kind_allowed
 
 def initialize(db):
     db.execute('CREATE TABLE IF NOT EXISTS departed_devices(group_id TEXT NOT NULL,device TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(group_id,device))')
@@ -30,6 +30,23 @@ def profile(relay,group,device):
 def expired(row,now):
     return bool(row and row[0] in MOBILE and now-row[2]>=row[1]*DAY)
 
+def require_group_control(relay,group,sender,now,state=None,allow_owner_root=False):
+    from private_input_relay import identifier,reject
+    state=state or relay.state(group)
+    kinds=[]
+    for member in state['members']:
+        device=identifier(member['device'])[0];p=profile(relay,group,device)
+        if expired(p,now) or relay.db.execute('SELECT 1 FROM departed_devices WHERE group_id=? AND device=?',(group,device)).fetchone():continue
+        kinds.append(p[0] if p else 'unknown')
+    if allow_owner_root and sender==identifier(state['ownerID'])[0]:
+        if not management_kind_allowed('root',kinds):reject('mobile_management_required' if any(k in MOBILE for k in kinds) else 'device_type_pending',403)
+        return
+    member=relay.member(state,sender)
+    if member['permissions']!=3:reject('manage_permission',403)
+    source=profile(relay,group,sender)
+    if not management_kind_allowed(source[0] if source else 'unknown',kinds):reject('mobile_management_required' if any(k in MOBILE for k in kinds) else 'device_type_pending',403)
+    authorized_activity(relay,group,sender,now)
+
 def authorized_activity(relay,group,sender,now):
     from private_input_relay import reject
     row=profile(relay,group,sender)
@@ -52,6 +69,13 @@ def rpc(relay,group,sender,operation,body,now):
             p=profile(relay,group,device)
             left=relay.db.execute('SELECT 1 FROM departed_devices WHERE group_id=? AND device=?',(group,device)).fetchone()
             devices.append({'device':device,'kind':p[0] if p else 'unknown','idleDays':p[1] if p else 30,'lastSeen':p[2] if p else 0,'inactive':bool(left) or expired(p,now),'isSelf':device==sender})
+        actor_kind=row[0] if row else 'unknown'
+        can_manage=members[sender]['permissions']==3 and management_kind_allowed(actor_kind,[d['kind'] for d in devices if not d['inactive']])
+        if not can_manage:
+            # Legacy desktop clients prune inactive rows before ordinary sync.
+            # Present effective members to read-only peers; cleanup stays with
+            # mobile controllers, whose complete list remains unchanged.
+            devices=[d for d in devices if not d['inactive']]
         return {'departed':False,'devices':devices}
     if sender not in members:reject('member',403)
     if operation==14:
@@ -75,9 +99,8 @@ def rpc(relay,group,sender,operation,body,now):
 
 def authorize_change(relay,group,old,next_state,now):
     from private_input_relay import identifier,reject
-    issuer=identifier(next_state['issuer'])[0];actor=relay.member(old,issuer)
-    if actor['permissions']!=3:reject('manage_permission',403)
-    authorized_activity(relay,group,issuer,now)
+    issuer=identifier(next_state['issuer'])[0]
+    require_group_control(relay,group,issuer,now,state=old)
     new={identifier(m['device'])[0] for m in next_state['members']}
     removed=[identifier(m['device'])[0] for m in old['members'] if identifier(m['device'])[0] not in new]
     source=profile(relay,group,issuer)

@@ -24,10 +24,12 @@
 #include "PayloadManifest.h"
 #include "../src/PrivateInputTSF.h"
 #include "../src/TsfBranding.h"
+#include "../src/RegistrationEnumeration.h"
+#include "RegistrationCatalogCheck.h"
 namespace fs = std::filesystem;
 namespace {
-constexpr wchar_t Version[] = L"0.5.7-win1";
-constexpr char VersionUtf8[] = "0.5.7-win1";
+constexpr wchar_t Version[] = L"0.6.2-win1";
+constexpr char VersionUtf8[] = "0.6.2-win1";
 // Use the DLL's actual COM identity for preflight, installation and rollback.
 // A second handwritten GUID previously caused a successful registration to be
 // reported as failed and left the real registration outside the snapshot.
@@ -43,7 +45,7 @@ struct Failure { int code; HRESULT hr; explicit Failure(int c, HRESULT h = E_FAI
 struct Report {
  int code = 1; HRESULT hr = S_OK;
  std::string action = "install", stage = "arguments", rollback = "not-needed",repairTargetVersion;
- bool workerStartupMigrated=false,workerRestartRequired=false,userTipUpdated=false;
+ bool workerStartupMigrated=false,workerRestartRequired=false,userTipUpdated=false,registrationCatalogVerified=false;
  bool quiet = false, committed = false, fileCleanupPending = false, retryRequired = false, unknownFilesPreserved = false, shortcutUpdated = false;
 };
 std::wstring ownExe() { wchar_t p[32768]; DWORD n=GetModuleFileNameW(nullptr,p,32768); if(!n||n>=32768)throw Failure(10); return {p,n}; }
@@ -149,7 +151,16 @@ HRESULT registerDll(const fs::path& dll,bool remove,std::string* stage=nullptr) 
  if(!lib) { auto error=GetLastError(); if(cookie)RemoveDllDirectory(cookie); return HRESULT_FROM_WIN32(error); }
  using Entry=HRESULT(WINAPI*)(); auto entry=reinterpret_cast<Entry>(GetProcAddress(lib,remove?"DllUnregisterServer":"DllRegisterServer"));
  HRESULT hr=entry?entry():E_NOINTERFACE;
- if(FAILED(hr)&&stage){using Diagnostic=unsigned(WINAPI*)();auto diagnostic=reinterpret_cast<Diagnostic>(GetProcAddress(lib,"DllGetRegistrationDiagnostic"));if(diagnostic)*stage+=".dll-stage-"+std::to_string(diagnostic());}
+ if(FAILED(hr)&&stage){
+  unsigned failedStage=0;using Diagnostic=unsigned(WINAPI*)();auto diagnostic=reinterpret_cast<Diagnostic>(GetProcAddress(lib,"DllGetRegistrationDiagnostic"));
+  if(diagnostic){failedStage=diagnostic();*stage+=".dll-stage-"+std::to_string(failedStage);}
+  using Enumeration=private_input::registration::EnumerationDiagnostic;
+  using EnumerationDiagnostic=HRESULT(WINAPI*)(Enumeration*);
+  auto readEnumeration=reinterpret_cast<EnumerationDiagnostic>(GetProcAddress(lib,"DllGetRegistrationEnumerationDiagnostic"));
+  Enumeration value;
+  if(readEnumeration&&SUCCEEDED(readEnumeration(&value))&&(value.stage==failedStage||(remove&&value.stage==15)))
+   *stage+=private_input::registration::enumerationDiagnosticSuffix(value);
+ }
  FreeLibrary(lib); if(cookie)RemoveDllDirectory(cookie); return hr;
 }
 // Microsoft's documented IME enablement API. Flags 0 adds only our TIP; it
@@ -470,7 +481,7 @@ bool receipt(const fs::path& target,const Report& report) {
   if(fs::exists(target)) { std::ifstream in(target,std::ios::binary); std::string prefix(256,'\0'); in.read(prefix.data(),prefix.size()); if(prefix.find("\"application\":\"LingheInputSetup\"")==std::string::npos)return false; }
   temporary=target; temporary+=L"."+std::to_wstring(GetCurrentProcessId())+L"."+std::to_wstring(GetTickCount64())+L".tmp"; normalPath(temporary);
   HANDLE output=CreateFileW(temporary.c_str(),GENERIC_WRITE,0,nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr); if(output==INVALID_HANDLE_VALUE)return false;
-  std::ostringstream json; json<<"{\"application\":\"LingheInputSetup\",\"schemaVersion\":1,\"version\":\""<<VersionUtf8<<"\",\"action\":\""<<report.action<<"\",\"status\":\""<<(report.retryRequired?"incomplete":report.code==0?"succeeded":"failed")<<"\",\"exitCode\":"<<report.code<<",\"stage\":\""<<report.stage<<"\",\"hresult\":"<<static_cast<unsigned long>(report.hr)<<",\"rollbackStatus\":\""<<report.rollback<<"\",\"installationCommitted\":"<<(report.committed?"true":"false")<<",\"fileCleanupPending\":"<<(report.fileCleanupPending?"true":"false")<<",\"retryRequired\":"<<(report.retryRequired?"true":"false")<<",\"unknownFilesPreserved\":"<<(report.unknownFilesPreserved?"true":"false")<<",\"shortcutUpdated\":"<<(report.shortcutUpdated?"true":"false")<<",\"workerStartupMigrated\":"<<(report.workerStartupMigrated?"true":"false")<<",\"workerRestartRequired\":"<<(report.workerRestartRequired?"true":"false")<<",\"userTipUpdated\":"<<(report.userTipUpdated?"true":"false")<<",\"repairTargetVersion\":\""<<report.repairTargetVersion<<"\",\"userDataPreserved\":true}\n";
+  std::ostringstream json; json<<"{\"application\":\"LingheInputSetup\",\"schemaVersion\":1,\"version\":\""<<VersionUtf8<<"\",\"action\":\""<<report.action<<"\",\"status\":\""<<(report.retryRequired?"incomplete":report.code==0?"succeeded":"failed")<<"\",\"exitCode\":"<<report.code<<",\"stage\":\""<<report.stage<<"\",\"hresult\":"<<static_cast<unsigned long>(report.hr)<<",\"rollbackStatus\":\""<<report.rollback<<"\",\"installationCommitted\":"<<(report.committed?"true":"false")<<",\"fileCleanupPending\":"<<(report.fileCleanupPending?"true":"false")<<",\"retryRequired\":"<<(report.retryRequired?"true":"false")<<",\"unknownFilesPreserved\":"<<(report.unknownFilesPreserved?"true":"false")<<",\"shortcutUpdated\":"<<(report.shortcutUpdated?"true":"false")<<",\"workerStartupMigrated\":"<<(report.workerStartupMigrated?"true":"false")<<",\"workerRestartRequired\":"<<(report.workerRestartRequired?"true":"false")<<",\"userTipUpdated\":"<<(report.userTipUpdated?"true":"false")<<",\"registrationCatalogVerified\":"<<(report.registrationCatalogVerified?"true":"false")<<",\"repairTargetVersion\":\""<<report.repairTargetVersion<<"\",\"userDataPreserved\":true}\n";
   auto bytes=json.str(); DWORD written=0; bool ok=WriteFile(output,bytes.data(),DWORD(bytes.size()),&written,nullptr)&&written==bytes.size()&&FlushFileBuffers(output); CloseHandle(output);
   if(ok)ok=MoveFileExW(temporary.c_str(),target.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=FALSE;
   if(!ok)DeleteFileW(temporary.c_str()); return ok;
@@ -484,6 +495,11 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
  try {
   int count=0; LPWSTR* args=CommandLineToArgvW(GetCommandLineW(),&count); if(!args)throw Failure(2);
   std::vector<std::wstring> arguments; for(int i=1;i<count;i++)arguments.emplace_back(args[i]); LocalFree(args);
+  if(arguments.size()==1&&arguments[0]==L"--verify-owned-tsf-catalog"){
+   const auto initialized=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+   if(FAILED(initialized))return static_cast<int>(initialized);
+   const auto status=linghe::installer::ownedRegistrationCatalogStatus();CoUninitialize();return static_cast<int>(status);
+  }
   // Recognize quiet even when another argument is invalid: invalid CLI must never display UI in session 0.
   report.quiet=std::find(arguments.begin(),arguments.end(),L"--quiet")!=arguments.end();
   for(size_t i=0;i<arguments.size();i++) {
@@ -545,7 +561,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
   try {
    report.stage=remove?"unregister":"register";
    if(remove) { if(!old.empty()) { mutated=true; auto hr=registerDll(old,true); if(FAILED(hr))throw Failure(20,hr); } }
-   else { mutated=true; if(!old.empty())setRegistered(dll.wstring()); auto hr=registerDll(dll,false,&report.stage); if(FAILED(hr))throw Failure(20,hr); if(!samePath(registered(),dll))throw Failure(20); }
+   else { mutated=true; if(!old.empty())setRegistered(dll.wstring()); auto hr=registerDll(dll,false,&report.stage); if(FAILED(hr))throw Failure(20,hr); if(!samePath(registered(),dll))throw Failure(20);report.stage="registration-catalog";hr=linghe::installer::verifyRegistrationInFreshProcess(ownExe());if(FAILED(hr))throw Failure(20,hr);report.registrationCatalogVerified=true; }
    if(!remove) { report.stage="uninstall-entry"; mutated=true; uninstallEntry(root,dll.parent_path().parent_path()/L"LingheInputSetup.exe",false); }
    report.committed=true;
   } catch(...) {

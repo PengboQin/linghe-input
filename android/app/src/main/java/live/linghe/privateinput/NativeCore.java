@@ -7,6 +7,8 @@ public final class NativeCore {
  public static native boolean languageInitialize(String folder);
  /** Shared automatic-candidate admission only; never rewrite literal or stored text. */
  public static native boolean candidateTextAllowed(String text);
+ /** Pure automatic reading admission; no Rime session, lock or file access. */
+ public static native boolean candidateReadingAllowed(String text,String reading);
  public static native double languageScore(String before,String text);
  public static native int exportLearning(String file);
  public static native int importLearning(String file);
@@ -17,6 +19,15 @@ public final class NativeCore {
  public static native boolean atEnd(long session);
  public static native boolean hasPending(long session);
  public static native String[] draft(long session);
+ /** Ephemeral, validated continuity of a displayed full nine-key reading. */
+ public static native boolean rememberNinePath(long session,String raw,String selectedPrefix,String reading);
+ public static native boolean rememberMappedNinePath(long session,String raw,String selectedPrefix,String reading,String canonicalCode);
+ public static native String preferredNineReading(long session);
+ public static native int[] ninePathPriorities(long session,String[] readings);
+ public static native boolean rememberVisibleNinePath(long session,String raw,String selectedPrefix,String text,String reading,String canonicalCode);
+ public static native String preferredNineText(long session);
+ public static native String commitPreferredNine(long session,String raw,String selectedPrefix,String text,String reading);
+ public static native boolean selectPreferredNinePrefix(long session,String raw,String selectedPrefix,String text,String reading);
  public static native String readableDraft(long session,String reading);
  public static native void clear(long session);
  public static native void mode(long session,boolean nine,boolean privateMode);

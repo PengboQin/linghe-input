@@ -195,6 +195,30 @@ import PrivateInputKit
         preferences.string(forKey:"automatic-clipboard-scope")==scope &&
         preferences.string(forKey:"automatic-clipboard-consent-generation")==generation
     }
+    func setClipboardSynchronization(_ enabled: Bool) {
+        guard !busy, !savingConsent, let session else { return }
+        info.clipboard = enabled; info.automaticClipboard = enabled
+        automaticClipboard.suspend(); automaticClipboardPreparing = false
+        savingConsent = true
+        Task {
+            defer { savingConsent = false }
+            while polling {
+                if Task.isCancelled { info = (try? await session.info()) ?? info; return }
+                try? await Task.sleep(nanoseconds: 50_000_000)
+            }
+            do {
+                try await session.setClipboardSynchronization(enabled)
+                info = try await session.info(); status = ""
+                if enabled, clipboardActive {
+                    _ = automaticClipboard.prepare(try await session.automaticClipboardSession())
+                    automaticClipboardPreparing = automaticClipboard.initializing
+                }
+            } catch {
+                if let retained = try? await session.info() { info = retained }
+                status = "设置未保存，请重试"
+            }
+        }
+    }
     func setAutomaticClipboard(_ enabled:Bool) {
         guard !savingConsent,let session else{return}
         info.automaticClipboard=enabled;automaticClipboard.suspend();automaticClipboardPreparing=false;savingConsent=true

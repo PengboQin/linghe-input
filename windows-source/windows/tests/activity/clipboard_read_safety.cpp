@@ -24,10 +24,10 @@ int main(){
  // A genuine new copy can recover; old denied remote remains seen.
  safety.observe(seq,seq,gen,gen,O::denied);auto old=message("blocked before new copy");assert(!round(old));++seq;++serial;safety.begin();assert(safety.observe(seq,seq,gen,gen,O::stableText));assert(!round(old));assert(round(message("fresh after new copy")));
  // Unknown clipboard owner does not occur in this policy and cannot be treated
- // as sensitivity. Initial metadata exclusion/read failure does block receive.
- safety.invalidate();++seq;assert(!safety.observe(seq,seq,gen,gen,O::denied));assert(!round(message("initial excluded metadata")));
- // A truly verified empty clipboard (including sequence zero) is safe. Metadata
- // excluded empty clipboard must have been denied before this observation.
+ // as sensitivity. Actual platform/password/read refusal does block receive.
+ safety.invalidate();++seq;assert(!safety.observe(seq,seq,gen,gen,O::denied));assert(!round(message("initial platform read refusal")));
+ // A truly verified empty clipboard (including sequence zero) is safe. An
+ // inaccessible empty clipboard must have been denied before this observation.
  safety.invalidate();seq=0;assert(safety.observe(seq,seq,gen,gen,O::verifiedEmpty));assert(safety.allows(0,gen));assert(clipboardApplyFence(true,gen,gen,serial,serial,0,0,false,true));assert(!clipboardApplyFence(true,gen,gen,serial,serial,0,0,false));
  auto allowed=round(message("fresh into verified empty"));assert(allowed);
  // Consent/epoch invalidation blocks old tokens and baseline cannot remove a
@@ -36,5 +36,5 @@ int main(){
  policy.setEnabled(false);assert(!policy.observe({message("disabled")},true,false,self));policy.setEnabled(true);assert(!policy.ready());assert(!policy.observe({message("cold on reenable")},true,false,self));policy.observe({},true,false,self);assert(policy.ready());
  policy.configure(group,2,personal,true);assert(!policy.ready());auto epochBacklog=message("old epoch backlog");assert(!policy.observe({epochBacklog},true,false,self));policy.observe({},true,false,self);assert(policy.ready());assert(!policy.observe({epochBacklog},true,false,self));assert(!clipboardApplyFence(true,gen,gen-1,serial,serial,seq,seq,false,true));
  safety.observe(seq,seq,gen,gen,O::verifiedEmpty);auto failed=message("must persist before apply");auto before=disk.dump();failSave=true;bool threw=false;try{round(failed);}catch(...){threw=true;}assert(threw&&disk.dump()==before);failSave=false;assert(round(failed));
- std::cout<<"046 production policy: sticky same-sequence denial, stable read recovery, initial exclusion/empty, new copy, no blocked replay, revoke/epoch/cold drain/persistence: passed\n";
+ std::cout<<"production policy: sticky same-sequence refusal, stable read recovery, inaccessible/empty, new copy, no blocked replay, revoke/epoch/cold drain/persistence: passed\n";
 }

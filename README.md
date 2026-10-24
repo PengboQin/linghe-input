@@ -1,4 +1,4 @@
-2026-10-22 Windows 0.5.7-win1 预览：保留056长句候选定位修复，补齐系统托盘图标类别并明确绑定鹤图标资源。源码、生产构建和资源检查通过；安装后系统切换器/托盘外观待用户验收。Mac75浅色鹤已签名、公证并保数据安装，本轮只公开其源码；不更新其他平台安装包。下载 [Windows图标修复预览](https://github.com/PengboQin/linghe-input/releases/tag/v0.2026.10.22-win057-preview.1)。输入过程诊断仍独立、默认关闭。
+2026-10-24 四端开发基线：iOS101（源码）、Android55 /0.1.54-r1、Mac82 /0.36.5、Windows062 /0.6.2-win1。下载[固定基线与安装附件](https://github.com/PengboQin/linghe-input/releases/tag/v0.2026.10.24-baseline.1)，平台验证范围见[BASELINE.md](BASELINE.md)。当前源码包含少量未进入桌面包的后续改动，重建已发布桌面包时使用`BASELINE-SOURCES.json`列出的覆盖文件。此为开发预览基线，当前不推进下一阶段开发；输入过程诊断仍独立、默认关闭。
 
 # 灵鹤输入法 · Linghe Input
 

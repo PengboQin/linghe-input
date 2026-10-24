@@ -1,5 +1,6 @@
 #include "PrivateInputTSF.h"
 #include "TsfBranding.h"
+#include "RegistrationEnumeration.h"
 #include <wrl/client.h>
 #include <string>
 #include <iterator>
@@ -7,6 +8,12 @@ using Microsoft::WRL::ComPtr;
 namespace {
 // Numeric stage only: no typed text, file paths or account details are exposed.
 thread_local unsigned registrationStage=0;
+thread_local private_input::registration::EnumerationDiagnostic registrationEnumeration;
+template<class Match>HRESULT observeGuids(unsigned stage,HRESULT enumerationHR,IEnumGUID*items,Match match){
+  registrationEnumeration=private_input::registration::enumerateGuids<GUID>(stage,static_cast<std::int32_t>(enumerationHR),items!=nullptr,
+    [&](GUID&item,std::uint32_t&fetched){ULONG count=0;auto hr=items->Next(1,&item,&count);fetched=count;return static_cast<std::int32_t>(hr);},match);
+  return static_cast<HRESULT>(registrationEnumeration.result());
+}
 constexpr LANGID Language = MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED);
 std::wstring classKey() {
   wchar_t id[64]; StringFromGUID2(CLSID_PrivateInput, id, 64);
@@ -63,6 +70,7 @@ extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID clsid, REFIID iid, void 
   auto *factory = new Factory; auto hr = factory->QueryInterface(iid, result); factory->Release(); return hr;
 }
 extern "C" HRESULT __stdcall DllRegisterServer() {
+  registrationEnumeration={};
   registrationStage=1;
   wchar_t path[32768];DWORD length=GetModuleFileNameW(g_instance,path,32768);if(!length||length>=32768)return HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE);
   // Registration must not advertise branding without its actual DLL resource.
@@ -77,8 +85,9 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
   HRESULT hr = CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&profiles));
   if (FAILED(hr)) return hr;
   registrationStage=4;
-  ComPtr<IEnumGUID> services;hr=profiles->EnumInputProcessorInfo(&services);if(FAILED(hr))return hr;
-  bool serviceBefore=false;GUID item{};ULONG fetched=0;while(services->Next(1,&item,&fetched)==S_OK&&fetched)if(item==CLSID_PrivateInput)serviceBefore=true;
+  ComPtr<IEnumGUID> services;hr=profiles->EnumInputProcessorInfo(&services);
+  hr=observeGuids(4,hr,services.Get(),[](const GUID&item){return item==CLSID_PrivateInput?1u:0u;});if(FAILED(hr))return hr;
+  const bool serviceBefore=(registrationEnumeration.matches&1)!=0;
   registrationStage=5;
   BSTR description=nullptr;HRESULT found=profiles->GetLanguageProfileDescription(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,&description);
   bool profileBefore=found==S_OK;
@@ -97,8 +106,9 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
   hr = CoCreateInstance(CLSID_TF_CategoryMgr, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&categories));
   if(FAILED(hr))return hr;
   registrationStage=7;
-  ComPtr<IEnumGUID> list;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&list);if(FAILED(hr))return hr;
-  bool categoryBefore=false,systrayBefore=false;while(list->Next(1,&item,&fetched)==S_OK&&fetched){if(item==GUID_TFCAT_TIP_KEYBOARD)categoryBefore=true;if(item==linghe::tsf::SystrayCategory)systrayBefore=true;}
+  ComPtr<IEnumGUID> list;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&list);
+  hr=observeGuids(7,hr,list.Get(),[](const GUID&item){return (item==GUID_TFCAT_TIP_KEYBOARD?1u:0u)|(item==linghe::tsf::SystrayCategory?2u:0u);});if(FAILED(hr))return hr;
+  const bool categoryBefore=(registrationEnumeration.matches&1)!=0,systrayBefore=(registrationEnumeration.matches&2)!=0;
   bool addedService=false,addedCategory=false,addedSystray=false,addedProfile=false;
   auto rollback=[&]{if(addedProfile){ComPtr<ITfInputProcessorProfileMgr> mgr;if(SUCCEEDED(profiles.As(&mgr)))mgr->UnregisterProfile(CLSID_PrivateInput,Language,GUID_PrivateInputProfile,0);}if(addedSystray)categories->UnregisterCategory(CLSID_PrivateInput,linghe::tsf::SystrayCategory,CLSID_PrivateInput);if(addedCategory)categories->UnregisterCategory(CLSID_PrivateInput,GUID_TFCAT_TIP_KEYBOARD,CLSID_PrivateInput);if(addedService)profiles->Unregister(CLSID_PrivateInput);if(!existingClass)deleteNewClass(base);};
   registrationStage=8;
@@ -141,12 +151,22 @@ extern "C" HRESULT __stdcall DllRegisterServer() {
   if(FAILED(hr)||verifiedProfile.clsid!=CLSID_PrivateInput||verifiedProfile.guidProfile!=GUID_PrivateInputProfile||verifiedProfile.langid!=Language){rollback();return FAILED(hr)?hr:E_FAIL;}
   // Category registration, not a blanket Windows-app compatibility claim,
   // enables branding in the desktop input indicator. Read back exact own caps.
-  registrationStage=14;ComPtr<IEnumGUID>verifiedCategories;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&verifiedCategories);if(FAILED(hr)){rollback();return hr;}bool systrayVerified=false;while(verifiedCategories->Next(1,&item,&fetched)==S_OK&&fetched)if(item==linghe::tsf::SystrayCategory)systrayVerified=true;if(!systrayVerified){rollback();return E_FAIL;}
+  registrationStage=14;ComPtr<IEnumGUID>verifiedCategories;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&verifiedCategories);
+  // On the target PC this process retains the pre-registration catalog view
+  // even after a fresh COM object, while a new OS process sees the category.
+  // Keep exact observation diagnostics, but do not turn successful mutations
+  // into a false rollback based on this process's view. Setup performs a fresh
+  // process catalog check inside its existing rollback transaction.
+  (void)observeGuids(14,hr,verifiedCategories.Get(),[](const GUID&item){return item==linghe::tsf::SystrayCategory?2u:0u;});
   registrationStage=0;
   return S_OK; // User chooses this keyboard. Do not set the default input source.
 }
 extern "C" unsigned __stdcall DllGetRegistrationDiagnostic() { return registrationStage; }
+extern "C" HRESULT __stdcall DllGetRegistrationEnumerationDiagnostic(private_input::registration::EnumerationDiagnostic*output) {
+  return static_cast<HRESULT>(private_input::registration::copyEnumerationDiagnostic(registrationEnumeration,output));
+}
 extern "C" HRESULT __stdcall DllUnregisterServer() {
+  registrationStage=0;registrationEnumeration={};
   wchar_t path[32768];DWORD length=GetModuleFileNameW(g_instance,path,32768);if(!length||length>=32768)return E_FAIL;
   const auto base=classKey();HRESULT verified=verifyExistingServer(base,path);if(FAILED(verified))return verified;
   ComPtr<ITfInputProcessorProfiles> profiles;
@@ -154,7 +174,9 @@ extern "C" HRESULT __stdcall DllUnregisterServer() {
   if(FAILED(hr))return hr;
   ComPtr<ITfCategoryMgr> categories;
   hr=CoCreateInstance(CLSID_TF_CategoryMgr,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&categories));if(FAILED(hr))return hr;
-  ComPtr<IEnumGUID>ownedCategories;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&ownedCategories);if(FAILED(hr))return hr;GUID category{};ULONG fetched=0;bool hasSystray=false;while(ownedCategories->Next(1,&category,&fetched)==S_OK&&fetched)if(category==linghe::tsf::SystrayCategory)hasSystray=true;
+  ComPtr<IEnumGUID>ownedCategories;hr=categories->EnumCategoriesInItem(CLSID_PrivateInput,&ownedCategories);
+  hr=observeGuids(15,hr,ownedCategories.Get(),[](const GUID&item){return item==linghe::tsf::SystrayCategory?2u:0u;});if(FAILED(hr))return hr;
+  const bool hasSystray=(registrationEnumeration.matches&2)!=0;
   if(hasSystray){hr=categories->UnregisterCategory(CLSID_PrivateInput,linghe::tsf::SystrayCategory,CLSID_PrivateInput);if(FAILED(hr))return hr;}
   hr=categories->UnregisterCategory(CLSID_PrivateInput,GUID_TFCAT_TIP_KEYBOARD,CLSID_PrivateInput);if(FAILED(hr))return hr;
   hr=profiles->Unregister(CLSID_PrivateInput);if(FAILED(hr))return hr;

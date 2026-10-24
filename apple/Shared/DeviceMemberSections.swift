@@ -7,7 +7,7 @@ struct DeviceMemberSections:View {
     @State private var idleDays="30"
     private var own:GroupDeviceStatus? {model.info.devices.first{$0.isSelf}}
     private func removable(_ device:GroupDeviceStatus) -> Bool {
-        guard !device.isSelf,!device.inactive else {return false}
+        guard model.info.canManage,!device.isSelf,!device.inactive else {return false}
         #if os(iOS)
         return device.kind=="macos" || device.kind=="windows"
         #else

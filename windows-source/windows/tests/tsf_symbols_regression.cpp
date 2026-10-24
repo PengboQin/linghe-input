@@ -1,0 +1,91 @@
+#include "PrivateInputTSF.h"
+#include "SyntheticTextStore.h"
+#include "activity/FixtureIPC.h"
+#include "private_input.h"
+#include <inputscope.h>
+#include <shlobj.h>
+#include <filesystem>
+#include <iostream>
+#include <stdexcept>
+#include <functional>
+using Microsoft::WRL::ComPtr;
+namespace {
+void check(bool okay,const char*message){if(!okay)throw std::runtime_error(message);}
+void okay(HRESULT hr,const char*message){check(SUCCEEDED(hr),message);}
+void pump(){MSG m;for(int n=0;n<3;++n){while(PeekMessageW(&m,nullptr,0,0,PM_REMOVE)){TranslateMessage(&m);DispatchMessageW(&m);}Sleep(10);}}
+LRESULT CALLBACK proc(HWND w,UINT m,WPARAM a,LPARAM b){if(m==WM_CHAR){auto store=reinterpret_cast<SyntheticTextStore*>(GetWindowLongPtrW(w,GWLP_USERDATA));if(store&&a>=32&&a<127){store->appInsert(WCHAR(a));return 0;}}return DefWindowProcW(w,m,a,b);}
+class FixtureRead final:public ITfEditSession {
+  std::atomic<ULONG>refs{1};std::function<void(TfEditCookie)>action;
+public:
+  explicit FixtureRead(std::function<void(TfEditCookie)>callback):action(std::move(callback)){}
+  STDMETHODIMP QueryInterface(REFIID iid,void**out)override{if(!out)return E_POINTER;*out=nullptr;if(iid!=IID_IUnknown&&iid!=IID_ITfEditSession)return E_NOINTERFACE;*out=static_cast<ITfEditSession*>(this);AddRef();return S_OK;}
+  STDMETHODIMP_(ULONG)AddRef()override{return ++refs;}STDMETHODIMP_(ULONG)Release()override{auto count=--refs;if(!count)delete this;return count;}
+  STDMETHODIMP DoEditSession(TfEditCookie cookie)override{action(cookie);return S_OK;}
+};
+}
+// Isolated OS-created TSF text store, real frontend and direct key sink; never
+// installs a profile, touches production IPC or claims physical OS dispatch.
+int wmain(int argc,wchar_t**argv){
+ const bool technicalOnly=argc==4&&std::wstring(argv[3])==L"--technical-only";if(argc!=3&&!technicalOnly)return 2;int result=1;HWND window=nullptr;ComPtr<ITfThreadMgr>manager;ComPtr<ITfDocumentMgr>document;ComPtr<ITfContext>ctx;ComPtr<ITfTextInputProcessorEx>service;ComPtr<ITfKeyEventSink>keys;ComPtr<SyntheticTextStore>store;bool activated=false,serviceActive=false;BYTE original[256]{};GetKeyboardState(original);
+ try{
+  check(private_input::activity::fixture::ipcStats().productionTransportDisabled&&private_input::activity::fixture::namesDisabled(),"IPC fixture required");
+  auto shared=std::filesystem::absolute(argv[1]),user=std::filesystem::absolute(argv[2]);PWSTR local=nullptr;okay(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local),"fixture base");auto base=std::filesystem::path(local)/L"PrivateInputDev"/L"fixtures";CoTaskMemFree(local);check(user.wstring().find(base.wstring()+L"\\")==0&&!std::filesystem::exists(user),"new owned fixture directory required");std::filesystem::create_directories(user);
+  okay(CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED),"COM");WNDCLASSW cls{};cls.lpfnWndProc=proc;cls.hInstance=GetModuleHandleW(nullptr);cls.lpszClassName=L"LingheInput.SymbolFixture";RegisterClassW(&cls);window=CreateWindowW(cls.lpszClassName,L"Linghe isolated symbol fixture",WS_OVERLAPPEDWINDOW,10,10,600,300,nullptr,nullptr,cls.hInstance,nullptr);check(window,"fixture window");
+  auto module=LoadLibraryExW(L"msctf.dll",nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32);auto setScope=module?reinterpret_cast<HRESULT(WINAPI*)(HWND,InputScope)>(GetProcAddress(module,"SetInputScope")):nullptr;check(setScope,"scope API");okay(setScope(window,IS_TEXT),"explicit text scope");
+  store.Attach(new SyntheticTextStore(window));okay(CoCreateInstance(CLSID_TF_ThreadMgr,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&manager)),"thread manager");TfClientId client=0;okay(manager->Activate(&client),"activate");activated=true;okay(manager->CreateDocumentMgr(&document),"document");TfEditCookie cookie=0;okay(document->CreateContext(client,0,store.Get(),&ctx,&cookie),"context");okay(document->Push(ctx.Get()),"push");okay(manager->SetFocus(document.Get()),"focus");ComPtr<ITfDocumentMgr>old;okay(manager->AssociateFocus(window,document.Get(),&old),"associate");
+  okay(setScope(window,IS_TEXT),"explicit text scope after document association");pump();
+  bool lastHasScope=false;
+  auto scopeDiagnostic=[&](const char*phase){
+    lastHasScope=false;
+    auto*job=new FixtureRead([&](TfEditCookie readCookie){
+      TF_SELECTION selection{};ULONG fetched=0;auto selected=ctx->GetSelection(readCookie,TF_DEFAULT_SELECTION,1,&selection,&fetched);ComPtr<ITfRange>range;range.Attach(selection.range);ComPtr<ITfReadOnlyProperty>property;auto app=ctx->GetAppProperty(GUID_PROP_INPUTSCOPE,&property);VARIANT value;VariantInit(&value);HRESULT got=E_UNEXPECTED,qi=E_UNEXPECTED,scopes=E_UNEXPECTED;UINT count=0;InputScope*items=nullptr;
+      if(SUCCEEDED(app)&&range){got=property->GetValue(readCookie,range.Get(),&value);if(SUCCEEDED(got)&&value.vt==VT_UNKNOWN&&value.punkVal){ComPtr<ITfInputScope>input;qi=value.punkVal->QueryInterface(IID_PPV_ARGS(&input));if(SUCCEEDED(qi))scopes=input->GetInputScopes(&items,&count);}}
+      lastHasScope=SUCCEEDED(scopes)&&items&&count>0&&count<=128;
+      std::cout<<"{\"diagnostic\":\"scope\",\"phase\":\""<<phase<<"\",\"selectionHR\":"<<long(selected)<<",\"fetched\":"<<fetched<<",\"propertyHR\":"<<long(app)<<",\"valueHR\":"<<long(got)<<",\"variantType\":"<<value.vt<<",\"queryInterfaceHR\":"<<long(qi)<<",\"inputScopesHR\":"<<long(scopes)<<",\"scopeCount\":"<<count<<",\"scopes\":[";
+      if(SUCCEEDED(scopes)&&items&&count<=128)for(UINT i=0;i<count;++i){if(i)std::cout<<',';std::cout<<int(items[i]);}std::cout<<"]}\n";CoTaskMemFree(items);VariantClear(&value);
+    });HRESULT granted=E_UNEXPECTED;auto requested=ctx->RequestEditSession(client,job,TF_ES_SYNC|TF_ES_READ,&granted);job->Release();std::cout<<"{\"diagnostic\":\"readLock\",\"phase\":\""<<phase<<"\",\"requestHR\":"<<long(requested)<<",\"sessionHR\":"<<long(granted)<<",\"lockCount\":"<<store->locks<<"}\n";
+  };
+  scopeDiagnostic("initial-explicit-text");
+  PrivateInputEnginePaths paths{shared,user};paths.directKeySinkOnlyForTests=true;okay(CreatePrivateInput(IID_ITfTextInputProcessorEx,reinterpret_cast<void**>(service.GetAddressOf()),&paths),"service");okay(service->ActivateEx(manager.Get(),client,0),"service activate");serviceActive=true;okay(service.As(&keys),"key sink");BYTE neutral[256]{};SetKeyboardState(neutral);
+  SetWindowLongPtrW(window,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(store.Get()));
+  bool lastRouted=false;
+  auto key=[&](WPARAM k){BOOL routed=FALSE,eaten=FALSE;auto tested=keys->OnTestKeyDown(ctx.Get(),k,1,&routed);okay(tested,"preflight");lastRouted=routed!=FALSE;HRESULT delivered=S_FALSE;if(routed){delivered=keys->OnKeyDown(ctx.Get(),k,1,&eaten);okay(delivered,"key");}std::cout<<"{\"diagnostic\":\"key\",\"virtualKey\":"<<k<<",\"preflightHR\":"<<long(tested)<<",\"preflightEaten\":"<<bool(routed)<<",\"deliveryHR\":"<<long(delivered)<<",\"deliveryEaten\":"<<bool(eaten)<<"}\n";pump();return bool(eaten);};
+  auto shifted=[&](WPARAM k){BYTE state[256]{};state[VK_SHIFT]=0x80;SetKeyboardState(state);bool consumed=key(k);SetKeyboardState(neutral);return consumed;};
+  auto type=[&](const char*value){while(*value){check(key(WPARAM(*value>='a'&&*value<='z'?*value-'a'+'A':*value)),"type");++value;}};
+  auto before=store->text;check(key(VK_OEM_COMMA),"idle comma handled");check(store->text==before+L"，","idle Chinese comma");
+  BYTE mode[256]{};mode[VK_CONTROL]=mode[VK_SHIFT]=0x80;
+  if(!technicalOnly){
+  before=store->text;type("nihao");check(key(VK_OEM_PERIOD),"pending period handled");check(store->text==before+L"你好。","native completion plus Chinese punctuation exactly once");
+  before=store->text;check(key('1')&&key(VK_OEM_PERIOD)&&key('4')&&key(VK_OEM_PERIOD)&&key('2'),"decimal keys");check(store->text==before+L"1.4.2","decimal and version retained");
+  before=store->text;check(shifted(VK_OEM_2)&&shifted('1')&&key(VK_OEM_1)&&shifted(VK_OEM_1),"Chinese punctuation keys");check(store->text==before+L"？！；：","question exclamation semicolon colon");
+  before=store->text;check(shifted('9'),"automatic pair");check(store->text==before+L"（）","Chinese pair");check(key(VK_BACK),"owned unchanged pair backspace");check(store->text==before,"pair deletion exactly once");check(!key(VK_BACK),"no second pair deletion");
+  store->appCaret(LONG(store->text.size()));before=store->text;store->failReads=true;check(shifted('9'),"unreadable-host pair insertion");store->failReads=false;check(store->text==before+L"（）"&&!key(VK_BACK),"unreadable host has no deletion capability");store->appBackspace();pump();check(store->text==before+L"）","caret still centered when text read refused");
+  for(auto modifier:{VK_SHIFT,VK_CONTROL,VK_MENU,VK_LWIN,VK_RWIN}){store->appCaret(LONG(store->text.size()));check(shifted('9'),"modified-back pair");auto kept=store->text;BYTE flags[256]{};flags[modifier]=0x80;SetKeyboardState(flags);check(!key(VK_BACK)&&store->text==kept,"Modified Backspace must pass through without deleting a pair");SetKeyboardState(neutral);check(!key(VK_BACK),"Modified Backspace invalidates capability");}
+  before=store->text;check(shifted(VK_OEM_7),"quote pair");check(store->text==before+L"“”"&&key(VK_BACK)&&store->text==before,"Chinese quote pair deletion");
+  check(shifted('9'),"movement pair");auto paired=store->text;check(!key(VK_LEFT),"navigation remains host owned");store->appCaret(LONG(paired.size()));store->appCaret(LONG(paired.size()-1));pump();check(!key(VK_BACK)&&store->text==paired,"movement away and back invalidates pair");
+  store->appCaret(LONG(store->text.size()));check(shifted('9'),"external edit pair");paired=store->text;store->appInsert(L'x');pump();store->appBackspace();pump();check(store->text==paired&&!key(VK_BACK),"external edit then restore cannot revive pair");
+  store->appCaret(LONG(store->text.size()));store->appInsert(L'(');store->appInsert(L')');store->appCaret(LONG(store->text.size()-1));pump();paired=store->text;check(!key(VK_BACK)&&store->text==paired,"manual pasted-looking pair has no receipt");
+  store->appCaret(LONG(store->text.size()));check(shifted('9'),"focus pair");paired=store->text;okay(keys->OnSetFocus(FALSE),"lose focus");check(!key(VK_BACK)&&store->text==paired,"focus loss invalidates receipt");
+  SetKeyboardState(mode);check(key(VK_SPACE),"English toggle");SetKeyboardState(neutral);before=store->text;check(key(VK_OEM_COMMA)&&key(VK_OEM_PERIOD)&&shifted(VK_OEM_2),"English punctuation keys");check(store->text==before+L",.?","English punctuation unmodified");
+  }else{SetKeyboardState(mode);check(key(VK_SPACE),"English toggle for independent technical fixture");SetKeyboardState(neutral);}
+  auto scope=[&](InputScope value){okay(setScope(window,value),"change declared input scope");pump();scopeDiagnostic("scope-change");};
+  // Follow the documented TSF host message-loop decision, then run the real
+  // TranslateMessage -> WM_CHAR path. No synthetic appInsert fallback here.
+  auto hostText=[&](const wchar_t*text,bool finishesDraft=false,bool technical=true){bool first=true;while(*text){const auto physical=VkKeyScanW(*text);check(physical!=-1&&!(HIBYTE(physical)&6),"ASCII fixture layout mapping");BYTE state[256]{};if(HIBYTE(physical)&1)state[VK_SHIFT]=0x80;SetKeyboardState(state);const auto k=LOBYTE(physical);check(!key(k),"Technical key must reach host");if(technical){if(!(finishesDraft&&first))check(!lastRouted,"Idle technical preflight must not claim key");else check(lastRouted,"Owned draft needs key delivery to finish");}auto expected=store->text+*text;MSG message{};message.hwnd=window;message.message=WM_KEYDOWN;message.wParam=k;message.lParam=1|(MapVirtualKeyW(k,MAPVK_VK_TO_VSC)<<16);check(TranslateMessage(&message),"Host TranslateMessage failed");DispatchMessageW(&message);pump();check(store->text==expected,"WM_CHAR did not preserve original physical character");SetKeyboardState(neutral);++text;first=false;}};
+  scope(IS_URL);before=store->text;BOOL directEaten=TRUE;okay(keys->OnKeyDown(ctx.Get(),'A',1,&directEaten),"Direct technical key delivery");check(!directEaten&&store->text==before,"Technical actual-key callback must agree with idle preflight");hostText(L"https://example.com:443/sync-v1?a=1&b=two#ok");check(store->text==before+L"https://example.com:443/sync-v1?a=1&b=two#ok","URL spelling/symbols changed");check(!key(VK_BACK),"URL Backspace belongs to host");
+  scope(IS_EMAIL_SMTPEMAILADDRESS);before=store->text;hostText(L"first.last+test@example.com");check(store->text==before+L"first.last+test@example.com","Email spelling/symbols changed");
+  BYTE heldShift[256]{};heldShift[VK_SHIFT]=0x80;SetKeyboardState(heldShift);check(!key(VK_SHIFT)&&lastRouted,"Shift down remains tracked");hostText(L":");BOOL upRouted=TRUE;okay(keys->OnTestKeyUp(ctx.Get(),VK_SHIFT,1,&upRouted),"Technical Shift chord release");check(!upRouted,"Address punctuation Shift chord must not become a language toggle");SetKeyboardState(neutral);
+  scope(IS_DIGITS);before=store->text;hostText(L"123456");check(store->text==before+L"123456","Pairing code digits changed");
+  scope(IS_TEXT);before=store->text;type("appl");scope(IS_URL);hostText(L":/",true);check(store->text==before+L"appl:/","Scope transition completed an English candidate instead of raw draft");
+  scope(IS_TEXT);before=store->text;type("hello");check(key(VK_RETURN)&&store->text==before+L"hello","Technical field changed global English mode");
+  before=store->text;type("appl");auto visibleDraft=store->text;scope(IS_URL);store->failNextWrites=1;hostText(L":a",true);check(store->text==visibleDraft+L":a","Rejected literal flush dropped or later overwrote visible draft");
+  scope(IS_TEXT);SetKeyboardState(mode);check(key(VK_SPACE),"restore Chinese mode");SetKeyboardState(neutral);before=store->text;type("shi");scope(IS_URL);hostText(L":/",true);check(store->text==before+L"shi:/","Scope transition lost or converted Chinese raw draft");
+  scope(IS_TEXT);before=store->text;check(key(VK_OEM_COMMA)&&store->text==before+L"，","Technical field changed global Chinese punctuation mode");
+  scope(IS_DEFAULT);check(!lastHasScope,"Removed association must produce an unknown fixture scope");auto capturesBefore=private_input::activity::fixture::ipcStats();before=store->text;type("shi");check(key(VK_RETURN)&&store->text==before+L"shi","Unknown field raw draft commit");auto capturesAfter=private_input::activity::fixture::ipcStats();check(capturesAfter.captureAttempts==capturesBefore.captureAttempts&&capturesAfter.learningAttempts==capturesBefore.learningAttempts,"Unknown field must not enter normal-field capture or learning");
+  scope(IS_PRIVATE);capturesBefore=private_input::activity::fixture::ipcStats();before=store->text;type("shi");check(key(VK_RETURN)&&store->text==before+L"shi","Private field raw draft commit");capturesAfter=private_input::activity::fixture::ipcStats();check(capturesAfter.captureAttempts==capturesBefore.captureAttempts&&capturesAfter.learningAttempts==capturesBefore.learningAttempts,"Private field must not enter capture or learning");
+  scope(IS_PASSWORD);capturesBefore=private_input::activity::fixture::ipcStats();before=store->text;hostText(L"Pa55:/",false,false);check(store->text==before+L"Pa55:/","Password pass-through changed");capturesAfter=private_input::activity::fixture::ipcStats();check(capturesAfter.captureAttempts==capturesBefore.captureAttempts&&capturesAfter.learningAttempts==capturesBefore.learningAttempts,"Password field must not enter capture or learning");
+  scope(IS_TEXT);before=store->text;check(key(VK_OEM_COMMA)&&store->text==before+L"，","Normal Chinese comma restored after sensitive scopes");
+  if(technicalOnly)std::cout<<"{\"passed\":true,\"mode\":\"technical-only\",\"productionIPCDisabled\":true,\"explicitNormalComma\":true,\"URLAndEmailAndDigits\":true,\"unknownPrivatePasswordCaptureBlocked\":true,\"scopeTransitionPreservesRaw\":true,\"globalLanguageModePreserved\":true,\"ShiftPunctuationChord\":true,\"idlePreflightFalse\":true,\"TranslateMessageWMChar\":true,\"pairSuiteExecuted\":false,\"installedDLL\":false,\"osKeyDispatch\":false}\n";else std::cout<<"{\"passed\":true,\"directKeySink\":true,\"osTextStore\":true,\"productionIPCDisabled\":true,\"idleAndPendingChinesePunctuation\":true,\"decimalAndVersion\":true,\"englishLiteral\":true,\"technicalURLAndEmailAndCode\":true,\"idleTechnicalPreflightPassThrough\":true,\"actualHostTranslateMessagePath\":true,\"literalDraftOnScopeTransition\":true,\"technicalFlushFailurePreservesDraft\":true,\"globalLanguageModePreserved\":true,\"ownedEmptyPairDeletion\":true,\"moveEditPasteFocusInvalidation\":true,\"installedDLL\":false,\"osKeyDispatch\":false}\n";result=0;
+ }catch(const std::exception&e){std::cerr<<"FAIL: "<<e.what()<<'\n';}
+ if(serviceActive)service->Deactivate();keys.Reset();service.Reset();if(document)document->Pop(TF_POPF_ALL);ctx.Reset();document.Reset();if(activated)manager->Deactivate();manager.Reset();store.Reset();if(window)DestroyWindow(window);pi_finalize();SetKeyboardState(original);CoUninitialize();return result;
+}

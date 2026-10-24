@@ -54,7 +54,7 @@ public struct CloudLearningReplica: Codable {
     }
     public mutating func stage(_ delta: CloudLearningDelta, policy: CloudLearningTextPolicy) throws {
         guard delta.generation == generation, ["bounded-confirmed-decay-v1", "shared-lexeme-decay-v2"].contains(delta.algorithmVersion), delta.fromVersion == modelVersion,
-              delta.toVersion >= modelVersion, delta.upserts.count <= 5000, delta.tombstones.count <= 5000,
+              delta.toVersion >= modelVersion, delta.upserts.count <= LearningCapacityProfiles.expanded10000.modelTermRows, delta.tombstones.count <= LearningCapacityProfiles.expanded10000.modelTombstoneRows,
               Set(delta.upserts.map(\.id)).count == delta.upserts.count,
               Set(delta.tombstones.map(\.id)).count == delta.tombstones.count,
               Set(delta.upserts.map(\.id)).isDisjoint(with: Set(delta.tombstones.map(\.id))) else { throw CloudLearningError.staleModel }
@@ -71,7 +71,7 @@ public struct CloudLearningReplica: Codable {
             next.terms.removeValue(forKey: term.id); next.termGenerations[term.id] = max(termGenerations[term.id] ?? 0, term.termGeneration)
             next.cloudTermGenerations[term.id] = term.termGeneration
         }
-        guard next.terms.count <= 5000 else { throw CloudLearningError.oversized }
+        guard next.terms.count <= LearningCapacityProfiles.expanded10000.modelTermRows else { throw CloudLearningError.oversized }
         let actualHash = try Self.hash(generation: generation, terms: Array(next.terms.values), watermarks: delta.watermarks, algorithmVersion: delta.algorithmVersion, producers: delta.producerWatermarks)
         guard actualHash == delta.modelSHA256 else { throw CloudLearningError.badHash }
         let own = delta.watermarks.filter { $0.deviceID == device && $0.installationID == installation && $0.consentVersion == consentVersion }
@@ -132,7 +132,7 @@ public struct CloudLearningReplica: Codable {
     public static func restore(_ data: Data) throws -> Self {
         guard data.count <= 4 * 1024 * 1024 else { throw CloudLearningError.oversized }
         let value = try JSONDecoder().decode(Self.self, from: data)
-        guard value.generation > 0, value.consentVersion > 0, value.observations.count <= 8192, value.terms.count <= 5000, value.cloudTermGenerations.count <= 5000,
+        guard value.generation > 0, value.consentVersion > 0, value.observations.count <= 8192, value.terms.count <= LearningCapacityProfiles.expanded10000.modelTermRows, value.cloudTermGenerations.count <= LearningCapacityProfiles.expanded10000.cloudFenceKeys,
               value.receivedSequence < value.nextSequence, value.nextSequence <= Int64.max,
               Set(value.observations.map(\.eventID)).count == value.observations.count,
               Set(value.observations.map(\.deviceSeq)).count == value.observations.count else { throw CloudLearningError.invalid }

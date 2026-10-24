@@ -3,9 +3,9 @@ import hashlib
 import math
 from .authority import fingerprint
 from activity_archive.service import decode, encode, fail, number, shape, uid
+from . import capacity
 
 MAX_RECORDS = 128
-MAX_TERMS = 5000
 MAX_COMPONENT_ROWS = 64000
 MAX_SCORE = 200000
 HALF_LIFE = 14 * 86400
@@ -90,9 +90,7 @@ def ingest(store, who, body):
         if result == old: continue
         if row is None:
             if store.db.execute('SELECT COUNT(*) FROM cl_components WHERE group_id=? AND generation=?', (who.group, generation)).fetchone()[0] >= MAX_COMPONENT_ROWS: fail('component_capacity', 503)
-            exists = store.db.execute('SELECT 1 FROM cl_components WHERE group_id=? AND generation=? AND reading=? AND text=? LIMIT 1', (who.group, generation) + term).fetchone()
-            total = store.db.execute('SELECT COUNT(*) FROM (SELECT reading,text FROM cl_components WHERE group_id=? AND generation=? GROUP BY reading,text)', (who.group, generation)).fetchone()[0]
-            if not exists and total >= MAX_TERMS: fail('term_capacity', 503)
+            capacity.require_term_admission(store.db, who.group, generation, *term)
         count = result['counts'][producer]
         same = old is not None and old['generation'] == result['generation']
         previous_count = old['counts'][producer] if same else 0
@@ -154,11 +152,12 @@ def bootstrap(store, who, body):
     if registry and (registry['device_id'] != who.sender or registry['fingerprint'] != fingerprint(who)):
         fail('producer_owned_by_other_device', 403)
     records = [decode(row[0]) for row in store.db.execute('SELECT record_json FROM cl_components WHERE group_id=? AND generation=? AND producer_id=? ORDER BY reading,text', key)] if registry else []
-    if len(records) > MAX_TERMS: fail('component_capacity', 503)
+    profile = capacity.profile_for_group(who.group, generation)
+    if len(records) > profile.distinct_terms: fail('component_capacity', 503)
     digest = component_digest(producer, records)
     if registry and registry['digest'] != digest: fail('component_state_mismatch', 503)
     result = {'exists': registry is not None, 'producer_id': producer,
               'producer_revision': registry['revision'] if registry else 0,
               'component_digest': digest, 'records': records}
-    if len(encode(result)) > 4 * 1024 * 1024: fail('response_size', 413)
+    if len(encode(result)) > profile.response_bytes: fail('response_size', 413)
     return result

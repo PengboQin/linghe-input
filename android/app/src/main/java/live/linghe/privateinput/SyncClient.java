@@ -143,6 +143,26 @@ final class SyncClient {
       prefs.edit().putLong("generation",prefs.getLong("generation",0)+1).putBoolean("learning",learning).putBoolean("clipboard",clipboard).commit();
     }
   }
+  private void applyNewGroupSharingDefaults()throws Exception{
+    // Only successful creation/admission calls this; existing opt-outs are not
+    // overwritten by reloads, background synchronization or group rotation.
+    synchronized(CONSENT_LOCK){
+      if(!state.optBoolean("newGroupSharingDefaultsPending"))return;
+      long generation=prefs.getLong("generation",0);
+      if(state.optLong("newGroupSharingDefaultsGeneration",generation)!=generation){
+        state.remove("newGroupSharingDefaultsPending");save();return;
+      }
+      try{
+        consent(true,true);
+        if(!AutoClipboardBridge.get(context).setSyncEnabled(true))throw new IOException("新设备共享设置未保存，请重试");
+        state.remove("newGroupSharingDefaultsPending");save();
+      }finally{
+        if(state.optBoolean("newGroupSharingDefaultsPending")){
+          state.put("newGroupSharingDefaultsGeneration",prefs.getLong("generation",0));save();
+        }
+      }
+    }
+  }
   private boolean permitted(int domain,long generation){
     try{
       return connected()&&(SyncCrypto.find(state.getJSONObject("membership"),state.getJSONObject("identity").getString("device")).getInt("permissions")&domain)!=0&&prefs.getLong("generation",0)==generation&&prefs.getBoolean(domain==1?"learning":"clipboard",false);
@@ -210,7 +230,9 @@ final class SyncClient {
     state.put("membership",pack.getJSONObject("membership")).put("groupKey",SyncCrypto.b64(key)).put("anchor",anchor);
     state.remove("joining");state.remove("pair");state.remove("pendingCode");state.remove("pendingQR");state.remove("departed");
     state.remove("profileRegistered");state.put("privacyEpoch",PersonalReset.generation(context));
+    state.put("newGroupSharingDefaultsPending",true).put("newGroupSharingDefaultsGeneration",prefs.getLong("generation",0));
     save();
+    applyNewGroupSharingDefaults();
   }
   private void refreshMembership()throws Exception{
     JSONObject old=state.getJSONObject("membership"),m=rpc(group(),1,null,false).getJSONObject("membership");
@@ -377,7 +399,7 @@ final class SyncClient {
       byte[] payload=SyncCrypto.data(pending,"payload");
       if(domain==1){
         String text=SyncCrypto.utf8(payload);
-        LearningModel merged=new LearningModel();
+        LearningModel merged=new LearningModel(LearningCapacityProfiles.EXPANDED_10000);
         merged.merge(text);
         new LearningSnapshotFile(new File(context.getFilesDir(),"Shared")).publish(text);
         String personal=merged.personalSnapshot();
@@ -522,7 +544,7 @@ final class SyncClient {
           // idempotent payload and persist a receipt before acknowledging it.
         }
         if(!duplicate){
-          if(domain==1){LearningModel validation=new LearningModel();validation.merge(SyncCrypto.utf8(payload));}
+          if(domain==1){LearningModel validation=new LearningModel(LearningCapacityProfiles.EXPANDED_10000);validation.merge(SyncCrypto.utf8(payload));}
           String pendingKey=domain==1?"pendingLearningIncoming":"pendingClipboardIncoming";
           state.put(pendingKey,new JSONObject().put("wire",wire).put("payload",SyncCrypto.b64(payload)).put("ledger",ledger).put("generation",generation));
           save();
@@ -546,7 +568,7 @@ final class SyncClient {
     flushOutbox();
     synchronized(CONSENT_LOCK){checkPass(generation,membership,privacyEpoch);}
     if(preferredAutomaticDomain!=2&&(mask&1)!=0&&learning()&&permitted(1,generation)&&!new LearningCoordinator(context.getFilesDir(),new File(context.getFilesDir(),"Shared")).requiresPrivateRecovery()){
-      LearningModel export=new LearningModel();
+      LearningModel export=new LearningModel(LearningCapacityProfiles.EXPANDED_10000);
       File shared=new File(context.getFilesDir(),"Shared");
       String current=new LearningSnapshotFile(shared).read();
       if(current!=null)export.merge(current);
@@ -572,7 +594,7 @@ final class SyncClient {
   }
   void configureCloudLearning(boolean enabled,boolean authorizeRank)throws Exception{
     if(!enabled){prefs.edit().putBoolean(CloudLearningStore.ENABLED,false).putBoolean(CloudLearningStore.RANK,false).putBoolean(CloudLearningStore.VALID,false).putBoolean(CloudLearningStore.REVOKE,connected()).commit();PersonalChangeSignal.notifyChanged(context);if(!connected())return;}
-    SyncCrypto.require(connected());new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).configure(enabled,authorizeRank);
+    SyncCrypto.require(connected());refreshDeviceStatus();SyncCrypto.require(connected());new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).configure(enabled,authorizeRank);
   }
   void synchronizeCloudLearning()throws Exception{SyncCrypto.require(connected());new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).synchronize(true);}
   void authorizeCloudRanking()throws Exception{SyncCrypto.require(connected());new CloudLearningSync(context,state,(path,body)->request(state.getString("endpoint"),"POST",path,body)).authorizeRank();}
@@ -586,6 +608,7 @@ final class SyncClient {
   }
   JSONObject invite()throws Exception{
     SyncCrypto.require(connected());
+    refreshDeviceStatus();SyncCrypto.require(connected());
     refreshMembership();
     SyncCrypto.require(SyncCrypto.find(state.getJSONObject("membership"),identity().getString("device")).getInt("permissions")==3);
     JSONObject anchor=state.getJSONObject("anchor"),invitation=new JSONObject().put("version",1).put("endpoint",state.getString("endpoint")).put("anchor",anchor);
@@ -610,12 +633,12 @@ final class SyncClient {
     SyncCrypto.require(!connected()&&!joining());
     JSONObject m=SyncCrypto.newMembership(identity());
     state.remove("departed");state.put("privacyEpoch",PersonalReset.generation(context));
-    state.put("endpoint",endpoint(server)).put("membership",m).put("anchor",SyncCrypto.anchor(m)).put("groupKey",SyncCrypto.b64(SyncCrypto.random(32))).put("registering",true);
+    state.put("endpoint",endpoint(server)).put("membership",m).put("anchor",SyncCrypto.anchor(m)).put("groupKey",SyncCrypto.b64(SyncCrypto.random(32))).put("registering",true).put("newGroupSharingDefaultsPending",true).put("newGroupSharingDefaultsGeneration",prefs.getLong("generation",0));
     save();
     finishRegistration();
   }
   private void finishRegistration()throws Exception{
-    if(!state.optBoolean("registering"))return;
+    if(!state.optBoolean("registering")){if(connected())applyNewGroupSharingDefaults();return;}
     try{
       SyncCrypto.require(request(state.getString("endpoint"),"POST","/v1/groups",state.getJSONObject("membership")).optBoolean("accepted"));
     }
@@ -627,6 +650,7 @@ final class SyncClient {
     }
     state.remove("registering");
     save();
+    applyNewGroupSharingDefaults();
   }
   private void approveQuickClaims()throws Exception{
     JSONObject current=state.getJSONObject("membership"),identity=identity();
@@ -739,7 +763,8 @@ final class SyncClient {
     }
   }
   boolean owner()throws Exception{
-    return connected()&&identity().getString("ownerID").equals(state.getJSONObject("anchor").getString("ownerID"));
+    // Android is a mobile controller even if another device founded the group.
+    return connected()&&SyncCrypto.find(state.getJSONObject("membership"),identity().getString("device")).getInt("permissions")==3;
   }
   JSONArray devices()throws Exception{refreshDeviceStatus();return state.optJSONArray("deviceStatus")==null?new JSONArray():state.getJSONArray("deviceStatus");}
   private void refreshDeviceStatus()throws Exception{

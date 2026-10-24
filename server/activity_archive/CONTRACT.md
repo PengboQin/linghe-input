@@ -21,10 +21,10 @@ full member permissions==3 may configure group policy but cannot read others by 
 `consent` is null or `{version,enabled,providers,readers}` for requesting device.
 `limits` includes `{max_batch_events:128,max_event_bytes:262144,max_body_bytes:524288,retention_days,max_group_bytes}`.
 
-2 **set_group_policy** body `{expected_version:0,enabled:true,retention_days:30,max_group_bytes:104857600}`.
+2 **set_group_policy** body `{expected_version:0,enabled:true,retention_days:30,max_group_bytes:4294967296}`.
 Initial policy version is 0; CAS mismatch returns `policy_conflict` 409.
-retention_days 1..3650; max_group_bytes 1048576..1073741824. Result `{policy_version,enabled,retention_days,max_group_bytes}`.
-Full current member only. Default policy disabled,30 days,100MiB. Closing group also disables every device consent and increments their versions; reopening requires fresh explicit per-device consent, rejecting pre-close offline queues.
+retention_days 1..3650; max_group_bytes 1048576..4294967296. Result `{policy_version,enabled,retention_days,max_group_bytes}`.
+Full current member only. Default policy disabled,30 days,4GiB. Closing group also disables every device consent and increments their versions; reopening requires fresh explicit per-device consent, rejecting pre-close offline queues.
 
 3 **set_device_consent** body `{expected_version:0,enabled:true,providers:["ime.commit.v1","clipboard.observed.v1"],readers:[UUID]}`.
 Device signs own consent; readers must CURRENT members, explicit list, default `[sender]` if omitted.

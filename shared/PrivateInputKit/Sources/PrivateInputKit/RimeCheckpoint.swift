@@ -8,10 +8,12 @@ public struct RimeLearnedWord: Equatable {
 }
 
 public enum RimeLearningFormat {
-    public static func parseExport(_ data: Data) throws -> [RimeLearnedWord] {
-        guard data.count <= 2 * 1024 * 1024 else { throw InputDataError.oversized }
+    public static func parseExport(_ data: Data, capacityProfile: LearningCapacityProfile = LearningCapacityProfiles.legacy5000) throws -> [RimeLearnedWord] {
+        let profile = try LearningCapacityProfiles.require(id: capacityProfile.id, version: capacityProfile.version)
+        guard data.count <= profile.nativeTsvBytes else { throw InputDataError.oversized }
         guard let string = String(data: data, encoding: .utf8) else { throw InputDataError.invalidRecord }
         var result: [RimeLearnedWord] = [], ids: Set<String> = []
+        var learnedRows = 0
         for line in string.split(separator: "\n", omittingEmptySubsequences: true) {
             if line.hasPrefix("#") { continue } // Discard engine/device metadata.
             let columns = line.split(separator: "\t", omittingEmptySubsequences: false)
@@ -22,7 +24,11 @@ public enum RimeLearningFormat {
             try entry.validate()
             guard ids.insert(entry.id).inserted else { throw InputDataError.duplicateEntry }
             result.append(.init(reading: reading, text: text, count: count))
-            guard result.count <= 5000 else { throw InputDataError.oversized }
+            // Rime also exports zero-commit prediction rows. They must remain
+            // visible to baseline reconciliation, but are not learned words.
+            // Keep the total byte/row validation above; bound positive entries.
+            if count > 0 { learnedRows += 1 }
+            guard learnedRows <= profile.nativePositiveRows else { throw InputDataError.oversized }
         }
         return result
     }
@@ -40,7 +46,7 @@ public enum RimeLearningFormat {
             lines.append(entry.text + "\t" + entry.reading + "\t" + count)
         }
         let result = Data((lines.joined(separator: "\n") + "\n").utf8)
-        guard result.count <= 2 * 1024 * 1024 else { throw InputDataError.oversized }
+        guard result.count <= model.capacityProfile.nativeTsvBytes else { throw InputDataError.oversized }
         return result
     }
 }
@@ -50,8 +56,26 @@ public struct RimeLearningCheckpoint: Codable {
     public private(set) var observedCounts: [String: UInt64] = [:]
     public private(set) var appliedGenerations: [String: UInt64]?
     public init() {}
+    public var capacityProfile: LearningCapacityProfile { model.capacityProfile }
+    public init(capacityProfile: LearningCapacityProfile) throws { model = try LearningModel(capacityProfile: capacityProfile) }
+    public mutating func upgradeCapacity(to profile: LearningCapacityProfile) throws {
+        var next = self; try next.model.upgradeCapacity(to: profile)
+        try next.validateState(); _ = try next.persistedData(); self = next
+    }
+    public func persistedData() throws -> Data {
+        try validateState(); _ = try model.export()
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(self)
+        guard data.count <= capacityProfile.checkpointStateBytes else { throw InputDataError.oversized }
+        return data
+    }
+    public static func restore(_ data: Data) throws -> Self {
+        let limit = max(LearningCapacityProfiles.legacy5000.checkpointStateBytes, LearningCapacityProfiles.expanded10000.checkpointStateBytes)
+        guard data.count <= limit else { throw InputDataError.oversized }
+        return try JSONDecoder().decode(Self.self, from: data)
+    }
     public mutating func observeExport(_ data: Data, device: String) throws {
-        let words = try RimeLearningFormat.parseExport(data)
+        let words = try RimeLearningFormat.parseExport(data, capacityProfile: capacityProfile)
         var next = self
         for word in words {
             if let entry = next.model.entries[word.id], entry.generation > (appliedGenerations?[word.id] ?? 0) { continue }
@@ -63,7 +87,11 @@ public struct RimeLearningCheckpoint: Codable {
             }
             next.observedCounts[word.id] = word.count
         }
-        self = next
+        // Missing and explicit zero have the same baseline (`?? 0`). Process
+        // zeros first, including positive→zero resets, then compact only zeros.
+        // Never discard nonzero proof or a model/pin/reset generation.
+        next.observedCounts = next.observedCounts.filter { $0.value > 0 }
+        try next.validateState(); self = next
     }
     public mutating func mergeRemoteArchive(_ data: Data) throws { try model.merge(data) }
     public mutating func setPinned(reading: String, text: String, pinned: Bool, device: String) throws {
@@ -74,9 +102,41 @@ public struct RimeLearningCheckpoint: Codable {
     // Call ONLY after the actual engine import succeeded and its export was
     // re-read while input was quiescent. Imported counts are not local typing.
     public mutating func establishBaselineAfterImport(_ data: Data) throws {
-        observedCounts = Dictionary(uniqueKeysWithValues: try RimeLearningFormat.parseExport(data).map { ($0.id, $0.count) })
-        appliedGenerations = Dictionary(uniqueKeysWithValues: model.entries.values.map { ($0.id, $0.generation) })
+        var next = self
+        next.observedCounts = Dictionary(uniqueKeysWithValues: try RimeLearningFormat.parseExport(data, capacityProfile: capacityProfile).filter { $0.count > 0 }.map { ($0.id, $0.count) })
+        next.appliedGenerations = Dictionary(uniqueKeysWithValues: model.entries.values.map { ($0.id, $0.generation) })
+        try next.validateState(); self = next
     }
     public func outboundArchive() throws -> Data { try model.export() }
     public func engineImport() throws -> Data { try RimeLearningFormat.importTSV(from: model) }
+    private enum CodingKeys: String, CodingKey { case model, observedCounts, appliedGenerations }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        model = try values.decode(LearningModel.self, forKey: .model)
+        observedCounts = try values.decode([String: UInt64].self, forKey: .observedCounts)
+        appliedGenerations = try values.decodeIfPresent([String: UInt64].self, forKey: .appliedGenerations)
+        try validateState()
+    }
+    public func encode(to encoder: Encoder) throws {
+        try validateState()
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(model, forKey: .model); try values.encode(observedCounts, forKey: .observedCounts)
+        try values.encodeIfPresent(appliedGenerations, forKey: .appliedGenerations)
+    }
+    private func validateState() throws {
+        try model.validateStoredEntries()
+        guard observedCounts.count <= capacityProfile.observedCountKeys,
+              (appliedGenerations?.count ?? 0) <= capacityProfile.appliedGenerationKeys else { throw InputDataError.oversized }
+        for (id, count) in observedCounts {
+            try Self.validateEntryID(id)
+            guard count <= 1_000_000_000 else { throw InputDataError.invalidRecord }
+        }
+        for id in appliedGenerations?.keys ?? Dictionary<String, UInt64>().keys { try Self.validateEntryID(id) }
+    }
+    private static func validateEntryID(_ id: String) throws {
+        let pieces = id.split(separator: "\u{001F}", omittingEmptySubsequences: false)
+        guard pieces.count == 2 else { throw InputDataError.invalidRecord }
+        try LearningEntry(reading: String(pieces[0]), text: String(pieces[1])).validate()
+    }
+
 }

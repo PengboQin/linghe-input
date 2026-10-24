@@ -2,14 +2,6 @@ import Foundation
 import CoreText
 import CryptoKit
 
-/// Shared product admission plus platform rendering support, for automatic
-/// suggestions only. Do not use this for literal insertion or stored records.
-enum AppleCandidateAdmission {
-    static func allows(_ text:String,displayable:(String)->Bool)->Bool {
-        text.withCString {pi_candidate_text_allowed($0) != 0} && displayable(text)
-    }
-}
-
 /// Only candidates with real system-font glyphs are presented. This is a local
 /// rendering policy, not a Unicode-plane blacklist or a user-dictionary edit.
 enum CandidateGlyphSupport {
@@ -64,12 +56,17 @@ struct CandidateVisibilityPage<Row> {
     private(set) var rows:[Row]=[]
     private(set) var sourceOffset=0
     private(set) var exhausted=false
-    mutating func slice(offset:Int,limit:Int,accept:(Row)->Bool,source:(Int,Int)->[Row])->[Row] {
-        guard offset>=0,limit>0,offset<=Int.max-limit else {return []}
-        while rows.count<offset+limit && !exhausted {
+    mutating func slice(offset:Int,limit:Int,maximumBatches:Int = .max,sourceMayContinue:()->Bool = {false},accept:(Row)->Bool,source:(Int,Int)->[Row])->[Row] {
+        guard offset>=0,limit>0,maximumBatches>0,offset<=Int.max-limit else {return []}
+        var batches=0
+        while rows.count<offset+limit && !exhausted && batches<maximumBatches {
             let batch=source(sourceOffset,64)
             rows.append(contentsOf:batch.filter(accept));sourceOffset+=batch.count
-            exhausted=batch.count<64
+            exhausted=batch.count<64 && !sourceMayContinue()
+            batches+=1
+            // A budgeted native source may have scanned only rejected rows.
+            // Keep this visible offset, yield, then retry in a later UI turn.
+            if batch.isEmpty && !exhausted {break}
         }
         return Array(rows.dropFirst(offset).prefix(limit))
     }

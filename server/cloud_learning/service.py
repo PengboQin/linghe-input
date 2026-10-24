@@ -24,13 +24,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from activity_archive.service import ArchiveError, decode, encode, fail, number, shape, uid, unb64
 from .authority import fingerprint
 from . import components
+from . import capacity
 
 DOMAIN = b'PrivateInput/cloud-learning-request/v1\0'
 ALGORITHM = 'shared-lexeme-decay-v2'
 CHARSET_SHA256 = '668f69e856c357157720ab5a6f8644dca8a253b439772f92cd762b186a53b421'
 MAX_WRAPPER = 1048576
 MAX_EVENTS = 128
-MAX_TERMS = 5000
+MAX_TERMS = capacity.CURRENT.distinct_terms
 MAX_EVENT_ROWS = 100000
 MAX_WEIGHT = 200000
 HALF_LIFE = 14 * 86400
@@ -121,7 +122,7 @@ class LearningStore:
                     'event_rows': self.db.execute('SELECT COUNT(*) FROM cl_events WHERE group_id=?', (who.group,)).fetchone()[0],
                     'max_event_rows': MAX_EVENT_ROWS,
                     'term_rows': self.db.execute('SELECT COUNT(*) FROM cl_terms WHERE group_id=? AND generation=?', (who.group, group['generation'])).fetchone()[0],
-                    'max_term_rows': MAX_TERMS,
+                    'max_term_rows': capacity.profile_for_group(who.group, group['generation']).distinct_terms,
                     'component_rows': self.db.execute('SELECT COUNT(*) FROM cl_components WHERE group_id=? AND generation=?', (who.group, group['generation'])).fetchone()[0],
                     'max_component_rows': components.MAX_COMPONENT_ROWS,
                     'producer_count': self.db.execute('SELECT COUNT(*) FROM cl_producers WHERE group_id=? AND generation=?', (who.group, group['generation'])).fetchone()[0],
@@ -147,7 +148,7 @@ class LearningStore:
                 return self.status(who)
             if operation == 2:
                 shape(body, ('expected_version', 'enabled'))
-                if not who.permissions & 2: fail('learning_admin_permission', 403)
+                if not who.permissions & 2 or not getattr(who,'can_manage',True): fail('learning_admin_permission', 403)
                 if type(body['enabled']) is not bool: fail('boolean')
                 group = self.group(who.group)
                 if number(body['expected_version']) != group['policy_version']: fail('policy_stale', 409)
@@ -221,7 +222,7 @@ class LearningStore:
             term_key = (who.group, generation, reading, text, layout)
             term = self.db.execute('SELECT * FROM cl_terms WHERE group_id=? AND generation=? AND reading=? AND text=? AND layout=?', term_key).fetchone()
             if term is None:
-                if self.db.execute('SELECT COUNT(*) FROM cl_terms WHERE group_id=? AND generation=?', (who.group, generation)).fetchone()[0] >= MAX_TERMS: fail('term_capacity', 503)
+                capacity.require_term_admission(self.db, who.group, generation, reading, text)
                 self.db.execute('INSERT INTO cl_terms(group_id,generation,reading,text,layout) VALUES(?,?,?,?,?)', term_key)
                 term = self.db.execute('SELECT * FROM cl_terms WHERE group_id=? AND generation=? AND reading=? AND text=? AND layout=?', term_key).fetchone()
             rejection = 'term_generation_stale' if tg != term['term_generation'] else ('term_removed' if kind in ('confirm', 'pin') and term['removed'] else None)
@@ -274,8 +275,9 @@ class LearningStore:
                 'upserts': [{k: v for k, v in x.items() if k != 'deleted'} for x in ordered if not x['deleted']],
                 'tombstones': [{k: v for k, v in x.items() if k not in ('deleted', 'weight', 'pinned')} for x in ordered if x['deleted']],
                 'watermarks': watermarks, 'producer_watermarks': producer_marks, 'model_sha256': digest, 'has_more': target < group['model_version'], 'algorithm_version': ALGORITHM}
-        if len(result['upserts']) > MAX_TERMS or len(result['tombstones']) > MAX_TERMS: fail('model_capacity', 503)
-        if len(encode(result)) > 4 * 1024 * 1024: fail('response_size', 413)
+        profile = capacity.profile_for_group(who.group, generation)
+        if len(result['upserts']) > profile.model_terms or len(result['tombstones']) > profile.model_terms: fail('model_capacity', 503)
+        if len(encode(result)) > profile.response_bytes: fail('response_size', 413)
         return result
 
     @staticmethod

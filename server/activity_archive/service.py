@@ -20,6 +20,7 @@ import time
 import uuid
 from urllib.parse import quote
 
+from .capacity import DEFAULT_DATABASE_BYTES, DEFAULT_GROUP_BYTES, MAX_GROUP_BYTES, MAX_LEDGER_BYTES
 from .metadata import latest_authorized_activity
 from .diagnostics import validate_decision_extensions
 
@@ -31,7 +32,6 @@ BODY_LIMIT = 524288
 EVENT_LIMIT = 262144
 MAX_BATCH = 128
 MAX_RESPONSE = 1048576
-MAX_LEDGER_BYTES = 134217728
 ERASE_REASONS = {'unknown': 0, 'retention_expire': 1, 'user_erase': 2}
 MAX_INTEGER = (1 << 63) - 1
 DOMAIN = b'PrivateInput/activity-request/v1\0'
@@ -152,6 +152,12 @@ class Identity:
     members: frozenset
 
 
+@dataclass(frozen=True)
+class RelayIdentity(Identity):
+    # Derived from current registered active members, never a client claim.
+    can_manage: bool
+
+
 class MemoryAuthority:
     """Explicit synthetic-test authority. Never selected by environment defaults."""
     def __init__(self):
@@ -200,6 +206,7 @@ class RelayMembershipAuthority:
                     fail('membership_anchor', 403)
                 tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
                 members = set()
+                active_kinds = {}
                 selected = None
                 for member in state['members']:
                     device = identifier(member['device'])[0]
@@ -214,11 +221,13 @@ class RelayMembershipAuthority:
                     if departed or expired:
                         continue
                     members.add(device)
+                    active_kinds[device]=profile[0] if profile else 'unknown'
                     if device == sender:
                         selected = member
                 if selected is None:
                     fail('member_inactive', 403)
-                return Identity(group, sender, b64(selected['signingPublic'], 32, 32), selected['permissions'], state['revision'], digest, frozenset(members))
+                from group_control_policy import management_kind_allowed
+                return RelayIdentity(group, sender, b64(selected['signingPublic'], 32, 32), selected['permissions'], state['revision'], digest, frozenset(members), management_kind_allowed(active_kinds[sender],active_kinds.values()))
         except RelayError:
             fail('membership_invalid', 403)
         except sqlite3.Error:
@@ -226,7 +235,7 @@ class RelayMembershipAuthority:
 
 
 class ArchiveStore:
-    def __init__(self, database, *, clock=time.time, max_database_bytes=1073741824, cursor_ttl=86400):
+    def __init__(self, database, *, clock=time.time, max_database_bytes=DEFAULT_DATABASE_BYTES, cursor_ttl=86400):
         self.path = Path(database)
         self.clock = clock
         self.cursor_ttl = cursor_ttl
@@ -241,8 +250,8 @@ class ArchiveStore:
         self.db.execute('PRAGMA wal_autocheckpoint=256')
         page_size = self.db.execute('PRAGMA page_size').fetchone()[0]
         self.db.execute('PRAGMA max_page_count=' + str(max_database_bytes // page_size))
-        self.db.executescript('''
-        CREATE TABLE IF NOT EXISTS archive_groups(group_id TEXT PRIMARY KEY, policy_version INTEGER NOT NULL DEFAULT 0, enabled INTEGER NOT NULL DEFAULT 0, retention_days INTEGER NOT NULL DEFAULT 30, max_group_bytes INTEGER NOT NULL DEFAULT 104857600, acl_version INTEGER NOT NULL DEFAULT 0);
+        self.db.executescript(f'''
+        CREATE TABLE IF NOT EXISTS archive_groups(group_id TEXT PRIMARY KEY, policy_version INTEGER NOT NULL DEFAULT 0, enabled INTEGER NOT NULL DEFAULT 0, retention_days INTEGER NOT NULL DEFAULT 30, max_group_bytes INTEGER NOT NULL DEFAULT {DEFAULT_GROUP_BYTES}, acl_version INTEGER NOT NULL DEFAULT 0);
         CREATE TABLE IF NOT EXISTS device_consents(group_id TEXT NOT NULL REFERENCES archive_groups(group_id),device_id TEXT NOT NULL,version INTEGER NOT NULL,enabled INTEGER NOT NULL,providers BLOB NOT NULL,readers BLOB NOT NULL,PRIMARY KEY(group_id,device_id));
         CREATE TABLE IF NOT EXISTS events(group_id TEXT NOT NULL REFERENCES archive_groups(group_id),event_id TEXT NOT NULL,device_id TEXT NOT NULL,installation_id TEXT NOT NULL,device_seq INTEGER NOT NULL,provider_id TEXT NOT NULL,event_type TEXT NOT NULL,observed_at REAL NOT NULL,received_at REAL NOT NULL,change_seq INTEGER NOT NULL DEFAULT 0,content_hash TEXT NOT NULL,event_json BLOB NOT NULL,size_bytes INTEGER NOT NULL,PRIMARY KEY(group_id,event_id),UNIQUE(group_id,device_id,installation_id,device_seq));
         CREATE INDEX IF NOT EXISTS events_scope ON events(group_id,device_id,change_seq);
@@ -292,7 +301,10 @@ class ArchiveStore:
             yield
             self.db.execute('COMMIT')
         except BaseException:
-            self.db.execute('ROLLBACK')
+            # SQLITE_FULL can already have rolled back this transaction. Keep
+            # its original capacity error instead of masking it with "no transaction".
+            if self.db.in_transaction:
+                self.db.execute('ROLLBACK')
             raise
 
     def close(self):
@@ -314,7 +326,9 @@ class ArchiveStore:
             self.cursor_key = key
 
     def group(self, group):
-        self.db.execute('INSERT OR IGNORE INTO archive_groups(group_id) VALUES(?)', (group,))
+        # Existing databases retain their original SQL column default. Bind the
+        # current value only for new groups; never rewrite an existing policy.
+        self.db.execute('INSERT OR IGNORE INTO archive_groups(group_id,max_group_bytes) VALUES(?,?)', (group, DEFAULT_GROUP_BYTES))
         return self.db.execute('SELECT * FROM archive_groups WHERE group_id=?', (group,)).fetchone()
 
     def consent(self, group, device):
@@ -432,14 +446,14 @@ class ArchiveStore:
 
     def set_policy(self, who, value):
         shape(value, ['expected_version', 'enabled', 'retention_days', 'max_group_bytes'])
-        if who.permissions != 3:
+        if who.permissions != 3 or not getattr(who,'can_manage',True):
             fail('manage_permission', 403)
         previous = self.group(who.group)
         if number(value['expected_version']) != previous['policy_version']:
             fail('policy_conflict', 409)
         enabled = boolean(value['enabled'])
         days = number(value['retention_days'], 1, 3650)
-        quota = number(value['max_group_bytes'], 1048576, 1073741824)
+        quota = number(value['max_group_bytes'], 1048576, MAX_GROUP_BYTES)
         version = previous['policy_version'] + 1
         self.db.execute('UPDATE archive_groups SET policy_version=?,enabled=?,retention_days=?,max_group_bytes=?,acl_version=acl_version+1 WHERE group_id=?', (version, int(enabled), days, quota, who.group))
         if not enabled:
@@ -566,6 +580,9 @@ class ArchiveStore:
             fail('batch_conflict', 409)
         accepted, duplicates, installations, batch_seen = [], [], set(), set()
         now = self.clock()
+        # process() holds BEGIN IMMEDIATE for the full batch. Count bytes once;
+        # duplicates do not consume quota and any failure rolls back all inserts.
+        used_bytes = self.db.execute('SELECT COALESCE(SUM(size_bytes),0) FROM events WHERE group_id=?', (who.group,)).fetchone()[0]
         for event in events:
             event_id, install, seq, observed, raw, digest = self.validate_event(who, event, consent)
             if event_id in batch_seen:
@@ -582,8 +599,7 @@ class ArchiveStore:
                 continue
             if self.db.execute('SELECT 1 FROM events WHERE group_id=? AND device_id=? AND installation_id=? AND device_seq=?', (who.group, who.sender, install, seq)).fetchone():
                 fail('sequence_conflict', 409)
-            total = self.db.execute('SELECT COALESCE(SUM(size_bytes),0),COUNT(*) FROM events WHERE group_id=?', (who.group,)).fetchone()
-            if total[0] + len(raw) > policy['max_group_bytes'] or total[1] >= 100000:
+            if used_bytes + len(raw) > policy['max_group_bytes']:
                 fail('group_capacity', 507)
             target = event.get('edit_op') or {}
             target_id = target.get('target_event_id')
@@ -601,6 +617,7 @@ class ArchiveStore:
             if self.fts:
                 self.db.execute('INSERT INTO event_search VALUES(?,?,?)', (who.group, event_id, event['content']['text']))
             accepted.append(event_id)
+            used_bytes += len(raw)
         self.db.execute('INSERT OR IGNORE INTO ingest_receipts VALUES(?,?,?,?,?,?)', (who.group, who.sender, batch_id, batch_hash, encode(sorted(batch_seen)), now))
         ranges = []
         for install in sorted(installations):

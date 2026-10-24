@@ -18,7 +18,8 @@ class RecentLearningTests(unittest.TestCase):
         self.now=1800000000
         self.relay=Relay(Path(self.temp.name)/'relay.sqlite',clock=lambda:self.now)
         self.fixture=json.loads((Path(__file__).resolve().parents[1]/'fixtures/protocol/relay-membership-v1.json').read_text())
-        self.relay.register(self.fixture['initial']);self.relay.update(self.fixture['paired']['group'],self.fixture['paired'])
+        from test_relay import seed_existing_membership
+        self.relay.register(self.fixture['initial']);seed_existing_membership(self.relay,self.fixture['paired'])
         self.group=self.fixture['paired']['group'];self.members=self.fixture['paired']['members']
         self.owner=self.fixture['initial']['members'][0]['device']
         self.peer=next(m['device'] for m in self.members if m['device']!=self.owner)
@@ -154,7 +155,10 @@ class RecentLearningTests(unittest.TestCase):
         state=copy.deepcopy(self.relay.state(self.group));state['revision']+=1;state['epoch']+=1
         state['members'].append({'device':device,'signingPublic':base64.b64encode(public).decode(),'exchangePublic':base64.b64encode(exchange).decode(),'permissions':3})
         state['signature']=base64.b64encode(Ed25519PrivateKey.from_private_bytes(base64.b64decode(self.fixture['ownerSeed'])).sign(membership_canonical(state))).decode()
-        self.relay.update(self.group,state);self.epoch=state['epoch'];self.revision=state['revision']
+        # This helper tests conditional reads across an already-admitted epoch;
+        # membership admission itself is tested separately through atomic v2.
+        from test_relay import seed_existing_membership
+        seed_existing_membership(self.relay,state);self.epoch=state['epoch'];self.revision=state['revision']
         for member in state['members']:self.hello(member['device'])
         return device
     def testConditionalPullContinuesPastKnownPeerRatherThanEndingEarly(self):

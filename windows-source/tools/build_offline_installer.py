@@ -14,7 +14,7 @@ import struct
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.4.4-win1'
+VERSION = '0.6.0-win1'
 MAX_FILE = 256 * 1024 * 1024
 MAX_TOTAL = 512 * 1024 * 1024
 

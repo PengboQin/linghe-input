@@ -329,7 +329,9 @@ class Relay:
             reject("group")
         with self.transaction():
             old = self.state(group)
-            if state['version']==1 and state['revision']!=old['revision'] and self.db.execute("SELECT 1 FROM device_profiles WHERE group_id=? AND kind!='unknown' LIMIT 1",(group,)).fetchone():reject('upgrade_required',403)
+            # Existing v1 snapshots remain readable/idempotent. Every change
+            # must use atomic v2 admission/removal, even before classification.
+            if state['version']==1 and state['revision']!=old['revision']:reject('upgrade_required',403)
             if state['version']==2 and self.transaction_depth==1 and state['revision']!=old['revision']:reject('atomic_change_required',403)
             if b64(old["ownerPublic"], 32, 32) != root or identifier(old["ownerID"])[0] != identifier(state["ownerID"])[0]:
                 reject("owner", 403)
@@ -480,6 +482,11 @@ class Relay:
             reject("expired", 410)
         with self.transaction():
             current = self.state(group)
+            import device_administration
+            proposed_membership=template['membership']
+            actor=identifier(proposed_membership['issuer'] if proposed_membership.get('version')==2 else current['ownerID'])[0]
+            device_administration.require_group_control(self,group,actor,now,state=current,
+                                                       allow_owner_root=proposed_membership.get('version')!=2)
             if root != b64(current["ownerPublic"], 32, 32) or identifier(template["membership"]["ownerID"])[0] != identifier(current["ownerID"])[0]:
                 reject("owner", 403)
             if template["membership"]["revision"] != current["revision"] + 1:
@@ -555,6 +562,12 @@ class Relay:
                 self.db.execute("INSERT INTO pair_sessions VALUES(?,?,?,?,?,NULL)", (group, session, sender, temporary_pair["expiresAt"], encoded(temporary_pair)))
                 return {"accepted": True}
             if operation == 5:
+                if body:reject()
+                import device_administration
+                try:device_administration.require_group_control(self,group,sender,now,state=state,allow_owner_root=True)
+                except RelayError as error:
+                    if error.status==403:return {'requests':[]}
+                    raise
                 if body:
                     reject()
                 rows = self.db.execute("SELECT request FROM pair_sessions WHERE group_id=? ORDER BY rowid", (group,)).fetchall()

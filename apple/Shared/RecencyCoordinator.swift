@@ -28,10 +28,16 @@ struct RecencyCoordinator {
     private var permit = false
     private var clockValidityDeadline: Double?
 
-    init(persisted: Persisted? = nil) throws {
+    init(persisted: Persisted? = nil, capacityProfile: LearningCapacityProfile = LearningCapacityProfiles.expanded10000) throws {
         policy = try RecentLearningPolicy(referenceDay: persisted?.referenceDay ?? 90,
                                          windowDays: persisted?.windowDays ?? 90)
-        if let persisted { try model.merge(persisted.archive, policy: policy) }
+        if let persisted {
+            model = try RecentLearningModel(restoring: persisted.archive, policy: policy)
+        } else { model = try RecentLearningModel(capacityProfile: capacityProfile) }
+    }
+    mutating func upgradeCapacity(to profile: LearningCapacityProfile) throws {
+        guard model.capacityProfile != profile else { return }
+        var next = model; try next.upgradeCapacity(to: profile, policy: policy); model = next
     }
     func persisted() throws -> Persisted {
         .init(archive: try model.export(policy: policy), referenceDay: policy.referenceDay, windowDays: policy.windowDays)
@@ -41,7 +47,7 @@ struct RecencyCoordinator {
         guard policy.referenceDay >= self.policy.referenceDay else { throw InputDataError.invalidRecord }
         var next = model
         let archive = try next.export(policy: self.policy)
-        next = RecentLearningModel(); try next.merge(archive, policy: policy)
+        next = try RecentLearningModel(capacityProfile: model.capacityProfile); try next.merge(archive, policy: policy)
         let resetProof = !permit || self.policy.referenceDay != policy.referenceDay
         self.model = next; self.policy = policy; self.clock = clock; clockValidityDeadline = validUntilUptime; permit = true
         if resetProof { invalidateObservation() }
@@ -54,7 +60,7 @@ struct RecencyCoordinator {
     /// day. A cross-midnight, cold start, imported or private interval is undated.
     mutating func observe(before: RimeLearningCheckpoint, after: RimeLearningCheckpoint,
                           replica: String, wall: Double, uptime: Double, boot: String,
-                          canDate: Bool) throws {
+                          canDate: Bool, validating: () -> Bool = { true }) throws {
         var active = clock
         let day = permit && canDate ? active?.day(wallUnixSeconds: wall, uptime: uptime, bootSession: boot) : nil
         clock = active
@@ -78,9 +84,13 @@ struct RecencyCoordinator {
         }
         // Establish the prior cumulative counts before adding a dated increment;
         // otherwise the final legacy MAX merge would double the replica count.
+        guard validating() else { throw SnapshotStoreError.busy }
         try model.mergeLegacy(before.outboundArchive(), policy: policy)
+        guard validating() else { throw SnapshotStoreError.busy }
         try model.recordLocalDeltas(deltas, policy: policy)
+        guard validating() else { throw SnapshotStoreError.busy }
         try model.mergeLegacy(after.outboundArchive(), policy: policy)
+        guard validating() else { throw SnapshotStoreError.busy }
         previousObservationDay = day; previousObservationUptime = day == nil ? nil : uptime
         previousBoot = day == nil ? nil : boot
     }
@@ -166,7 +176,7 @@ struct AppleRecencyBridge {
         let state = try JSONDecoder().decode(State.self, from: data)
         guard state.version == 1 else { throw InputDataError.incompatibleSchema }
         let policy = try state.policy
-        if let data = state.archive { var model = RecentLearningModel(); try model.merge(data, policy: policy) }
+        if let data = state.archive { var model = try RecentLearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try model.merge(data, policy: policy) }
         return state
     }
     func acceptAuthenticated(group: UUID, epoch: UInt64, policy: RecentLearningPolicy, unixSeconds: Double,
@@ -175,7 +185,7 @@ struct AppleRecencyBridge {
         _ = try RecentLearningClock(authenticatedUnixSeconds: unixSeconds, uptime: uptime, bootSession: boot)
         try update { old in
             if let old, old.group == group, (policy.referenceDay < old.referenceDay || epoch < old.epoch) { throw InputDataError.invalidRecord }
-            var model = RecentLearningModel()
+            var model = try RecentLearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
             if let old, old.group == group, let data = old.archive { try model.merge(data, policy: policy) }
             return State(group: group, epoch: epoch, referenceDay: policy.referenceDay, windowDays: policy.windowDays,
                 archive: try model.export(policy: policy), anchor: .init(unixSeconds: unixSeconds, uptime: uptime, boot: boot))
@@ -192,17 +202,49 @@ struct AppleRecencyBridge {
         return state.archive
     }
     func merge(_ data: Data, group: UUID, epoch: UInt64) throws {
-        try update { old in
-            guard var old, old.group == group, old.epoch == epoch else { throw InputDataError.invalidRecord }
+        guard try mergeIfCurrent(data, group: group, epoch: epoch) else { throw InputDataError.invalidRecord }
+    }
+    /// A completed local checkpoint may still refer to the previously accepted
+    /// group epoch after its clock anchor was suspended. Never publish that
+    /// observation into another target, or turn its local commit into failure.
+    func mergeIfCurrent(_ data: Data, group: UUID, epoch: UInt64, validating: () -> Bool = { true }) throws -> Bool {
+        try self.epoch.requireCurrent()
+        do { _ = try FileManager.default.attributesOfItem(atPath: file.path) }
+        catch let error as NSError where error.domain == NSCocoaErrorDomain &&
+            [NSFileNoSuchFileError, NSFileReadNoSuchFileError].contains(error.code) { return false }
+        var merged = false
+        try update(validating: validating) { old in
+            guard var old, old.group == group, old.epoch == epoch else { return nil }
             let policy = try old.policy
-            var model = RecentLearningModel()
+            var model = try RecentLearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
             if let data = old.archive { try model.merge(data, policy: policy) }
             try model.merge(data, policy: policy); old.archive = try model.export(policy: policy)
+            merged = true
             return old
         }
+        return merged
     }
-    private func update(_ action: (State?) throws -> State?) throws {
-        try epoch.requireCurrent()
+    private struct FileVersion: Equatable {
+        let inode: UInt64, size: UInt64
+        let modified: Date?
+        static func read(_ file: URL) throws -> Self? {
+            do {
+                let a = try FileManager.default.attributesOfItem(atPath: file.path)
+                return .init(inode: (a[.systemFileNumber] as? NSNumber)?.uint64Value ?? 0,
+                    size: (a[.size] as? NSNumber)?.uint64Value ?? 0, modified: a[.modificationDate] as? Date)
+            } catch let e as NSError where e.domain == NSCocoaErrorDomain && [NSFileNoSuchFileError, NSFileReadNoSuchFileError].contains(e.code) { return nil }
+        }
+    }
+    private func update(validating: () -> Bool = { true }, _ action: (State?) throws -> State?) throws {
+        try epoch.requireCurrent(); guard validating() else { throw SnapshotStoreError.busy }
+        let before = try FileVersion.read(file), old = try read()
+        guard try FileVersion.read(file) == before else { throw SnapshotStoreError.busy }
+        // Decode, merge and encode before acquiring the publication lock.
+        guard let next = try action(old) else { return }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(next)
+        guard data.count <= 3 * 1024 * 1024 else { throw InputDataError.oversized }
+        try epoch.requireCurrent(); guard validating() else { throw SnapshotStoreError.busy }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let descriptor = Darwin.open(directory.appendingPathComponent("learning-recency-publication.lock").path,
                                      O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
@@ -210,11 +252,8 @@ struct AppleRecencyBridge {
         defer { Darwin.close(descriptor) }
         guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else { throw SnapshotStoreError.busy }
         defer { flock(descriptor, LOCK_UN) }
-        guard let next = try action(read()) else { return }
-        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(next)
-        guard data.count <= 3 * 1024 * 1024 else { throw InputDataError.oversized }
         try epoch.requireCurrent()
+        guard validating(), try FileVersion.read(file) == before else { throw SnapshotStoreError.busy }
         #if os(iOS)
         try data.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         #else

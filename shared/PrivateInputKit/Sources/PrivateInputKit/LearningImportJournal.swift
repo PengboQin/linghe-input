@@ -35,13 +35,23 @@ public struct LearningImportJournal: Codable {
     /// includes the final pre-import observation and the incoming remote merge.
     public private(set) var checkpoint: RimeLearningCheckpoint
     public private(set) var pending: Intent?
-    private let version: Int
-    private static let currentVersion = 1
-    private static let maximumBytes = 8 * 1024 * 1024
+    private var version: Int
+    private static let maximumBytes = max(LearningCapacityProfiles.legacy5000.journalBytes, LearningCapacityProfiles.expanded10000.journalBytes)
 
     public init(checkpoint: RimeLearningCheckpoint = .init()) throws {
         try Self.validate(checkpoint)
-        self.version = Self.currentVersion; self.checkpoint = checkpoint
+        self.version = Self.version(for: checkpoint.capacityProfile); self.checkpoint = checkpoint
+    }
+
+    public var capacityProfile: LearningCapacityProfile { checkpoint.capacityProfile }
+    /// Capacity migration cannot rewrite a desired native transaction in flight.
+    public mutating func upgradeCapacity(to profile: LearningCapacityProfile) throws {
+        guard pending == nil else { throw JournalError.importPending }
+        var target = checkpoint; try target.upgradeCapacity(to: profile)
+        let next = try Self(checkpoint: target); _ = try next.persistedData(); self = next
+    }
+    private static func version(for profile: LearningCapacityProfile) -> Int {
+        profile == LearningCapacityProfiles.legacy5000 ? 1 : 2
     }
 
     /// Observe only when no native import may be unfinished. Mutates atomically
@@ -90,6 +100,20 @@ public struct LearningImportJournal: Codable {
         checkpoint = next; pending = nil
     }
 
+    /// Only after the ORIGINAL pending target has completed its native work.
+    /// No desired import or pending ID is rewritten before that proof. The
+    /// owner must reconcile provable post-crash excess before persisting this
+    /// completed journal, so a newly baselined word cannot lose local usage.
+    public mutating func commitThenUpgradeCapacity(transactionID: UUID, actualEngineExport: Data,
+                                                   to profile: LearningCapacityProfile) throws {
+        guard let intent = pending else { throw JournalError.noPendingImport }
+        guard intent.id == transactionID else { throw JournalError.staleTransaction }
+        var next = intent.target; try next.upgradeCapacity(to: profile)
+        try next.establishBaselineAfterImport(actualEngineExport); try Self.validate(next)
+        var completed = try Self(checkpoint: next); _ = try completed.persistedData()
+        completed.pending = nil; self = completed
+    }
+
     // There is deliberately no abort/"trust current native counts" shortcut.
     // After a crash the adapter must idempotently reset/re-import pending.target,
     // read the actual engine export, then commit the SAME transaction ID. In
@@ -104,7 +128,7 @@ public struct LearningImportJournal: Codable {
     public func persistedData() throws -> Data {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(self)
-        guard data.count <= Self.maximumBytes else { throw InputDataError.oversized }
+        guard data.count <= capacityProfile.journalBytes else { throw InputDataError.oversized }
         return data
     }
 
@@ -117,16 +141,24 @@ public struct LearningImportJournal: Codable {
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         version = try values.decode(Int.self, forKey: .version)
-        guard version == Self.currentVersion else { throw JournalError.incompatibleVersion }
+        guard version == 1 || version == 2 else { throw JournalError.incompatibleVersion }
         checkpoint = try values.decode(RimeLearningCheckpoint.self, forKey: .checkpoint)
         pending = try values.decodeIfPresent(Intent.self, forKey: .pending)
+        guard version == Self.version(for: checkpoint.capacityProfile) else { throw JournalError.incompatibleVersion }
         try Self.validate(checkpoint)
-        if let pending { try Self.validate(pending.target) }
+        if let pending {
+            guard pending.target.capacityProfile == checkpoint.capacityProfile else { throw JournalError.incompatibleVersion }
+            try Self.validate(pending.target)
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
+        guard version == Self.version(for: checkpoint.capacityProfile) else { throw JournalError.incompatibleVersion }
         try Self.validate(checkpoint)
-        if let pending { try Self.validate(pending.target) }
+        if let pending {
+            guard pending.target.capacityProfile == checkpoint.capacityProfile else { throw JournalError.incompatibleVersion }
+            try Self.validate(pending.target)
+        }
         var values = encoder.container(keyedBy: CodingKeys.self)
         try values.encode(version, forKey: .version)
         try values.encode(checkpoint, forKey: .checkpoint)
@@ -140,8 +172,8 @@ public struct LearningImportJournal: Codable {
     private static func validate(_ value: RimeLearningCheckpoint) throws {
         _ = try value.outboundArchive()
         guard value.model.entries.allSatisfy({ $0.key == $0.value.id }),
-              value.observedCounts.count <= 5000,
-              (value.appliedGenerations?.count ?? 0) <= 5000 else { throw InputDataError.invalidRecord }
+              value.observedCounts.count <= value.capacityProfile.observedCountKeys,
+              (value.appliedGenerations?.count ?? 0) <= value.capacityProfile.appliedGenerationKeys else { throw InputDataError.invalidRecord }
         for (id, count) in value.observedCounts {
             try validateEntryID(id)
             guard count <= 1_000_000_000 else { throw InputDataError.invalidRecord }

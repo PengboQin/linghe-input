@@ -47,12 +47,20 @@ final class LearningModel {
   }
  }
  private LinkedHashMap<String,Entry> entries=new LinkedHashMap<>();private PersonalLexicon.Snapshot personal;
+ private LearningCapacityProfiles.Profile capacity;
+ LearningModel(){this(LearningCapacityProfiles.LEGACY_5000);}
+ LearningModel(LearningCapacityProfiles.Profile profile){capacity=LearningCapacityMetadata.checked(profile);}
+ LearningCapacityProfiles.Profile capacityProfile(){return capacity;}
+ void upgradeCapacity(LearningCapacityProfiles.Profile profile)throws Exception{
+  profile=LearningCapacityMetadata.checked(profile);LearningCapacityMetadata.allowMerge(profile,capacity);
+  LearningModel next=copy();next.capacity=profile;next.export();capacity=profile;
+ }
  boolean learningEnabled=true;
- LearningModel copy(){LearningModel next=new LearningModel();next.entries=new LinkedHashMap<>(entries);next.personal=personal;next.learningEnabled=learningEnabled;return next;}
+ LearningModel copy(){LearningModel next=new LearningModel(capacity);next.entries=new LinkedHashMap<>(entries);next.personal=personal;next.learningEnabled=learningEnabled;return next;}
  List<Entry> entries(){return Collections.unmodifiableList(new ArrayList<>(entries.values()));}
  Entry get(String id){return entries.get(canonical(id));}
  private Entry get(String reading,String text)throws Exception{Entry fresh=Entry.fresh(reading,text);return entries.getOrDefault(fresh.id(),fresh);}
- private void put(Entry entry)throws Exception{require(entries.containsKey(entry.id())||entries.size()<5000,"Learning capacity exceeded");entries.put(entry.id(),entry);}
+ private void put(Entry entry)throws Exception{require(entries.containsKey(entry.id())||entries.size()<capacity.termRows,"Learning capacity exceeded");entries.put(entry.id(),entry);}
  void record(String reading,String text,String device)throws Exception {
   if(!learningEnabled)return;Entry old=get(reading,text);if(old.deleted)return;LinkedHashMap<String,Long> counts=new LinkedHashMap<>(old.counts);String key=canonical(device);counts.put(key,Math.min(MAX_COUNT,counts.getOrDefault(key,0L)+1));put(new Entry(old.reading,old.text,old.generation,false,counts,old.pinned,old.pinVersion));
  }
@@ -70,11 +78,11 @@ final class LearningModel {
   Entry old=get(id);if(old==null||!old.deleted)return;require(old.generation.compareTo(LosslessJson.UINT64_MAX)<0,"Restore generation exhausted");put(new Entry(old.reading,old.text,old.generation.add(BigInteger.ONE),false,Collections.emptyMap(),old.pinned,old.pinVersion));
  }
  String export()throws Exception {
-  require(entries.size()<=5000,"Learning capacity exceeded");ArrayList<String> keys=new ArrayList<>(entries.keySet());Collections.sort(keys);JSONArray values=new JSONArray();for(String key:keys){Entry entry=entries.get(key);entry.validate();values.put(entry.json());}
-  JSONObject archive=new JSONObject().put("version",1).put("schemaID","private_pinyin").put("entries",values);if(personal!=null)archive.put("personalLexicon",personal.synchronizationObject());String encoded=LosslessJson.canonical(archive);require(PersonalLexicon.bytes(encoded)<=MAX_BYTES,"Learning archive too large");return encoded;
+  require(entries.size()<=capacity.termRows,"Learning capacity exceeded");ArrayList<String> keys=new ArrayList<>(entries.keySet());Collections.sort(keys);JSONArray values=new JSONArray();for(String key:keys){Entry entry=entries.get(key);entry.validate();values.put(entry.json());}
+  JSONObject archive=new JSONObject().put("version",LearningCapacityMetadata.legacy(capacity)?1:2).put("schemaID","private_pinyin").put("entries",values);if(!LearningCapacityMetadata.legacy(capacity))archive.put("capacity_profile",LearningCapacityMetadata.encode(capacity));if(personal!=null)archive.put("personalLexicon",personal.synchronizationObject());String encoded=LosslessJson.canonical(archive);require(PersonalLexicon.bytes(encoded)<=capacity.learningArchiveBytes,"Learning archive too large");return encoded;
  }
  void merge(String encoded)throws Exception {
-  JSONObject archive=LosslessJson.object(encoded,MAX_BYTES);require(PersonalLexicon.version(archive)&&PersonalLexicon.string(archive,"schemaID").equals("private_pinyin"),"Incompatible learning schema");JSONArray values=archive.getJSONArray("entries");require(values.length()<=5000,"Learning capacity exceeded");
+  JSONObject archive=LosslessJson.object(encoded,capacity.learningArchiveBytes);LearningCapacityProfiles.Profile incomingProfile=LearningCapacityMetadata.archive(archive,1,2);LearningCapacityMetadata.allowMerge(capacity,incomingProfile);require(PersonalLexicon.string(archive,"schemaID").equals("private_pinyin"),"Incompatible learning schema");JSONArray values=archive.getJSONArray("entries");require(values.length()<=incomingProfile.termRows,"Learning capacity exceeded");
   LearningModel next=copy();Set<String> seen=new HashSet<>();for(int i=0;i<values.length();i++){Entry entry=Entry.decode(values.getJSONObject(i));require(seen.add(entry.id()),"Duplicate learned entry");Entry local=next.entries.get(entry.id());next.put(local==null?entry:local.merging(entry));}
   if(archive.has("personalLexicon")&&!archive.isNull("personalLexicon")){PersonalLexicon.Snapshot incoming=PersonalLexicon.decodeSynchronized(archive.getJSONObject("personalLexicon"));next.personal=PersonalLexicon.combine(next.personal==null?PersonalLexicon.empty():next.personal,incoming);}
   next.export();entries=next.entries;personal=next.personal;
@@ -84,10 +92,12 @@ final class LearningModel {
  }
  String personalSnapshot()throws Exception{return personal==null?null:personal.synchronizationObject().toString();}
  JSONObject stateObject()throws Exception {
-  JSONObject values=new JSONObject();for(Map.Entry<String,Entry> entry:entries.entrySet())values.put(entry.getKey(),entry.getValue().json());JSONObject state=new JSONObject().put("entries",values).put("learningEnabled",learningEnabled);if(personal!=null)state.put("personalLexicon",personal.synchronizationObject());return state;
+  JSONObject values=new JSONObject();for(Map.Entry<String,Entry> entry:entries.entrySet())values.put(entry.getKey(),entry.getValue().json());JSONObject state=new JSONObject().put("entries",values).put("learningEnabled",learningEnabled);if(personal!=null)state.put("personalLexicon",personal.synchronizationObject());return LearningCapacityMetadata.legacy(capacity)?state:new JSONObject().put("capacity_profile",LearningCapacityMetadata.encode(capacity)).put("profiled_model",state);
  }
  static LearningModel fromState(JSONObject state)throws Exception {
-  require(state.get("learningEnabled") instanceof Boolean,"Invalid learning consent");LearningModel model=new LearningModel();model.learningEnabled=state.getBoolean("learningEnabled");JSONObject values=state.getJSONObject("entries");require(values.length()<=5000,"Learning capacity exceeded");Iterator<String> keys=values.keys();while(keys.hasNext()){String key=keys.next();Entry entry=Entry.decode(values.getJSONObject(key));require(canonical(key).equals(entry.id())&&!model.entries.containsKey(entry.id()),"Invalid learned dictionary key");model.put(entry);}
+  LearningCapacityProfiles.Profile profile=LearningCapacityProfiles.LEGACY_5000;
+  if(state.has("capacity_profile")||state.has("profiled_model")){require(state.length()==2&&state.has("capacity_profile")&&state.has("profiled_model"),"Invalid profiled model state");profile=LearningCapacityMetadata.decode(state.getJSONObject("capacity_profile"));require(profile==LearningCapacityProfiles.EXPANDED_10000,"Invalid profiled model wrapper");state=state.getJSONObject("profiled_model");}
+  require(state.get("learningEnabled") instanceof Boolean,"Invalid learning consent");LearningModel model=new LearningModel(profile);model.learningEnabled=state.getBoolean("learningEnabled");JSONObject values=state.getJSONObject("entries");require(values.length()<=profile.termRows,"Learning capacity exceeded");Iterator<String> keys=values.keys();while(keys.hasNext()){String key=keys.next();Entry entry=Entry.decode(values.getJSONObject(key));require(canonical(key).equals(entry.id())&&!model.entries.containsKey(entry.id()),"Invalid learned dictionary key");model.put(entry);}
   if(state.has("personalLexicon")&&!state.isNull("personalLexicon"))model.personal=PersonalLexicon.decodeSynchronized(state.getJSONObject("personalLexicon"));model.export();return model;
  }
 }

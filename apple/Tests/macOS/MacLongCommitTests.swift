@@ -190,15 +190,16 @@ final class MacLongCommitTests:XCTestCase {
         XCTAssertTrue(e.rawInput.isEmpty);XCTAssertFalse(c.view.hasMarkedText())
     }
 
-    func testUserReportedEveryVisibleRepairRemainsSelectableWithConfirmedPrefix()throws {
+    func testEveryVisibleTypoRepairRemainsSelectableWithConfirmedPrefix()throws {
         let e=try engine();defer{e.clear();e.finish()};_ = e.setMixedEnglishEnabled(true)
+        let typo="wokankanzhegedaoshihounengyouduochagn"
         let firstClient=client(),firstInput=MacInputSession(engine:e)
-        try prepareUserReportedPrefix(engine:e,input:firstInput,client:firstClient)
+        try prepareUserReportedPrefix(engine:e,input:firstInput,client:firstClient,raw:typo)
         let repairs=firstInput.allCandidateRows.filter{$0.pinyinRepair != nil && $0.pinyinRemainder==nil}
         XCTAssertFalse(repairs.isEmpty,"The ranking fix must preserve correction alternatives")
         for (position,choice) in repairs.enumerated() {
             let c=client(),input=MacInputSession(engine:e)
-            try prepareUserReportedPrefix(engine:e,input:input,client:c)
+            try prepareUserReportedPrefix(engine:e,input:input,client:c,raw:typo)
             let row=try XCTUnwrap(input.allCandidateRows.first{$0.text==choice.text && $0.comment==choice.comment && $0.pinyinRepair==choice.pinyinRepair})
             try choose(row,route:["nil","number","click"][position%3],input:input,client:c)
             XCTAssertEqual(c.view.string,"前：我看看这个"+row.text,"visible repair \(position): \(row.text)")
@@ -255,8 +256,27 @@ final class MacLongCommitTests:XCTestCase {
         let first=try XCTUnwrap(input.allCandidateRows.first)
         XCTAssertEqual(first.text,"我看看这个到时候能有多长")
         XCTAssertNil(first.pinyinRepair)
+        XCTAssertTrue(input.allCandidateRows.allSatisfy{$0.pinyinRepair==nil},"A complete 26-key match must not trigger speculative edit probes")
         try choose(first,route:"nil",input:input,client:c)
         XCTAssertEqual(c.view.string,"前：我看看这个到时候能有多长");XCTAssertTrue(e.rawInput.isEmpty)
+    }
+
+    func testExactPhysicalSpellingKeepsNativeMatchesAndTypoStillOffersRepair()throws {
+        let e=try engine();defer{e.clear();e.finish()};_ = e.setMixedEnglishEnabled(true)
+        for (raw,text) in [("nihao","你好"),("shijie","世界"),("daoshihounengyouduochang","到时候能有多长")] {
+            let c=client(),input=MacInputSession(engine:e);seed(raw,engine:e,client:c)
+            let rows=input.allCandidateRows
+            let exact=try XCTUnwrap(rows.first{$0.text==text},raw)
+            XCTAssertTrue(rows.allSatisfy{$0.pinyinRepair==nil},"Exact physical spelling needs no edit candidates: \(raw)")
+            XCTAssertEqual(e.rawInput,raw,"Candidate generation cannot rewrite explicit keys")
+            try choose(exact,route:"nil",input:input,client:c)
+            XCTAssertEqual(c.view.string,"前："+text);XCTAssertTrue(e.rawInput.isEmpty)
+        }
+        let c=client(),input=MacInputSession(engine:e);seed("shijei",engine:e,client:c)
+        let repaired=try XCTUnwrap(input.allCandidateRows.first{$0.text=="世界" && $0.pinyinRepair != nil})
+        XCTAssertEqual(e.rawInput,"shijei","A proposed correction is not an automatic edit")
+        try choose(repaired,route:"click",input:input,client:c)
+        XCTAssertEqual(c.view.string,"前：世界");XCTAssertTrue(e.rawInput.isEmpty)
     }
 
 }

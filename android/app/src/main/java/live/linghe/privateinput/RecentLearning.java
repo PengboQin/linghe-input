@@ -67,11 +67,22 @@ final class RecentLearning {
   }
  }
  private Map<String,Entry> entries=new LinkedHashMap<>();
+ private LearningCapacityProfiles.Profile capacity;
+ RecentLearning(){this(LearningCapacityProfiles.LEGACY_5000);}
+ RecentLearning(LearningCapacityProfiles.Profile profile){capacity=LearningCapacityMetadata.checked(profile);}
+ LearningCapacityProfiles.Profile capacityProfile(){return capacity;}
+ void upgradeCapacity(LearningCapacityProfiles.Profile profile)throws IOException{
+  profile=LearningCapacityMetadata.checked(profile);LearningCapacityMetadata.allowMerge(profile,capacity);
+  require(entries.size()<=profile.recentTermRows,"Recent capacity exceeded");int components=0;
+  for(Entry entry:entries.values()){entry.validate();for(Map<String,Long> bucket:entry.buckets.values())components+=bucket.size();require(components<=profile.recentComponents,"Recent component capacity exceeded");}
+  capacity=profile;
+ }
  List<Entry> entries(){return Collections.unmodifiableList(new ArrayList<>(entries.values()));}
  Entry get(String reading,String text){return entries.get(nfc(reading.toLowerCase(Locale.ROOT)+'\u001f'+text));}
- RecentLearning copy(){RecentLearning next=new RecentLearning();next.entries=new LinkedHashMap<>(entries);return next;}
+ RecentLearning copy(){RecentLearning next=new RecentLearning(capacity);next.entries=new LinkedHashMap<>(entries);return next;}
+ void merge(RecentLearning incoming,Policy policy)throws IOException{LearningCapacityMetadata.allowMerge(capacity,incoming.capacity);merge(incoming.entries(),policy);}
  void merge(List<Entry> incoming,Policy policy)throws IOException{
-  require(incoming.size()<=MAX_WORDS,"Recent archive oversized");Map<String,Entry> next=new LinkedHashMap<>(entries);Set<String> seen=new HashSet<>();
+  require(incoming.size()<=capacity.recentTermRows,"Recent archive oversized");Map<String,Entry> next=new LinkedHashMap<>(entries);Set<String> seen=new HashSet<>();
   for(Entry entry:incoming){entry.validate();require(seen.add(entry.id()),"Duplicate recent entry");Entry local=next.get(entry.id());next.put(entry.id(),local==null?entry.normalized(policy):local.merge(entry,policy));}
   validate(next,policy);entries=next;
  }
@@ -90,7 +101,7 @@ final class RecentLearning {
  }
  void recordConfirmedSelection(String reading,String text,String replica,Integer day,Policy policy)throws IOException{recordConfirmedSelections(Collections.singletonList(new SelectionDelta(reading,text,replica,day)),policy);}
  void recordConfirmedSelections(List<SelectionDelta> events,Policy policy)throws IOException{
-  require(events.size()<=5000,"Recent batch oversized");Map<String,Entry> next=new LinkedHashMap<>(entries);
+  require(events.size()<=capacity.recentTermRows,"Recent batch oversized");Map<String,Entry> next=new LinkedHashMap<>(entries);
   for(SelectionDelta event:events){name(event.replica);Integer day=event.day;if(day==null||!policy.accepts(day))continue;Entry fresh=Entry.fresh(event.reading,event.text),old=next.getOrDefault(fresh.id(),fresh).normalized(policy);if(old.deleted||event.expectedGeneration!=null&&!event.expectedGeneration.equals(old.generation))continue;
    String id=nfc(event.replica);long known=0;for(Map<String,Long> bucket:old.buckets.values())known+=bucket.getOrDefault(id,0L);if(known>=MAX_COUNT)continue;
    Map<String,Long> counts=new LinkedHashMap<>(old.counts);counts.put(id,Math.max(counts.getOrDefault(id,0L),known+1));
@@ -99,7 +110,7 @@ final class RecentLearning {
   }
   validate(next,policy);entries=next;
  }
- private static void validate(Map<String,Entry> next,Policy policy)throws IOException{require(next.size()<=MAX_WORDS,"Recent capacity exceeded");int components=0;for(Map.Entry<String,Entry> item:next.entrySet()){Entry e=item.getValue().normalized(policy);item.setValue(e);e.validate();for(Map.Entry<Integer,Map<String,Long>> b:e.buckets.entrySet())if(policy.accepts(b.getKey()))components+=b.getValue().size();require(components<=MAX_COMPONENTS,"Recent component capacity exceeded");}}
+ private void validate(Map<String,Entry> next,Policy policy)throws IOException{require(next.size()<=capacity.recentTermRows,"Recent capacity exceeded");int components=0;for(Map.Entry<String,Entry> item:next.entrySet()){Entry e=item.getValue().normalized(policy);item.setValue(e);e.validate();for(Map.Entry<Integer,Map<String,Long>> b:e.buckets.entrySet())if(policy.accepts(b.getKey()))components+=b.getValue().size();require(components<=capacity.recentComponents,"Recent component capacity exceeded");}}
  static final class ScoringSnapshot {
   private final Map<String,Entry> words;
   ScoringSnapshot(Map<String,Entry> words){this.words=Collections.unmodifiableMap(new HashMap<>(words));}

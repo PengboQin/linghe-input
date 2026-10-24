@@ -15,6 +15,7 @@ from activity_archive.service import Identity, RelayMembershipAuthority, fail
 @dataclass(frozen=True)
 class LearningIdentity(Identity):
     incarnation: str
+    can_manage: bool = True
 
 
 def fingerprint(who):
@@ -43,7 +44,7 @@ class LearningMembershipAuthority(RelayMembershipAuthority):
                 # A v1 snapshot with no signed history intentionally binds its
                 # revision: a legacy unexplained replacement requires re-consent.
                 incarnation = str(admission)
-                return LearningIdentity(who.group, who.sender, who.public, who.permissions, who.revision, who.digest, who.members, incarnation)
+                return LearningIdentity(who.group, who.sender, who.public, who.permissions, who.revision, who.digest, who.members, incarnation, getattr(who,'can_manage',True))
         except RelayError:
             fail('membership_invalid', 403)
         except sqlite3.Error:

@@ -28,9 +28,11 @@ final class CandidateViews {
   value.setAutoSizeTextTypeUniformWithConfiguration(11,15,1,android.util.TypedValue.COMPLEX_UNIT_SP);
  }
  static final class Item {
-  final String id,text,reading;
-  Item(String[] row){id=row[0];text=row[1];reading=row.length>2?row[2]:"";}
+  final String id,text,reading;final long generation;
+  Item(String[] row){id=row[0];text=row[1];reading=row.length>2?row[2]:"";generation=Long.MIN_VALUE;}
+  Item(Item source,long generation){id=source.id;text=source.text;reading=source.reading;this.generation=generation;}
  }
+ static List<Item> bindItems(List<Item> source,long generation){ArrayList<Item> result=new ArrayList<>();for(Item item:source)result.add(new Item(item,generation));return Collections.unmodifiableList(result);}
  static Button word(Context c,Item item,Consumer<Item> select){return word(c,item,select,null);}
  static Button word(Context c,Item item,Consumer<Item> select,BiConsumer<View,Item> manage){return word(c,item,select,manage,null);}
  static Button word(Context c,Item item,Consumer<Item> select,BiConsumer<View,Item> manage,BiConsumer<Item,String> trace){
@@ -75,14 +77,16 @@ final class CandidateViews {
   @Override protected void onDetachedFromWindow(){removeCallbacks(layoutUpdate);removeCallbacks(requestMore);removeCallbacks(drain);touching=false;deferred=null;super.onDetachedFromWindow();}
  }
  static final class Expanded extends ListView {
-  private final Rows rows;private final Runnable more,interaction;private boolean touching;private List<Item> deferred;
-  private final Runnable drain=()->{if(deferred!=null&&!touching){List<Item> next=deferred;deferred=null;update(next);}};
+  private final Rows rows;private final Runnable more,interaction;private boolean touching;private List<Item> deferred;private long publishedGeneration;
+  private final Runnable drain=this::drainRows;
+  private void drainRows(){if(deferred!=null&&!touching){List<Item> next=deferred;deferred=null;rows.update(next);}}
   Expanded(Context c,Consumer<Item> select,Runnable more){this(c,select,more,()->{});}
   Expanded(Context c,Consumer<Item> select,Runnable more,Runnable interaction){this(c,select,more,interaction,null);}
   Expanded(Context c,Consumer<Item> select,Runnable more,Runnable interaction,BiConsumer<View,Item> manage){this(c,select,more,interaction,manage,null);}
   Expanded(Context c,Consumer<Item> select,Runnable more,Runnable interaction,BiConsumer<View,Item> manage,BiConsumer<Item,String> trace){super(c);this.more=more;this.interaction=interaction;setDivider(null);setVerticalScrollBarEnabled(false);setSelector(android.R.color.transparent);rows=new Rows(c,select,manage,trace);setAdapter(rows);setOnScrollListener(new AbsListView.OnScrollListener(){public void onScrollStateChanged(AbsListView v,int state){}public void onScroll(AbsListView v,int first,int visible,int total){if(total>0&&first+visible>=total-3)Expanded.this.more.run();}});}
   @Override public boolean dispatchTouchEvent(MotionEvent event){int phase=event.getActionMasked();if(phase==MotionEvent.ACTION_DOWN){touching=true;interaction.run();}boolean result=super.dispatchTouchEvent(event);if(phase==MotionEvent.ACTION_UP||phase==MotionEvent.ACTION_CANCEL){touching=false;removeCallbacks(drain);post(drain);}return result;}
-  void update(List<Item> items){if(touching){deferred=new ArrayList<>(items);return;}rows.update(items);}
+  void update(List<Item> items){update(items,publishedGeneration);}
+  void update(List<Item> items,long generation){List<Item> bound=bindItems(items,generation);publishedGeneration=generation;if(touching){deferred=bound;return;}rows.update(bound);}
   @Override protected void onDetachedFromWindow(){removeCallbacks(drain);touching=false;deferred=null;super.onDetachedFromWindow();}
  }
  private static final class Cell{final Item item;final int span;Cell(Item item,int span){this.item=item;this.span=span;}}

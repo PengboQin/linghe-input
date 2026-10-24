@@ -11,7 +11,7 @@ import java.util.*;
 public final class DeviceSyncActivity extends Activity {
   private LinearLayout body,details,inbox;
   private TextView status;
-  private EditText endpoint,code,message;
+  private EditText endpoint,code;
   private Switch learn,shared;
   private boolean active=false,changing=false;
   private String lastError="";
@@ -55,20 +55,8 @@ public final class DeviceSyncActivity extends Activity {
   }
   @Override public void onCreate(Bundle saved){
     Ui.prepareTheme(this);super.onCreate(saved);
-    ScrollView scroll=new ScrollView(this);
-    scroll.setBackgroundColor(Ui.page(this));
-    body=new LinearLayout(this);
-    body.setOrientation(1);
-    body.setPadding(dp(20),dp(20),dp(20),dp(28));
-    scroll.addView(body);
-    setContentView(scroll);
-    scroll.setOnApplyWindowInsetsListener((v,i)->{
-      body.setPadding(dp(20)+i.getSystemWindowInsetLeft(),dp(16)+i.getSystemWindowInsetTop(),dp(20)+i.getSystemWindowInsetRight(),dp(24)+i.getSystemWindowInsetBottom());return i;
-    }
-    );
-    button(body,"返回",this::finish);
-    body.addView(label("设备与同步",26));
-    status=label("",14);
+    body=SettingsScreen.content(this,"设备与同步",true);
+    status=label("",14);status.setTextColor(Ui.muted(this));status.setPadding(0,dp(8),0,dp(12));
     body.addView(status);
     details=new LinearLayout(this);
     details.setOrientation(1);
@@ -78,6 +66,7 @@ public final class DeviceSyncActivity extends Activity {
     body.addView(inbox);
     refresh();
   }
+  @Override public boolean onOptionsItemSelected(MenuItem item){if(item.getItemId()==android.R.id.home){finish();return true;}return super.onOptionsItemSelected(item);}
   private void run(boolean manual,Work work){
     if(manual)status.setText("正在处理…");
     SyncTasks.worker.execute(()->{
@@ -154,15 +143,15 @@ public final class DeviceSyncActivity extends Activity {
     learn.setChecked(l);
     details.addView(learn,new LinearLayout.LayoutParams(-1,dp(54)));
     shared=new Switch(this);
-    shared.setText("共享文本");
+    shared.setText("剪贴板同步");
     shared.setTextColor(Ui.text(this));
-    shared.setChecked(s);
+    shared.setChecked(AutoClipboardBridge.get(this).syncEnabled());
     details.addView(shared,new LinearLayout.LayoutParams(-1,dp(54)));
     android.widget.CompoundButton.OnCheckedChangeListener toggle=(v,on)->{
       if(changing)return;
-      boolean a=learn.isChecked(),b=shared.isChecked();
+      boolean a=learn.isChecked();
       synchronized(SyncClient.CONSENT_LOCK){
-        getSharedPreferences("sync-consent",0).edit().putLong("generation",getSharedPreferences("sync-consent",0).getLong("generation",0)+1).putBoolean("learning",a).putBoolean("clipboard",b).commit();
+        getSharedPreferences("sync-consent",0).edit().putLong("generation",getSharedPreferences("sync-consent",0).getLong("generation",0)+1).putBoolean("learning",a).commit();
       }
       if(!a)CloudLearningStore.requestDisable(this);
       SyncJob.schedule(this);
@@ -173,13 +162,21 @@ public final class DeviceSyncActivity extends Activity {
     }
     ;
     learn.setOnCheckedChangeListener(toggle);
-    shared.setOnCheckedChangeListener(toggle);
+    shared.setOnCheckedChangeListener((button,on)->{
+      if(changing)return;
+      shared.setEnabled(false);
+      run(false,x->{
+        try{
+          if(!AutoClipboardBridge.get(this).setSyncEnabled(on))throw new java.io.IOException("剪贴板同步设置未保存，请重试");
+          SyncJob.schedule(this);
+        }finally{
+          main.post(()->{if(!isFinishing()&&!isDestroyed()){changing=true;shared.setChecked(AutoClipboardBridge.get(this).syncEnabled());shared.setEnabled(true);changing=false;}});
+        }
+        x.synchronize();return null;
+      });
+    });
     Switch cloud=new Switch(this);cloud.setText("云端词频优化");cloud.setTextColor(Ui.text(this));cloud.setChecked(getSharedPreferences("sync-consent",0).getBoolean(CloudLearningStore.ENABLED,false));cloud.setEnabled(l);details.addView(cloud,new LinearLayout.LayoutParams(-1,dp(54)));
     cloud.setOnCheckedChangeListener((button,on)->{if(changing)return;if(!on)CloudLearningStore.requestDisable(this);run(true,x->{x.configureCloudLearning(on,true);return null;});});
-    Switch automatic=new Switch(this);automatic.setText("自动同步系统剪贴板");automatic.setTextColor(Ui.text(this));automatic.setChecked(AutoClipboardBridge.get(this).enabled());automatic.setEnabled(s);
-    details.addView(automatic,new LinearLayout.LayoutParams(-1,dp(54)));
-    automatic.setOnCheckedChangeListener((button,on)->{if(!changing){AutoClipboardBridge.get(this).setEnabled(on);SyncJob.schedule(this);run(false,x->{x.synchronize();return null;});}});
-    shared.setOnCheckedChangeListener((button,on)->{toggle.onCheckedChanged(button,on);automatic.setEnabled(on);});
     button(details,"立即同步",()->run(true,x->{
       x.synchronize();return null;
     }
@@ -192,15 +189,6 @@ public final class DeviceSyncActivity extends Activity {
     });
     button(details,"退出设备组",()->new AlertDialog.Builder(this).setTitle("退出并清除本机资料？").setMessage("个人词库、学习记录、快捷短语和共享文本将恢复初装状态。此操作无法撤销。").setNegativeButton("取消",null).setPositiveButton("退出并清除",(d,w)->run(true,x->{x.leaveGroup();return null;})).show());
     details.addView(label("仅同步已开启的项目。打字在本机处理；系统可能延迟后台同步。",13));
-    message=editor("发送共享文本",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);((ActivityArchiveEditText)message).archivePaste=true;
-    details.addView(message);
-    button(details,"发送",()->{
-      String text=message.getText().toString();run(true,x->{
-        x.sendText(text);main.post(()->message.setText(""));return null;
-      }
-      );
-    }
-    );
     button(details,"暂停此设备同步",()->new AlertDialog.Builder(this).setTitle("暂停此设备同步？").setMessage("关闭两个同步开关，保留配对和本机词库。之后可随时恢复。").setNegativeButton("取消",null).setPositiveButton("暂停",(d,w)->run(true,x->{
       x.disconnect();SyncJob.schedule(this);return null;
     }
@@ -214,15 +202,20 @@ public final class DeviceSyncActivity extends Activity {
     inbox.removeAllViews();
     if(!enabled)return;
     if(unsent.length()>0){
-      inbox.addView(label("待确认发送",18));
-      inbox.addView(label("设备组变化前的发送结果未确认。",13));
-      for(int n=0;n<unsent.length();n++){
-        JSONObject row=unsent.optJSONObject(n);
-        String event=row.optString("event");
-        inbox.addView(new SharedTextEntry(this,row.optString("text"),"重新发送",raw->run(true,c->{
-          c.resend(event);return null;
-        })));
-      }
+      button(inbox,"处理未确认发送（"+unsent.length()+"）",()->{
+        LinearLayout recovery=new LinearLayout(this);recovery.setOrientation(1);
+        recovery.setPadding(dp(18),dp(10),dp(18),dp(10));
+        recovery.addView(label("这些旧发送未确认完成。重新发送会送达当前设备组。",14));
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("未确认发送").setPositiveButton("关闭",null).create();
+        for(int n=0;n<unsent.length();n++){
+          JSONObject row=unsent.optJSONObject(n);if(row==null)continue;
+          String event=row.optString("event");
+          recovery.addView(new SharedTextEntry(this,row.optString("text"),"重新发送",raw->{
+            dialog.dismiss();run(true,c->{c.resend(event);return null;});
+          }));
+        }
+        ScrollView scroll=new ScrollView(this);scroll.addView(recovery);dialog.setView(scroll);Ui.dialog(dialog);
+      });
     }
   }
   private void showTicket(JSONObject value){

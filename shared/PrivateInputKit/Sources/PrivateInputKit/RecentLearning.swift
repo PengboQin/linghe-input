@@ -113,8 +113,36 @@ public struct RecentLearningArchive: Codable {
     public var algorithmVersion = 1
     public var entries: [RecentLearningEntry]
     public var personalLexicon: PersonalLexiconSync?
-    public init(entries: [RecentLearningEntry], personalLexicon: PersonalLexiconSync? = nil) {
-        self.entries = entries; self.personalLexicon = personalLexicon
+    public private(set) var capacityProfile = LearningCapacityProfiles.legacy5000
+    public init(entries: [RecentLearningEntry], personalLexicon: PersonalLexiconSync? = nil,
+                capacityProfile: LearningCapacityProfile = LearningCapacityProfiles.legacy5000) {
+        self.entries = entries; self.personalLexicon = personalLexicon; self.capacityProfile = capacityProfile
+        version = capacityProfile == LearningCapacityProfiles.legacy5000 ? 2 : 3
+    }
+    private enum CodingKeys: String, CodingKey { case version, schemaID, algorithmVersion, entries, personalLexicon, capacityProfile = "capacity_profile" }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        version = try values.decode(Int.self, forKey: .version)
+        schemaID = try values.decode(String.self, forKey: .schemaID)
+        algorithmVersion = try values.decode(Int.self, forKey: .algorithmVersion)
+        if version == 2 {
+            guard !values.contains(.capacityProfile) else { throw InputDataError.incompatibleSchema }
+            capacityProfile = LearningCapacityProfiles.legacy5000
+        } else if version == 3 {
+            capacityProfile = try values.decode(LearningCapacityReference.self, forKey: .capacityProfile).resolved()
+            guard capacityProfile == LearningCapacityProfiles.expanded10000 else { throw InputDataError.incompatibleSchema }
+        } else { throw InputDataError.incompatibleSchema }
+        entries = try values.decode([RecentLearningEntry].self, forKey: .entries)
+        personalLexicon = try values.decodeIfPresent(PersonalLexiconSync.self, forKey: .personalLexicon)
+    }
+    public func encode(to encoder: Encoder) throws {
+        let known = try LearningCapacityProfiles.require(id: capacityProfile.id, version: capacityProfile.version)
+        guard version == (known == LearningCapacityProfiles.legacy5000 ? 2 : 3) else { throw InputDataError.incompatibleSchema }
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(version, forKey: .version); try values.encode(schemaID, forKey: .schemaID)
+        try values.encode(algorithmVersion, forKey: .algorithmVersion); try values.encode(entries, forKey: .entries)
+        try values.encodeIfPresent(personalLexicon, forKey: .personalLexicon)
+        if known != LearningCapacityProfiles.legacy5000 { try values.encode(LearningCapacityReference(known), forKey: .capacityProfile) }
     }
 }
 
@@ -138,12 +166,31 @@ public struct RecentLearningDelta {
 }
 
 public struct RecentLearningModel {
-    public static let byteLimit = 2 * 1024 * 1024
-    public static let componentLimit = 40_000
+    public static let byteLimit = LearningCapacityProfiles.legacy5000.recentArchiveBytes
+    public static let componentLimit = LearningCapacityProfiles.legacy5000.recentComponents
     public private(set) var entries: [String: RecentLearningEntry] = [:]
     public private(set) var personalLexicon: PersonalLexiconSync?
     public var learningEnabled = true
+    public private(set) var capacityProfile = LearningCapacityProfiles.legacy5000
     public init() {}
+    public init(capacityProfile: LearningCapacityProfile) throws {
+        self.capacityProfile = try LearningCapacityProfiles.require(id: capacityProfile.id, version: capacityProfile.version)
+    }
+    /// Restore one known persisted archive with one full decode. Remote merge
+    /// remains explicit and cannot silently promote a legacy receiver.
+    public init(restoring data: Data, policy: RecentLearningPolicy) throws {
+        guard data.count <= max(LearningCapacityProfiles.legacy5000.recentArchiveBytes,
+                                LearningCapacityProfiles.expanded10000.recentArchiveBytes) else { throw InputDataError.oversized }
+        let archive = try JSONDecoder().decode(RecentLearningArchive.self, from: data)
+        guard archive.schemaID == "private_pinyin_recency", archive.algorithmVersion == 1 else { throw InputDataError.incompatibleSchema }
+        try self.init(capacityProfile: archive.capacityProfile)
+        try mergeEntries(archive.entries, personalLexicon: archive.personalLexicon, policy: policy)
+    }
+    public mutating func upgradeCapacity(to profile: LearningCapacityProfile, policy: RecentLearningPolicy) throws {
+        let target = try LearningCapacityProfiles.require(id: profile.id, version: profile.version)
+        guard target.recentTermRows >= capacityProfile.recentTermRows else { throw InputDataError.incompatibleSchema }
+        var next = self; next.capacityProfile = target; _ = try next.export(policy: policy); self = next
+    }
 
     /// Only checkpoint-confirmed local positive increments belong here.
     /// An absent/untrusted date preserves cumulative usage without inventing
@@ -156,7 +203,7 @@ public struct RecentLearningModel {
     /// serialize a complete archive for each word or run this on key-down.
     public mutating func recordLocalDeltas(_ deltas: [RecentLearningDelta], policy: RecentLearningPolicy) throws {
         guard learningEnabled else { return }
-        guard deltas.count <= 5000 else { throw InputDataError.oversized }
+        guard deltas.count <= capacityProfile.recentTermRows else { throw InputDataError.oversized }
         var next = self
         for delta in deltas { try next.applyLocalDelta(delta, policy: policy) }
         next.entries = try next.entries.mapValues { try $0.normalized(policy) }
@@ -184,17 +231,19 @@ public struct RecentLearningModel {
     /// Legacy migration adds no fabricated timestamps, and re-importing the
     /// same totals cannot add fresh buckets. The version-1 file is not changed.
     public mutating func mergeLegacy(_ data: Data, policy: RecentLearningPolicy) throws {
-        var legacy = LearningModel(); try legacy.merge(data)
+        var legacy = try LearningModel(capacityProfile: capacityProfile); try legacy.merge(data)
         try mergeEntries(Array(legacy.entries.values).map { .init(word: $0) }, personalLexicon: legacy.personalLexicon, policy: policy)
     }
     public mutating func merge(_ data: Data, policy: RecentLearningPolicy) throws {
-        guard data.count <= Self.byteLimit else { throw InputDataError.oversized }
+        guard data.count <= capacityProfile.recentArchiveBytes else { throw InputDataError.oversized }
         let archive = try JSONDecoder().decode(RecentLearningArchive.self, from: data)
-        guard archive.version == 2, archive.schemaID == "private_pinyin_recency", archive.algorithmVersion == 1 else { throw InputDataError.incompatibleSchema }
+        guard archive.schemaID == "private_pinyin_recency", archive.algorithmVersion == 1,
+              archive.capacityProfile == capacityProfile || archive.capacityProfile == LearningCapacityProfiles.legacy5000 else { throw InputDataError.incompatibleSchema }
+        guard archive.entries.count <= archive.capacityProfile.recentTermRows else { throw InputDataError.oversized }
         try mergeEntries(archive.entries, personalLexicon: archive.personalLexicon, policy: policy)
     }
     private mutating func mergeEntries(_ incoming: [RecentLearningEntry], personalLexicon: PersonalLexiconSync?, policy: RecentLearningPolicy) throws {
-        guard incoming.count <= 5000 else { throw InputDataError.oversized }
+        guard incoming.count <= capacityProfile.recentTermRows else { throw InputDataError.oversized }
         var next = self, seen = Set<String>()
         for entry in incoming {
             try entry.validate()
@@ -209,26 +258,29 @@ public struct RecentLearningModel {
         _ = try next.export(policy: policy); self = next
     }
     public func export(policy: RecentLearningPolicy) throws -> Data {
-        guard entries.count <= 5000 else { throw InputDataError.oversized }
+        guard entries.count <= capacityProfile.recentTermRows else { throw InputDataError.oversized }
         var components = 0
         let normalized = try entries.values.map { entry -> RecentLearningEntry in
             let value = try entry.normalized(policy)
             components += value.buckets.reduce(0) { $0 + $1.counts.count }
-            guard components <= Self.componentLimit else { throw InputDataError.oversized }
+            guard components <= capacityProfile.recentComponents else { throw InputDataError.oversized }
             return value
         }.sorted { $0.word.id < $1.word.id }
         try personalLexicon?.validate()
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(RecentLearningArchive(entries: normalized, personalLexicon: personalLexicon))
-        guard data.count <= Self.byteLimit else { throw InputDataError.oversized }
+        let data = try encoder.encode(RecentLearningArchive(entries: normalized, personalLexicon: personalLexicon, capacityProfile: capacityProfile))
+        guard data.count <= capacityProfile.recentArchiveBytes else { throw InputDataError.oversized }
         return data
     }
-    /// Deliberate compatibility projection, never a complete v2 backup. Do not
-    /// replace durable v2 state with this lossy view after an older peer echoes it.
-    public func legacyProjection() throws -> Data {
+    /// A cumulative projection that retains this model's known capacity.
+    public func cumulativeProjection() throws -> Data {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(LearningArchive(entries: entries.values.map(\.word).sorted { $0.id < $1.id }, personalLexicon: personalLexicon))
-        var check = LearningModel(); try check.merge(data); return data
+        let data = try encoder.encode(LearningArchive(entries: entries.values.map(\.word).sorted { $0.id < $1.id }, personalLexicon: personalLexicon, capacityProfile: capacityProfile))
+        var check = try LearningModel(capacityProfile: capacityProfile); try check.merge(data); return data
+    }
+    public func legacyProjection() throws -> Data {
+        guard capacityProfile == LearningCapacityProfiles.legacy5000 else { throw InputDataError.incompatibleSchema }
+        return try cumulativeProjection()
     }
     public mutating func resetFrequency(id: String, policy: RecentLearningPolicy) throws {
         guard var entry = entries[id], !entry.word.deleted, entry.word.generation < UInt64.max else { throw InputDataError.invalidRecord }

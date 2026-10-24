@@ -21,7 +21,7 @@ class SyntheticTextStore final : public ITextStoreACP {
 public:
   std::wstring text;
   unsigned writes=0,locks=0;
-  unsigned failNextWrites=0;
+  unsigned failNextWrites=0;bool failReads=false;
   bool readonly=false;
   HRESULT textExtResult=S_OK;BOOL textExtClipped=FALSE;bool textExtEmpty=false;
   bool deferAsyncLayouts=false;DWORD deferredLayoutFlags=0;
@@ -33,6 +33,7 @@ public:
   void appCaret(LONG position){if(lock||!range(position,position))return;selection.acpStart=selection.acpEnd=position;if(sink)sink->OnSelectionChange();}
   void setReadOnly(bool value){readonly=value;if(sink)sink->OnStatusChange(TS_SD_READONLY);}
   void appInsert(WCHAR value){if(readonly||lock)return;LONG a=selection.acpStart,b=selection.acpEnd;text.replace(a,b-a,1,value);selection.acpStart=selection.acpEnd=a+1;TS_TEXTCHANGE change{a,b,a+1};if(sink){sink->OnTextChange(0,&change);sink->OnSelectionChange();}InvalidateRect(window,nullptr,TRUE);}
+  void appBackspace(){if(readonly||lock)return;LONG a=selection.acpStart,b=selection.acpEnd;if(a==b&&a>0){--a;if(a>0&&text[a]>=0xdc00&&text[a]<=0xdfff&&text[a-1]>=0xd800&&text[a-1]<=0xdbff)--a;}if(a==b)return;text.erase(a,b-a);selection.acpStart=selection.acpEnd=a;TS_TEXTCHANGE change{a,b,a};if(sink){sink->OnTextChange(0,&change);sink->OnSelectionChange();}InvalidateRect(window,nullptr,TRUE);}
   STDMETHODIMP QueryInterface(REFIID iid,void **out)override{if(!out)return E_POINTER;*out=nullptr;if(iid!=IID_IUnknown&&iid!=IID_ITextStoreACP)return E_NOINTERFACE;*out=static_cast<ITextStoreACP*>(this);AddRef();return S_OK;}
   STDMETHODIMP_(ULONG) AddRef()override{return ++refs;}
   STDMETHODIMP_(ULONG) Release()override{auto n=--refs;if(!n)delete this;return n;}
@@ -60,7 +61,7 @@ public:
   STDMETHODIMP GetSelection(ULONG index,ULONG count,TS_SELECTION_ACP *out,ULONG *fetched)override{if(!out||!fetched)return E_POINTER;*fetched=0;if(!readable())return TS_E_NOLOCK;if(index!=TS_DEFAULT_SELECTION&&index!=0)return E_INVALIDARG;if(count){*out=selection;*fetched=1;}return S_OK;}
   STDMETHODIMP SetSelection(ULONG count,const TS_SELECTION_ACP *value)override{if(!writable())return TS_E_NOLOCK;if(count!=1||!value||!range(value->acpStart,value->acpEnd))return E_INVALIDARG;selection=*value;return S_OK;}
   STDMETHODIMP GetText(LONG a,LONG b,WCHAR *plain,ULONG capacity,ULONG *plainCount,TS_RUNINFO *runs,ULONG runCapacity,ULONG *runCount,LONG *next)override{
-    if(!plainCount||!runCount||!next)return E_POINTER;*plainCount=0;*runCount=0;if(!readable())return TS_E_NOLOCK;
+    if(!plainCount||!runCount||!next)return E_POINTER;*plainCount=0;*runCount=0;if(!readable())return TS_E_NOLOCK;if(failReads)return E_FAIL;
     if(b==-1)b=LONG(text.size());if(!range(a,b))return TS_E_INVALIDPOS;
     ULONG amount=ULONG(b-a);if(capacity){if(!plain)return E_POINTER;amount=std::min(amount,capacity);std::copy_n(text.data()+a,amount,plain);*plainCount=amount;}
     if(runCapacity){if(!runs)return E_POINTER;runs[0]={amount,TS_RT_PLAIN};*runCount=1;}*next=a+LONG(amount);return S_OK;

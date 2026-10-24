@@ -55,11 +55,9 @@ void syncContentWithAutomaticClipboard(){
  bool observed=false;try{client->syncContent([&]{observed=true;automaticReceived(generation,serial,sequence,localActivity);});}catch(...){if(!observed)automaticReceived(generation,serial,sequence,localActivity);throw;}
  if(!observed)automaticReceived(generation,serial,sequence,localActivity);if(queueAutomaticCopy())lastContentSync=0;
 }
-// Caller holds the system clipboard. Treat unreadable exclusion values as
-// excluded; never infer that the foreground app owns the copied content.
-bool clipboardFormatsAllowed(){
- for(const wchar_t*format:{L"ExcludeClipboardContentFromMonitorProcessing",L"CanIncludeInClipboardHistory",L"CanUploadToCloudClipboard"}){auto id=RegisterClipboardFormatW(format);if(!id)return false;if(!IsClipboardFormatAvailable(id))continue;HANDLE h=GetClipboardData(id);auto*v=h&&GlobalSize(h)>=sizeof(DWORD)?static_cast<DWORD*>(GlobalLock(h)):nullptr;bool excluded=!v||(format[0]==L'E'?*v!=0:*v==0);if(v)GlobalUnlock(h);if(excluded)return false;}return true;
-}
+// Provider history/cloud-monitoring hints do not alter this application's
+// independently authorized clipboard collection or group forwarding. Actual
+// clipboard access, password/desktop checks and generation fences stay below.
 bool automaticMarkerMatches(const std::string&text){
  auto actualDigest=sha256(bytes(text));auto actualHash=base64(Data(actualDigest.begin(),actualDigest.end()));if(GetClipboardOwner()==window&&!automaticWriteEvent.empty()&&actualHash==automaticWriteHash)return true;HANDLE h=GetClipboardData(automaticMarkerFormat());if(!h||GlobalSize(h)<sizeof(AutomaticClipboardMarker)||GlobalSize(h)>4096)return false;auto*p=static_cast<AutomaticClipboardMarker*>(GlobalLock(h));if(!p)return false;auto marker=*p;GlobalUnlock(h);if(marker.magic!=0x3441484c||marker.nonce!=automaticEchoNonce||!memchr(marker.event,0,sizeof(marker.event))||!memchr(marker.hash,0,sizeof(marker.hash)))return false;
  auto digest=sha256(bytes(text));auto hash=base64(Data(digest.begin(),digest.end()));const bool same=automaticWriteHash==marker.hash&&hash==marker.hash;return clipboardEchoFence(GetClipboardSequenceNumber(),automaticWriteSequence,same,automaticWriteEvent==marker.event&&marker.nonce==automaticEchoNonce);

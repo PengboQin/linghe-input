@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 struct DeviceSyncView: View {
     @StateObject private var model: DeviceSyncModel
     private let showsSharedTextLink: Bool
-    init(model:DeviceSyncModel? = nil, showsSharedTextLink:Bool = true,initialInvitation:URL? = nil) {
+    init(model:DeviceSyncModel? = nil, showsSharedTextLink:Bool = false,initialInvitation:URL? = nil) {
         _model=StateObject(wrappedValue:model ?? DeviceSyncModel.shared);self.showsSharedTextLink=showsSharedTextLink
         _invitation=State(initialValue:initialInvitation?.absoluteString ?? "")
     }
@@ -36,7 +36,9 @@ struct DeviceSyncView: View {
             if model.info.configured {
                 Section("我的设备") {
                     LabeledContent("设备组", value: "\(model.info.count) 台设备").accessibilityIdentifier("sync-device-count")
-                    Button("接入新设备") { model.run {try await $0.makeQuickInvitation()};showingInvitation=true }.accessibilityIdentifier("sync-invite")
+                    if model.info.canManage {
+                        Button("接入新设备") { model.run {try await $0.makeQuickInvitation()};showingInvitation=true }.accessibilityIdentifier("sync-invite")
+                    }
                     Button("退出设备组") { disconnecting = true }.accessibilityIdentifier("sync-disconnect")
                 }.disabled(model.busy)
                 Section("同步") {
@@ -44,8 +46,7 @@ struct DeviceSyncView: View {
                     Toggle("按组优化词频", isOn: Binding(get: { model.info.cloudLearning }, set: { model.setCloudLearning($0) })).disabled(model.busy || !model.info.learning).accessibilityIdentifier("sync-cloud-learning")
                     Text("已选词条和词频由所设服务器按组整理，服务器管理员可读。").font(.footnote).foregroundStyle(.secondary)
                     if model.info.cloudLearning { Text(model.info.cloudPhase).font(.footnote).foregroundStyle(.secondary) }
-                    Toggle("共享文本", isOn: Binding(get: { model.info.clipboard }, set: { model.consent(learning: model.info.learning, clipboard: $0) })).disabled(model.savingConsent).accessibilityIdentifier("sync-clipboard")
-                    Toggle("自动同步系统剪贴板",isOn:Binding(get:{model.info.automaticClipboard},set:{model.setAutomaticClipboard($0)})).disabled(model.savingConsent || !model.info.clipboard).accessibilityIdentifier("sync-automatic-clipboard")
+                    Toggle("剪贴板同步", isOn: Binding(get: { model.info.clipboard && model.info.automaticClipboard }, set: { model.setClipboardSynchronization($0) })).disabled(model.busy || model.savingConsent).accessibilityIdentifier("sync-clipboard")
                     if model.info.automaticClipboard && model.info.automaticClipboardReadPaused {Text("剪贴板读取已暂停，可在“剪贴板权限”中检查并重试。").font(.footnote).foregroundStyle(.secondary)}
                     Button("剪贴板权限…") {showingClipboardPermission=true}.accessibilityIdentifier("sync-clipboard-permission")
                     Button("立即同步") { model.run { _ = try await $0.synchronize() } }.disabled(model.busy || model.savingConsent || (!model.info.learning && !model.info.clipboard)).accessibilityIdentifier("sync-now")

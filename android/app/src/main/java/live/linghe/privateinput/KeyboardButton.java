@@ -31,7 +31,7 @@ final class KeyboardButton extends Button {
       String value=getText().toString();
       Rect bounds=new Rect();
       p.getTextBounds(value,0,value.length(),bounds);
-      canvas.drawText(value,(getWidth()-bounds.left-bounds.right)/2f,(getHeight()-bounds.top-bounds.bottom)/2f,p);
+      canvas.drawText(value,MobileKeyboardRegions.inkOrigin(getWidth(),bounds.left,bounds.right),MobileKeyboardRegions.inkOrigin(getHeight(),bounds.top,bounds.bottom),p);
       return;
     }
     float unit=Ui.dp(getContext(),1);
