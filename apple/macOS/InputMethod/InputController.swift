@@ -169,7 +169,12 @@ private final class MacHiddenCheckpointCoordinator {
     // Keep system-owned placement for live IMK hosts. A client may return an
     // empty caret rectangle or omit optional geometry; typing must still show
     // candidates, just as the last known-good input service did.
-    private var candidateWindow:IMKCandidates?
+    // IMK's server keeps an unretained pointer to the candidates object and
+    // messages it while deactivating a stale controller after its host quits.
+    // A per-controller instance dies with the controller and crashes there, so
+    // one process-lifetime instance is shared; only the active controller uses it.
+    private static var sharedCandidates:IMKCandidates?
+    private var candidateWindow:IMKCandidates? { Self.sharedCandidates }
     private let candidatePanel=MacCandidatePanel()
     private var activeClient:IMKTextInput?
     private var preferenceObserver:NSObjectProtocol?
@@ -182,8 +187,10 @@ private final class MacHiddenCheckpointCoordinator {
     override init!(server:IMKServer!,delegate:Any!,client inputClient:Any!) {
         super.init(server:server,delegate:delegate,client:inputClient);trace("controller-init")
         activeClient=inputClient as? IMKTextInput
-        candidateWindow=IMKCandidates(server:server,panelType:kIMKSingleRowSteppingCandidatePanel)
-        candidateWindow?.setAttributes([IMKCandidatesSendServerKeyEventFirst as String:true])
+        if Self.sharedCandidates==nil {
+            Self.sharedCandidates=IMKCandidates(server:server,panelType:kIMKSingleRowSteppingCandidatePanel)
+            Self.sharedCandidates?.setAttributes([IMKCandidatesSendServerKeyEventFirst as String:true])
+        }
         preferenceObserver=NotificationCenter.default.addObserver(forName:KeyboardPreferences.updated,object:nil,queue:.main) { [weak self] _ in
             guard let self,let input=self.input else{return}
             input.applyCandidateLayout(KeyboardPreferences.desktopCandidateLayout);self.updateCandidates()

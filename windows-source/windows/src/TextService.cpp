@@ -13,6 +13,8 @@
 #include "EnglishSuggestions.h"
 #include "SymbolPairing.h"
 #include "TechnicalInputScope.h"
+#include "BackgroundTask.h"
+#include "NativeInputScope.h"
 #include "GlyphFilter.h"
 #include "pinyin_text.h"
 #include "private_input.h"
@@ -50,6 +52,11 @@ public:
 };
 enum class FieldScope {unknown,normal,privateField,password};
 FieldScope scopeOf(ITfContext *ctx,TfEditCookie cookie){
+  ComPtr<ITfContextView>nativeView;HWND nativeWindow=nullptr;
+  if(SUCCEEDED(ctx->GetActiveView(&nativeView))&&nativeView&&SUCCEEDED(nativeView->GetWnd(&nativeWindow))){
+    if(private_input::nativePasswordWindow(nativeWindow))return FieldScope::password;
+    const auto focus=GetFocus();if(focus&&(focus==nativeWindow||IsChild(nativeWindow,focus))&&private_input::nativePasswordWindow(focus))return FieldScope::password;
+  }
   TF_SELECTION selected{};ULONG fetched=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&fetched))||!fetched)return FieldScope::unknown;
   ComPtr<ITfRange> range;range.Attach(selected.range);ComPtr<ITfReadOnlyProperty> property;
   if(FAILED(ctx->GetAppProperty(GUID_PROP_INPUTSCOPE,&property)))return FieldScope::unknown;
@@ -104,6 +111,7 @@ bool disabled(ITfContext *ctx){
   VARIANT v;VariantInit(&v);bool result=false;if(SUCCEEDED(item->GetValue(&v)))result=(v.vt==VT_I4&&v.lVal!=0)||(v.vt==VT_BOOL&&v.boolVal!=VARIANT_FALSE);VariantClear(&v);return result;
 }
 struct CachedDesktopPreferences{private_input::DesktopCandidates layout;DesktopInputPreferences input;};
+struct DesktopPreferenceSnapshot{std::shared_ptr<const CachedDesktopPreferences> value=std::make_shared<CachedDesktopPreferences>();};
 class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,public ITfCompositionSink,public ITfTextEditSink,public ITfTextLayoutSink {
   std::atomic<ULONG> refs{1};ComPtr<ITfThreadMgr> manager;ComPtr<ITfKeystrokeMgr> keystrokes;
   ComPtr<ITfContext> compositionContext,pendingContext;ComPtr<ITfComposition> composition;
@@ -157,16 +165,30 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     *eaten=true; // A later selection failure must never replay this deletion.
     if(SUCCEEDED(range->Collapse(cookie,TF_ANCHOR_START))){TF_SELECTION after{range.Get(),{TF_AE_NONE,FALSE}};ctx->SetSelection(cookie,1,&after);}return S_OK;
   }
+  ComPtr<ITfContext>literalDigitContext;ComPtr<ITfRange>literalDigitCaret;
+  void clearLiteralDigit(){literalDigitContext.Reset();literalDigitCaret.Reset();}
+  bool followsOwnLiteralDigit(ITfContext*ctx,TfEditCookie cookie){
+    if(literalDigitContext.Get()!=ctx||!literalDigitCaret)return false;
+    TF_SELECTION selected{};ULONG count=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))||count!=1||!selected.range)return false;
+    ComPtr<ITfRange>caret;caret.Attach(selected.range);LONG start=1,end=1;
+    return SUCCEEDED(caret->CompareStart(cookie,literalDigitCaret.Get(),TF_ANCHOR_START,&start))&&SUCCEEDED(caret->CompareEnd(cookie,literalDigitCaret.Get(),TF_ANCHOR_END,&end))&&!start&&!end;
+  }
+  void rememberLiteralDigit(ITfContext*ctx,TfEditCookie cookie){
+    TF_SELECTION selected{};ULONG count=0;if(FAILED(ctx->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selected,&count))||count!=1||!selected.range)return;
+    ComPtr<ITfRange>caret;caret.Attach(selected.range);BOOL empty=FALSE;if(FAILED(caret->IsEmpty(cookie,&empty))||!empty)return;
+    literalDigitContext=ctx;literalDigitCaret=caret;
+  }
   HRESULT insertPhysicalSymbol(ITfContext*ctx,TfEditCookie cookie,WPARAM key,bool*eaten){
-    if(finishPending)return S_FALSE;auto symbol=literalSymbol(key);if(symbol.empty())return S_FALSE;readContext(ctx,cookie);
+    if(finishPending)return S_FALSE;const auto scope=scopeOf(ctx,cookie);if(scope==FieldScope::password||scope==FieldScope::privateField)return S_FALSE;auto symbol=literalSymbol(key);if(symbol.empty())return S_FALSE;readContext(ctx,cookie);
     const auto field=archiveFieldType(ctx,cookie);const bool asciiField=field>=2&&field<=5;
-    const bool digit=!contextBefore.empty()&&contextBefore.back()>='0'&&contextBefore.back()<='9';
+    const bool digit=(!contextBefore.empty()&&contextBefore.back()>='0'&&contextBefore.back()<='9')||followsOwnLiteralDigit(ctx,cookie);clearLiteralDigit();
     symbol=private_input::punctuationSymbol(symbol,!english,asciiField,digit);
-    auto plan=private_input::symbolPlan(symbol,inputPreferences.pairSymbols,inputPreferences.caretInside);
-    clearAutomaticPair();auto hr=setOwnText(ctx,cookie,plan.text,true);if(FAILED(hr))return hr;*eaten=true;rememberAutomaticPair(ctx,cookie,plan,symbol);return S_OK;
+    // Unknown fields may type punctuation, but gain no context or pair capability.
+    auto plan=private_input::symbolPlan(symbol,scope==FieldScope::normal&&inputPreferences.pairSymbols,inputPreferences.caretInside);
+    clearAutomaticPair();auto hr=setOwnText(ctx,cookie,plan.text,true);if(FAILED(hr))return hr;*eaten=true;rememberAutomaticPair(ctx,cookie,plan,symbol);if(symbol.size()==1&&symbol[0]>=L'0'&&symbol[0]<=L'9')rememberLiteralDigit(ctx,cookie);return S_OK;
   }
 
-  std::shared_ptr<const CachedDesktopPreferences>desktopCache=std::make_shared<CachedDesktopPreferences>();
+  std::shared_ptr<DesktopPreferenceSnapshot>desktopCache=std::make_shared<DesktopPreferenceSnapshot>();
   unsigned ownEndDepth=0;std::string contextBefore,contextAfter;std::filesystem::path publicContextPath;
   private_input::activity::CaptureEmitter archiveEmitter;
   std::optional<private_input::activity::DecisionCapture>activeDecision;
@@ -274,7 +296,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   }
   HRESULT request(ITfContext *ctx,DWORD flags,std::function<HRESULT(TfEditCookie)> action,HRESULT *result,std::function<void()>completed={}){auto *job=new EditJob(identity(),std::move(action),std::move(completed));HRESULT hr=ctx->RequestEditSession(client,job,flags,result);job->Release();return hr;}
   void detachComposition(){
-    clearAutomaticPair();
+    clearLiteralDigit();clearAutomaticPair();
     unwatchLayout();auto old=composition;auto ctx=compositionContext;composition.Reset();compositionContext.Reset();finishPending=false;pendingCommit.clear();pendingContext.Reset();panel.hide();contextBefore.clear();contextAfter.clear();englishInput.clear();learningSelections.clear();if(session)pi_clear(session);++revision;
     if(old&&ctx){HRESULT result=E_FAIL;request(ctx.Get(),TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,[old](TfEditCookie cookie){return old->EndComposition(cookie);},&result);}
   }
@@ -448,7 +470,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     // Draining a failed commit can be the only reason this key was routed.
     // Let the host handle literals and navigation once that work has finished.
     sessionLearning=private_input::freezeLearningSnapshot(learningReader.read(),sessionLearning,!composing());
-    if(!composing()){auto cached=std::atomic_load(&desktopCache);inputPreferences=cached->input;panel.setTheme(inputPreferences.theme);navigation.configure(cached->layout.collapsed,cached->layout.columns,cached->layout.rows);}
+    if(!composing()){auto cached=std::atomic_load(&desktopCache->value);inputPreferences=cached->input;panel.setTheme(inputPreferences.theme);navigation.configure(cached->layout.collapsed,cached->layout.columns,cached->layout.rows);}
     if(!accepts(ctx,key))return S_OK;
     if(key==VK_BACK&&!composing()&&automaticPair.active()){auto hr=eraseAutomaticPair(ctx,cookie,eaten);if(hr!=S_FALSE)return hr;}
     // Return explicitly commits the typed spelling, never the highlighted
@@ -461,9 +483,9 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
       if(SUCCEEDED(hr)){pi_clear(session);englishInput.clear();++revision;panel.hide();*eaten=true;}
       return hr;
     }
-    if(!composing()&&printable(key)&&!(key>='A'&&key<='Z')){if(scope==FieldScope::normal&&focusedContext(ctx))return insertPhysicalSymbol(ctx,cookie,key,eaten);return S_OK;}
+    if(!composing()&&printable(key)&&!(key>='A'&&key<='Z')){if((scope==FieldScope::normal||scope==FieldScope::unknown)&&focusedContext(ctx))return insertPhysicalSymbol(ctx,cookie,key,eaten);return S_OK;}
     if(composing()&&endingLiteral(key)){
-      if(scope==FieldScope::normal&&!words.empty()&&navigation.selected<candidates.rows.size()){const auto&choice=candidates.rows[navigation.selected];auto raw=std::string(pi_raw_input(session));auto start=pi_unselected_input_start(session);auto tail=start<=raw.size()?raw.substr(start):raw;if(english||choice.custom||private_input::pinyin::covers(tail,choice.reading)){auto hr=applyCandidate(ctx,cookie,navigation.selected);if(FAILED(hr))return hr;if(!composing()){if(!finishPending&&printable(key))return insertPhysicalSymbol(ctx,cookie,key,eaten);*eaten=false;return S_OK;}}}
+      if((scope==FieldScope::normal||scope==FieldScope::unknown)&&!words.empty()&&navigation.selected<candidates.rows.size()){const auto&choice=candidates.rows[navigation.selected];auto raw=std::string(pi_raw_input(session));auto start=pi_unselected_input_start(session);auto tail=start<=raw.size()?raw.substr(start):raw;if(english||choice.custom||private_input::pinyin::covers(tail,choice.reading)){auto hr=applyCandidate(ctx,cookie,navigation.selected);if(FAILED(hr))return hr;if(!composing()){if(!finishPending&&printable(key))return insertPhysicalSymbol(ctx,cookie,key,eaten);*eaten=false;return S_OK;}}}
       // An incomplete spelling keeps every readable remaining key before the
       // host receives its original punctuation or shortcut.
       const std::string rawInput=pi_raw_input(session),prefix=pi_selected_prefix(session);const auto start=pi_unselected_input_start(session);
@@ -560,9 +582,16 @@ public:
     // or create any learning database. The OS retains its own input handling.
     if(secure)return S_OK;
     // Desktop clipboard has no IME offer and requires no UI polling timer.
-    archiveEmitter.start();if(!enginePaths){wchar_t module[32768]{};DWORD n=GetModuleFileNameW(g_instance,module,32768);if(n&&n<32768){auto broker=std::filesystem::path(module).parent_path()/L"LingheInputActivity.exe";if(std::filesystem::is_regular_file(broker))ShellExecuteW(nullptr,L"open",broker.c_str(),L"--background",broker.parent_path().c_str(),SW_HIDE);}}
+    archiveEmitter.start();if(!enginePaths){wchar_t module[32768]{};DWORD n=GetModuleFileNameW(g_instance,module,32768);if(n&&n<32768){auto broker=std::filesystem::path(module).parent_path()/L"LingheInputActivity.exe";private_input::BackgroundTask::start([broker]{
+      // Worker startup must not wait on shell extensions or file inspection in
+      // the host's TSF activation callback. Launch only this existing executable
+      // with the caller's token; the worker keeps its normal singleton gate.
+      std::error_code error;if(!std::filesystem::is_regular_file(broker,error))return;
+      std::wstring command=L"\""+broker.wstring()+L"\" --background";STARTUPINFOW startup{};startup.cb=sizeof(startup);startup.dwFlags=STARTF_USESHOWWINDOW;startup.wShowWindow=SW_HIDE;PROCESS_INFORMATION process{};
+      if(CreateProcessW(broker.c_str(),command.data(),nullptr,nullptr,FALSE,0,nullptr,broker.parent_path().c_str(),&startup,&process)){CloseHandle(process.hThread);CloseHandle(process.hProcess);}
+    });}}
     HRESULT hr=manager.As(&keystrokes);if(FAILED(hr)){manager.Reset();return hr;}
-    if(!startEngine()){keystrokes.Reset();manager.Reset();return E_FAIL;}if(!enginePaths){auto resource=utf8((publicContextPath.parent_path().parent_path()/L"rime").wstring());PWSTR local=nullptr;std::filesystem::path preference;if(SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local))){preference=std::filesystem::path(local)/L"PrivateInput/desktop-candidate-layout-v1.json";CoTaskMemFree(local);}learningReader.start(publicContextPath,[resource]{pi_prepare_repair_resources(resource.c_str());},[this,preference]{auto next=std::make_shared<CachedDesktopPreferences>();next->layout=readDesktopLayout(preference);next->input=readDesktopInputPreferences(preference);std::shared_ptr<const CachedDesktopPreferences>frozen=next;std::atomic_store(&desktopCache,std::move(frozen));});}
+    if(!startEngine()){keystrokes.Reset();manager.Reset();return E_FAIL;}if(!enginePaths){auto resource=utf8((publicContextPath.parent_path().parent_path()/L"rime").wstring());PWSTR local=nullptr;std::filesystem::path preference;if(SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local))){preference=std::filesystem::path(local)/L"PrivateInput/desktop-candidate-layout-v1.json";CoTaskMemFree(local);}auto nextCache=std::make_shared<DesktopPreferenceSnapshot>();nextCache->value=std::atomic_load(&desktopCache->value);desktopCache=std::move(nextCache);learningReader.start(publicContextPath,[resource]{pi_prepare_repair_resources(resource.c_str());},[cache=desktopCache,preference]{auto next=std::make_shared<CachedDesktopPreferences>();next->layout=readDesktopLayout(preference);next->input=readDesktopInputPreferences(preference);std::shared_ptr<const CachedDesktopPreferences>frozen=next;std::atomic_store(&cache->value,std::move(frozen));});}
 #ifdef PRIVATE_INPUT_TSF_TEST_HOOKS
     // A synthetic text-store application receives an application TfClientId,
     // not the OS-assigned TIP id needed for real key-sink subscription. Its
@@ -573,7 +602,7 @@ public:
     hr=keystrokes->AdviseKeyEventSink(client,this,TRUE);keySinkAdvised=SUCCEEDED(hr);
     if(FAILED(hr)){if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();}return hr;
   }
-  STDMETHODIMP Deactivate()override{if(anchorLeaseWindow){DestroyWindow(anchorLeaseWindow);anchorLeaseWindow=nullptr;}if(clipboardPollWindow){DestroyWindow(clipboardPollWindow);clipboardPollWindow=nullptr;}retireClipboard();clipboardReader.close();detachComposition();if(keystrokes&&keySinkAdvised)keystrokes->UnadviseKeyEventSink(client);keySinkAdvised=false;if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();client=PrivateInputClientNull;return S_OK;}
+  STDMETHODIMP Deactivate()override{learningReader.stop();if(anchorLeaseWindow){DestroyWindow(anchorLeaseWindow);anchorLeaseWindow=nullptr;}if(clipboardPollWindow){DestroyWindow(clipboardPollWindow);clipboardPollWindow=nullptr;}retireClipboard();clipboardReader.close();detachComposition();if(keystrokes&&keySinkAdvised)keystrokes->UnadviseKeyEventSink(client);keySinkAdvised=false;if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();client=PrivateInputClientNull;return S_OK;}
   STDMETHODIMP OnCompositionTerminated(TfEditCookie,ITfComposition *ended)override{
     // Treat our own ending exactly like a host that never calls this sink;
     // explicit finish paths own cleanup. External termination still resets it.
@@ -602,9 +631,9 @@ public:
 
   STDMETHODIMP OnEndEdit(ITfContext*ctx,TfEditCookie,ITfEditRecord*)override{if(pairContext.Get()==ctx&&!pairOwnRequest)clearAutomaticPair();if(clipboardVisible)retireClipboard();return S_OK;}
   STDMETHODIMP OnSetFocus(BOOL foreground)override{if(!foreground){shiftTap.reset();retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
-  STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(!eaten)return E_POINTER;if(key!=VK_BACK||modifiedBackspace(key))clearAutomaticPair();if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}if(key!=VK_SHIFT&&technicalIdlePassThrough(ctx)){*eaten=FALSE;return S_OK;}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
+  STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();if(!eaten)return E_POINTER;if(key!=VK_BACK||modifiedBackspace(key))clearAutomaticPair();if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}if(key!=VK_SHIFT&&technicalIdlePassThrough(ctx)){*eaten=FALSE;return S_OK;}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
   STDMETHODIMP OnTestKeyUp(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();if(!eaten)return E_POINTER;const bool toggle=key==VK_SHIFT&&shiftTap.ready(reinterpret_cast<uintptr_t>(ctx))&&!secure;if(key==VK_SHIFT&&!toggle)shiftTap.reset();*eaten=toggle;return S_OK;}
-  STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{
+  STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();
     if(!eaten)return E_POINTER;*eaten=FALSE;if(modifiedBackspace(key)){clearAutomaticPair();return S_OK;}if(key==VK_SHIFT){shiftTap.press(reinterpret_cast<uintptr_t>(ctx),secure||GetKeyState(VK_CONTROL)<0||GetKeyState(VK_MENU)<0||GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0);return S_OK;}shiftTap.otherKey();if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld){clipboardPolicy.hideForDelete(clipboardOffer.sequence);retireClipboard();*eaten=TRUE;return S_OK;}if(key!=VK_DELETE&&key!=VK_BACK){retireClipboard(GetClipboardSequenceNumber());}if(!accepts(ctx,key))return S_OK;ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
     pairOwnRequest=true;
     HRESULT hr=request(ctx,TF_ES_SYNC|TF_ES_READWRITE,[this,retained,key,&handled](TfEditCookie cookie){return handleArchivedKey(retained.Get(),cookie,key,&handled);},&result);

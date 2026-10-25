@@ -30,7 +30,7 @@ bool inside(const fs::path& path,const fs::path& root) {
  return p.size()>r.size()&&CompareStringOrdinal(p.data(),int(r.size()),r.data(),int(r.size()),TRUE)==CSTR_EQUAL;
 }
 void selectPage(HWND window,int page) {
- selectedPage=page==1?1:0;SetWindowTextW(heading,settingsSectionName(selectedPage));
+ selectedPage=page==1?1:0;settingsSurfacePage(window,selectedPage);SetWindowTextW(heading,settingsSectionName(selectedPage));
  for(int i=0;i<5;i++){const bool show=(i<3)==(selectedPage==0);ShowWindow(labels[i],show?SW_SHOW:SW_HIDE);ShowWindow(fields[i],show?SW_SHOW:SW_HIDE);}
  ShowWindow(pairBox,selectedPage?SW_HIDE:SW_SHOW);ShowWindow(insideBox,selectedPage?SW_HIDE:SW_SHOW);
  ShowWindow(sectionTitles[0],selectedPage?SW_HIDE:SW_SHOW);ShowWindow(sectionTitles[1],selectedPage?SW_SHOW:SW_HIDE);ShowWindow(sectionTitles[2],selectedPage?SW_HIDE:SW_SHOW);
@@ -49,7 +49,7 @@ void layout(HWND window) {
  SetWindowPos(saveButton,nullptr,px(568),px(height-94),px(124),px(34),SWP_NOZORDER);SetWindowPos(statusLabel,nullptr,px(188),px(height-50),px(504),px(38),SWP_NOZORDER);
  for(auto control:{saveButton,statusLabel,pairBox,insideBox})SendMessageW(control,WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);
  SetWindowPos(pairBox,nullptr,px(188),px(296),px(504),px(32),SWP_NOZORDER);SetWindowPos(insideBox,nullptr,px(188),px(338),px(504),px(32),SWP_NOZORDER);
- SetWindowPos(brand,nullptr,px(28),px(32),px(136),px(28),SWP_NOZORDER);SendMessageW(brand,WM_SETFONT,reinterpret_cast<WPARAM>(section),TRUE);
+ SetWindowPos(brand,nullptr,px(60),px(32),px(104),px(28),SWP_NOZORDER);SendMessageW(brand,WM_SETFONT,reinterpret_cast<WPARAM>(section),TRUE);
  for(int i=0;i<5;i++){SetWindowPos(navigation[i],nullptr,px(16),px(88+48*i),px(148),px(42),SWP_NOZORDER);SendMessageW(navigation[i],WM_SETFONT,reinterpret_cast<WPARAM>(replacement),TRUE);}
  SetWindowPos(heading,nullptr,px(188),px(26),px(504),px(36),SWP_NOZORDER);
  for(int i=0;i<3;i++){SetWindowPos(sectionTitles[i],nullptr,px(188),px(i==2?256:78),px(504),px(26),SWP_NOZORDER);SendMessageW(sectionTitles[i],WM_SETFONT,reinterpret_cast<WPARAM>(section),TRUE);}
@@ -85,22 +85,24 @@ void save() {
 LRESULT CALLBACK procedure(HWND window,UINT message,WPARAM w,LPARAM l) {
  switch(message) {
  case WM_CREATE: {
-  settingsWindowIcon(window);if(!fixture)SetPropW(window,L"LingheInput.Settings.Live",reinterpret_cast<HANDLE>(1));
+  settingsWindowIcon(window);settingsInstallSurface(window,windowTheme);if(!fixture)SetPropW(window,L"LingheInput.Settings.Live",reinterpret_cast<HANDLE>(1));
   brand=CreateWindowW(L"STATIC",L"灵鹤输入法",WS_CHILD|WS_VISIBLE,0,0,0,0,window,nullptr,nullptr,nullptr);
   for(int i=0;i<5;i++){navigation[i]=CreateWindowW(L"BUTTON",settingsSectionName(i),WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,0,0,window,reinterpret_cast<HMENU>(INT_PTR(201+i)),nullptr,nullptr);if(fixture&&i>=2)EnableWindow(navigation[i],FALSE);}
   heading=CreateWindowW(L"STATIC",L"输入设置",WS_CHILD|WS_VISIBLE,0,0,0,0,window,nullptr,nullptr,nullptr);
-  const wchar_t* sections[]={L"候选词",L"外观",L"符号与光标"};for(int i=0;i<3;i++)sectionTitles[i]=CreateWindowW(L"STATIC",sections[i],WS_CHILD|WS_VISIBLE,0,0,0,0,window,nullptr,nullptr,nullptr);
+  const wchar_t* sections[]={L"候选词",L"主题",L"符号与光标"};for(int i=0;i<3;i++)sectionTitles[i]=CreateWindowW(L"STATIC",sections[i],WS_CHILD|WS_VISIBLE,0,0,0,0,window,nullptr,nullptr,nullptr);
   auto state=fixture?private_input::DesktopCandidates{}:readDesktopLayout(file);
   auto preferences=fixture?DesktopInputPreferences{}:readDesktopInputPreferences(file);const wchar_t* names[]={L"单行候选数(&C)",L"展开列数(&L)",L"展开行数(&R)",L"明暗外观",L"主题色"}; int values[]={state.collapsed,state.columns,state.rows,preferences.theme.mode+3,preferences.theme.accent+3};
   for(int i=0;i<5;i++) {
    labels[i]=CreateWindowW(L"STATIC",names[i],WS_CHILD|WS_VISIBLE|SS_LEFT,0,0,0,0,window,nullptr,nullptr,nullptr);
-   fields[i]=CreateWindowExW(0,L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST|WS_VSCROLL,0,0,0,0,window,reinterpret_cast<HMENU>(INT_PTR(100+i)),nullptr,nullptr);
+   fields[i]=CreateWindowExW(0,L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|CBS_DROPDOWNLIST|CBS_OWNERDRAWFIXED|CBS_HASSTRINGS|WS_VSCROLL,0,0,0,0,window,reinterpret_cast<HMENU>(INT_PTR(100+i)),nullptr,nullptr);
    if(i<3){for(int n=3;n<=9;n++)SendMessageW(fields[i],CB_ADDSTRING,0,reinterpret_cast<LPARAM>(std::to_wstring(n).c_str()));}else{const wchar_t*modes[]={L"跟随系统",L"浅色",L"深色"};const wchar_t*accents[]={L"胭脂",L"琥珀",L"紫藤",L"石墨"};for(int n=0;n<(i==3?3:4);++n)SendMessageW(fields[i],CB_ADDSTRING,0,reinterpret_cast<LPARAM>(i==3?modes[n]:accents[n]));}
    SendMessageW(fields[i],CB_SETCURSEL,values[i]-3,0);
   }
   saveButton=CreateWindowW(L"BUTTON",L"保存(&S)",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,0,0,0,0,window,reinterpret_cast<HMENU>(SaveId),nullptr,nullptr);
+  settingsPrimaryButton(saveButton);
   statusLabel=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE|SS_LEFT,0,0,0,0,window,nullptr,nullptr,nullptr);
   pairBox=CreateWindowW(L"BUTTON",L"自动输入成对符号",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,0,0,0,0,window,reinterpret_cast<HMENU>(110),nullptr,nullptr);insideBox=CreateWindowW(L"BUTTON",L"输入成对符号后光标居中",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,0,0,0,0,window,reinterpret_cast<HMENU>(111),nullptr,nullptr);SendMessageW(pairBox,BM_SETCHECK,preferences.pairSymbols?BST_CHECKED:BST_UNCHECKED,0);SendMessageW(insideBox,BM_SETCHECK,preferences.caretInside?BST_CHECKED:BST_UNCHECKED,0);
+  SetWindowPos(saveButton,insideBox,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
   for(HWND control:fields)settingsControlTheme(control);for(HWND control:{pairBox,insideBox,saveButton})settingsControlTheme(control);
   windowTheme.apply(window,preferences.theme);settingsFitWindow(window,GetDpiForWindow(window));layout(window);selectPage(window,selectedPage);EnableWindow(insideBox,preferences.pairSymbols);EnableWindow(saveButton,fixture?TRUE:FALSE); return 0;
  }
@@ -117,7 +119,7 @@ LRESULT CALLBACK procedure(HWND window,UINT message,WPARAM w,LPARAM l) {
   if(LOWORD(w)>=100&&LOWORD(w)<105&&HIWORD(w)==CBN_SELCHANGE) { EnableWindow(saveButton,TRUE); SetWindowTextW(statusLabel,L""); return 0; }
   if(LOWORD(w)==110||LOWORD(w)==111){EnableWindow(insideBox,SendMessageW(pairBox,BM_GETCHECK,0,0)==BST_CHECKED);EnableWindow(saveButton,TRUE);SetWindowTextW(statusLabel,L"");return 0;}
   if(LOWORD(w)==SaveId&&IsWindowEnabled(saveButton)) {
-   try { save();windowTheme.apply(window,readDesktopInputPreferences(file).theme); SetWindowTextW(statusLabel,L"已保存，下次输入时生效。"); EnableWindow(saveButton,FALSE); SetFocus(fields[selectedPage?3:0]); }
+   try { save();windowTheme.apply(window,readDesktopInputPreferences(file).theme); SetWindowTextW(statusLabel,L"设置已保存。"); EnableWindow(saveButton,FALSE); SetFocus(fields[selectedPage?3:0]); }
    catch(...) { MessageBoxW(window,L"设置未能保存。请关闭其他设置窗口后重试。",L"灵鹤输入法",MB_OK|MB_ICONERROR); }
    return 0;
   }
@@ -149,7 +151,10 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
   if(!window)return 1; ShowWindow(window,SW_SHOWNORMAL);UpdateWindow(window);SetFocus(fields[selectedPage?3:0]);
   MSG message{}; int result;
   while((result=GetMessageW(&message,nullptr,0,0))>0) {
-   if(message.message==WM_KEYDOWN&&message.wParam==VK_ESCAPE) { DestroyWindow(window); continue; }
+   if(message.message==WM_KEYDOWN&&message.wParam==VK_ESCAPE) {
+    bool dropped=false;for(HWND field:fields)if(SendMessageW(field,CB_GETDROPPEDSTATE,0,0))dropped=true;
+    if(dropped){TranslateMessage(&message);DispatchMessageW(&message);}else DestroyWindow(window);continue;
+   }
    if(message.message==WM_KEYDOWN&&message.wParam==VK_RETURN) {
     // Preserve Enter's normal selection behavior while a dropdown is open.
     bool dropped=false; for(HWND field:fields)if(SendMessageW(field,CB_GETDROPPEDSTATE,0,0))dropped=true;

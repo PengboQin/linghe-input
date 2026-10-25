@@ -40,7 +40,30 @@ fs::path protectedRoot(const fs::path&root){auto parent=root/L"InstallerRecovery
 std::wstring oldDll(const std::string&image){auto rows=decodeSnapshots(image,true);if(rows.empty()||!rows[0].existed)throw Failure(42);for(const auto&p:rows[0].tree.children)if(!_wcsicmp(p.first.c_str(),L"InprocServer32"))for(const auto&v:p.second.values)if(v.name.empty())return stringValue(v);throw Failure(42);}
 void transformPaths(Tree&t,const fs::path&old,const fs::path&target,bool inproc=false){for(auto&v:t.values)if(v.type==REG_SZ&&((inproc&&v.name.empty())||!_wcsicmp(v.name.c_str(),L"IconFile"))&&samePath(stringValue(v),old))setString(v,normalizedPath(target).wstring());for(auto&p:t.children)transformPaths(p.second,old,target,!_wcsicmp(p.first.c_str(),L"InprocServer32"));}
 Image capture(){Image image;image.slots[0]=encodeSnapshots(registration(),true);image.slots[1]=encodeSnapshots({Snapshot(HKEY_LOCAL_MACHINE,UninstallKey)},false);image.slots[2]=runImage();image.slots[3]=linkImage();return image;}
-Image desired(const Image&before,const fs::path&root,const fs::path&oldInput,const fs::path&targetInput){const auto old=normalizedPath(oldInput),target=normalizedPath(targetInput);Image out=before;std::pair<bool,std::wstring> api;auto reg=decodeSnapshots(before.slots[0],true,&api);for(auto&r:reg)transformPaths(r.tree,old,target);out.slots[0]=encodeFixed(reg,&api);auto arp=decodeSnapshots(before.slots[1],false);if(!arp[0].existed)throw Failure(42);auto targetSetup=target.parent_path().parent_path()/L"LingheInputSetup.exe";for(auto&v:arp[0].tree.values){if(v.name==L"DisplayVersion")setString(v,target.parent_path().parent_path().filename().wstring());else if(v.name==L"UninstallString")setString(v,L"\""+targetSetup.wstring()+L"\" --uninstall");else if(v.name==L"QuietUninstallString")setString(v,L"\""+targetSetup.wstring()+L"\" --uninstall --quiet");}out.slots[1]=encodeFixed(arp);auto run=decodeRun(before.slots[2]);if(run){auto expectedOld=L"\""+(old.parent_path()/L"LingheInputActivity.exe").wstring()+L"\" --background",expectedTarget=L"\""+(target.parent_path()/L"LingheInputActivity.exe").wstring()+L"\" --background";if(*run!=expectedOld&&*run!=expectedTarget)throw Failure(42,E_ACCESSDENIED);Writer w;w.number(true);putWide(w,expectedTarget);out.slots[2]=w.data;}return out;}
+// Only a stale startup pointer may be repaired when registration and target
+// already agree. This parser is not a trust decision: the caller must verify
+// the complete historical payload and pinned installer before using its result.
+std::optional<fs::path> staleOwnedRunDirectory(const std::wstring&run,const fs::path&root,const fs::path&registeredDll,const fs::path&targetDll){
+ if(!samePath(registeredDll,targetDll))return {};
+ const std::wstring suffix=L"\" --background";
+ if(run.size()<=suffix.size()+1||run.front()!=L'"'||run.compare(run.size()-suffix.size(),suffix.size(),suffix)!=0)return {};
+ auto text=run.substr(1,run.size()-suffix.size()-1);
+ if(text.find_first_of(L"\"\0",0,2)!=std::wstring::npos)return {};
+ fs::path worker(text);auto canonical=normalizedPath(worker);
+ if(!worker.is_absolute()||worker.wstring()!=canonical.wstring()||worker.filename()!=L"LingheInputActivity.exe"||worker.parent_path().filename()!=L"AMD64")return {};
+ auto version=worker.parent_path().parent_path();
+ if(!samePath(version.parent_path(),normalizedPath(root)/L"versions")||!linghe::installer::ownedVersionName(version.filename().u8string()))return {};
+ return version;
+}
+void requireVerifiedStaleRun(const std::wstring&run,const fs::path&root,const fs::path&registeredDll,const fs::path&targetDll){
+ auto directory=staleOwnedRunDirectory(run,root,registeredDll,targetDll);
+ if(!directory)throw Failure(42,E_ACCESSDENIED);
+ // verifiedVersion checks every ancestor for reparse points, exact historical
+ // installer SHA, version-bound manifest and every required payload byte. It
+ // reads the old installer as inert resources, never launches it.
+ (void)verifiedVersion(*directory,digest(ownExe()));
+}
+Image desired(const Image&before,const fs::path&root,const fs::path&oldInput,const fs::path&targetInput){const auto old=normalizedPath(oldInput),target=normalizedPath(targetInput);Image out=before;std::pair<bool,std::wstring> api;auto reg=decodeSnapshots(before.slots[0],true,&api);for(auto&r:reg)transformPaths(r.tree,old,target);out.slots[0]=encodeFixed(reg,&api);auto arp=decodeSnapshots(before.slots[1],false);if(!arp[0].existed)throw Failure(42);auto targetSetup=target.parent_path().parent_path()/L"LingheInputSetup.exe";for(auto&v:arp[0].tree.values){if(v.name==L"DisplayVersion")setString(v,target.parent_path().parent_path().filename().wstring());else if(v.name==L"UninstallString")setString(v,L"\""+targetSetup.wstring()+L"\" --uninstall");else if(v.name==L"QuietUninstallString")setString(v,L"\""+targetSetup.wstring()+L"\" --uninstall --quiet");}out.slots[1]=encodeFixed(arp);auto run=decodeRun(before.slots[2]);if(run){auto expectedOld=L"\""+(old.parent_path()/L"LingheInputActivity.exe").wstring()+L"\" --background",expectedTarget=L"\""+(target.parent_path()/L"LingheInputActivity.exe").wstring()+L"\" --background";if(*run!=expectedOld&&*run!=expectedTarget)requireVerifiedStaleRun(*run,root,old,target);Writer w;w.number(true);putWide(w,expectedTarget);out.slots[2]=w.data;}return out;}
 struct NativeAdapter final:Adapter {
  fs::path root,directory;std::unique_ptr<ProtectedJournalFile> file;Report&report;
  NativeAdapter(fs::path r,fs::path d,const std::wstring&id,Report&x):root(std::move(r)),directory(std::move(d)),file(new ProtectedJournalFile(directory,id)),report(x){}

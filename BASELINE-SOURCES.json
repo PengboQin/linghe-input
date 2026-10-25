@@ -1,66 +1,38 @@
 {
   "schemaVersion": 1,
-  "tag": "v0.2026.10.24-baseline.1",
-  "mainSnapshot": "Current reviewed source; includes later source-only fixes",
+  "tag": "v0.2026.10.25-preview.1",
+  "mainSnapshot": "Current reviewed source; equals Android60 and adds automatic-phrase core functions after the Mac84/Windows065 builds",
   "overrides": [
     {
-      "platformBuild": "Mac82",
-      "path": "release-overrides/mac82/apple/Shared/ActivityArchiveView.swift",
-      "applyTo": "apple/Shared/ActivityArchiveView.swift",
-      "originalSourceSHA256": "a758a8307b172fc4652a86c9315417aedb700ac230702b93a422ba0f5f1e6708",
-      "sha256": "a758a8307b172fc4652a86c9315417aedb700ac230702b93a422ba0f5f1e6708"
+      "platformBuild": "Mac84",
+      "path": "release-overrides/mac84/core/src/private_input.cpp",
+      "applyTo": "core/src/private_input.cpp",
+      "originalSourceSHA256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e",
+      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
     },
     {
-      "platformBuild": "Mac82",
-      "path": "release-overrides/mac82/apple/Shared/LocalLearningCoordinator.swift",
-      "applyTo": "apple/Shared/LocalLearningCoordinator.swift",
-      "originalSourceSHA256": "71b484c02f52476d164f78b50f38593ae0bdf261e10472ba8eec58b27182fe66",
-      "sha256": "71b484c02f52476d164f78b50f38593ae0bdf261e10472ba8eec58b27182fe66"
+      "platformBuild": "Mac84",
+      "path": "release-overrides/mac84/core/include/private_input.h",
+      "applyTo": "core/include/private_input.h",
+      "originalSourceSHA256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190",
+      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
     },
     {
-      "platformBuild": "Mac82",
-      "path": "release-overrides/mac82/apple/Shared/NativeEngine.swift",
-      "applyTo": "apple/Shared/NativeEngine.swift",
-      "originalSourceSHA256": "fcf8c4b53cb7cb7ef482827360e6e99ef7c8f8aea9bb9a18f375b0efec7cf12a",
-      "sha256": "fcf8c4b53cb7cb7ef482827360e6e99ef7c8f8aea9bb9a18f375b0efec7cf12a"
+      "platformBuild": "Windows065",
+      "path": "release-overrides/windows065/core/src/private_input.cpp",
+      "applyTo": "core/src/private_input.cpp",
+      "originalSourceSHA256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e",
+      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
     },
     {
-      "platformBuild": "Mac82",
-      "path": "release-overrides/mac82/apple/Shared/RecencyCoordinator.swift",
-      "applyTo": "apple/Shared/RecencyCoordinator.swift",
-      "originalSourceSHA256": "0ad1f08427583d376d5590a2e9d5a35ce37b80f6ce5fb145dea35489d8c30432",
-      "sha256": "0ad1f08427583d376d5590a2e9d5a35ce37b80f6ce5fb145dea35489d8c30432"
-    },
-    {
-      "platformBuild": "Mac82",
-      "path": "release-overrides/mac82/apple/iOS/Keyboard/KeyboardViewController.swift",
-      "applyTo": "apple/iOS/Keyboard/KeyboardViewController.swift",
-      "originalSourceSHA256": "5c778cf0c32a4ee2f7b4c6bbc6ff7deaddab756ae889e27deaf968c9b0581cbf",
-      "sha256": "5c778cf0c32a4ee2f7b4c6bbc6ff7deaddab756ae889e27deaf968c9b0581cbf"
-    },
-    {
-      "platformBuild": "Mac82",
-      "path": "release-overrides/mac82/apple/project.yml",
-      "applyTo": "apple/project.yml",
-      "originalSourceSHA256": "cebf23078bc7e42cbe4506490b8feca3113a930ac2c29e7154cd5d2c43d12110",
-      "sha256": "95855b7c6341df3bacd924ee5fb37d6a004937adb11ac704169fb84b82df0169"
-    },
-    {
-      "platformBuild": "Mac82",
-      "path": "release-overrides/mac82/shared/PrivateInputKit/Sources/PrivateInputKit/ActivityClient.swift",
-      "applyTo": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityClient.swift",
-      "originalSourceSHA256": "3f28dd51a975a4bd652d120d808ebee78d678fbd023f5499f7101b252492715d",
-      "sha256": "3f28dd51a975a4bd652d120d808ebee78d678fbd023f5499f7101b252492715d"
-    },
-    {
-      "platformBuild": "Windows062",
-      "path": "release-overrides/windows062/windows-source/windows/activity/Worker.cpp",
-      "applyTo": "windows-source/windows/activity/Worker.cpp",
-      "originalSourceSHA256": "214c5f973a6645222e03fd3c236111d8ac58785b9ab3322191029d98dfc69ba6",
-      "sha256": "214c5f973a6645222e03fd3c236111d8ac58785b9ab3322191029d98dfc69ba6"
+      "platformBuild": "Windows065",
+      "path": "release-overrides/windows065/core/include/private_input.h",
+      "applyTo": "core/include/private_input.h",
+      "originalSourceSHA256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190",
+      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
     }
   ],
-  "usage": "Copy one platform override directory into a separate copy of this source archive before rebuilding that historical desktop package. Do not apply mac82 overrides when building iOS101.",
+  "usage": "Copy one override directory into a separate copy of this source archive before rebuilding Mac84 or Windows065. Android60 and iOS101 use the main snapshot.",
   "privateSigningAndOperatorURLsSanitized": true,
   "cleanRoomOrByteIdenticalRebuildClaimed": false
 }

@@ -7,6 +7,12 @@ public final class NativeCore {
  public static native boolean languageInitialize(String folder);
  /** Shared automatic-candidate admission only; never rewrite literal or stored text. */
  public static native boolean candidateTextAllowed(String text);
+ // 2 new phrase, 1 known, 0 not eligible, -1 vocabulary unavailable. File I/O: worker only.
+ public static native int autoPhraseStatus(String text);
+ // Undo an automatically memorized new phrase; 1 forgotten, 0 absent/known, -1 invalid.
+ public static native int forgetPhrase(String reading,String text);
+ // Teach an eligible new phrase committed outside Rime (nine-key preferred path); 1 learned.
+ public static native int learnPhrase(String reading,String text);
  /** Pure automatic reading admission; no Rime session, lock or file access. */
  public static native boolean candidateReadingAllowed(String text,String reading);
  public static native double languageScore(String before,String text);

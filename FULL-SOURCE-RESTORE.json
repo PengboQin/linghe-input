@@ -3,10 +3,9 @@
   "snapshot_kind": "baseline-20261024",
   "complete_build_source_published": true,
   "development_archive": {
-    "name": "LingheInput-Source-20261024-baseline.zip",
-    "sha256": "e0dfa601c50ddd0bab925709555cdecafc0112037a28dbec25b6b02c249685cb",
-    "public_download_available": true,
-    "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.24-baseline.1/LingheInput-Source-20261024-baseline.zip"
+    "name": "LingheInput-Source-20261025-preview.zip",
+    "sha256": "de59e80d65f2d72ad79dc3dfad911ed3626010c0ca828b5538c38a3cd782303d",
+    "public_download_available": true
   },
   "last_release_tag": "v0.2026.10.24-baseline.1",
   "excluded_files": [
@@ -177,7 +176,7 @@
     },
     {
       "path": "windows-source/windows/resources/AppIcon.ico",
-      "sha256": "3909a2a6fa3368a4b2e22c6febb0f08810bc24a350815762a519b8fba39f066c",
+      "sha256": "c0e51263636c207c9122661df25f521c203f716850c7c4878faa64335205484e",
       "reason": "binary_asset"
     },
     {
@@ -226,5 +225,5 @@
       "reason": "binary_fixture"
     }
   ],
-  "instructions": "Use the complete baseline source ZIP for build resources. Apply the platform overlay listed in BASELINE-SOURCES.json only when rebuilding that desktop baseline package. The web tree intentionally omits large public data, compiled dictionaries and binary assets."
+  "instructions": "The baseline browsing tree is not a complete build source; use the complete baseline ZIP. Released installers correspond only to their immutable release tag and source attachment. The audited development archive exists locally but has not been published; do not assume the old source archive matches these new source files."
 }

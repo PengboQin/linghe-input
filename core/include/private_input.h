@@ -102,6 +102,17 @@ int pi_set_ascii_mode(PI_Session session, int enabled);
 int pi_candidate_text_allowed(const char *text);
 /* Pure automatic reading eligibility; never apply to literal/storage or explicit aliases. */
 int pi_candidate_reading_allowed(const char *text,const char *reading);
+/* Automatic phrase collection: 2 = 2-8 standard Han characters absent from the
+   preset vocabulary (eligible new phrase), 1 = known, 0 = not eligible,
+   -1 = vocabulary unavailable. Reads shared files; call off the key path. */
+int pi_auto_phrase_status(const char *text);
+/* Undo an automatically memorized new phrase (status 2) by deleting that exact
+   text/reading user row. Known vocabulary is never removed. 1 forgotten,
+   0 absent/known, -1 invalid. Safe while other sessions are open. */
+int pi_forget_phrase(const char *reading, const char *text);
+/* Teach an eligible new phrase (status 2) committed outside Rime's own
+   composition. 1 learned, 0 not found/not eligible, -1 invalid. */
+int pi_learn_phrase(const char *reading, const char *text);
 size_t pi_candidate_count(PI_Session session);
 const char *pi_candidate_text(PI_Session session, size_t index);
 const char *pi_take_commit(PI_Session session);

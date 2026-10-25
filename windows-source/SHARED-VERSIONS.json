@@ -8,6 +8,12 @@
       "same_bytes": false
     },
     {
+      "path": "core/include/known_phrase_lookup.h",
+      "main_sha256": "fe4faf4f1988cd6abd3f70d17224ea9dd14905e59023efcb0f5047914c1384ec",
+      "windows_sha256": "678ed09720e1c9c53db799a6cdabfe99e8dde7749dacf7a540b3bac9ced09f9d",
+      "same_bytes": false
+    },
+    {
       "path": "core/include/learning_capacity_profiles.h",
       "main_sha256": "2960cf8c424dfd24fbd13eae7bfdac9bec803028bc44afab598af89971083c59",
       "windows_sha256": "9f28d1fd486a6e5fb1bb389c50ee61ae6fd736f840cacdf97bcc5016c7400259",
@@ -39,7 +45,7 @@
     },
     {
       "path": "core/include/private_input.h",
-      "main_sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190",
+      "main_sha256": "13578b14b90fc70031280064893933dfa9cce53c68a553e7d59c65c6c137e930",
       "windows_sha256": "918566fe2b50b363df29c47e72ae5e45ec66f4af2e7fcbdcbfa4f066f6dab17c",
       "same_bytes": false
     },
@@ -69,8 +75,14 @@
     },
     {
       "path": "core/src/private_input.cpp",
-      "main_sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e",
+      "main_sha256": "ef05ff978a9a75173a98317aa5a14dce300914bf97d4a975a038870d911b0707",
       "windows_sha256": "09dcc2126bf32ffa2f7cb7d30b25528ec6718fd3440ecc9fc08395ac48c4b744",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/auto_phrase_engine.cpp",
+      "main_sha256": "3e4124346ee5362fa7667d241e9fc2a2ff65a44d0314c165f7124f4deb0fe6c2",
+      "windows_sha256": "dc5cda55685583ebe4c8688e6cd402821f3e1190c56ee2f682ca5684f77f45de",
       "same_bytes": false
     },
     {
@@ -113,6 +125,12 @@
       "path": "core/tests/engine_smoke.cpp",
       "main_sha256": "fdc89d7edc13ef784e59da506dd011d8671d626fd4430f1b73acb8db2b11aecf",
       "windows_sha256": "1bd1c7f4519adb610e54c42f26bc89df5b647744410efc5d07699e580eab403e",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/known_phrase_lookup.cpp",
+      "main_sha256": "3434760d854d45360b2705d300762875a0dab22ddffbe154b3bc102f203115e0",
+      "windows_sha256": "e8912ccecefefc15d5f9a8371e95d3a55c69c20937047c89c5d14978355d23a1",
       "same_bytes": false
     },
     {

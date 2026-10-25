@@ -28,8 +28,8 @@
 #include "RegistrationCatalogCheck.h"
 namespace fs = std::filesystem;
 namespace {
-constexpr wchar_t Version[] = L"0.6.2-win1";
-constexpr char VersionUtf8[] = "0.6.2-win1";
+constexpr wchar_t Version[] = L"0.6.5-win1";
+constexpr char VersionUtf8[] = "0.6.5-win1";
 // Use the DLL's actual COM identity for preflight, installation and rollback.
 // A second handwritten GUID previously caused a successful registration to be
 // reported as failed and left the real registration outside the snapshot.

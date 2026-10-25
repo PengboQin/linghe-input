@@ -12,16 +12,20 @@ std::wstring pipeName(const std::wstring&){return {};}
 std::wstring gateName(const std::wstring&){return {};}
 std::wstring contextCapabilityName(const std::wstring&){return {};}
 std::wstring learningName(const std::wstring&){return {};}
+CaptureEmitter::CaptureEmitter(std::wstring){}
 CaptureEmitter::~CaptureEmitter()=default;
 void CaptureEmitter::start(){++starts;}
 bool CaptureEmitter::diagnosticsEnabled()const noexcept{return false;}
 void CaptureEmitter::emit(std::wstring_view,HWND,const std::array<unsigned char,16>&,const std::array<unsigned char,16>&,bool,uint32_t,uint32_t,bool,bool,const DecisionCapture*,const DecisionLink*)noexcept{++captures;}
 void CaptureEmitter::emitLearning(std::wstring_view,std::wstring_view,HWND,uint32_t)noexcept{++learnings;}
-void CaptureEmitter::run()noexcept{}
+
+LearningReader::LearningReader()=default;
 LearningReader::~LearningReader()=default;
+std::shared_ptr<const LearningSnapshot>LearningReader::read()const{static const auto snapshot=std::make_shared<const LearningSnapshot>();return snapshot;}
+std::shared_ptr<const private_input::PublicContextModel>LearningReader::model()const{return {};}
 void LearningReader::stop(){}
 void LearningReader::start(std::filesystem::path,std::function<void()>,std::function<void()>){++learningStarts;}
-void LearningReader::run(){}
+
 namespace fixture {
 bool namesDisabled()noexcept{return pipeName({}).empty()&&gateName({}).empty()&&contextCapabilityName({}).empty()&&learningName({}).empty();}
 IPCStats ipcStats()noexcept{return {true,starts.load(),captures.load(),learnings.load(),learningStarts.load()};}

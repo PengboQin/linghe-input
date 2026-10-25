@@ -30,6 +30,7 @@ public:
   void notifyLayout(){if(sink)sink->OnLayoutChange(TS_LC_CHANGE,1);}
 
   explicit SyntheticTextStore(HWND hwnd):window(hwnd){}
+  void useViewWindowForTests(HWND hwnd){window=hwnd;}
   void appCaret(LONG position){if(lock||!range(position,position))return;selection.acpStart=selection.acpEnd=position;if(sink)sink->OnSelectionChange();}
   void setReadOnly(bool value){readonly=value;if(sink)sink->OnStatusChange(TS_SD_READONLY);}
   void appInsert(WCHAR value){if(readonly||lock)return;LONG a=selection.acpStart,b=selection.acpEnd;text.replace(a,b-a,1,value);selection.acpStart=selection.acpEnd=a+1;TS_TEXTCHANGE change{a,b,a+1};if(sink){sink->OnTextChange(0,&change);sink->OnSelectionChange();}InvalidateRect(window,nullptr,TRUE);}

@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput.tests" android:versionCode="48" android:versionName="0.1.47">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput.tests" android:versionCode="49" android:versionName="0.1.48">
  <instrumentation android:name="live.linghe.privateinput.StartupLifecycleCheck" android:targetPackage="live.linghe.privateinput.tests" android:functionalTest="true"/>
  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36"/>
  <instrumentation android:name="live.linghe.privateinput.ActivityArchiveHttpInstrumentation" android:targetPackage="live.linghe.privateinput.tests"/>

@@ -19,15 +19,15 @@ HWND control(const wchar_t*cls,const wchar_t*text,int x,int y,int w,int h,int id
 }
 HWND section(const wchar_t*text,int y){auto label=control(L"STATIC",text,188,y,504,26,0);settingsSections.push_back(label);return label;}
 void selectSettingsPage(int page){
- if(page<0||page>2)return;settingsPage=page;SetWindowTextW(settingsTitle,settingsSectionName(page==0?3:page==1?4:2));
+ if(page<0||page>2)return;settingsPage=page;settingsSurfacePage(window,page==0?3:page==1?4:2);SetWindowTextW(settingsTitle,settingsSectionName(page==0?3:page==1?4:2));
  for(const auto&c:controls)ShowWindow(c.hwnd,c.page<0||c.page==page?SW_SHOW:SW_HIDE);
  for(auto control:{syncSaveButton,syncNowButton})ShowWindow(control,page==1?SW_HIDE:SW_SHOW);
  for(auto nav:settingsNav)InvalidateRect(nav,nullptr,TRUE);InvalidateRect(settingsLearningNav,nullptr,TRUE);
  SetFocus(page==2?settingsLearningNav:settingsNav[page]);
 }
 void createControls(){
- uiDpi=GetDpiForWindow(window);if(!uiDpi)uiDpi=96;settingsWindowIcon(window);settingsFitWindow(window,uiDpi);controlPage=-1;
- auto brand=control(L"STATIC",L"灵鹤输入法",28,32,136,28,0);settingsSections.push_back(brand);
+ uiDpi=GetDpiForWindow(window);if(!uiDpi)uiDpi=96;settingsWindowIcon(window);settingsInstallSurface(window,mainTheme);settingsFitWindow(window,uiDpi);controlPage=-1;
+ auto brand=control(L"STATIC",L"灵鹤输入法",60,32,104,28,0);settingsSections.push_back(brand);
  control(L"BUTTON",settingsSectionName(0),16,88,148,42,203,WS_TABSTOP|BS_OWNERDRAW);
  control(L"BUTTON",settingsSectionName(1),16,136,148,42,205,WS_TABSTOP|BS_OWNERDRAW);
  settingsLearningNav=control(L"BUTTON",settingsSectionName(2),16,184,148,42,204,WS_TABSTOP|BS_OWNERDRAW);
@@ -49,7 +49,7 @@ void createControls(){
  control(L"BUTTON",L"生成接入码",188,266,158,34,9,WS_TABSTOP);
  control(L"BUTTON",L"关闭接入码",361,266,158,34,10,WS_TABSTOP);
  control(L"BUTTON",L"退出设备组…",534,266,158,34,3,WS_TABSTOP);
- ticketField=control(L"STATIC",L"",188,310,504,24,0);
+ ticketField=control(L"STATIC",L"",188,306,504,22,0);
  textSyncBox=control(L"BUTTON",L"自动同步剪贴板文字",188,342,504,32,22,WS_TABSTOP|BS_AUTOCHECKBOX);
  controlPage=2;
  section(L"输入习惯",78);
@@ -59,7 +59,7 @@ void createControls(){
  control(L"STATIC",L"归档服务器",188,82,504,22,0);
  archiveField=control(L"EDIT",L"",188,110,504,32,103,WS_TABSTOP|ES_AUTOHSCROLL);settingsInputScope(archiveField,IS_URL);SendMessageW(archiveField,EM_SETLIMITTEXT,2048,0);
  control(L"BUTTON",L"开启本组归档…",188,154,176,34,4,WS_TABSTOP);
- section(L"本设备记录范围",194);
+ section(L"本设备记录范围",202);
  imeBox=control(L"BUTTON",L"输入法输出",188,228,504,30,104,WS_TABSTOP|BS_AUTOCHECKBOX);
  clipboardBox=control(L"BUTTON",L"剪贴板文字",188,262,504,30,105,WS_TABSTOP|BS_AUTOCHECKBOX);
  diagnosticBox=control(L"BUTTON",L"输入过程（包含未发送内容）",188,296,504,30,106,WS_TABSTOP|BS_AUTOCHECKBOX);
@@ -67,6 +67,9 @@ void createControls(){
  control(L"BUTTON",L"清空本机归档…",188,426,160,34,7,WS_TABSTOP);
  control(L"BUTTON",L"刷新状态",364,426,136,34,8,WS_TABSTOP);
  control(L"BUTTON",L"保存本设备授权…",516,426,176,34,5,WS_TABSTOP);
+ SetWindowPos(syncNowButton,GetDlgItem(window,5),0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
+ SetWindowPos(syncSaveButton,syncNowButton,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
+ settingsPrimaryButton(syncSaveButton);settingsPrimaryButton(GetDlgItem(window,5));
  contentWindow=window;controlPage=-1;setFont();selectSettingsPage(requestedSettingsPage);
  for(int id:{21,22,23,24})EnableWindow(GetDlgItem(window,id),FALSE);
 }

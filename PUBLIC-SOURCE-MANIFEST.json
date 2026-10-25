@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1792862337,
-  "member_count": 1161,
-  "uncompressed_bytes": 147182418,
+  "created_at_unix": 1792946612,
+  "member_count": 1173,
+  "uncompressed_bytes": 146858328,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -58,6 +58,11 @@
     },
     {
       "file": "windows-source/core/include/desktop_candidates.hpp",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
+      "file": "windows-source/core/include/known_phrase_lookup.h",
       "kind": "canonical_core_forwarding_include",
       "count": 1
     },
@@ -117,6 +122,11 @@
       "count": 1
     },
     {
+      "file": "windows-source/core/tests/auto_phrase_engine.cpp",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
       "file": "windows-source/core/tests/candidate_batch_budget.cpp",
       "kind": "canonical_core_forwarding_include",
       "count": 1
@@ -148,6 +158,11 @@
     },
     {
       "file": "windows-source/core/tests/engine_smoke.cpp",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
+      "file": "windows-source/core/tests/known_phrase_lookup.cpp",
       "kind": "canonical_core_forwarding_include",
       "count": 1
     },
@@ -241,8 +256,8 @@
     },
     {
       "path": "android/app/src/main/AndroidManifest.xml",
-      "bytes": 1946,
-      "sha256": "e3af9b9ce755bb8a996137590d506cf516939a850bc381b34303701240b9c88e"
+      "bytes": 1943,
+      "sha256": "a3580a8c05f6cb91ea8a80fad14136ee5d33317376391e9bf0ce492beba86dd1"
     },
     {
       "path": "android/app/src/main/cpp/CMakeLists.txt",
@@ -251,8 +266,8 @@
     },
     {
       "path": "android/app/src/main/cpp/jni.cpp",
-      "bytes": 17802,
-      "sha256": "f683d8b772deb7181171408297b06bb71f54796de196e69c6bae0f427b3a8770"
+      "bytes": 18498,
+      "sha256": "068f17ff41a34d0adfa8351fb1d04eb816259a6193e8063b3bd048187b1d40df"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -318,6 +333,11 @@
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardState.java",
       "bytes": 2899,
       "sha256": "4eda77067b8f73a2e156d66de4d48d314c0446fce08a0244cb26eab41325da65"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/AutoPhrase.java",
+      "bytes": 2466,
+      "sha256": "680479917cb9a99d520269e23fa2ac1a803ba96b5da27de237639fe0eac9f0a1"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutomaticReadingAdmission.java",
@@ -495,6 +515,11 @@
       "sha256": "1f650dca93728ef9b88b8d0b455e13ce6a94a6e368de9734392702508bef0568"
     },
     {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ImeTaskExecutors.java",
+      "bytes": 1415,
+      "sha256": "453cd443dbafe085566160a7ab087703246848e7738cea265263c7bdc1f311d1"
+    },
+    {
       "path": "android/app/src/main/java/live/linghe/privateinput/InputActionDelivery.java",
       "bytes": 794,
       "sha256": "e67c9e68a47287c6787b218457a00863c6c7e0f61b6d72c3734fef3b5fac5eb6"
@@ -591,8 +616,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LingheInputService.java",
-      "bytes": 116319,
-      "sha256": "f11a22405d5cb61bfae7ed7f25e7be5c82c922b0eeedc72da7bd915ff7bbbc14"
+      "bytes": 121298,
+      "sha256": "360ea5c9351a6619d211fe612d98c6e2ed84424e0241ab1a93ce3a7c4a4faa05"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LosslessJson.java",
@@ -611,8 +636,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/NativeCore.java",
-      "bytes": 3184,
-      "sha256": "4e303d9991ae08143422db78c659adf2fdff40d60448669942fce0241b38f6d8"
+      "bytes": 3652,
+      "sha256": "c9e04271766b333d259f130d672e5945329e55663db311490a45552e1fb2b409"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/NativeEnginePaths.java",
@@ -852,7 +877,7 @@
     {
       "path": "android/tests/AndroidManifest.xml",
       "bytes": 3499,
-      "sha256": "07c79f84d792671a5c6f9f7aa73b78967c2b1d83212d56ad0a9e4aa4597cfb18"
+      "sha256": "60100e91dcedf0137dfae73cf9c2f62fa9833701a44f1c1feed391e5d0440ce4"
     },
     {
       "path": "android/tests/cli/CliAppleParity15.java",
@@ -958,6 +983,11 @@
       "path": "android/tests/host/ClipboardPresentationPolicyTest.java",
       "bytes": 4302,
       "sha256": "6367c6b124981ff0eee2b6da23af0848313c362f1336f2de009bcea21614d36f"
+    },
+    {
+      "path": "android/tests/host/ImeTaskExecutorsTest.java",
+      "bytes": 5766,
+      "sha256": "0662e80c836a192f38bae95b52fc8e16d607fa73d595fd3760b7111d3c176e92"
     },
     {
       "path": "android/tests/host/InputAlgorithmsTest.java",
@@ -1110,6 +1140,11 @@
       "sha256": "4054ddcb0a4d46bf732ebac1fc7c88947e440dc71127f128418733a00edb61fb"
     },
     {
+      "path": "android/tests/java/live/linghe/privateinput/AutoPhraseTrackerTest.java",
+      "bytes": 1449,
+      "sha256": "4c958aa53d0dbc47e5ab480d8171fa2ea68d3cb6a30961aabc225e22fd47122a"
+    },
+    {
       "path": "android/tests/java/live/linghe/privateinput/ClipboardCandidateCheck.java",
       "bytes": 3990,
       "sha256": "1c360d0791c2d583cce568d4c980eeb0a3133ebf612caa40d9e57ef77f7ef3d0"
@@ -1176,8 +1211,8 @@
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/StartupLifecycleCheck.java",
-      "bytes": 5920,
-      "sha256": "07816a5131ebfb464430be5d33f2496b1305d6cd8f77deda9e530f057aa8d5e3"
+      "bytes": 6347,
+      "sha256": "fcc4d9b560f3adf2da11474005dd7247db5b763855d597901c0b5fdbdbc085d0"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/SyncAcceptanceActivity.java",
@@ -1217,7 +1252,7 @@
     {
       "path": "apple/project.yml",
       "bytes": 12389,
-      "sha256": "7ad8e5f4a04dab74e4466e453fd9439da13b7729116a202fbb15442351bb0897"
+      "sha256": "4fddbafbccfd1b85d83c92640cc59933e28d1deb2a36566377a416f65fa88861"
     },
     {
       "path": "apple/Shared/ActivityArchiveController.swift",
@@ -1766,8 +1801,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/InputController.swift",
-      "bytes": 26268,
-      "sha256": "afeb28405a5a4a5557f6c4528ff6709b2019bcca03ffbc69197d842619a918f5"
+      "bytes": 26739,
+      "sha256": "f9b35da7e2f290df68b5323c7d041e940dc1fdb10451d9aacfd3e1761a5a90d6"
     },
     {
       "path": "apple/macOS/InputMethod/LingheCraneLightTemplate.tiff",
@@ -1870,6 +1905,11 @@
       "sha256": "c6bd08e45b7b57e50542991a3dd41d0eab6f5ec14116ff0814de50b260f7aa5f"
     },
     {
+      "path": "core/include/known_phrase_lookup.h",
+      "bytes": 3563,
+      "sha256": "fe4faf4f1988cd6abd3f70d17224ea9dd14905e59023efcb0f5047914c1384ec"
+    },
+    {
       "path": "core/include/learning_capacity_profiles.h",
       "bytes": 5024,
       "sha256": "2960cf8c424dfd24fbd13eae7bfdac9bec803028bc44afab598af89971083c59"
@@ -1896,8 +1936,8 @@
     },
     {
       "path": "core/include/private_input.h",
-      "bytes": 9056,
-      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
+      "bytes": 9817,
+      "sha256": "13578b14b90fc70031280064893933dfa9cce53c68a553e7d59c65c6c137e930"
     },
     {
       "path": "core/include/private_modern_readings.h",
@@ -1921,8 +1961,13 @@
     },
     {
       "path": "core/src/private_input.cpp",
-      "bytes": 71742,
-      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
+      "bytes": 74994,
+      "sha256": "ef05ff978a9a75173a98317aa5a14dce300914bf97d4a975a038870d911b0707"
+    },
+    {
+      "path": "core/tests/auto_phrase_engine.cpp",
+      "bytes": 2950,
+      "sha256": "3e4124346ee5362fa7667d241e9fc2a2ff65a44d0314c165f7124f4deb0fe6c2"
     },
     {
       "path": "core/tests/candidate_batch_budget.cpp",
@@ -1958,6 +2003,11 @@
       "path": "core/tests/engine_smoke.cpp",
       "bytes": 4594,
       "sha256": "fdc89d7edc13ef784e59da506dd011d8671d626fd4430f1b73acb8db2b11aecf"
+    },
+    {
+      "path": "core/tests/known_phrase_lookup.cpp",
+      "bytes": 1953,
+      "sha256": "3434760d854d45360b2705d300762875a0dab22ddffbe154b3bc102f203115e0"
     },
     {
       "path": "core/tests/learning_capacity_native.cpp",
@@ -3650,6 +3700,11 @@
       "sha256": "b136f760f3e15e806a2525ef5a11fc1b8128f23fb3266c6be6acc1d67f9c0e01"
     },
     {
+      "path": "windows-source/core/include/known_phrase_lookup.h",
+      "bytes": 127,
+      "sha256": "7e01ac60d6c6a2a7c93ab53a2500cdf3236553e573ab982f4dedca9f84d5c693"
+    },
+    {
       "path": "windows-source/core/include/learning_capacity_profiles.h",
       "bytes": 134,
       "sha256": "d40a5cd11de6f2915022a078191dd61b00bc36ac7a8fe57b9e4efcf10e3ecaa4"
@@ -3705,6 +3760,11 @@
       "sha256": "c2175180db518e644d8f60a025ab0d1577ffd3d3bcd5ac5c853b0d1f48f622aa"
     },
     {
+      "path": "windows-source/core/tests/auto_phrase_engine.cpp",
+      "bytes": 126,
+      "sha256": "7a85ed392477706abb529305bb2e158d43105bac970ad74bfa98f13d21d2bdca"
+    },
+    {
       "path": "windows-source/core/tests/candidate_batch_budget.cpp",
       "bytes": 130,
       "sha256": "a4f8518a56c36bfa9aae3c0a371db9038dc461397e72c52ec46faead12771f0e"
@@ -3738,6 +3798,11 @@
       "path": "windows-source/core/tests/engine_smoke.cpp",
       "bytes": 120,
       "sha256": "f98e916444d1d00565e701dd3b841615ca162f15aaeebf0ce1c30ffc6ba07314"
+    },
+    {
+      "path": "windows-source/core/tests/known_phrase_lookup.cpp",
+      "bytes": 127,
+      "sha256": "ec524e970119d7ff6a4ac336589948dc20f8d6226f2956f993272e8646fe8af9"
     },
     {
       "path": "windows-source/core/tests/learning_capacity_native.cpp",
@@ -4186,13 +4251,13 @@
     },
     {
       "path": "windows-source/windows/activity/CaptureIPC.cpp",
-      "bytes": 12489,
-      "sha256": "d3972efefacfa39caaca141291355be297070538814b88bb6bdcbbc0078fedf7"
+      "bytes": 14201,
+      "sha256": "9e23260509dfc31c874f16c6f2cbcc80e98b6a52bab3d3423c67284293035767"
     },
     {
       "path": "windows-source/windows/activity/CaptureIPC.h",
-      "bytes": 1954,
-      "sha256": "0d159db4ab570bb93cd77805e5a23694a93a975d9f09da1fe2e5c3fd6f9fd569"
+      "bytes": 1714,
+      "sha256": "4e04b1ff10941e0548d7862fae2bc0708d3e052b7f3bfb947e7f121784ecb15f"
     },
     {
       "path": "windows-source/windows/activity/CaptureWire.h",
@@ -4351,13 +4416,13 @@
     },
     {
       "path": "windows-source/windows/activity/LearningIPC.cpp",
-      "bytes": 4574,
-      "sha256": "90339940e26fdee829fa063901a8cb7e1547803ae1ea826d02d577ec83ab3e5c"
+      "bytes": 5434,
+      "sha256": "cd4544162796a3040f97f35276843b47ca408de0354ca7ec3435d6b8630d3b82"
     },
     {
       "path": "windows-source/windows/activity/LearningIPC.h",
-      "bytes": 2336,
-      "sha256": "25467bdfb2c0fb68038496d8fecf123c1d4f99ca6904b883707f6bf377a105c5"
+      "bytes": 2234,
+      "sha256": "bbbe7fbe15e73ec1757702d6e603987b7dd12b3b29f870f4bd3f8768194d0b1a"
     },
     {
       "path": "windows-source/windows/activity/LearningInbox.h",
@@ -4446,8 +4511,8 @@
     },
     {
       "path": "windows-source/windows/activity/SettingsPane.inc",
-      "bytes": 9001,
-      "sha256": "43b1f18710674251c36c1c11894d245fe9e4ac1972661b0158e0265f9a94205d"
+      "bytes": 9362,
+      "sha256": "1aceb6bad66f82086590d9b89eea9f580f54368ff49db58d1a4b6c37bc2584eb"
     },
     {
       "path": "windows-source/windows/activity/SourceContext.h",
@@ -4461,8 +4526,8 @@
     },
     {
       "path": "windows-source/windows/activity/Worker.cpp",
-      "bytes": 66675,
-      "sha256": "3cc0433cadb2093c5492f6d9708dda82313e52f351f01bdae8a09c20db98d2f1"
+      "bytes": 66721,
+      "sha256": "e58cb4c384c27779378bb2859e1d7ca971b20d1743f8d77ddca0d4bd645d623c"
     },
     {
       "path": "windows-source/windows/cmake/SharedCore.cmake",
@@ -4501,8 +4566,8 @@
     },
     {
       "path": "windows-source/windows/installer/PayloadManifest.h",
-      "bytes": 7348,
-      "sha256": "9c2bdec43e335e2c79df0c04cf5d95e19f7b7316b58ad5e03f5ae0f6423acf79"
+      "bytes": 7521,
+      "sha256": "7d948a08b801cd50013d3df2a91da69d909e62deeec384c56626749874de4cec"
     },
     {
       "path": "windows-source/windows/installer/ProtectedJournalFile.h",
@@ -4531,18 +4596,18 @@
     },
     {
       "path": "windows-source/windows/installer/RepairExisting.inc",
-      "bytes": 25195,
-      "sha256": "a445c44848a44ef98086fcd0cfd59c0df814bafa65fd782664b993af4860095a"
+      "bytes": 26909,
+      "sha256": "242374cb81819804daddd2849fd8e4c237150baf7302733a189e7810504ff118"
     },
     {
       "path": "windows-source/windows/installer/Settings.cpp",
-      "bytes": 15314,
-      "sha256": "821ec7ab60c00f8c6eb3cb4efddf039727f9127477439c2e6516b7f659f728b3"
+      "bytes": 15717,
+      "sha256": "057081e24841938a61cc89df8b128bee56fe4711b79799dbe317a9a48e505f00"
     },
     {
       "path": "windows-source/windows/installer/Setup.cpp",
       "bytes": 49309,
-      "sha256": "e131b517ce003ea7f03f821b701ba20f9ec02eb823084ff9f4451e67ed96d016"
+      "sha256": "ed903c3c78d7fd853a50ee691b32ffba2c178e550937342ae543c83f89c3594e"
     },
     {
       "path": "windows-source/windows/installer/UpgradeState.h",
@@ -4551,8 +4616,8 @@
     },
     {
       "path": "windows-source/windows/resources/AppIcon.ico",
-      "bytes": 114269,
-      "sha256": "3909a2a6fa3368a4b2e22c6febb0f08810bc24a350815762a519b8fba39f066c"
+      "bytes": 100646,
+      "sha256": "c0e51263636c207c9122661df25f521c203f716850c7c4878faa64335205484e"
     },
     {
       "path": "windows-source/windows/resources/BrandingResource.h",
@@ -4568,6 +4633,11 @@
       "path": "windows-source/windows/resources/Settings.rc",
       "bytes": 78,
       "sha256": "a3718b32b91939624ffbec51aa9d841e2edfe919099162d5bf8c3db86406dea0"
+    },
+    {
+      "path": "windows-source/windows/src/BackgroundTask.h",
+      "bytes": 1189,
+      "sha256": "74532eeae4e16193b68976cd1d6c24d3f494c885ea7859ac6c9ebefce02c78ed"
     },
     {
       "path": "windows-source/windows/src/CandidateAdmission.h",
@@ -4630,9 +4700,14 @@
       "sha256": "7a29f7f5d5614d9c2ab2d326cbc949def0cea88dfc61502bd378dd4c39c50d5d"
     },
     {
+      "path": "windows-source/windows/src/NativeInputScope.h",
+      "bytes": 515,
+      "sha256": "cf473ddae0796a41ed84523f5136f10487817d7b2a0162ddbf7fe2e5d187c814"
+    },
+    {
       "path": "windows-source/windows/src/NativeSettingsChrome.h",
-      "bytes": 4481,
-      "sha256": "7655d059e6a11a048df76eea6607072d4e0acc2aad01b52e815f885b60d2067d"
+      "bytes": 13342,
+      "sha256": "131d0eb7a90d19b382f7e1cdae7c16ab6a955f09c74b12be298cd3e2608de846"
     },
     {
       "path": "windows-source/windows/src/NativeWindowTheme.h",
@@ -4676,8 +4751,8 @@
     },
     {
       "path": "windows-source/windows/src/TextService.cpp",
-      "bytes": 73544,
-      "sha256": "7e5224db13b867ee6c12659e76bcf87d118cafa1b246cae89a2d9da8c6677ad3"
+      "bytes": 76706,
+      "sha256": "028075f8f35f290cfd5f08bd85a64508767689831566066d4dc1f7f6f3c4783d"
     },
     {
       "path": "windows-source/windows/src/TsfBranding.h",
@@ -4736,8 +4811,18 @@
     },
     {
       "path": "windows-source/windows/tests/SyntheticTextStore.h",
-      "bytes": 9038,
-      "sha256": "ac527ccf898cd226dacf0e5cc56f2f2c8b7a0699e05a2d55f96e6ea5d2121115"
+      "bytes": 9092,
+      "sha256": "7b56ad5621490ee57bb44f333055d4155db155250c743d50425877091359d193"
+    },
+    {
+      "path": "windows-source/windows/tests/background_lifecycle.cpp",
+      "bytes": 3067,
+      "sha256": "c6ee8a623d92351fbaa22d7e5430a29ba118f7175fddbb7ab914f8454bf0bcb2"
+    },
+    {
+      "path": "windows-source/windows/tests/background_module_lifetime.cpp",
+      "bytes": 1576,
+      "sha256": "55cb4f8e170b95101eff79e84119ab8e0b95a3c1ace4c44d65394703cc710b81"
     },
     {
       "path": "windows-source/windows/tests/candidate_anchor_policy.cpp",
@@ -4825,9 +4910,19 @@
       "sha256": "b5272292b4a11cff5782e799d37f954b957acb96876956891d99ce39428ff9fd"
     },
     {
+      "path": "windows-source/windows/tests/installer_repair_preflight_diag.cpp",
+      "bytes": 3630,
+      "sha256": "c89aee17826e2e48f6a818368c3913dfdfe2a9c57b8f55dcbd13c1581e7126f0"
+    },
+    {
       "path": "windows-source/windows/tests/installer_review.cpp",
       "bytes": 1231,
       "sha256": "7569f773e4dc93302e1199bfa7af51db67f1ebe280c5ca4dd953cfd19fa6c280"
+    },
+    {
+      "path": "windows-source/windows/tests/installer_stale_run.cpp",
+      "bytes": 4067,
+      "sha256": "2b1f75cecf7270480a640994a8bd2eaa280a84feab93c3fdd17df5ec66439c70"
     },
     {
       "path": "windows-source/windows/tests/membership_typed.cpp",
@@ -4936,8 +5031,8 @@
     },
     {
       "path": "windows-source/windows/tests/tsf_symbols_regression.cpp",
-      "bytes": 16935,
-      "sha256": "8476367298e307ef881029a58e407134e0c6f62ee491377e0f5fbfad36807e8e"
+      "bytes": 19029,
+      "sha256": "4c6822d87c8a2541d43dea8db223def499efbcc8badfdd8056dc0e05edae3321"
     },
     {
       "path": "windows-source/windows/tests/uninstall_policy.cpp",
@@ -4951,8 +5046,8 @@
     },
     {
       "path": "windows-source/windows/tests/activity/FixtureIPC.cpp",
-      "bytes": 1802,
-      "sha256": "2ee8cd8b763bf386d20991c4423e497e943ab2681c2f24ec2d182ea03c9a809c"
+      "bytes": 2079,
+      "sha256": "185326802ef91a9345fd096f176b0ef376f4aa028086109538c1ba0e366f9f6c"
     },
     {
       "path": "windows-source/windows/tests/activity/FixtureIPC.h",
@@ -5911,63 +6006,43 @@
     },
     {
       "path": "BASELINE.md",
-      "bytes": 2809,
-      "sha256": "09008cc227321bbb936bab204af8f767d99fcec3d07da2c1e647b3662c8fdd51"
+      "bytes": 2063,
+      "sha256": "e2c4b728bdf41d3770ff95073c726bfbeb85acb86e3ab248eff43549aab8d5c9"
     },
     {
       "path": "BASELINE-PACKAGES.json",
-      "bytes": 1443,
-      "sha256": "7fb56255b0a3e48331c5705a9a87bc579a24a6f46ff75f4b01c1e31fa2a1d1bc"
+      "bytes": 1431,
+      "sha256": "1377f4ddaa21a9e01f2d83fe96c3451e84af85e7a38e20eae352580fdba498ea"
     },
     {
       "path": "BASELINE-SOURCES.json",
-      "bytes": 3426,
-      "sha256": "a54f2af9f1eb0e730cd9a48f61a2b77f6be6b3c3df5928e770746a822357dd23"
+      "bytes": 1882,
+      "sha256": "695bf4203d26f1977544a1cd81c95b9cab6ae0d55d375030c2bbbdbf69bf0000"
     },
     {
-      "path": "release-overrides/mac82/apple/Shared/ActivityArchiveView.swift",
-      "bytes": 18858,
-      "sha256": "a758a8307b172fc4652a86c9315417aedb700ac230702b93a422ba0f5f1e6708"
+      "path": "release-overrides/mac84/core/src/private_input.cpp",
+      "bytes": 71742,
+      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
     },
     {
-      "path": "release-overrides/mac82/apple/Shared/LocalLearningCoordinator.swift",
-      "bytes": 62615,
-      "sha256": "71b484c02f52476d164f78b50f38593ae0bdf261e10472ba8eec58b27182fe66"
+      "path": "release-overrides/mac84/core/include/private_input.h",
+      "bytes": 9056,
+      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
     },
     {
-      "path": "release-overrides/mac82/apple/Shared/NativeEngine.swift",
-      "bytes": 195843,
-      "sha256": "fcf8c4b53cb7cb7ef482827360e6e99ef7c8f8aea9bb9a18f375b0efec7cf12a"
+      "path": "release-overrides/windows065/core/src/private_input.cpp",
+      "bytes": 71742,
+      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
     },
     {
-      "path": "release-overrides/mac82/apple/Shared/RecencyCoordinator.swift",
-      "bytes": 14120,
-      "sha256": "0ad1f08427583d376d5590a2e9d5a35ce37b80f6ce5fb145dea35489d8c30432"
-    },
-    {
-      "path": "release-overrides/mac82/apple/iOS/Keyboard/KeyboardViewController.swift",
-      "bytes": 147954,
-      "sha256": "5c778cf0c32a4ee2f7b4c6bbc6ff7deaddab756ae889e27deaf968c9b0581cbf"
-    },
-    {
-      "path": "release-overrides/mac82/apple/project.yml",
-      "bytes": 12388,
-      "sha256": "95855b7c6341df3bacd924ee5fb37d6a004937adb11ac704169fb84b82df0169"
-    },
-    {
-      "path": "release-overrides/mac82/shared/PrivateInputKit/Sources/PrivateInputKit/ActivityClient.swift",
-      "bytes": 16477,
-      "sha256": "3f28dd51a975a4bd652d120d808ebee78d678fbd023f5499f7101b252492715d"
-    },
-    {
-      "path": "release-overrides/windows062/windows-source/windows/activity/Worker.cpp",
-      "bytes": 66733,
-      "sha256": "214c5f973a6645222e03fd3c236111d8ac58785b9ab3322191029d98dfc69ba6"
+      "path": "release-overrides/windows065/core/include/private_input.h",
+      "bytes": 9056,
+      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
     },
     {
       "path": "windows-source/SHARED-VERSIONS.json",
-      "bytes": 20413,
-      "sha256": "41b0688aa2cf2916b995e5f3b5879fe510756e25740bd622cdcec4b98107e080"
+      "bytes": 21228,
+      "sha256": "c473449ce5b77792ce9a470e014e5cc52dc6f6256a57a2c8cbc0ff315046155c"
     },
     {
       "path": "windows-source/docs/stages/P1/dependencies.lock.json",

@@ -106,8 +106,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.inputmethod.PrivateInput
         PRODUCT_NAME: PrivateInput
-        CURRENT_PROJECT_VERSION: "82"
-        MARKETING_VERSION: "0.36.5"
+        CURRENT_PROJECT_VERSION: "84"
+        MARKETING_VERSION: "0.36.7"
         ARCHS: arm64
         ENABLE_DEBUG_DYLIB: NO
       configs:

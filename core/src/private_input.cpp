@@ -5,6 +5,7 @@
 #include "mainland_candidate_policy.h"
 #include "modern_candidate_reading_policy.h"
 #include "learning_capacity_profiles.h"
+#include "known_phrase_lookup.h"
 #include "rime_api.h"
 #include "rime_levers_api.h"
 #include <map>
@@ -990,6 +991,11 @@ int pi_candidate_text_allowed(const char *text) {
 int pi_candidate_reading_allowed(const char *text,const char *reading) {
   return text && reading && private_input::mainland::candidate_reading_allowed(text,reading);
 }
+int pi_auto_phrase_status(const char *text) {
+  std::string vocabulary;
+  {std::lock_guard<std::recursive_mutex> lock(gate);if(shared_path.empty())return static_cast<int>(private_input::known_phrase::Status::unavailable);vocabulary=shared_path+"/essay.txt";}
+  return static_cast<int>(private_input::known_phrase::classify(vocabulary,text?text:""));
+}
 size_t pi_candidate_count(PI_Session id) {
   std::lock_guard<std::recursive_mutex> lock(gate);
   auto it = sessions.find(id); return it == sessions.end() ? 0 : it->second.candidates.size();
@@ -1215,6 +1221,59 @@ int pi_reset_word_frequency(const char *reading, const char *text, uint64_t coun
   if (!status.ok()) return -1;
   preferences[{normalized_reading(code), word}] = count;
   return base_word ? 2 : 1;
+}
+// Teach Rime one eligible new phrase that was committed outside its own
+// composition (e.g. the nine-key preferred path), exactly as a 26-key commit of
+// the same row would. Only status-2 phrases; returns 1 learned, 0 not found or
+// not eligible, -1 invalid.
+int pi_learn_phrase(const char *reading, const char *text) {
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if (!api || !reading || !text || !*text || std::string(text).size() > 1024) return -1;
+  if (pi_auto_phrase_status(text) != static_cast<int>(private_input::known_phrase::Status::eligible_new)) return 0;
+  const auto spelling = normalized_reading(reading);
+  if (spelling.empty() || spelling.size() > 128) return -1;
+  const auto probe = pi_create_session();
+  if (!probe) return -1;
+  for (char c : spelling) pi_process_key(probe, c, 0);
+  int found = -1;
+  RimeCandidateListIterator rows{};
+  if (api->candidate_list_begin(probe, &rows)) {
+    for (int i = 0; i < 128 && api->candidate_list_next(&rows); ++i)
+      if (rows.candidate.text && std::string(text) == rows.candidate.text && rows.candidate.comment && normalized_reading(rows.candidate.comment) == spelling) { found = rows.index; break; }
+    api->candidate_list_end(&rows);
+  }
+  int result = 0;
+  if (found >= 0 && api->select_candidate(probe, static_cast<size_t>(found))) {
+    const char *committed = pi_take_commit(probe);
+    result = committed && std::string(committed) == text ? 1 : 0;
+  }
+  pi_destroy_session(probe);
+  return result;
+}
+// Undo one automatic phrase memory: a private probe session finds the exact
+// text/reading row and asks Rime to delete it, as manual candidate deletion
+// does. Base vocabulary rows are never deleted; returns 1 forgotten, 0 absent
+// or known word, -1 invalid.
+int pi_forget_phrase(const char *reading, const char *text) {
+  std::lock_guard<std::recursive_mutex> lock(gate);
+  if (!api || !reading || !text || !*text || std::string(text).size() > 1024) return -1;
+  if (pi_auto_phrase_status(text) != static_cast<int>(private_input::known_phrase::Status::eligible_new)) return 0;
+  const auto spelling = normalized_reading(reading);
+  if (spelling.empty() || spelling.size() > 128) return -1;
+  const auto probe = pi_create_session();
+  if (!probe) return -1;
+  for (char c : spelling) pi_process_key(probe, c, 0);
+  int result = 0;
+  RimeCandidateListIterator rows{};
+  if (api->candidate_list_begin(probe, &rows)) {
+    int found = -1;
+    for (int i = 0; i < 128 && api->candidate_list_next(&rows); ++i)
+      if (rows.candidate.text && std::string(text) == rows.candidate.text && rows.candidate.comment && normalized_reading(rows.candidate.comment) == spelling) { found = rows.index; break; }
+    api->candidate_list_end(&rows);
+    if (found >= 0) result = api->delete_candidate(probe, static_cast<size_t>(found)) ? 1 : 0;
+  }
+  pi_destroy_session(probe);
+  return result;
 }
 const char *pi_engine_version() { return api ? api->get_version() : "not-initialized"; }
 }
