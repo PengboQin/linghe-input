@@ -207,6 +207,10 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private var sharedHeightRevision = UserDefaults.standard.string(forKey:"last-shared-height-revision")
     private let candidateBar = UIStackView()
     private let clipboardCandidate=ClipboardPasteCandidateView()
+    // “已记住 X　撤销” notice: first item in the candidate bar, hidden once input resumes.
+    private let phraseNotice=UIStackView(),phraseNoticeLabel=UILabel(),phraseNoticeUndo=UIButton(type:.system)
+    private var phraseNoticeUndoAction:(()->Void)?
+    private var autoPhrases=AutoPhraseTracker()
     private var clipboardState=ClipboardCandidateState()
     private var clipboardKnown:ClipboardCandidatePresentation.Snapshot?
     private var clipboardLoad=ClipboardCandidateLoadState()
@@ -428,6 +432,14 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         toolbar.translatesAutoresizingMaskIntoConstraints=false;header.addSubview(toolbar)
         NSLayoutConstraint.activate([toolbar.leadingAnchor.constraint(equalTo:header.leadingAnchor),toolbar.trailingAnchor.constraint(equalTo:header.trailingAnchor),toolbar.topAnchor.constraint(equalTo:header.topAnchor),toolbar.bottomAnchor.constraint(equalTo:header.bottomAnchor)])
         toolbar.alignment = .center
+        phraseNoticeLabel.font = .systemFont(ofSize:15);phraseNoticeLabel.textColor = .secondaryLabel
+        phraseNoticeUndo.setTitle("撤销",for:.normal);phraseNoticeUndo.titleLabel?.font = .systemFont(ofSize:15,weight:.medium)
+        phraseNoticeUndo.accessibilityLabel="撤销记住的词"
+        phraseNoticeUndo.addAction(UIAction { [weak self] _ in let action=self?.phraseNoticeUndoAction;self?.hidePhraseNotice();action?() },for:.touchUpInside)
+        phraseNotice.axis = .horizontal;phraseNotice.spacing=10;phraseNotice.alignment = .center
+        phraseNotice.isLayoutMarginsRelativeArrangement=true;phraseNotice.layoutMargins=UIEdgeInsets(top:0,left:10,bottom:0,right:6)
+        phraseNotice.addArrangedSubview(phraseNoticeLabel);phraseNotice.addArrangedSubview(phraseNoticeUndo)
+        phraseNotice.isHidden=true;candidateBar.insertArrangedSubview(phraseNotice,at:0)
         clipboardCandidate.translatesAutoresizingMaskIntoConstraints=false;candidateBar.insertArrangedSubview(clipboardCandidate,at:0)
         clipboardCandidate.isHidden=true
         clipboardCandidate.interactionBegan = { [weak self] in self?.cancelLearningForInteraction() }
@@ -855,6 +867,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         }
     }
     override func viewWillDisappear(_ animated: Bool) {
+        hidePhraseNotice()
         KeyboardRuntimeDiagnostics.record(.viewWillDisappear, [.owner: Double(learningDiagnosticOwner)])
         defer { super.viewWillDisappear(animated) }
         // A repeated UIKit callback is not a second teardown. In particular it
@@ -1619,7 +1632,10 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         resumeAutomaticPredictionForUserInput()
         let originalInput=engine.rawInput
         let code=NineKeySpelling.rawCode(originalInput) ?? originalInput,context=engine.precedingOwnText
+        let selectedBefore=engine.selectedPrefixText
         let commit = engine.chooseCandidate(candidate)
+        autoPhrases.selected(prefix:selectedBefore,text:candidate.text,reading:candidate.comment)
+        if !commit.isEmpty,let reading=autoPhrases.committed(commit),engine.autoPhraseAllowed {autoPhraseCommitted(phrase:commit,reading:reading,outsideRime:candidate.preservedNinePath)}
         #if targetEnvironment(simulator)
         let probe=engine.candidateBatch(offset:0,limit:3)
         NSLog("INLINE_CHOICE text=%d commit=%d raw=%d preedit=%d first=%d",candidate.text.utf16.count,commit.utf16.count,engine.rawInput.utf16.count,engine.preedit.utf16.count,probe.first?.text.utf16.count ?? -1)
@@ -1831,7 +1847,24 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         #endif
         inlineComposition.leave(host:compositionHost);engine.clear();expanded=false;ownCommitTracker.invalidate();engine.resetPredictionContext();return true
     }
+    private func hidePhraseNotice() {phraseNoticeUndoAction=nil;if !phraseNotice.isHidden {phraseNotice.isHidden=true}}
+    /// Classify off the key path; teach Rime when the commit bypassed it; announce once.
+    private func autoPhraseCommitted(phrase:String,reading:String,outsideRime:Bool) {
+        let document=documentID
+        DispatchQueue.global(qos:.utility).async { [weak self] in
+            let status=NativeEngine.autoPhraseStatus(phrase)
+            DispatchQueue.main.async {
+                guard status==2,let self,self.documentID==document,self.engine.preedit.isEmpty else{return}
+                if outsideRime,!self.engine.learnAutoPhrase(text:phrase,reading:reading) {return}
+                guard NativeEngine.firstAutoPhraseAnnouncement(phrase,reading) else{return}
+                self.phraseNoticeLabel.text="已记住 "+phrase
+                self.phraseNoticeUndoAction={ [weak self] in self?.engine.forgetAutoPhrase(text:phrase,reading:reading);self?.render() }
+                self.phraseNotice.isHidden=false
+            }
+        }
+    }
     private func render() {
+        if engine != nil,!engine.preedit.isEmpty {hidePhraseNotice()}
         guard engine != nil,!inlineComposition.applying else { return }
         deletionPrediction.observeDocument(documentID)
         if let currentDocument=documentID,activeDocument != currentDocument {

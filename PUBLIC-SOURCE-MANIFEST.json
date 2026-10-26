@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1792946612,
-  "member_count": 1173,
-  "uncompressed_bytes": 146858328,
+  "created_at_unix": 1792976022,
+  "member_count": 1177,
+  "uncompressed_bytes": 146734019,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -257,7 +257,7 @@
     {
       "path": "android/app/src/main/AndroidManifest.xml",
       "bytes": 1943,
-      "sha256": "a3580a8c05f6cb91ea8a80fad14136ee5d33317376391e9bf0ce492beba86dd1"
+      "sha256": "2b7a7e76860e2599d48b67099c34a27518d66fd72f87298e4c5f6384054e4b88"
     },
     {
       "path": "android/app/src/main/cpp/CMakeLists.txt",
@@ -321,8 +321,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardBridge.java",
-      "bytes": 11446,
-      "sha256": "befd34930b34d1698ef8dc2fc1faefe72e0320fc2f0071b55ae1f9a40d0b8496"
+      "bytes": 11492,
+      "sha256": "ed3deb44c8c1cfe75cdb097e047ff0c101db01432257f84bb67f42aca8a5b3f8"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardObservation.java",
@@ -336,8 +336,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoPhrase.java",
-      "bytes": 2466,
-      "sha256": "680479917cb9a99d520269e23fa2ac1a803ba96b5da27de237639fe0eac9f0a1"
+      "bytes": 4521,
+      "sha256": "67cb586a5bd1556f69aceb9db1eb0c25777b62f739f9500447a940d162de1064"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutomaticReadingAdmission.java",
@@ -346,8 +346,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutomaticSyncCadence.java",
-      "bytes": 793,
-      "sha256": "67ef566266aa2b702526de4bbfb728b408aff520cde2b16a2b09b81b77f49f91"
+      "bytes": 1039,
+      "sha256": "d980a0c62c20bdf4a2a2a4216a09c5a7a4f2f732965d21505105505e30aebd7c"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CandidateExpansionGesture.java",
@@ -446,8 +446,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningStore.java",
-      "bytes": 7298,
-      "sha256": "df6719edcee4fb53ee309eff184cbe74595d6c9abd26c5bfc8fd0afe4ff8c3ee"
+      "bytes": 8043,
+      "sha256": "6715d83a072b9613c4b8c38833112061d73371c7af48be14f48a91be33e0067b"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningSync.java",
@@ -566,8 +566,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningCoordinator.java",
-      "bytes": 15636,
-      "sha256": "de183657bec09daa23aaeb6b9cad92b75a692d739d597b39f8aaa0b4a7198806"
+      "bytes": 16377,
+      "sha256": "c2fc3c2fa2cd219e338e694d6367e3c67bdea386e5fcf10cd8da12352d57b03c"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningDeltaDiagnostics.java",
@@ -591,8 +591,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningModel.java",
-      "bytes": 12953,
-      "sha256": "80d9f3b97a3565adc0a3888ce42429a175967905e3e2b63b3d6a68ca1bf121d0"
+      "bytes": 13572,
+      "sha256": "be846a33b10d37fc6d7e681047387827894391fa7ece2ba23a9dbe524ee48632"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningSnapshotFile.java",
@@ -616,8 +616,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LingheInputService.java",
-      "bytes": 121298,
-      "sha256": "360ea5c9351a6619d211fe612d98c6e2ed84424e0241ab1a93ce3a7c4a4faa05"
+      "bytes": 122366,
+      "sha256": "b3e7cc7f205390a5bee92de218eafd122cf884756f598d7899fb02dd9f4bd1a9"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LosslessJson.java",
@@ -756,8 +756,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/RimeCheckpoint.java",
-      "bytes": 8733,
-      "sha256": "bb4870002cf02444de222f763cbc5b5fd22d907f32edc7e832d0bc20835e8c53"
+      "bytes": 8872,
+      "sha256": "2d265c4bc685067f08c4072197ed20c41e4dee93ed938a5a9cbedf2caf8e04d1"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/RimeResourceInstaller.java",
@@ -1140,6 +1140,11 @@
       "sha256": "4054ddcb0a4d46bf732ebac1fc7c88947e440dc71127f128418733a00edb61fb"
     },
     {
+      "path": "android/tests/java/live/linghe/privateinput/AutoPhraseForgottenTest.java",
+      "bytes": 3545,
+      "sha256": "4716051e62a2cfcd04f7b11cbd855aa1f6f9ae42b3204427fc0fad2bbaa23d61"
+    },
+    {
       "path": "android/tests/java/live/linghe/privateinput/AutoPhraseTrackerTest.java",
       "bytes": 1449,
       "sha256": "4c958aa53d0dbc47e5ab480d8171fa2ea68d3cb6a30961aabc225e22fd47122a"
@@ -1188,6 +1193,11 @@
       "path": "android/tests/java/live/linghe/privateinput/LearningAcceptanceService.java",
       "bytes": 4424,
       "sha256": "95f4040a775c952b766f80968ba6c464fc5f0f657d381270a5affb3b01305677"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/LearningForgetTest.java",
+      "bytes": 1640,
+      "sha256": "32d2532edb13e9149e0ec52a0e020923c424d7e0729a9f9aea3c9a6a9028b94b"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/LearningProof.java",
@@ -1252,7 +1262,7 @@
     {
       "path": "apple/project.yml",
       "bytes": 12389,
-      "sha256": "4fddbafbccfd1b85d83c92640cc59933e28d1deb2a36566377a416f65fa88861"
+      "sha256": "2feb556a1bf1a21faa5ea75957de21e95f99f4e6290c3186e4e264324d889cb9"
     },
     {
       "path": "apple/Shared/ActivityArchiveController.swift",
@@ -1376,13 +1386,13 @@
     },
     {
       "path": "apple/Shared/LocalLearningCoordinator.swift",
-      "bytes": 63950,
-      "sha256": "8b56e2153d7014fa98d91e88fd3ddac5beaca8aa1a84b19847ede9d1c40ea923"
+      "bytes": 64756,
+      "sha256": "bb9f0e070a1be0a168e4b24f05d4dd801b5fc1d65e3178cb0a59e04a06c6c2de"
     },
     {
       "path": "apple/Shared/NativeEngine.swift",
-      "bytes": 198292,
-      "sha256": "345c10f29e8dbfea69e6775dfdd223d22706c9893b627a7dfc0e5e237abf1592"
+      "bytes": 201117,
+      "sha256": "6abb0f7743af14bbf630e1925e230655a56496a2e9657d97611c80bdc709dcf8"
     },
     {
       "path": "apple/Shared/PersonalDataReset.swift",
@@ -1751,8 +1761,8 @@
     },
     {
       "path": "apple/iOS/Keyboard/KeyboardViewController.swift",
-      "bytes": 151657,
-      "sha256": "fa948983151efee1a3e2860e7557cac35e43b63024b2da578aaf99f26eefd240"
+      "bytes": 154361,
+      "sha256": "18bb69b94bd454eee2666f9d660586f2843e8c456c537b7e1d3eb928194ca7fa"
     },
     {
       "path": "apple/iOS/Keyboard/PrivacyInfo.xcprivacy",
@@ -1801,8 +1811,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/InputController.swift",
-      "bytes": 26739,
-      "sha256": "f9b35da7e2f290df68b5323c7d041e940dc1fdb10451d9aacfd3e1761a5a90d6"
+      "bytes": 27907,
+      "sha256": "536cbf0db827fa86fb6edd75a3e391a9f86d35d37ab71e71be7461bce83ca10d"
     },
     {
       "path": "apple/macOS/InputMethod/LingheCraneLightTemplate.tiff",
@@ -1851,8 +1861,13 @@
     },
     {
       "path": "apple/macOS/InputMethod/MacInputSession.swift",
-      "bytes": 27883,
-      "sha256": "0f5625f9c19e2778681a49de8b03819174dd7fc6d2dd177015619d043f3135d8"
+      "bytes": 28447,
+      "sha256": "5f586ed9cd8800f06bf7b29b55bb47bc328e89954ec001d7f1e9cefff04cb286"
+    },
+    {
+      "path": "apple/macOS/InputMethod/MacPhraseNotice.swift",
+      "bytes": 3258,
+      "sha256": "88ebb5027f52ffc78307b9ff60fe964c130c00d8d6778fab69047b149199bea1"
     },
     {
       "path": "apple/macOS/InputMethod/MacSemanticRanker.swift",
@@ -3045,6 +3060,11 @@
       "sha256": "914eb5b46b8e594475e0ec24bc8019ee9a4080af65739575ccc4e3848ec5cb80"
     },
     {
+      "path": "server/cloud_learning/tests/test_forget.py",
+      "bytes": 4589,
+      "sha256": "ec7ae4e5c42c35fa770b1b2d02e2bb397326d28d5a7d31a12c60af89abf6ca5b"
+    },
+    {
       "path": "server/cloud_learning/tests/test_learning.py",
       "bytes": 19236,
       "sha256": "6c6c9ff83c232973087b9643d1b101838556cb2f640fd09cd49131e68dc64540"
@@ -3118,6 +3138,11 @@
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivitySourceContext.swift",
       "bytes": 2132,
       "sha256": "c52244c2027490c241388165d3bbc77f5a44f3f10410953f0a2dff9d83ec5ebd"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/AutoPhraseTracker.swift",
+      "bytes": 1258,
+      "sha256": "19b23eb5081967a19e48d6db32c20a2200455eafcf68b9b0f91d23128b0972d5"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/AutomaticClipboardState.swift",
@@ -3201,8 +3226,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Learning.swift",
-      "bytes": 15292,
-      "sha256": "4c65bc85958122b86c62128085f7b2817c9a80a3c044cccbdfd55eff218f1f9b"
+      "bytes": 16106,
+      "sha256": "226de89c70cb9465395c634037115f629a7746844407f10810e405851aca2262"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningCapacityProfiles.swift",
@@ -3311,8 +3336,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RimeCheckpoint.swift",
-      "bytes": 8866,
-      "sha256": "1a7a12943a80f0819bfa8ec68eb88a9b037c295e1f8045b8391f1dd5943b53e0"
+      "bytes": 9065,
+      "sha256": "e1dfde294b6a82461f88902309b5f321b4efb083305621f97c4d33ef3ec73627"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SecureMessage.swift",
@@ -3390,6 +3415,11 @@
       "sha256": "104467eaf9f6617f1022009b4c208332a32ee20d0bc79fa93627b0056f8b91b9"
     },
     {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AutoPhraseTrackerTests.swift",
+      "bytes": 1136,
+      "sha256": "1cafe13d2ef82670a6238f4a40a526e57cca881e2a5224e2f5f7f406699a4b1f"
+    },
+    {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AutomaticClipboardRetryTests.swift",
       "bytes": 1239,
       "sha256": "403d001a72b48501920503ac7aa7b759027f4b16478c19e915dbebf327520816"
@@ -3428,6 +3458,11 @@
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningDeltaPublicationTests.swift",
       "bytes": 2753,
       "sha256": "6ffc149848d9e55926f71446392e6625a965e9f0633b6037950f44ca4ff59c75"
+    },
+    {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningForgetTests.swift",
+      "bytes": 1834,
+      "sha256": "011e2393c9ef66dc8cfadfe83009e4f47b873e8e01f389086818031da2df00af"
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningImportJournalTests.swift",
@@ -4566,8 +4601,8 @@
     },
     {
       "path": "windows-source/windows/installer/PayloadManifest.h",
-      "bytes": 7521,
-      "sha256": "7d948a08b801cd50013d3df2a91da69d909e62deeec384c56626749874de4cec"
+      "bytes": 7605,
+      "sha256": "c979e85faa44c0031c11715d092bfd4a26363b332ad2302c4354aa985be42473"
     },
     {
       "path": "windows-source/windows/installer/ProtectedJournalFile.h",
@@ -4607,7 +4642,7 @@
     {
       "path": "windows-source/windows/installer/Setup.cpp",
       "bytes": 49309,
-      "sha256": "ed903c3c78d7fd853a50ee691b32ffba2c178e550937342ae543c83f89c3594e"
+      "sha256": "f25a80e0ddc06bc5db69d9957f6d6378194ec237e4f0bf389596deaf4d14e78f"
     },
     {
       "path": "windows-source/windows/installer/UpgradeState.h",
@@ -4715,6 +4750,11 @@
       "sha256": "cc161d0bfd6658a2821a971c6ac7b6d5493331b292fede600995badcdfa7ad1c"
     },
     {
+      "path": "windows-source/windows/src/PhraseNotice.h",
+      "bytes": 4936,
+      "sha256": "a488ec7b8a12f97926fb77c3408b5d5937dfa40ed1900efbd15854c004cbee5c"
+    },
+    {
       "path": "windows-source/windows/src/PrivateInputTSF.h",
       "bytes": 1717,
       "sha256": "8038bd28d08ae2bddb783be913aebc5a47ef95b3d277c0d5ea2ca871c4582782"
@@ -4751,8 +4791,8 @@
     },
     {
       "path": "windows-source/windows/src/TextService.cpp",
-      "bytes": 76706,
-      "sha256": "028075f8f35f290cfd5f08bd85a64508767689831566066d4dc1f7f6f3c4783d"
+      "bytes": 79155,
+      "sha256": "8c3457cecc512d9ab70bf9cc0399b9306ab455fc1df789c40f08c0f39e700f63"
     },
     {
       "path": "windows-source/windows/src/TsfBranding.h",
@@ -6006,38 +6046,18 @@
     },
     {
       "path": "BASELINE.md",
-      "bytes": 2063,
-      "sha256": "e2c4b728bdf41d3770ff95073c726bfbeb85acb86e3ab248eff43549aab8d5c9"
+      "bytes": 1712,
+      "sha256": "2a333c9ffcf5687a5b99d1023d8f812032c582bbfa3188fd436a7c45ffc935a9"
     },
     {
       "path": "BASELINE-PACKAGES.json",
-      "bytes": 1431,
-      "sha256": "1377f4ddaa21a9e01f2d83fe96c3451e84af85e7a38e20eae352580fdba498ea"
+      "bytes": 1091,
+      "sha256": "96edd5935089b13bd470368f93e6e5c22dcf4cf8900cd50fee6cf5b315a7a3cd"
     },
     {
       "path": "BASELINE-SOURCES.json",
-      "bytes": 1882,
-      "sha256": "695bf4203d26f1977544a1cd81c95b9cab6ae0d55d375030c2bbbdbf69bf0000"
-    },
-    {
-      "path": "release-overrides/mac84/core/src/private_input.cpp",
-      "bytes": 71742,
-      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
-    },
-    {
-      "path": "release-overrides/mac84/core/include/private_input.h",
-      "bytes": 9056,
-      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
-    },
-    {
-      "path": "release-overrides/windows065/core/src/private_input.cpp",
-      "bytes": 71742,
-      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
-    },
-    {
-      "path": "release-overrides/windows065/core/include/private_input.h",
-      "bytes": 9056,
-      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
+      "bytes": 392,
+      "sha256": "c3fd7c0195cb47b40d9441dc45f453e738b5c377fc62641535901315d95cb479"
     },
     {
       "path": "windows-source/SHARED-VERSIONS.json",

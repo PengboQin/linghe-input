@@ -248,6 +248,10 @@ final class MacInputSession {
     func toggleExpanded() {
         refreshRows();navigationLocked=true;rankWork?.cancel();ranker?.cancel();expanded.toggle();candidateOffset=(selectedIndex/activeColumns)*activeColumns
     }
+    /// Called with (phrase, reading) after a candidate commit that may have taught Rime
+    /// a new phrase; the controller classifies it off the key path and shows the notice.
+    var autoPhraseCommitted:((String,String)->Void)?
+    private var autoPhrases=AutoPhraseTracker()
     func chooseCandidate(_ candidate:InputCandidate,client:MacInputClient) {
         refreshPersonalEpoch()
         guard candidate.generation==engine.revision else{return}
@@ -258,8 +262,11 @@ final class MacInputSession {
         guard let candidate = requested.generation==engine.revision ? requested:engine.candidateBatch(offset:0,limit:max(36,rows.count)).first(where:{$0.text==requested.text && $0.comment==requested.comment}) else{return}
         let code=NineKeySpelling.rawCode(engine.rawInput),context=engine.precedingOwnText
         let before=client.correctionAnchor(expectedSuffix:"")
+        let selectedBefore=engine.selectedPrefixText
         let commit=engine.chooseCandidate(candidate)
         deliver(commit,client:client);candidateOffset=0;refreshRows()
+        autoPhrases.selected(prefix:selectedBefore,text:candidate.text,reading:candidate.comment)
+        if !commit.isEmpty,let reading=autoPhrases.committed(commit),engine.autoPhraseAllowed {autoPhraseCommitted?(commit,reading)}
         ownCommit=nil
         if !commit.isEmpty,engine.preedit.isEmpty,commit==candidate.text,engine.canManage(candidate),
            let code,let before,before.marked,let after=client.correctionAnchor(expectedSuffix:commit),

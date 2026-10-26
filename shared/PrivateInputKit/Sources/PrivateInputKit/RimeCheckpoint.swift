@@ -98,6 +98,7 @@ public struct RimeLearningCheckpoint: Codable {
         try model.setPinned(reading: reading, text: text, pinned: pinned, device: device)
     }
     public mutating func resetFrequency(reading: String, text: String) throws { try model.resetFrequency(reading: reading, text: text) }
+    public mutating func forget(reading: String, text: String, knownCloudGeneration: UInt64 = 0) throws { try model.forget(reading: reading, text: text, knownCloudGeneration: knownCloudGeneration) }
     public var pendingResets: [LearningEntry] { model.entries.values.filter { !$0.deleted && $0.generation > (appliedGenerations?[$0.id] ?? 0) } }
     // Call ONLY after the actual engine import succeeded and its export was
     // re-read while input was quiescent. Imported counts are not local typing.

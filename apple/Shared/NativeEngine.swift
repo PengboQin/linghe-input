@@ -2180,6 +2180,46 @@ final class NativeEngine: ObservableObject {
         guard let reading = candidateReading(candidate) else { return false }
         return managedEntries.contains { !$0.deleted && $0.reading == reading && $0.text == candidate.text && $0.pinned }
     }
+    // MARK: automatic phrase collection
+    /// Text already selected in the current composition (segmented choices).
+    var selectedPrefixText: String { ready ? String(cString: pi_selected_prefix(session)) : "" }
+    var autoPhraseAllowed: Bool { !privateInput && KeyboardPreferences.rememberWords }
+    /// 2 new phrase, 1 known, 0 not eligible, -1 unavailable. Reads shared files: call off the key path.
+    static func autoPhraseStatus(_ text: String) -> Int { Int(text.withCString { pi_auto_phrase_status($0) }) }
+    /// True once per text/reading on this device so a phrase is announced only the first time.
+    static func firstAutoPhraseAnnouncement(_ phrase: String, _ reading: String) -> Bool {
+        let defaults = UserDefaults(suiteName: LocalLearningCoordinator.groupID) ?? .standard, key = phrase + "\u{1f}" + reading
+        var seen = defaults.stringArray(forKey: "auto-phrase-announced") ?? []
+        guard !seen.contains(key) else { return false }
+        seen.append(key); if seen.count > 500 { seen.removeFirst(seen.count - 500) }
+        defaults.set(seen, forKey: "auto-phrase-announced"); return true
+    }
+    /// The nine-key preferred path commits outside Rime; teach that new phrase once so
+    /// “remembered” is true. Returns false when Rime could not learn it.
+    func learnAutoPhrase(text: String, reading: String) -> Bool {
+        guard !privateInput else { return false }
+        let value = readingParts(reading.lowercased().trimmingCharacters(in: .whitespaces)).joined(separator: " ")
+        guard !value.isEmpty else { return false }
+        markNativeLearningChanged()
+        return value.withCString { r in text.withCString { pi_learn_phrase(r, $0) } } == 1
+    }
+    /// Undo one automatic phrase: remove the Rime user row, record a cross-device
+    /// deletion and clear the nine-key choice memory, like candidate management.
+    @discardableResult func forgetAutoPhrase(text: String, reading: String) -> Bool {
+        guard !privateInput, let coordinator else { return false }
+        let value = readingParts(reading.lowercased().trimmingCharacters(in: .whitespaces)).joined(separator: " ")
+        guard !value.isEmpty else { return false }
+        markNativeLearningChanged()
+        let removed = value.withCString { r in text.withCString { pi_forget_phrase(r, $0) } }
+        do {
+            try coordinator.forget(reading: value, text: text)
+            if choiceMemoryWritable { var next = choiceMemory; next.reset(text: text, reading: value); try saveChoiceMemory(next); choiceMemory = next }
+            pendingLearningMetadata = nil
+            managedEntries = try coordinator.entries(); cloudCommittedVersion &+= 1; managementPending = true
+            applyPins(); reload()
+            return true
+        } catch { reload(); return removed > 0 }
+    }
     func manage(_ candidate: InputCandidate, pinned: Bool?) throws {
         guard !privateInput, let reading = candidateReading(candidate), let coordinator else { throw InputDataError.invalidRecord }
         markNativeLearningChanged()

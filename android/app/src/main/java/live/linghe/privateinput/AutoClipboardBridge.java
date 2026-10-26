@@ -22,6 +22,7 @@ final class AutoClipboardBridge {
  private AutoClipboardBridge(Context c){context=c;clipboard=(ClipboardManager)c.getSystemService(Context.CLIPBOARD_SERVICE);prefs=c.getSharedPreferences("sync-consent",0);if(clipboard!=null)try{clipboard.addPrimaryClipChangedListener(()->observe(true));}catch(RuntimeException unavailable){/* Explicit sending remains available in the app. */}}
  // All callers use SyncTasks.worker, including the foreground application.
  void synchronizeActive(SyncClient client)throws Exception{String scope=client.automaticClipboardScope();if(scope.isEmpty())scope=client.automaticLearningScope();client.synchronizeAutomatic(cadence.learningTurn(scope,SystemClock.elapsedRealtime()));}
+ void learningSoon(){cadence.learningSoon();}
  long activePollDelay(boolean success){long delay=cadence.pollDelay(success);return success&&liveAvailable?15000:delay;}
  boolean enabled(){return prefs.getBoolean(ENABLED,false);}
  boolean syncEnabled(){return ClipboardSyncConsent.enabled(prefs);}

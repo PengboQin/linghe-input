@@ -37,6 +37,7 @@ final class RimeCheckpoint {
  void mergeRemote(String archive)throws Exception{model.merge(archive);}
  void setPinned(String reading,String text,boolean pinned,String device)throws Exception{model.setPinned(reading,text,pinned,device);}
  void resetFrequency(String reading,String text)throws Exception{model.resetFrequency(reading,text);}
+ void forget(String reading,String text,BigInteger knownCloudGeneration)throws Exception{model.forget(reading,text,knownCloudGeneration);}
  List<LearningModel.Entry> pendingResets(){List<LearningModel.Entry> result=new ArrayList<>();for(LearningModel.Entry entry:model.entries())if(!entry.deleted&&entry.generation.compareTo(applied==null?BigInteger.ZERO:applied.getOrDefault(entry.id(),BigInteger.ZERO))>0)result.add(entry);return result;}
  void establishBaselineAfterImport(String export)throws Exception {
   LinkedHashMap<String,Long> counts=new LinkedHashMap<>();for(Word word:parseExport(export,model.capacityProfile()))if(word.count>0)counts.put(word.id(),word.count);LinkedHashMap<String,BigInteger> generations=new LinkedHashMap<>();for(LearningModel.Entry entry:model.entries())generations.put(entry.id(),entry.generation);observed=counts;applied=generations;

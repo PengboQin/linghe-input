@@ -44,6 +44,36 @@ final class AutoPhrase {
   return true;
  }
 
+ static final String FORGOTTEN="auto-phrase-forgotten";
+
+ /** Terms the user undid or reset locally. Shared learning scores are ignored for them until the user
+  *  selects the term again or the cloud rank snapshot changes (the server has seen the reset). */
+ static final class Forgotten {
+  private final SharedPreferences preferences;
+  Forgotten(SharedPreferences preferences){this.preferences=preferences;}
+  private static String entry(String text,String reading,String rankVersion){return key(text,normalized(reading))+"\u001f"+(rankVersion==null?"":rankVersion);}
+  static String normalized(String reading){return reading==null?"":reading.toLowerCase(java.util.Locale.ROOT).replace("'"," ").trim().replaceAll("\\s+"," ");}
+  synchronized void forget(String text,String reading,String rankVersion){
+   Set<String> next=new HashSet<>(preferences.getStringSet(FORGOTTEN,new HashSet<>()));
+   next.removeIf(value->value.startsWith(key(text,normalized(reading))+"\u001f"));next.add(entry(text,reading,rankVersion));
+   while(next.size()>ANNOUNCED_LIMIT)next.remove(next.iterator().next());
+   preferences.edit().putStringSet(FORGOTTEN,next).apply();
+  }
+  /** True while shared scores must not promote this term. */
+  boolean suppressed(String text,String reading,String rankVersion){
+   Set<String> stored=preferences.getStringSet(FORGOTTEN,null);if(stored==null||stored.isEmpty())return false;
+   String prefix=key(text,normalized(reading))+"\u001f";
+   for(String value:stored)if(value.startsWith(prefix))return rankVersion==null||value.substring(prefix.length()).equals(rankVersion);
+   return false;
+  }
+  /** A new explicit selection lets the term learn again. */
+  synchronized void selectedAgain(String text,String reading){
+   Set<String> stored=preferences.getStringSet(FORGOTTEN,null);if(stored==null||stored.isEmpty())return;
+   String prefix=key(text,normalized(reading))+"\u001f";Set<String> next=new HashSet<>(stored);
+   if(next.removeIf(value->value.startsWith(prefix)))preferences.edit().putStringSet(FORGOTTEN,next).apply();
+  }
+ }
+
  /** Visible notice for one committed phrase in one editor. */
  static final class Notice {
   final int document;final String text,reading;final long shownAt;

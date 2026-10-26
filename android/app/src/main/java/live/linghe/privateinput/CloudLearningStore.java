@@ -10,6 +10,12 @@ final class CloudLearningStore {
  private void allowed()throws IOException{if(!privacy.equals(PersonalReset.generation(context)))throw new IOException("cloud personal epoch changed");}
  JSONObject read()throws Exception{return AppFiles.locked(directory,"state.lock",()->{allowed();String value=AppFiles.readOptional(file,MAX);return value==null?null:LosslessJson.object(value,MAX);});}
  void write(JSONObject value)throws Exception{AppFiles.locked(directory,"state.lock",()->{allowed();LearningCapacityMetadata.archive(value,1,2);AppFiles.write(file,CloudLearningCanonical.encode(value),MAX);return null;});}
+ /** Highest generation the shared model has published for this term (0 when unknown). */
+ java.math.BigInteger termGeneration(String reading,String text){
+  try{JSONObject value=read();if(value==null)return java.math.BigInteger.ZERO;String key=LearningModel.canonical(reading+'\u001f'+text);java.math.BigInteger best=java.math.BigInteger.ZERO;
+   for(String table:new String[]{"fences","terms"}){JSONObject rows=value.optJSONObject(table);JSONObject row=rows==null?null:rows.optJSONObject(key);if(row==null)continue;Object raw=row.opt(table.equals("fences")?"generation":"term_generation");if(raw!=null)best=best.max(new java.math.BigInteger(raw.toString()));}
+   return best;}catch(Exception unavailable){return java.math.BigInteger.ZERO;}
+ }
  String installation()throws Exception{return AppFiles.locked(directory,"state.lock",()->{allowed();AtomicFile id=new AtomicFile(new File(directory,"installation.txt"));String old=AppFiles.readOptional(id,128);if(old!=null)return PersonalLexicon.uuid(old);String fresh=UUID.randomUUID().toString().toUpperCase(Locale.ROOT);AppFiles.write(id,fresh,128);return fresh;});}
  void invalidateRank(){context.getSharedPreferences("sync-consent",0).edit().putBoolean(VALID,false).commit();PersonalChangeSignal.notifyChanged(context);}
  void publishRank(CloudLearningState state,String group,BigInteger membershipEpoch,String producer)throws Exception{

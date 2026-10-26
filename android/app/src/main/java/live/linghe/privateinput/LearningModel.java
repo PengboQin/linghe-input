@@ -74,6 +74,13 @@ final class LearningModel {
  void resetFrequency(String reading,String text)throws Exception {
   Entry old=get(reading,text);require(!old.deleted&&old.generation.compareTo(LosslessJson.UINT64_MAX)<0,"Reset generation exhausted");put(new Entry(old.reading,old.text,old.generation.add(BigInteger.ONE),false,Collections.emptyMap(),old.pinned,old.pinVersion));
  }
+ /** Forget a term everywhere: a deletion one generation above both the local and the
+  *  known cloud generation, so the shared model publishes a tombstone that stale producers cannot revive. */
+ void forget(String reading,String text,BigInteger knownCloudGeneration)throws Exception {
+  Entry old=get(reading,text);BigInteger base=old.generation.max(knownCloudGeneration==null?BigInteger.ZERO:knownCloudGeneration);
+  require(base.compareTo(LosslessJson.UINT64_MAX)<0,"Forget generation exhausted");
+  put(new Entry(old.reading,old.text,base.add(BigInteger.ONE),true,Collections.emptyMap(),false,old.pinVersion));
+ }
  void restore(String id)throws Exception {
   Entry old=get(id);if(old==null||!old.deleted)return;require(old.generation.compareTo(LosslessJson.UINT64_MAX)<0,"Restore generation exhausted");put(new Entry(old.reading,old.text,old.generation.add(BigInteger.ONE),false,Collections.emptyMap(),old.pinned,old.pinVersion));
  }

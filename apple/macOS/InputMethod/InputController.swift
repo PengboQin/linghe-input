@@ -175,6 +175,20 @@ private final class MacHiddenCheckpointCoordinator {
     // one process-lifetime instance is shared; only the active controller uses it.
     private static var sharedCandidates:IMKCandidates?
     private var candidateWindow:IMKCandidates? { Self.sharedCandidates }
+    private static let phraseNotice=MacPhraseNotice()
+    private func autoPhraseCommitted(phrase:String,reading:String,session:MacInputSession) {
+        let generation=focusGeneration
+        DispatchQueue.global(qos:.utility).async { [weak self,weak session] in
+            let status=NativeEngine.autoPhraseStatus(phrase)
+            DispatchQueue.main.async {
+                guard status==2,let self,let session,self.activated,self.focusGeneration==generation,self.input===session,
+                      NativeEngine.firstAutoPhraseAnnouncement(phrase,reading),let client=self.liveClient() else{return}
+                var caret=NSRect.zero
+                guard PIReadIMKCaret(client,&caret) else{return}
+                Self.phraseNotice.show(phrase:phrase,caret:caret) { [weak session] in session?.engine.forgetAutoPhrase(text:phrase,reading:reading) }
+            }
+        }
+    }
     private let candidatePanel=MacCandidatePanel()
     private var activeClient:IMKTextInput?
     private var preferenceObserver:NSObjectProtocol?
@@ -220,6 +234,7 @@ private final class MacHiddenCheckpointCoordinator {
         if let input { return input }
         if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.beforeRealInput()}
         let value=MacInputSession(engine:NativeEngine(storageBase:Self.acceptanceStorage,mixedEnglishProvider:MacEnglishDictionary.completions));input=value
+        value.autoPhraseCommitted={ [weak self,weak value] phrase,reading in if let self,let value {self.autoPhraseCommitted(phrase:phrase,reading:reading,session:value)} }
         let generation=focusGeneration
         value.candidatesChanged={ [weak self,weak value] in
             guard let self,let value,self.activated,self.focusGeneration==generation,self.input === value else{return}
@@ -238,6 +253,7 @@ private final class MacHiddenCheckpointCoordinator {
         if CommandLine.arguments.contains("--imk-acceptance") { NSLog("PRIVATE_INPUT_IMK %@",event) }
     }
     override func inputText(_ string:String!,key keyCode:Int,modifiers flags:Int,client sender:Any!) -> Bool {
+        if Self.phraseNotice.phrase != nil {Self.phraseNotice.hide()}
         guard let client=sender as? IMKTextInput else { return false }
         if let activeClient,ObjectIdentifier(activeClient as AnyObject) != ObjectIdentifier(client as AnyObject) {input?.invalidateCorrection()}
         activeClient=client
@@ -377,6 +393,7 @@ private final class MacHiddenCheckpointCoordinator {
         if Self.acceptanceStorage==nil {MacHiddenCheckpointCoordinator.shared.changed()}
     }
     override func deactivateServer(_ sender:Any!) {
+        Self.phraseNotice.hide()
         activated=false;focusGeneration &+= 1
         commitComposition(sender)
         if let input {input.engine.finish()}

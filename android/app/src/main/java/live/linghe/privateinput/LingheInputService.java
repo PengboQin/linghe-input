@@ -77,6 +77,9 @@ public class LingheInputService extends InputMethodService {
  private final AutoPhrase.Tracker autoPhrases=new AutoPhrase.Tracker();
  private AutoPhrase.Notice learnedNotice;
  private volatile String autoPhraseDiagnostic="none";
+ private AutoPhrase.Forgotten forgottenTerms;
+ private AutoPhrase.Forgotten forgottenTerms(){if(forgottenTerms==null)forgottenTerms=new AutoPhrase.Forgotten(preferences());return forgottenTerms;}
+ private String rankVersion(){CloudLearningRankSnapshot rank=cloudRank;return rank!=null&&rank.valid(this)?rank.modelVersion:null;}
 
  private boolean dark(){return Ui.dark(this);}
  private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
@@ -251,7 +254,7 @@ public class LingheInputService extends InputMethodService {
   if(commonOrder!=null&&!explicitRetry){final String inputCode=code;rows=commonOrder.apply(rows,nine,privateInput||!preferences().getBoolean("context",true)?"":context.before,row->!privateInput&&!recoveryPrivate&&(isPinned(new CandidateViews.Item(row))||choiceWritable&&inputCode!=null&&choiceMemory.boost(inputCode,row[2],row[1],own)>0));}
   if(privateInput||recoveryPrivate||!choiceWritable)return withStableNinePath(withPrefixCompletions(rows,own,explicitRetry,plans));
   RecentLearning.Policy policy=null;if(recentPolicy!=null&&recentPolicy.publishEnabled){RecentLearningStore.Usage clock=RecentLearningStore.usage(this);Integer day=recentPolicy.clock.day(clock.wallSeconds,clock.uptime,clock.bootSession);if(day!=null&&recentPolicy.policy.accepts(day))policy=recentPolicy.policy;}final RecentLearning.Policy scoringPolicy=policy;
-  rows=ChoiceOrder.apply(rows,own,choiceMemory,replacement,document,now,this::isPinned,item->cloudRank!=null&&cloudRank.valid(this)?cloudRank.score(item.reading,item.text):recentLearning.score(item.reading,item.text,scoringPolicy));return withStableNinePath(withPrefixCompletions(rows,own,explicitRetry,plans));
+  rows=ChoiceOrder.apply(rows,own,choiceMemory,replacement,document,now,this::isPinned,item->forgottenTerms().suppressed(item.text,item.reading,rankVersion())?0.0:cloudRank!=null&&cloudRank.valid(this)?cloudRank.score(item.reading,item.text):recentLearning.score(item.reading,item.text,scoringPolicy));return withStableNinePath(withPrefixCompletions(rows,own,explicitRetry,plans));
  }
  private String[][] withStableNinePath(String[][] rows){
   if(!nine||english||numbers||symbols||secure||rows.length==0||rows[0].length<5)return rows;
@@ -349,13 +352,13 @@ public class LingheInputService extends InputMethodService {
   menu.getMenu().add("恢复默认词频").setOnMenuItemClickListener(value->{manage(item,token,null);return true;});menu.show();
  }
  private void manage(CandidateViews.Item item,long token,Boolean pinned){
-  if(pinned==null){ownTracker.invalidate();replacement=null;}final int target=document;final boolean useNine=nine;final String own=ownContext;final String[][] visible=new String[candidateItems.size()+1][];visible[0]=snapshot[0];for(int i=0;i<candidateItems.size();i++){CandidateViews.Item row=candidateItems.get(i);visible[i+1]=new String[]{row.id,row.text,row.reading};}
+  if(pinned==null){ownTracker.invalidate();replacement=null;forgottenTerms().forget(item.text,item.reading,rankVersion());}final int target=document;final boolean useNine=nine;final String own=ownContext;final String[][] visible=new String[candidateItems.size()+1][];visible[0]=snapshot[0];for(int i=0;i<candidateItems.size();i++){CandidateViews.Item row=candidateItems.get(i);visible[i+1]=new String[]{row.id,row.text,row.reading};}
   final long epoch=inputEpoch.incrementAndGet(),cancellation=predictions.cancellation();browsing=true;if(qualityRefresh!=null)main.removeCallbacks(qualityRefresh);
   worker.execute(()->{
    if(target!=document||version!=token||!predictions.current(cancellation)||privateInput||recoveryPrivate)return;
    final String privacy=PersonalReset.generation(this);final long choiceRevision=pinned==null?++choiceMemoryRevision:choiceMemoryRevision;final boolean resetChoice=pinned==null&&choiceWritable;maintenance.localChanged();
    try{learningIO.execute(()->{
-    try{learningCoordinator.manage(item.reading.toLowerCase(Locale.ROOT).trim(),item.text,pinned);List<LearningModel.Entry> nextManaged=learningCoordinator.entries();ChoiceMemory nextChoice=null;boolean choiceOK=true;if(resetChoice)try{nextChoice=choiceStore.change(value->value.reset(item.text,item.reading));}catch(Exception failed){choiceOK=false;}
+    try{learningCoordinator.manage(item.reading.toLowerCase(Locale.ROOT).trim(),item.text,pinned);AutoClipboardBridge.get(this).learningSoon();List<LearningModel.Entry> nextManaged=learningCoordinator.entries();ChoiceMemory nextChoice=null;boolean choiceOK=true;if(resetChoice)try{nextChoice=choiceStore.change(value->value.reset(item.text,item.reading));}catch(Exception failed){choiceOK=false;}
      final ChoiceMemory reset=nextChoice;final boolean writable=choiceOK;
      if(destroyed||worker.isShutdown())return;worker.execute(()->{
       if(destroyed||!privacy.equals(PersonalReset.generation(this)))return;stageLearningMetadata(nextManaged,null,privacy);if(choiceMemoryRevision==choiceRevision){if(reset!=null){stagedChoice=reset;stagedChoiceRevision=choiceRevision;stagedChoicePrivacy=privacy;}if(!writable)choiceWritable=false;}nativeLearningChanged();recentSnapshotRevision.incrementAndGet();refreshRecentLearning();adoptStagedMetadataIfIdle();
@@ -605,7 +608,7 @@ public class LingheInputService extends InputMethodService {
  // Native worker only. Returns {phrase,reading} when a newly remembered phrase should be announced.
  // Rime memorizes its own commits; a nine-key preferred-path commit bypasses it, so that new phrase is taught once before claiming it was remembered.
  private String[] autoPhraseDecision(SelectionIntent selected,String literal,String nativeCommit,String raw){
-  if(selected!=null)autoPhrases.selected(selected.selected,selected.text,selected.reading);
+  if(selected!=null){autoPhrases.selected(selected.selected,selected.text,selected.reading);forgottenTerms().selectedAgain(selected.text,selected.reading);}
   String phrase=selected!=null?nativeCommit+literal:nativeCommit;
   if(phrase.isEmpty()){if(selected==null&&raw.isEmpty())autoPhrases.reset();autoPhraseDiagnostic=selected==null?autoPhraseDiagnostic:"selected_pending";return null;}
   String reading=autoPhrases.committed(phrase);
@@ -622,11 +625,12 @@ public class LingheInputService extends InputMethodService {
  // Undo clears both persisted layers that promote the phrase: Rime's user row and the nine-key choice memory,
  // staged through the same revision/privacy guards as candidate management.
  private void undoLearned(AutoPhrase.Notice notice){if(learnedNotice!=notice)return;learnedNotice=null;render();final String reading=notice.reading.toLowerCase(Locale.ROOT).trim();
-  worker.execute(()->{if(privateInput||recoveryPrivate)return;final int forgotten=NativeCore.forgetPhrase(reading,notice.text);
+  worker.execute(()->{if(privateInput||recoveryPrivate)return;final int forgotten=NativeCore.forgetPhrase(reading,notice.text);forgottenTerms().forget(notice.text,reading,rankVersion());
    final String privacy=PersonalReset.generation(this);final long choiceRevision=++choiceMemoryRevision;final boolean resetChoice=choiceWritable;maintenance.localChanged();
-   try{learningIO.execute(()->{ChoiceMemory nextChoice=null;boolean choiceOK=true;if(resetChoice)try{nextChoice=choiceStore.change(value->value.reset(notice.text,reading));}catch(Exception failed){choiceOK=false;}
-    final ChoiceMemory reset=nextChoice;final boolean writable=choiceOK;if(destroyed||worker.isShutdown())return;
-    worker.execute(()->{if(destroyed||!privacy.equals(PersonalReset.generation(this)))return;if(choiceMemoryRevision==choiceRevision){if(reset!=null){stagedChoice=reset;stagedChoiceRevision=choiceRevision;stagedChoicePrivacy=privacy;}if(!writable)choiceWritable=false;}if(forgotten>0)nativeLearningChanged();adoptStagedMetadataIfIdle();
+   try{learningIO.execute(()->{List<LearningModel.Entry> forgottenManaged=null;try{if(learningCoordinator!=null){learningCoordinator.forget(reading,notice.text,new CloudLearningStore(this).termGeneration(reading,notice.text));forgottenManaged=learningCoordinator.entries();AutoClipboardBridge.get(this).learningSoon();}}catch(Exception deferred){}
+    ChoiceMemory nextChoice=null;boolean choiceOK=true;if(resetChoice)try{nextChoice=choiceStore.change(value->value.reset(notice.text,reading));}catch(Exception failed){choiceOK=false;}
+    final ChoiceMemory reset=nextChoice;final boolean writable=choiceOK;final List<LearningModel.Entry> managed=forgottenManaged;if(destroyed||worker.isShutdown())return;
+    worker.execute(()->{if(destroyed||!privacy.equals(PersonalReset.generation(this)))return;if(managed!=null)stageLearningMetadata(managed,null,privacy);if(choiceMemoryRevision==choiceRevision){if(reset!=null){stagedChoice=reset;stagedChoiceRevision=choiceRevision;stagedChoicePrivacy=privacy;}if(!writable)choiceWritable=false;}if(forgotten>0)nativeLearningChanged();adoptStagedMetadataIfIdle();
      main.post(()->Toast.makeText(this,forgotten>=0&&writable?"已撤销："+notice.text:"未能完全撤销，可长按候选恢复默认词频",Toast.LENGTH_SHORT).show());});});
    }catch(java.util.concurrent.RejectedExecutionException closed){}});}
  private void render(){if(root==null)return;String shape=ready+":"+english+":"+nine+":"+numbers+":"+symbols+":"+symbolCategory+":"+expanded+":"+secure+":"+shift+":"+keyHeight+":"+dark()+":"+Ui.accentName(this);boolean rebuild=!shape.equals(builtLayout);if(renderGate.defer(rebuild))return;builtLayout=shape;

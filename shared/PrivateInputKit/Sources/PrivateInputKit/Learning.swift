@@ -160,6 +160,16 @@ public struct LearningModel: Codable {
         entry.generation += 1; entry.counts = [:]
         try entry.validate(); entries[entry.id] = entry
     }
+    // Forget everywhere: a deletion one generation above both the local entry and the
+    // known shared-model generation, so stale producers on other devices cannot revive it.
+    public mutating func forget(reading: String, text: String, knownCloudGeneration: UInt64 = 0) throws {
+        var entry = LearningEntry(reading: reading.lowercased(), text: text.precomposedStringWithCanonicalMapping)
+        entry = entries[entry.id] ?? entry
+        let base = max(entry.generation, knownCloudGeneration)
+        guard base < UInt64.max, entries[entry.id] != nil || entries.count < capacityProfile.termRows else { throw InputDataError.invalidRecord }
+        entry.generation = base + 1; entry.deleted = true; entry.counts = [:]; entry.pinned = false
+        try entry.validate(); entries[entry.id] = entry
+    }
     public mutating func restore(id: String) throws {
         guard var entry = entries[id], entry.deleted else { return }
         guard entry.generation < UInt64.max else { throw InputDataError.invalidRecord }

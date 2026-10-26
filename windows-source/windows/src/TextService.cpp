@@ -1,3 +1,4 @@
+#include "PhraseNotice.h"
 #include "PrivateInputTSF.h"
 #include "learning_capacity_profiles.h"
 #include "CandidateWindow.h"
@@ -248,6 +249,21 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     ComPtr<ITfContextView>view;HWND host=nullptr;if(SUCCEEDED(ctx->GetActiveView(&view))&&SUCCEEDED(view->GetWnd(&host))&&host){renewArchiveEditor(ctx,true);archiveExpectedCaret=archiveCaret(ctx,cookie);archiveEmitter.emit(text,host,archiveSession,archiveEditor,true,english?2:1,archiveFieldType(ctx,cookie),true);}return S_OK;
   }
   unsigned long long revision=0;std::wstring pendingCommit;std::string englishInput;CandidateWindow panel;
+  // Automatic phrase notice: segmented selections paired with their readings; last caret anchor for the card.
+  PhraseNotice phraseNotice;std::vector<std::string> phraseTexts,phraseReadings;bool phraseBroken=false;std::wstring lastFlushCommit;RECT lastAnchor{};UINT lastAnchorDpi=96;
+  void phraseReset(){phraseTexts.clear();phraseReadings.clear();phraseBroken=false;}
+  static std::string joined(const std::vector<std::string>&parts,const char *separator){std::string out;for(size_t i=0;i<parts.size();++i){if(i)out+=separator;out+=parts[i];}return out;}
+  static bool firstAnnouncement(const std::wstring &key){HKEY store=nullptr;if(RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\LingheInput\\AutoPhraseAnnounced",0,nullptr,0,KEY_QUERY_VALUE|KEY_SET_VALUE,nullptr,&store,nullptr)!=ERROR_SUCCESS)return false;bool fresh=RegQueryValueExW(store,key.c_str(),nullptr,nullptr,nullptr,nullptr)==ERROR_FILE_NOT_FOUND;if(fresh){DWORD one=1;fresh=RegSetValueExW(store,key.c_str(),0,REG_DWORD,reinterpret_cast<const BYTE*>(&one),sizeof(one))==ERROR_SUCCESS;}RegCloseKey(store);return fresh;}
+  // Called after a Rime candidate commit; mirrors Android/Apple AutoPhraseTracker semantics.
+  void autoPhraseAfter(const std::string &prefix,const std::string &text,const std::string &reading){
+    if(prefix.empty())phraseReset();else if(phraseBroken||prefix!=joined(phraseTexts,"")){phraseBroken=true;return;}
+    if(text.empty()||reading.empty()){phraseBroken=true;return;}
+    phraseTexts.push_back(text);phraseReadings.push_back(reading);
+    if(lastFlushCommit.empty())return;
+    const auto commit=utf8(lastFlushCommit);const bool match=!phraseBroken&&commit==joined(phraseTexts,"");const auto fullReading=joined(phraseReadings," ");phraseReset();
+    if(!match||privateSchema||pi_auto_phrase_status(commit.c_str())!=2||!firstAnnouncement(lastFlushCommit+L"\x1f"+wide(fullReading.c_str())))return;
+    phraseNotice.show(g_instance,lastAnchor,lastAnchorDpi,lastFlushCommit,[commit,fullReading]{pi_forget_phrase(fullReading.c_str(),commit.c_str());});
+  }
   std::optional<PrivateInputEnginePaths> enginePaths;
   DesktopInputPreferences inputPreferences;CandidateGlyphFilter glyphFilter;private_input::DesktopCandidates navigation;private_input::CandidateStream candidates;std::vector<std::wstring> words;
   bool candidateDisplayable(const std::string&text){return private_input::candidateAllowedForDisplay(text,[this](const auto&value){return glyphFilter.supports(wide(value.c_str()));});}
@@ -398,7 +414,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     if(!anchor){clearAnchor();panel.hide();return;}
     if(observation==private_input::CandidateAnchorObservation::Verified){anchorLease.clear();if(anchorLeaseWindow)KillTimer(anchorLeaseWindow,1);}else if(!expireAnchorLease()){clearAnchor();panel.hide();return;}
     anchorViewIdentity=viewIdentity;rect={anchor->left,anchor->top,anchor->right,anchor->bottom};diagnosticHost=host;
-    panel.show(g_instance,rect,words,revision,dpi,navigation);
+    lastAnchor=rect;lastAnchorDpi=dpi;panel.show(g_instance,rect,words,revision,dpi,navigation);
   }
 
   // Native rows select their absolute engine index; repair rows replay their
@@ -414,8 +430,11 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     const auto choice=candidates.rows[index];auto previousSelections=learningSelections.size();if(!choice.reading.empty())learningSelections.push_back({wide(private_input::activity::canonicalLearningReading(choice.reading).c_str()),wide(choice.text.c_str())});
     if(choice.custom){auto committed=wide(pi_selected_prefix(session))+wide(choice.text.c_str());pi_clear(session);++revision;auto hr=setOwnText(ctx,cookie,committed,true);if(FAILED(hr)){pendingCommit=committed;pendingContext=ctx;return hr;}reloadCandidates();updatePanel(ctx,cookie);return S_OK;}
     if(choice.absolute!=SIZE_MAX){
+      const std::string phrasePrefix=pi_selected_prefix(session);
       if(!pi_select_candidate_absolute(session,choice.absolute)){learningSelections.resize(previousSelections);return E_FAIL;}
-      ++revision;return flushResult(ctx,cookie);
+      ++revision;lastFlushCommit.clear();auto flushed=flushResult(ctx,cookie);
+      if(SUCCEEDED(flushed))autoPhraseAfter(phrasePrefix,choice.text,private_input::activity::canonicalLearningReading(choice.reading));
+      return flushed;
     }
     const auto committed=wide(pi_commit_repair_candidate(session,choice.repair));
     if(committed.empty()){learningSelections.resize(previousSelections);return E_FAIL;}
@@ -424,7 +443,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     reloadCandidates();updatePanel(ctx,cookie);return S_OK;
   }
   HRESULT flushResult(ITfContext *ctx,TfEditCookie cookie){
-    auto commit=wide(pi_take_commit(session));HRESULT hr=S_OK;
+    auto commit=wide(pi_take_commit(session));HRESULT hr=S_OK;lastFlushCommit=commit;
     if(!commit.empty()){hr=setOwnText(ctx,cookie,commit,true);if(FAILED(hr)){pendingCommit=commit;pendingContext=ctx;return hr;}}
     auto text=wide(pi_preedit(session));if(!text.empty()){hr=beginComposition(ctx,cookie);if(SUCCEEDED(hr))hr=setOwnText(ctx,cookie,text,false);}
     else if(commit.empty())hr=setOwnText(ctx,cookie,L"",true);
@@ -630,10 +649,10 @@ public:
   }
 
   STDMETHODIMP OnEndEdit(ITfContext*ctx,TfEditCookie,ITfEditRecord*)override{if(pairContext.Get()==ctx&&!pairOwnRequest)clearAutomaticPair();if(clipboardVisible)retireClipboard();return S_OK;}
-  STDMETHODIMP OnSetFocus(BOOL foreground)override{if(!foreground){shiftTap.reset();retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
+  STDMETHODIMP OnSetFocus(BOOL foreground)override{phraseNotice.hide();if(!foreground){shiftTap.reset();retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
   STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();if(!eaten)return E_POINTER;if(key!=VK_BACK||modifiedBackspace(key))clearAutomaticPair();if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}if(key!=VK_SHIFT&&technicalIdlePassThrough(ctx)){*eaten=FALSE;return S_OK;}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
   STDMETHODIMP OnTestKeyUp(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();if(!eaten)return E_POINTER;const bool toggle=key==VK_SHIFT&&shiftTap.ready(reinterpret_cast<uintptr_t>(ctx))&&!secure;if(key==VK_SHIFT&&!toggle)shiftTap.reset();*eaten=toggle;return S_OK;}
-  STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();
+  STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(phraseNotice.visible())phraseNotice.hide();if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();
     if(!eaten)return E_POINTER;*eaten=FALSE;if(modifiedBackspace(key)){clearAutomaticPair();return S_OK;}if(key==VK_SHIFT){shiftTap.press(reinterpret_cast<uintptr_t>(ctx),secure||GetKeyState(VK_CONTROL)<0||GetKeyState(VK_MENU)<0||GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0);return S_OK;}shiftTap.otherKey();if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld){clipboardPolicy.hideForDelete(clipboardOffer.sequence);retireClipboard();*eaten=TRUE;return S_OK;}if(key!=VK_DELETE&&key!=VK_BACK){retireClipboard(GetClipboardSequenceNumber());}if(!accepts(ctx,key))return S_OK;ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
     pairOwnRequest=true;
     HRESULT hr=request(ctx,TF_ES_SYNC|TF_ES_READWRITE,[this,retained,key,&handled](TfEditCookie cookie){return handleArchivedKey(retained.Get(),cookie,key,&handled);},&result);

@@ -1,31 +1,24 @@
 {
-  "baselineID": "20261025-ios101-android60-mac84-win065",
-  "tag": "v0.2026.10.25-preview.1",
+  "baselineID": "20261025b-ios102src-android63-mac85pending-win066",
+  "tag": "v0.2026.10.25-preview.2",
   "packages": [
     {
-      "platformBuild": "Android60",
-      "name": "LingheInput-Android-arm64-0.1.59.apk",
+      "platformBuild": "Android63",
+      "name": "LingheInput-Android-arm64-0.1.62.apk",
       "bytes": 49292185,
-      "sha256": "978a0a6ace073d90822b2d2016a7c8ee027ae2c13821729b7c9181774750f24f",
-      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.25-preview.1/LingheInput-Android-arm64-0.1.59.apk"
+      "sha256": "80e9f64a0b7f847820be33caccc32a6c712f7a922155ff4d025210a5c4a70be9",
+      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.25-preview.2/LingheInput-Android-arm64-0.1.62.apk"
     },
     {
-      "platformBuild": "Mac84",
-      "name": "LingheInput-Mac0.36.7-84-signed.zip",
-      "bytes": 151227476,
-      "sha256": "aae09c3958d5fea5dc6642abb91b6d12d47ab055fda03fdcabc26446af82724a",
-      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.25-preview.1/LingheInput-Mac0.36.7-84-signed.zip"
-    },
-    {
-      "platformBuild": "Windows065",
-      "name": "LingheInput-Windows11-x64-0.6.5-offline-preview.exe",
-      "bytes": 40764416,
-      "sha256": "95cb0caa8c869f60bdf38a6019dac968046858ee4feb597e0ce0d0bf32129d7e",
-      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.25-preview.1/LingheInput-Windows11-x64-0.6.5-offline-preview.exe"
+      "platformBuild": "Windows066",
+      "name": "LingheInput-Windows11-x64-0.6.6-offline-preview.exe",
+      "bytes": 40793600,
+      "sha256": "0b78a44338c11765c617dd4fe920b2bf9461615fdc925dd65988754d5cc7964e",
+      "downloadURL": "https://github.com/PengboQin/linghe-input/releases/download/v0.2026.10.25-preview.2/LingheInput-Windows11-x64-0.6.6-offline-preview.exe"
     }
   ],
   "iOS": {
-    "build": 101,
+    "build": 102,
     "sourceOnly": true,
     "developmentIPAExcluded": true
   },

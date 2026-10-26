@@ -1,38 +1,9 @@
 {
   "schemaVersion": 1,
-  "tag": "v0.2026.10.25-preview.1",
-  "mainSnapshot": "Current reviewed source; equals Android60 and adds automatic-phrase core functions after the Mac84/Windows065 builds",
-  "overrides": [
-    {
-      "platformBuild": "Mac84",
-      "path": "release-overrides/mac84/core/src/private_input.cpp",
-      "applyTo": "core/src/private_input.cpp",
-      "originalSourceSHA256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e",
-      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
-    },
-    {
-      "platformBuild": "Mac84",
-      "path": "release-overrides/mac84/core/include/private_input.h",
-      "applyTo": "core/include/private_input.h",
-      "originalSourceSHA256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190",
-      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
-    },
-    {
-      "platformBuild": "Windows065",
-      "path": "release-overrides/windows065/core/src/private_input.cpp",
-      "applyTo": "core/src/private_input.cpp",
-      "originalSourceSHA256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e",
-      "sha256": "f6805c4947166af5e75a38e57d96e80998d2ebe2c15e17fbccdd4d8d2bb6990e"
-    },
-    {
-      "platformBuild": "Windows065",
-      "path": "release-overrides/windows065/core/include/private_input.h",
-      "applyTo": "core/include/private_input.h",
-      "originalSourceSHA256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190",
-      "sha256": "5421bf4b7498486bd89a37f1ff058e91610f0fb221cb565561fa257892d4f190"
-    }
-  ],
-  "usage": "Copy one override directory into a separate copy of this source archive before rebuilding Mac84 or Windows065. Android60 and iOS101 use the main snapshot.",
+  "tag": "v0.2026.10.25-preview.2",
+  "mainSnapshot": "Current reviewed source; equals Android63, Windows066, Mac85 and iOS102 builds",
+  "overrides": [],
+  "usage": "All packages in this release were built from the main snapshot; no override directory is needed.",
   "privateSigningAndOperatorURLsSanitized": true,
   "cleanRoomOrByteIdenticalRebuildClaimed": false
 }

@@ -326,6 +326,17 @@ final class LocalLearningCoordinator {
         return (id, directory)
     }
     func entries() throws -> [LearningEntry] { Array(try readJournal().checkpoint.model.entries.values) }
+    /// Same durable path as manage(); records a cross-device deletion for the next
+    /// checkpoint import and cloud publication.
+    func forget(reading: String, text: String, knownCloudGeneration: UInt64 = 0) throws {
+        try requireAuthorityWrite()
+        let expectedRuntime = try ObservationFileVersion.read(runtimeURL), expectedLegacy = try ObservationFileVersion.read(stateURL)
+        let old = try readJournal(); guard old.pending == nil else { throw LearningSyncFailure.busy }
+        var state = old.checkpoint
+        try state.forget(reading: reading, text: text, knownCloudGeneration: knownCloudGeneration)
+        try recent?.mergeCumulative(state)
+        try persist(LearningImportJournal(checkpoint: state), expectedRuntime: expectedRuntime, expectedLegacy: expectedLegacy)
+    }
     func manage(reading: String, text: String, pinned: Bool?) throws {
         try requireAuthorityWrite()
         let expectedRuntime = try ObservationFileVersion.read(runtimeURL), expectedLegacy = try ObservationFileVersion.read(stateURL)
