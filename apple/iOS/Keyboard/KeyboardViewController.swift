@@ -209,7 +209,8 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private let clipboardCandidate=ClipboardPasteCandidateView()
     // “已记住 X　撤销” notice: first item in the candidate bar, hidden once input resumes.
     private let phraseNotice=UIStackView(),phraseNoticeLabel=UILabel(),phraseNoticeUndo=UIButton(type:.system)
-    private var phraseNoticeUndoAction:(()->Void)?
+    private var phraseNoticeUndoAction:(()->Bool)?
+    private var phraseNoticeText=""
     private var autoPhrases=AutoPhraseTracker()
     private var clipboardState=ClipboardCandidateState()
     private var clipboardKnown:ClipboardCandidatePresentation.Snapshot?
@@ -435,7 +436,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         phraseNoticeLabel.font = .systemFont(ofSize:15);phraseNoticeLabel.textColor = .secondaryLabel
         phraseNoticeUndo.setTitle("撤销",for:.normal);phraseNoticeUndo.titleLabel?.font = .systemFont(ofSize:15,weight:.medium)
         phraseNoticeUndo.accessibilityLabel="撤销记住的词"
-        phraseNoticeUndo.addAction(UIAction { [weak self] _ in let action=self?.phraseNoticeUndoAction;self?.hidePhraseNotice();action?() },for:.touchUpInside)
+        phraseNoticeUndo.addAction(UIAction { [weak self] _ in guard let self else { return }; if self.phraseNoticeUndoAction?() == true { self.hidePhraseNotice() } else { self.phraseNoticeLabel.text="撤销未完成，请重试" } },for:.touchUpInside)
         phraseNotice.axis = .horizontal;phraseNotice.spacing=10;phraseNotice.alignment = .center
         phraseNotice.isLayoutMarginsRelativeArrangement=true;phraseNotice.layoutMargins=UIEdgeInsets(top:0,left:10,bottom:0,right:6)
         phraseNotice.addArrangedSubview(phraseNoticeLabel);phraseNotice.addArrangedSubview(phraseNoticeUndo)
@@ -1558,6 +1559,12 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     }
     private func backspace() {
         clipboardActivity.noteInput(at:Date.timeIntervalSinceReferenceDate)
+        // Deleting into a just-remembered phrase means it was a typo or a wrong
+        // pick while typing fast: drop the learning exactly like the undo button.
+        if !phraseNotice.isHidden,engine.preedit.isEmpty,!phraseNoticeText.isEmpty,
+           textDocumentProxy.documentContextBeforeInput?.hasSuffix(phraseNoticeText)==true,let reject=phraseNoticeUndoAction {
+            _=reject();hidePhraseNotice()
+        }
         let diagnosticBefore=diagnosticScope() != nil ? engine.rawInput : ""
         defer { archiveDiagnostic("delete",key:"backspace",before:diagnosticBefore) }
         let dismissClipboard = !clipboardCandidate.isHidden
@@ -1847,7 +1854,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         #endif
         inlineComposition.leave(host:compositionHost);engine.clear();expanded=false;ownCommitTracker.invalidate();engine.resetPredictionContext();return true
     }
-    private func hidePhraseNotice() {phraseNoticeUndoAction=nil;if !phraseNotice.isHidden {phraseNotice.isHidden=true}}
+    private func hidePhraseNotice() {phraseNoticeUndoAction=nil;phraseNoticeText="";if !phraseNotice.isHidden {phraseNotice.isHidden=true}}
     /// Classify off the key path; teach Rime when the commit bypassed it; announce once.
     private func autoPhraseCommitted(phrase:String,reading:String,outsideRime:Bool) {
         let document=documentID
@@ -1858,7 +1865,8 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
                 if outsideRime,!self.engine.learnAutoPhrase(text:phrase,reading:reading) {return}
                 guard NativeEngine.firstAutoPhraseAnnouncement(phrase,reading) else{return}
                 self.phraseNoticeLabel.text="已记住 "+phrase
-                self.phraseNoticeUndoAction={ [weak self] in self?.engine.forgetAutoPhrase(text:phrase,reading:reading);self?.render() }
+                self.phraseNoticeText=phrase
+                self.phraseNoticeUndoAction={ [weak self] in guard let self else { return false }; let success=self.engine.forgetAutoPhrase(text:phrase,reading:reading);self.render();return success }
                 self.phraseNotice.isHidden=false
             }
         }

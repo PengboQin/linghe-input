@@ -21,7 +21,8 @@ class GroupClient {
  Id activeContentGroup()const{return connected()?group():identity.device;}
  void loadRecent();void saveRecent(const Json&);std::optional<uint64_t> recentDay();Json recentRPC(uint8_t,const Json&,const protocol::VerifiedMembership&);void syncRecent(const protocol::VerifiedMembership&,const Key&);
  std::unique_ptr<ContentStore> content;ContentStore& contentStore();protocol::VerifiedMembership verified()const;Key master()const;
- bool recentLearningRepairPending=false;
+ bool recentLearningRepairPending=false,recentLearningDirty=true;uint64_t recentLearningChangedTick=0;std::string recentLearningScope;std::vector<RecentLocalDelta>recentLocalDeltas;
+ void ensureRecentLearningScope();void markRecentLearningDirty();
  void save();Json rpc(const Id&,uint8_t,const Json&body=Json());
 public:
  explicit GroupClient(const std::filesystem::path&root);
@@ -35,8 +36,8 @@ public:
  std::function<void()>willReset;std::function<bool(bool)>allowClipboardPublication;ContentSyncObservation lastContentSyncObservation;
  void importLegacyLearning(const std::string&nativeTSV,const std::string&expectedPersonalEpoch);
  bool clipboardLiveAuthorityMatches(const Json&);Json clipboardLiveAuthority(const std::string&scope,uint64_t issuedAt);Json clipboardLiveRevocation(const Json&certificate,uint64_t now);void sendClipboardCompatibility(const std::string&text,const Id&event,uint64_t expiresAt);
- Json learningIntentAuthority();LearningIntentResult recordLearningIntent(const LearningIntent&,uint64_t now);size_t retryLearningIntents(uint64_t now);void setLocalLearningEnabled(bool);
- void consentContent(bool learning,bool clipboard);void syncContent(std::function<void()> transportComplete={});void changeCandidate(const std::string&reading,const std::string&text,unsigned action);void recordContent(const std::string&reading,const std::string&text);void sendSharedText(const std::string&,bool automatic=false);void cancelAutomaticSharedText(){contentStore().cancelAutomaticText();}Json contentSnapshot();
+ uint64_t cloudTermGeneration(const std::string&,const std::string&,bool*deleted=nullptr);std::function<void(const char*,uint64_t,unsigned)> learningTiming;Json learningIntentAuthority();LearningIntentResult recordLearningIntent(const LearningIntent&,uint64_t now,std::function<void(LearningIntentStatus)>durable={});size_t retryLearningIntents(uint64_t now);void setLocalLearningEnabled(bool);
+ void consentContent(bool learning,bool clipboard);void syncContent(std::function<void()> transportComplete={},bool learningMaintenance=true);bool flushRecentLearning(bool force=false);void changeCandidate(const std::string&reading,const std::string&text,unsigned action);void recordContent(const std::string&reading,const std::string&text);void sendSharedText(const std::string&,bool automatic=false);void cancelAutomaticSharedText(){contentStore().cancelAutomaticText();}Json contentSnapshot();
  Json makeTicket();void cancelTicket();bool pollAdmissions();
  // Explicit opt-in; shadow only until validated platform cutover. Other groups default off.
  bool refreshCloudRanking();void authorizeCloudRanking(bool enabled);

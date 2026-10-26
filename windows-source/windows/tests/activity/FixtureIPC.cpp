@@ -17,7 +17,9 @@ CaptureEmitter::~CaptureEmitter()=default;
 void CaptureEmitter::start(){++starts;}
 bool CaptureEmitter::diagnosticsEnabled()const noexcept{return false;}
 void CaptureEmitter::emit(std::wstring_view,HWND,const std::array<unsigned char,16>&,const std::array<unsigned char,16>&,bool,uint32_t,uint32_t,bool,bool,const DecisionCapture*,const DecisionLink*)noexcept{++captures;}
-void CaptureEmitter::emitLearning(std::wstring_view,std::wstring_view,HWND,uint32_t)noexcept{++learnings;}
+bool CaptureEmitter::emitLearning(std::wstring_view,std::wstring_view,HWND,uint32_t,LearningCapability*)noexcept{++learnings;return true;}
+std::shared_ptr<LearningForgetRequest>CaptureEmitter::makeForget(std::wstring,std::wstring,LearningCapability)noexcept{return {};}
+bool CaptureEmitter::sendForget(const std::shared_ptr<LearningForgetRequest>&)noexcept{return false;}
 
 LearningReader::LearningReader()=default;
 LearningReader::~LearningReader()=default;

@@ -153,27 +153,46 @@ public struct LearningModel: Codable {
     }
     // A new generation makes an explicit reset win over old peer counters.
     // Keep the word and its pin; resetting frequency must not delete either.
-    public mutating func resetFrequency(reading: String, text: String) throws {
+    public mutating func resetFrequency(reading: String, text: String, knownCloudGeneration: UInt64 = 0) throws {
         var entry = LearningEntry(reading: reading.lowercased(), text: text.precomposedStringWithCanonicalMapping)
         entry = entries[entry.id] ?? entry
-        guard !entry.deleted, entry.generation < UInt64.max, entries[entry.id] != nil || entries.count < capacityProfile.termRows else { throw InputDataError.invalidRecord }
-        entry.generation += 1; entry.counts = [:]
+        let base = max(entry.generation, knownCloudGeneration)
+        guard !entry.deleted, base < UInt64.max, entries[entry.id] != nil || entries.count < capacityProfile.termRows else { throw InputDataError.invalidRecord }
+        entry.generation = base + 1; entry.counts = [:]
         try entry.validate(); entries[entry.id] = entry
     }
     // Forget everywhere: a deletion one generation above both the local entry and the
     // known shared-model generation, so stale producers on other devices cannot revive it.
-    public mutating func forget(reading: String, text: String, knownCloudGeneration: UInt64 = 0) throws {
+    public mutating func forget(reading: String, text: String, knownCloudGeneration: UInt64 = 0, device: String? = nil) throws {
         var entry = LearningEntry(reading: reading.lowercased(), text: text.precomposedStringWithCanonicalMapping)
         entry = entries[entry.id] ?? entry
         let base = max(entry.generation, knownCloudGeneration)
         guard base < UInt64.max, entries[entry.id] != nil || entries.count < capacityProfile.termRows else { throw InputDataError.invalidRecord }
+        if entry.pinned {
+            let sequence = entries.values.map { $0.pinVersion.sequence }.max() ?? 0
+            guard sequence < UInt64.max else { throw InputDataError.invalidRecord }
+            entry.pinVersion = .init(sequence: sequence + 1, device: device ?? entry.pinVersion.device)
+        }
         entry.generation = base + 1; entry.deleted = true; entry.counts = [:]; entry.pinned = false
         try entry.validate(); entries[entry.id] = entry
     }
-    public mutating func restore(id: String) throws {
+    public mutating func restore(id: String, knownCloudGeneration: UInt64 = 0) throws {
         guard var entry = entries[id], entry.deleted else { return }
-        guard entry.generation < UInt64.max else { throw InputDataError.invalidRecord }
-        entry.generation += 1; entry.deleted = false; entry.counts = [:]; entries[id] = entry
+        let base = max(entry.generation, knownCloudGeneration)
+        guard base < UInt64.max else { throw InputDataError.invalidRecord }
+        entry.generation = base + 1; entry.deleted = false; entry.counts = [:]; entries[id] = entry
+    }
+    /// A verified cloud tombstone may exist before this device has any local row.
+    @discardableResult public mutating func relearnDeleted(reading: String, text: String, device: String,
+        knownCloudGeneration: UInt64, cloudDeleted: Bool) throws -> Bool {
+        var row = LearningEntry(reading: reading.lowercased(), text: text.precomposedStringWithCanonicalMapping)
+        row = entries[row.id] ?? row
+        guard row.deleted || (cloudDeleted && row.generation <= knownCloudGeneration) else { return false }
+        let base = max(row.generation, knownCloudGeneration)
+        guard base < UInt64.max, entries[row.id] != nil || entries.count < capacityProfile.termRows else { throw InputDataError.oversized }
+        row.generation = base + 1; row.deleted = false; row.counts = [device: 1]
+        try row.validate(); entries[row.id] = row
+        return true
     }
     public func export() throws -> Data {
         guard entries.count <= capacityProfile.termRows else { throw InputDataError.oversized }

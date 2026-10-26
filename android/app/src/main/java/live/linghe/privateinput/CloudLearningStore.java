@@ -11,10 +11,17 @@ final class CloudLearningStore {
  JSONObject read()throws Exception{return AppFiles.locked(directory,"state.lock",()->{allowed();String value=AppFiles.readOptional(file,MAX);return value==null?null:LosslessJson.object(value,MAX);});}
  void write(JSONObject value)throws Exception{AppFiles.locked(directory,"state.lock",()->{allowed();LearningCapacityMetadata.archive(value,1,2);AppFiles.write(file,CloudLearningCanonical.encode(value),MAX);return null;});}
  /** Highest generation the shared model has published for this term (0 when unknown). */
- java.math.BigInteger termGeneration(String reading,String text){
-  try{JSONObject value=read();if(value==null)return java.math.BigInteger.ZERO;String key=LearningModel.canonical(reading+'\u001f'+text);java.math.BigInteger best=java.math.BigInteger.ZERO;
-   for(String table:new String[]{"fences","terms"}){JSONObject rows=value.optJSONObject(table);JSONObject row=rows==null?null:rows.optJSONObject(key);if(row==null)continue;Object raw=row.opt(table.equals("fences")?"generation":"term_generation");if(raw!=null)best=best.max(new java.math.BigInteger(raw.toString()));}
-   return best;}catch(Exception unavailable){return java.math.BigInteger.ZERO;}
+ BigInteger termGeneration(String reading,String text)throws Exception{return termControl(reading,text).generation;}
+ static final class TermControl {final BigInteger generation;final boolean deleted;TermControl(BigInteger generation,boolean deleted){this.generation=generation;this.deleted=deleted;}}
+ TermControl termControl(String reading,String text)throws Exception{
+  JSONObject value=read();if(value==null)return new TermControl(BigInteger.ZERO,false);
+  new CloudLearningState(value).validate(CloudLearningPolicy.get(context));
+  return termControl(value,reading,text);
+ }
+ static TermControl termControl(JSONObject value,String reading,String text)throws Exception{
+  String key=LearningModel.Entry.fresh(reading,text).id();BigInteger best=BigInteger.ZERO;boolean deleted=false;
+  for(String table:new String[]{"fences","terms"}){JSONObject rows=value.getJSONObject(table);if(!rows.has(key))continue;JSONObject row=rows.getJSONObject(key);BigInteger generation=LosslessJson.unsigned(row.get(table.equals("fences")?"generation":"term_generation"));boolean gone=table.equals("fences")&&row.getBoolean("deleted");if(generation.compareTo(best)>=0){deleted=generation.equals(best)?deleted||gone:gone;best=generation;}}
+  return new TermControl(best,deleted);
  }
  String installation()throws Exception{return AppFiles.locked(directory,"state.lock",()->{allowed();AtomicFile id=new AtomicFile(new File(directory,"installation.txt"));String old=AppFiles.readOptional(id,128);if(old!=null)return PersonalLexicon.uuid(old);String fresh=UUID.randomUUID().toString().toUpperCase(Locale.ROOT);AppFiles.write(id,fresh,128);return fresh;});}
  void invalidateRank(){context.getSharedPreferences("sync-consent",0).edit().putBoolean(VALID,false).commit();PersonalChangeSignal.notifyChanged(context);}

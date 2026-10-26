@@ -365,7 +365,7 @@ final class NativeEngine: ObservableObject {
         CandidateGlyphSupport.clearCache()
         predictionProbe=0;session=0
         pendingLearningMetadata = nil
-        choiceMemory=NineKeyChoiceMemory();choiceMemoryWritable=true;coordinator=nil;personalStore=nil
+        choiceMemory=NineKeyChoiceMemory();choiceMemoryWritable=true;coordinator=nil;personalStore=nil;pendingRelearnIntents.removeAll();stagedRelearnChoices.removeAll()
         resetPredictionContext();ownContext=""
         do {
             try start(sharedResources:originalSharedResources,storageBase:originalStorageBase)
@@ -461,7 +461,7 @@ final class NativeEngine: ObservableObject {
         if !privateInput, rawInput.isEmpty, preedit.isEmpty,
            (65...90).contains(code) || (97...122).contains(code) || (50...57).contains(code) { adoptPendingLearningMetadataIfIdle(); coordinator?.beginComposition() }
 
-        if rawInput.isEmpty { refreshPersonalLexicon() }
+        if rawInput.isEmpty { stagedRelearnChoices.removeAll(); refreshPersonalLexicon() }
         markNativeLearningChanged()
         let inputCode = !nineKeyInput && !englishInput && code==252 ? Int32(118):code
         let handled = pi_process_key(session, inputCode, modifiers) != 0
@@ -469,9 +469,11 @@ final class NativeEngine: ObservableObject {
         observeCommit(commit);reload(); return (handled, commit)
     }
     func choose(_ index: Int) -> String {
-        guard refreshResetBarrier(),index>=0,let row=nativeBatch(offset:index,limit:1).first,candidateIsDisplayable(row.text),pi_select_candidate(session,index) != 0 else{return ""}
+        guard refreshResetBarrier(),index>=0,let row=nativeBatch(offset:index,limit:1).first,candidateIsDisplayable(row.text) else{return ""}
+        let prefix = selectedPrefixText
+        guard pi_select_candidate(session,index) != 0 else{return ""}
         markNativeLearningChanged()
-        let commit = String(cString: pi_take_commit(session));observeCommit(commit);reload(); return commit
+        let commit = String(cString: pi_take_commit(session)); finishExplicitChoice(row, previousPrefix: prefix, commit: commit);observeCommit(commit);reload(); return commit
     }
     func candidateBatch(offset:Int,limit:Int,incremental:Bool = false,maximumScannedRows:Int = 256)->[InputCandidate] {
         let started=ProcessInfo.processInfo.systemUptime
@@ -1287,14 +1289,19 @@ final class NativeEngine: ObservableObject {
             return InputCandidate(text:text,comment:reading,index:Int(pi_batch_candidate_index(session,i)),generation:revision,learnedPreference:remembered.contains{$0.text==text && $0.reading==reading.replacingOccurrences(of:" ",with:"").replacingOccurrences(of:"'",with:"")})
         }
     }
-    func chooseAbsolute(_ index: Int) -> String {
-        guard ready, index >= 0, pi_select_candidate_absolute(session, index) != 0 else { return "" }
+    func chooseAbsolute(_ index: Int, trackExplicit: Bool = true) -> String {
+        guard ready, index >= 0 else { return "" }
+        let selected = trackExplicit ? nativeBatch(offset:index,limit:1).first : nil
+        let prefix = selectedPrefixText
+        guard pi_select_candidate_absolute(session, index) != 0 else { return "" }
         markNativeLearningChanged()
-        let commit = String(cString: pi_take_commit(session));observeCommit(commit);reload(); return commit
+        let commit = String(cString: pi_take_commit(session)); if let selected { finishExplicitChoice(selected, previousPrefix: prefix, commit: commit) };observeCommit(commit);reload(); return commit
     }
     /// Learning uses only own commits. Supplied host context remains separate and ephemeral.
     private func observeCommit(_ text:String) {
         guard !text.isEmpty else{return}
+        for choice in stagedRelearnChoices where text.hasPrefix(choice.prefix) { enqueueExplicitRelearn(choice.row) }
+        stagedRelearnChoices.removeAll()
         ownContext=SentenceContextWindow.append(text,to:ownContext)
         if let context=hostContext {hostContext=SurroundingText(before:context.before+text,after:context.after)}
     }
@@ -1917,7 +1924,36 @@ final class NativeEngine: ObservableObject {
         if !privateInput { score += choiceMemory.boost(code:predictionLearningCode,reading:candidate.comment,text:candidate.text,context:predictionContext) }
         return score
     }
+    private var pendingRelearnIntents: [String: LearningEntry] = [:]
+    private var stagedRelearnChoices: [(prefix: String, row: LearningEntry)] = []
+    private func explicitRelearnRow(_ candidate: InputCandidate) -> LearningEntry? {
+        guard !privateInput, KeyboardPreferences.rememberWords, candidate.personalID == nil,
+              candidate.latinInput == nil, candidate.supplementaryTrigger == nil,
+              let reading = candidateReading(candidate) else { return nil }
+        return managedEntries.first(where: { $0.reading == reading && $0.text == candidate.text })
+            ?? LearningEntry(reading: reading, text: candidate.text)
+    }
+    private func enqueueExplicitRelearn(_ row: LearningEntry) {
+        guard pendingRelearnIntents[row.id] != nil || pendingRelearnIntents.count < 256 else { return }
+        pendingRelearnIntents[row.id] = row; managementPending = true
+    }
+    private func finishExplicitChoice(_ candidate: InputCandidate, previousPrefix: String, commit: String) {
+        guard let row = explicitRelearnRow(candidate) else { return }
+        if !commit.isEmpty { enqueueExplicitRelearn(row); return }
+        let prefix = selectedPrefixText
+        stagedRelearnChoices.removeAll { !prefix.hasPrefix($0.prefix) }
+        if prefix == previousPrefix + candidate.text, prefix != previousPrefix,
+           !stagedRelearnChoices.contains(where: { $0.prefix == prefix && $0.row.id == row.id }) {
+            stagedRelearnChoices.append((prefix, row))
+        }
+    }
     func chooseCandidate(_ candidate:InputCandidate) -> String {
+        let prefix = selectedPrefixText
+        let committed = chooseCandidateImpl(candidate)
+        finishExplicitChoice(candidate, previousPrefix: prefix, commit: committed)
+        return committed
+    }
+    private func chooseCandidateImpl(_ candidate:InputCandidate) -> String {
         guard refreshResetBarrier(),candidateIsDisplayable(candidate.text) else{return ""}
         markNativeLearningChanged()
         if let generation=candidate.generation,generation != revision { return "" }
@@ -2049,17 +2085,18 @@ final class NativeEngine: ObservableObject {
                 if values.count<32 { break }
             }
             guard let actual else { _ = pi_replace_pending_input(session,input,original);reload();return "" }
-            let commit=chooseAbsolute(actual.index)
+            let commit=chooseAbsolute(actual.index, trackExplicit: false)
             if commit==selected+actual.text,let code=learningCode { rememberChoice(code:code,candidate:actual,context:context,corrected:true) }
             return commit
         }
-        let commit=chooseAbsolute(candidate.index)
+        let commit=chooseAbsolute(candidate.index, trackExplicit: false)
         if commit==selected+candidate.text,let code=learningCode { rememberChoice(code:code,candidate:candidate,context:context) }
         return commit
     }
     private func rememberChoice(code:String,candidate:InputCandidate,context:String,corrected:Bool=false) {
         defer { replacement=nil }
-        guard !privateInput,choiceMemoryWritable,let reading=NineKeySpelling.encode(candidate.comment) else { return }
+        guard !privateInput else { return }
+        guard choiceMemoryWritable,let reading=NineKeySpelling.encode(candidate.comment) else { return }
         var codes=Set([code])
         if let r=replacement,Date.timeIntervalSinceReferenceDate-r.time<=120,r.context==context,NineKeySpelling.isRelated(r.code,reading) { codes.insert(r.code) }
         let retry=replacement.map { r in Date.timeIntervalSinceReferenceDate-r.time<=120 && r.context==context && r.rejectedText != nil && r.rejectedText != candidate.text && NineKeySpelling.isRelated(r.code,reading) } ?? false
@@ -2121,7 +2158,7 @@ final class NativeEngine: ObservableObject {
         guard ready, pi_nine_undo_syllable(session) != 0 else { return false }
         markNativeLearningChanged();reload(); return true
     }
-    func clear() { guard refreshResetBarrier() else { return }; markNativeLearningChanged();replacement=nil;pi_clear(session); reload() }
+    func clear() { guard refreshResetBarrier() else { return }; markNativeLearningChanged();replacement=nil;stagedRelearnChoices.removeAll();pi_clear(session); reload() }
     var rawInput: String { ready ? String(cString: pi_raw_input(session)) : "" }
     private func latinDisplay()->(selected:String,pending:String)? {
         guard ready,!nineKeyInput,!englishInput,mixedEnglishEnabled,!rawInput.isEmpty else{return nil}
@@ -2206,29 +2243,41 @@ final class NativeEngine: ObservableObject {
     /// Undo one automatic phrase: remove the Rime user row, record a cross-device
     /// deletion and clear the nine-key choice memory, like candidate management.
     @discardableResult func forgetAutoPhrase(text: String, reading: String) -> Bool {
-        guard !privateInput, let coordinator else { return false }
+        guard !privateInput, choiceMemoryWritable, let coordinator else { return false }
         let value = readingParts(reading.lowercased().trimmingCharacters(in: .whitespaces)).joined(separator: " ")
         guard !value.isEmpty else { return false }
         markNativeLearningChanged()
-        let removed = value.withCString { r in text.withCString { pi_forget_phrase(r, $0) } }
         do {
             try coordinator.forget(reading: value, text: text)
-            if choiceMemoryWritable { var next = choiceMemory; next.reset(text: text, reading: value); try saveChoiceMemory(next); choiceMemory = next }
+            pendingRelearnIntents.removeValue(forKey: LearningEntry(reading: value, text: text).id)
             pendingLearningMetadata = nil
             managedEntries = try coordinator.entries(); cloudCommittedVersion &+= 1; managementPending = true
+            guard value.withCString({ r in text.withCString { pi_forget_phrase(r, $0) } }) >= 0 else { throw LearningSyncFailure.importFailed }
+            if choiceMemoryWritable { var next = choiceMemory; next.reset(text: text, reading: value); try saveChoiceMemory(next); choiceMemory = next }
             applyPins(); reload()
             return true
-        } catch { reload(); return removed > 0 }
+        } catch { applyPins(); reload(); return false }
     }
     func manage(_ candidate: InputCandidate, pinned: Bool?) throws {
         guard !privateInput, let reading = candidateReading(candidate), let coordinator else { throw InputDataError.invalidRecord }
         markNativeLearningChanged()
+        if pinned == nil, !isPinned(candidate), Self.autoPhraseStatus(candidate.text) == 2 {
+            guard forgetAutoPhrase(text: candidate.text, reading: reading) else { throw LearningSyncFailure.importFailed }
+            return
+        }
         try coordinator.manage(reading: reading, text: candidate.text, pinned: pinned)
-        if pinned == nil,choiceMemoryWritable { var next=choiceMemory;next.reset(text:candidate.text,reading:reading);try saveChoiceMemory(next);choiceMemory=next }
+        pendingRelearnIntents.removeValue(forKey: LearningEntry(reading: reading, text: candidate.text).id)
         pendingLearningMetadata = nil
         managedEntries = try coordinator.entries(); cloudCommittedVersion &+= 1; managementPending = true
-        applyPins(); reload()
+        defer { applyPins(); reload() }
+        if pinned == nil {
+            guard choiceMemoryWritable else { throw InputDataError.invalidRecord }
+            guard pi_reset_word_frequency(reading, candidate.text, 0) >= 0 else { throw LearningSyncFailure.importFailed }
+            var next=choiceMemory;next.reset(text:candidate.text,reading:reading)
+            try saveChoiceMemory(next);choiceMemory=next
+        }
     }
+
     private func applyPins() {
         for entry in appliedPins { _ = pi_set_word_pinned(entry.reading, entry.text, 0) }
         appliedPins = managedEntries.filter { !$0.deleted && $0.pinned }
@@ -2301,6 +2350,7 @@ final class NativeEngine: ObservableObject {
         guard publishNeeded || rankNeeded else { return }
         cloudUtilityInFlight = true
         let entries = managedEntries, capturedEpoch = personalEpoch
+        let rankingRevision = coordinator?.rankingRevision ?? 0
         learningRefreshQueue.async { [weak self] in
             var published = false
             var prepared: (RecencyCoordinator.Snapshot, UUID, UInt64)?
@@ -2323,8 +2373,8 @@ final class NativeEngine: ObservableObject {
                 guard let self else { return }; self.cloudUtilityInFlight = false
                 guard self.personalEpoch == capturedEpoch, self.currentPersonalEpoch == capturedEpoch else { return }
                 if didPublish { self.cloudPublishedVersion = version }
-                if let (snapshot, group, epoch) = result {
-                    self.coordinator?.stageCloudSnapshot(snapshot, group: group, epoch: epoch)
+                if self.cloudCommittedVersion == version, let (snapshot, group, epoch) = result {
+                    self.coordinator?.stageCloudSnapshot(snapshot, group: group, epoch: epoch, expectedRevision: rankingRevision)
                     self.cloudPreparedRankToken = token
                 }
                 if (publishNeeded && !didPublish) || (rankNeeded && result == nil) {
@@ -2378,7 +2428,8 @@ final class NativeEngine: ObservableObject {
                 revision == expectedRevision && mayCommit() &&
                 isCurrentLearningRefreshPreparation(preparation, publish: publish)
         }
-        detached.synchronizeNativeCheckpoint(queue: learningRefreshQueue, allowDatedLearning: allowDated,
+        let relearnIntents = Array(pendingRelearnIntents.values)
+        detached.synchronizeNativeCheckpoint(queue: learningRefreshQueue, allowDatedLearning: allowDated, relearnIntents: relearnIntents,
             mayCommit: current, stage: { stage in
                 // Immutable metadata only: the preparing event can run on IO.
                 switch stage {
@@ -2444,13 +2495,18 @@ final class NativeEngine: ObservableObject {
                     }
                     catch { fullLearningPreparationID = nil; learningCheckpointGate.invalidate(); completion(.failure(error)); return }
                     if adopted {
+                        for intent in relearnIntents where pendingRelearnIntents[intent.id]?.generation == intent.generation {
+                            if value.relearnIntentsProcessed || value.entries.contains(where: { $0.id == intent.id && (!$0.deleted || $0.generation != intent.generation) }) {
+                                pendingRelearnIntents.removeValue(forKey: intent.id)
+                            }
+                        }
                         pendingLearningMetadata = (value.entries, capturedEpoch)
                         if revision == expectedRevision, rawInput.isEmpty, preedit.isEmpty { adoptPendingLearningMetadataIfIdle() }
                     }
                     let fullyCurrent = adopted && learningRefreshIdentityIsCurrent(preparation, publish: publish) && mayCommit()
                     learningCheckpointRuns += 1
                     if fullyCurrent {
-                        managementPending = false
+                        managementPending = !pendingRelearnIntents.isEmpty
                         #if os(iOS)
                         observationNeedsNativeMaintenance = false
                         #endif
@@ -2778,7 +2834,8 @@ final class NativeEngine: ObservableObject {
         diagnosticNativeTransactionStarted=true
         diagnosticStage = .nativeCheckpoint
         managedEntries = try coordinator.checkpoint(exportFile: directory.appendingPathComponent("engine.tsv"), importFile: directory.appendingPathComponent("incoming.tsv"), publish: privateInput ? nil : publish,
-            engineExport: { pi_export_learning($0.path) }, engineImport: { pi_import_learning($0.path) }, engineReset: { pi_reset_word_frequency($0.reading, $0.text, $0.frequency) },allowDatedLearning: !privateInput)
+            engineExport: { pi_export_learning($0.path) }, engineImport: { pi_import_learning($0.path) }, engineReset: { pi_reset_word_frequency($0.reading, $0.text, $0.frequency) },allowDatedLearning: !privateInput, relearnIntents: Array(pendingRelearnIntents.values))
+        pendingRelearnIntents.removeAll(); stagedRelearnChoices.removeAll()
         cloudCommittedVersion &+= 1
         managementPending = false; applyPins()
         learningCheckpointRuns += 1;checkpointSucceeded=true

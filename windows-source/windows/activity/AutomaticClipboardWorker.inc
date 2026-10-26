@@ -48,11 +48,11 @@ void automaticReceived(uint64_t generation,uint64_t serial,DWORD sequence,bool l
  if(candidate&&!fixtureMode){auto*request=new AutomaticApplyRequest{*candidate,generation,serial,sequence,0};if(!PostMessageW(window,AutomaticClipboardApplyMessage,0,reinterpret_cast<LPARAM>(request)))delete request;}
  lastAutomaticSyncSerial=clipboardLocalSerial.load();
 }
-void syncContentWithAutomaticClipboard(){
+void syncContentWithAutomaticClipboard(bool learningMaintenance=true){
  lastContentAttempt=unixTime();refreshAutomaticClipboard();const auto generation=automaticClipboardGeneration.load(),serial=clipboardLocalSerial.load();const auto sequence=GetClipboardSequenceNumber();
  bool localActivity=!clipboardReadSafety.allows(sequence,generation)||sequence!=clipboardHandledSequence.load()||serial!=lastAutomaticSyncSerial||automaticPendingSerial!=0||pendingAutomaticCopy.has_value()||clipboardSharingPending();client->lastContentSyncObservation={};
  queueAutomaticCopy();
- bool observed=false;try{client->syncContent([&]{observed=true;automaticReceived(generation,serial,sequence,localActivity);});}catch(...){if(!observed)automaticReceived(generation,serial,sequence,localActivity);throw;}
+ bool observed=false;try{client->syncContent([&]{observed=true;automaticReceived(generation,serial,sequence,localActivity);},learningMaintenance);}catch(...){if(!observed)automaticReceived(generation,serial,sequence,localActivity);throw;}
  if(!observed)automaticReceived(generation,serial,sequence,localActivity);if(queueAutomaticCopy())lastContentSync=0;
 }
 // Provider history/cloud-monitoring hints do not alter this application's

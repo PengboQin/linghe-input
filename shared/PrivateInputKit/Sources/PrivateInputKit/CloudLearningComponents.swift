@@ -208,6 +208,12 @@ public struct CloudLearningRankProjection: Codable {
         deleted = Set(epochs.keys).subtracting(values.keys)
         represented = migration.producers.mapValues(\.represented)
     }
+    /// Includes tombstones: a locally absent word may already have a newer
+    /// shared generation. Explicit deletion must advance beyond that fence.
+    public func generation(reading: String, text: String) -> UInt64 {
+        let key = LearningEntry(reading: reading.lowercased(), text: text.precomposedStringWithCanonicalMapping).id
+        return generations[key] ?? 0
+    }
     public func scores(current: [UUID: [LearningEntry]]) throws -> [String: Double] {
         var result = weights, local: [String: LearningEntry] = [:]
         // Project ownership before merge. A host's checkpoint also contains

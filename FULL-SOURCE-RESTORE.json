@@ -3,8 +3,8 @@
   "snapshot_kind": "baseline-20261024",
   "complete_build_source_published": true,
   "development_archive": {
-    "name": "LingheInput-Source-20261025-preview2.zip",
-    "sha256": "ae1874a60f785f15a737a3303e093ccf308df733f461b958da1c32e302b87a79",
+    "name": "LingheInput-Source-20261026-preview.zip",
+    "sha256": "4347ba79f382bae1ce44727777439f78ece1232e28a9d7de1f8c7ab0878bae53",
     "public_download_available": true
   },
   "last_release_tag": "v0.2026.10.24-baseline.1",

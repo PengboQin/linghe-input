@@ -16,7 +16,7 @@ settings:
     "HEADER_SEARCH_PATHS[sdk=iphoneos*]": ["$(SRCROOT)/../core/include", "$(SRCROOT)/../vendor/librime/src", "$(SRCROOT)/../vendor/librime/include", "$(SRCROOT)/../vendor/boost_1_85_0", "$(SRCROOT)/../build/rime/ios-arm64/include", "$(SRCROOT)/../build/librime/ios-arm64/src"]
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ""
-    CURRENT_PROJECT_VERSION: "102"
+    CURRENT_PROJECT_VERSION: "105"
     MARKETING_VERSION: "1.0.0"
     PRIVATE_INPUT_RELAY_HOST: ""
     GENERATE_INFOPLIST_FILE: NO
@@ -106,8 +106,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.linghe.privateinput.inputmethod.PrivateInput
         PRODUCT_NAME: PrivateInput
-        CURRENT_PROJECT_VERSION: "85"
-        MARKETING_VERSION: "0.36.8"
+        CURRENT_PROJECT_VERSION: "88"
+        MARKETING_VERSION: "0.37.1"
         ARCHS: arm64
         ENABLE_DEBUG_DYLIB: NO
       configs:

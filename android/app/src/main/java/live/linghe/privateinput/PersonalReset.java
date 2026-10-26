@@ -32,6 +32,7 @@ final class PersonalReset {
     File shared=new File(c.getFilesDir(),"Shared");shared.mkdirs();try(java.io.FileOutputStream out=new java.io.FileOutputStream(new File(shared,"privacy-reset-generation-v1.txt"))){out.write(generation(c).getBytes(java.nio.charset.StandardCharsets.UTF_8));out.getFD().sync();}
     remove(c.getCacheDir());c.getCacheDir().mkdirs();
     android.content.SharedPreferences p=c.getSharedPreferences("keyboard",0);android.content.SharedPreferences.Editor edit=p.edit();
+    if(!AutoPhrase.clearPersonalState(p))throw new IOException("无法清除个人学习状态");
     for(String key:p.getAll().keySet())if(key.startsWith("symbol-use-"))edit.remove(key);edit.commit();
     c.getSharedPreferences("privacy-reset",0).edit().putBoolean("pending",false).commit();
   }

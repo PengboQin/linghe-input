@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "mainland_candidate_policy.h"
 #include "private_input.h"
 #include <filesystem>
@@ -33,7 +34,10 @@ int main(int argc,char **argv) {
   std::vector<std::string> paged;for(size_t i=0;i<first;++i)paged.emplace_back(pi_batch_candidate_text(session,i));
   const auto second=pi_load_candidate_batch(session,first,128);for(size_t i=0;i<second;++i)paged.emplace_back(pi_batch_candidate_text(session,i));
   check(full==paged,"logical filtered continuation has no duplicates/gaps");
-  check(!pi_select_candidate_absolute(session,0),"hidden legacy native candidate cannot be selected by stale absolute id");
+  // A native id the filter hid (not necessarily 0 once the dictionary itself is
+  // standard-only) must never be selectable by a stale absolute id.
+  size_t hidden=SIZE_MAX;for(size_t k=0;k<(ids.empty()?0:ids.back());++k)if(std::find(ids.begin(),ids.end(),k)==ids.end()){hidden=k;break;}
+  if(hidden!=SIZE_MAX)check(!pi_select_candidate_absolute(session,hidden),"hidden legacy native candidate cannot be selected by stale absolute id");
   check(pi_select_candidate_absolute(session,ids[0]),"native absolute id retained after filtering");
   check(std::string(pi_take_commit(session))==full[0],"exact displayed row committed");
   type(session,"hao");check(pi_load_candidate_batch(session,0,2)==2,"fresh stream after commit");

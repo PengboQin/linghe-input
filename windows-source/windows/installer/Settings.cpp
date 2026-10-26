@@ -141,7 +141,14 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
    auto root=folder(FOLDERID_LocalAppData)/L"PrivateInputDev/fixtures";
    if(!file.is_absolute()||file.extension()!=L".json"||!inside(file,root))return 2;
    normalPath(file); if(fs::exists(file))return 2;
-  } else file=folder(FOLDERID_LocalAppData)/L"PrivateInput/desktop-candidate-layout-v1.json";
+  } else {
+   // One settings window: input and appearance pages now live in the main
+   // settings window; this entry point (Start menu, tray, TSF) only forwards.
+   wchar_t path[32768]{};DWORD n=GetModuleFileNameW(nullptr,path,32768);if(!n||n>=32768)return 1;
+   const auto exe=fs::path(path).parent_path()/L"LingheInputActivity.exe";
+   if(reinterpret_cast<INT_PTR>(ShellExecuteW(nullptr,L"open",exe.c_str(),selectedPage?L"--settings --page appearance":L"--settings --page input",exe.parent_path().c_str(),SW_SHOWNORMAL))>32)return 0;
+   file=folder(FOLDERID_LocalAppData)/L"PrivateInput/desktop-candidate-layout-v1.json"; // Fallback: legacy standalone window.
+  }
   if(!fixture){HWND previous=nullptr;while((previous=FindWindowExW(nullptr,previous,L"LingheInput.Settings",nullptr))){if(GetPropW(previous,L"LingheInput.Settings.Live")){SendMessageW(previous,WM_COMMAND,201+selectedPage,0);ShowWindow(previous,SW_SHOWNORMAL);SetForegroundWindow(previous);return 0;}}}
   WNDCLASSW cls{}; cls.lpfnWndProc=procedure; cls.hInstance=instance; cls.lpszClassName=L"LingheInput.Settings"; cls.hCursor=LoadCursor(nullptr,IDC_ARROW); cls.hbrBackground=GetSysColorBrush(COLOR_WINDOW);
   if(!RegisterClassW(&cls))return 1;

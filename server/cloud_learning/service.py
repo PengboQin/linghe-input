@@ -24,6 +24,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from activity_archive.service import ArchiveError, decode, encode, fail, number, shape, uid, unb64
 from .authority import fingerprint
 from . import components
+from . import personal
 from . import capacity
 
 DOMAIN = b'PrivateInput/cloud-learning-request/v1\0'
@@ -82,6 +83,7 @@ class LearningStore:
         CREATE TABLE IF NOT EXISTS cl_nonces(group_id TEXT NOT NULL,device_id TEXT NOT NULL,nonce TEXT NOT NULL,expires INTEGER NOT NULL,PRIMARY KEY(group_id,device_id,nonce));
         ''')
         components.initialize(self.db)
+        personal.initialize(self.db)
         if str(database) != ':memory:':
             self.path.chmod(0o600)
             for suffix in ('-wal', '-shm'):
@@ -172,6 +174,8 @@ class LearningStore:
             if operation == 5: return self.pull(who, body)
             if operation == 6: return components.ingest(self, who, body)
             if operation == 7: return components.bootstrap(self, who, body)
+            if operation == 8: return personal.put(self, who, body)
+            if operation == 9: return personal.pull(self, who, body)
             fail('operation')
 
     def term_key(self, event):
@@ -416,7 +420,7 @@ class LearningApplication:
 
     def capabilities(self):
         return {'protocol': 'private-input-cloud-learning', 'version': 1, 'default_enabled': False,
-                'algorithm_version': ALGORITHM, 'operations': [1, 2, 3, 4, 5, 6, 7], 'component_protocol': 1, 'own_component_bootstrap': True, 'model_scope': 'shared_lexeme', 'max_batch_events': MAX_EVENTS,
+                'algorithm_version': ALGORITHM, 'operations': [1, 2, 3, 4, 5, 6, 7, 8, 9], 'component_protocol': 1, 'personal_records': 1, 'own_component_bootstrap': True, 'model_scope': 'shared_lexeme', 'max_batch_events': MAX_EVENTS,
                 'max_group_terms': MAX_TERMS, 'aggregate_interval_seconds': 600, 'decay_interval_seconds': 3600,
                 'input_sources': ['confirmed_selection', 'explicit_control'], 'clipboard_training': False,
                 'charset': 'mainland-standard-8105', 'charset_sha256': CHARSET_SHA256}
@@ -429,7 +433,7 @@ class LearningApplication:
         group, sender, nonce = (uid(envelope[k]) for k in ('group', 'sender', 'nonce'))
         number(envelope['issuedAt'], 0, (1 << 64) - 1)
         if abs(self.clock() - envelope['issuedAt']) > 300: fail('request_clock', 401)
-        operation = number(envelope['operation'], 1, 7)
+        operation = number(envelope['operation'], 1, 9)
         body, signature = unb64(envelope['body']), unb64(envelope['signature'], 64, 64)
         who = self.authority.resolve(group, sender, self.clock())
         try:

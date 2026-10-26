@@ -185,7 +185,7 @@ private final class MacHiddenCheckpointCoordinator {
                       NativeEngine.firstAutoPhraseAnnouncement(phrase,reading),let client=self.liveClient() else{return}
                 var caret=NSRect.zero
                 guard PIReadIMKCaret(client,&caret) else{return}
-                Self.phraseNotice.show(phrase:phrase,caret:caret) { [weak session] in session?.engine.forgetAutoPhrase(text:phrase,reading:reading) }
+                Self.phraseNotice.show(phrase:phrase,caret:caret) { [weak session] in session?.engine.forgetAutoPhrase(text:phrase,reading:reading) ?? false }
             }
         }
     }
@@ -253,7 +253,12 @@ private final class MacHiddenCheckpointCoordinator {
         if CommandLine.arguments.contains("--imk-acceptance") { NSLog("PRIVATE_INPUT_IMK %@",event) }
     }
     override func inputText(_ string:String!,key keyCode:Int,modifiers flags:Int,client sender:Any!) -> Bool {
-        if Self.phraseNotice.phrase != nil {Self.phraseNotice.hide()}
+        if Self.phraseNotice.phrase != nil {
+            // The first key after a remembered phrase being Delete means it was a
+            // typo or a wrong pick: forget it like the explicit undo (key still deletes).
+            if keyCode==51,flags & Int(NSEvent.ModifierFlags([.command,.control,.option,.shift]).rawValue)==0 {Self.phraseNotice.rejectByDelete()}
+            else {Self.phraseNotice.hide()}
+        }
         guard let client=sender as? IMKTextInput else { return false }
         if let activeClient,ObjectIdentifier(activeClient as AnyObject) != ObjectIdentifier(client as AnyObject) {input?.invalidateCorrection()}
         activeClient=client

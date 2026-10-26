@@ -22,6 +22,17 @@ public final class LearningForgetTest {
   model.restore(model.get(LearningModel.Entry.fresh("ling he","灵鹤").id()).id());
   LearningModel.Entry back=model.get(LearningModel.Entry.fresh("ling he","灵鹤").id());
   check(!back.deleted&&back.generation.equals(BigInteger.valueOf(4)),"deliberate relearn uses a newer generation");
+  LearningModel known=new LearningModel();known.setDeviceCount("ni hao","你好","device-a",20);known.setPinned("ni hao","你好",true,"device-a");
+  known.resetFrequency("ni hao","你好",BigInteger.valueOf(7));known.claimControl("ni hao","你好","device-a");
+  LearningModel.Entry reset=known.get("ni hao\u001f你好");check(!reset.deleted&&reset.pinned&&reset.frequency()==0&&reset.generation.intValue()==8,"known reset retains word and pin above cloud generation");
+  check(reset.counts.containsKey("device-a"),"reset owns publishable zero component");
+  LearningModel relearn=new LearningModel();relearn.forget("ling he","灵鹤",BigInteger.valueOf(7));relearn.claimControl("ling he","灵鹤","device-a");
+  relearn.setDeviceCount("ling he","灵鹤","device-b",900);check(relearn.get("ling he\u001f灵鹤").deleted,"old offline counts cannot restore");
+  check(relearn.selectedAgain("ling he","灵鹤","device-a",BigInteger.valueOf(8),true),"explicit selection crosses fence");
+  check(relearn.get("ling he\u001f灵鹤").generation.intValue()==9&&relearn.get("ling he\u001f灵鹤").frequency()==1,"explicit relearn starts fresh one count");
+  check(!relearn.selectedAgain("ling he","灵鹤","device-a",BigInteger.valueOf(9),false),"ordinary selection leaves native counting owner");
+  check(!relearn.selectedAgain("ling he","灵鹤","device-a",BigInteger.valueOf(8),true),"old cloud tombstone cannot reset newer local relearn");
+  known.forget("ni hao","你好",BigInteger.valueOf(8));known.claimControl("ni hao","你好","device-a");LearningModel.Entry unpinned=known.get("ni hao\u001f你好");check(!unpinned.pinned&&unpinned.pinVersion.sequence.compareTo(reset.pinVersion.sequence)>0,"forget advances pin version to avoid server equivocation");
   System.out.println("PASS "+checks+" learning forget checks");
  }
 }

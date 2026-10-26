@@ -240,12 +240,14 @@ void seed_nine_path(PI_Session id) {
     api->candidate_list_end(&rows);
   }
 }
+bool flush_unmatched_remainder(PI_Session id);
 int select_with_nine_path(PI_Session id,size_t index,bool absolute) {
   auto &s=sessions.at(id);seed_nine_path(id);
   const auto before=pending_nine_code(id),prefix=s.selected_prefix;
   auto path=s.path;const auto path_before=path;const auto raw_before=s.input;
   const auto result=absolute ? api->select_candidate(id,index):api->select_candidate_on_current_page(id,index);
   if(result)s.syllable_undo.clear();refresh(id);
+  if(result)flush_unmatched_remainder(id);
   if(result && s.nine_key && !s.input.empty() && s.selected_prefix.size()>prefix.size() &&
      s.selected_prefix.compare(0,prefix.size(),prefix)==0){
     const auto remaining=pending_nine_code(id);
@@ -257,6 +259,20 @@ int select_with_nine_path(PI_Session id,size_t index,bool absolute) {
     }else{s.path.clear();s.path_active=false;}
   }
   return result;
+}
+// Full-pinyin composition stuck after a selection: the convertible part is
+// chosen but unmatched letters (e.g. "nihaoi" -> 你好 + "i") have no candidate,
+// so neither selection nor space could ever commit. Commit the selected text
+// plus the raw letters through Rime itself (keeps its normal learning).
+bool flush_unmatched_remainder(PI_Session id) {
+  auto &s=sessions.at(id);
+  if(s.nine_key||s.input.empty()||s.selected_prefix.empty()||!s.indices.empty()||!s.candidates.empty())return false;
+  if(s.preedit.size()<=s.selected_prefix.size()||s.preedit.compare(0,s.selected_prefix.size(),s.selected_prefix)!=0)return false;
+  const auto rest=s.preedit.substr(s.selected_prefix.size());
+  if(!std::all_of(rest.begin(),rest.end(),[](unsigned char c){return (c>='a'&&c<='z')||c=='\''||c==' ';}))return false;
+  if(!api->get_caret_pos||api->get_caret_pos(id)!=s.input.size())return false;
+  if(!api->commit_composition(id))return false;
+  refresh(id);return true;
 }
 RimeLeversApi *levers() {
   if (!api) return nullptr;
@@ -343,6 +359,7 @@ int pi_process_key(PI_Session id, int keycode, int mask) {
       return select_with_nine_path(id,snapshot.indices[visible],snapshot.absolute_page);
     }
   }
+  if (mask == 0 && keycode == ' ' && flush_unmatched_remainder(id)) return 1;
   if (mask == 0 && !snapshot.input.empty() &&
       ((!snapshot.nine_key && keycode >= '1' && keycode <= '9') || keycode == ' ')) return 1;
   const auto raw_before=snapshot.input,prefix_before=snapshot.selected_prefix;

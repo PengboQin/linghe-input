@@ -45,9 +45,13 @@ final class AutoPhrase {
  }
 
  static final String FORGOTTEN="auto-phrase-forgotten";
+ /** Clear only learned personal state; appearance/input preferences remain. */
+ static boolean clearPersonalState(SharedPreferences preferences){return preferences.edit().remove(ANNOUNCED).remove(FORGOTTEN).commit();}
+
 
  /** Terms the user undid or reset locally. Shared learning scores are ignored for them until the user
-  *  selects the term again or the cloud rank snapshot changes (the server has seen the reset). */
+  *  selects the term again. A model version change can belong to an unrelated word
+  *  and is not an acknowledgement of this deletion. This hides ranking boosts, not the candidate. */
  static final class Forgotten {
   private final SharedPreferences preferences;
   Forgotten(SharedPreferences preferences){this.preferences=preferences;}
@@ -63,7 +67,7 @@ final class AutoPhrase {
   boolean suppressed(String text,String reading,String rankVersion){
    Set<String> stored=preferences.getStringSet(FORGOTTEN,null);if(stored==null||stored.isEmpty())return false;
    String prefix=key(text,normalized(reading))+"\u001f";
-   for(String value:stored)if(value.startsWith(prefix))return rankVersion==null||value.substring(prefix.length()).equals(rankVersion);
+   for(String value:stored)if(value.startsWith(prefix))return true;
    return false;
   }
   /** A new explicit selection lets the term learn again. */

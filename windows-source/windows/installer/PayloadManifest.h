@@ -59,12 +59,18 @@ inline bool recognizedSetupHash(const std::string& hash,const std::string& runni
         hash=="aad708921cb7deae91b9ebe6dac2dda09e1077235894cee43ec98da854680f12" ||
         hash=="4a09a75b70eb6dbf309afd8809669df04d11dcef427d3d8b55e54598aeb0b120" ||
         hash=="41924eba956d0d51221afa89ea59b99399736f9cc007518865bc5c2e2777414e" ||
+        hash=="9358e5f3628913dd999db4512d74cf2aebe52c2f3fa8821113d7cb7833c47ce3" ||
+        hash=="7ac45b49b4a1c7a14c7284b14135b51653107412eede25d0b79eddc91f86e561" ||
         hash=="82afe64c935d8c22536bd3c529c61ed4e5a9fdd55a76923188c52c95bf95465c" ||
         hash=="914a3c6a2f690a862caac4622d1fae2d951225e080638b8028b9720b97eb01b2" ||
         hash=="b20ee4911fc7f9f4f895fa93f874b332a6dc47e7e3661949aaff53cebbd600ab" ||
         // 062 public baseline: retained package and installed copy independently match.
         hash=="2d1a3d727ae7cd14ec68b76cb70670b2141517a1ee3f0ad855d4fd05aafecd75" ||
-        hash=="95cb0caa8c869f60bdf38a6019dac968046858ee4feb597e0ce0d0bf32129d7e";
+        hash=="95cb0caa8c869f60bdf38a6019dac968046858ee4feb597e0ce0d0bf32129d7e" ||
+        hash=="7448c783c5374c2f4f5cd85a6cb9f4c2a52aa260b36cbb2a9f3a002505a60fb5" ||
+        hash=="f55efde22ab08ec2abf4ca9d9889229c585005cf4c2be950242a39bf81c10c87" ||
+        hash=="b64467fa3abff7bb34f81457f5a1bb18a64f6eb7e4b5fbd47f841953b2d8cd57" ||
+        hash=="64f04b406dfddc6271bd2ed429275865d9b4c9a7e826f1c2c9a7855d2cb7fc45";
 }
 inline std::vector<PayloadEntry> parseManifest(const std::string& bytes, const std::string& version) {
  if(bytes.empty() || bytes.size()>256*1024 || bytes.find('\0')!=std::string::npos)throw std::runtime_error("Invalid manifest size");

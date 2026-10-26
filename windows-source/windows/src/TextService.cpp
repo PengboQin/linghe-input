@@ -1,4 +1,5 @@
 #include "PhraseNotice.h"
+#include "PhraseNoticePolicy.h"
 #include "PrivateInputTSF.h"
 #include "learning_capacity_profiles.h"
 #include "CandidateWindow.h"
@@ -6,6 +7,7 @@
 #include "TsfLayoutSink.h"
 #include <textstor.h>
 #include "LearningSnapshotBoundary.h"
+#include "CommittedLearning.h"
 #include "CandidateStream.h"
 #include "CandidateAdmission.h"
 #include "ClipboardCandidatePolicy.h"
@@ -51,7 +53,7 @@ public:
   STDMETHODIMP_(ULONG) Release()override{auto n=--refs;if(!n)delete this;return n;}
   STDMETHODIMP DoEditSession(TfEditCookie cookie)override{return action(cookie);}
 };
-enum class FieldScope {unknown,normal,privateField,password};
+using FieldScope=private_input::PhraseFieldScope;
 FieldScope scopeOf(ITfContext *ctx,TfEditCookie cookie){
   ComPtr<ITfContextView>nativeView;HWND nativeWindow=nullptr;
   if(SUCCEEDED(ctx->GetActiveView(&nativeView))&&nativeView&&SUCCEEDED(nativeView->GetWnd(&nativeWindow))){
@@ -250,19 +252,30 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
   }
   unsigned long long revision=0;std::wstring pendingCommit;std::string englishInput;CandidateWindow panel;
   // Automatic phrase notice: segmented selections paired with their readings; last caret anchor for the card.
-  PhraseNotice phraseNotice;std::vector<std::string> phraseTexts,phraseReadings;bool phraseBroken=false;std::wstring lastFlushCommit;RECT lastAnchor{};UINT lastAnchorDpi=96;
+  private_input::activity::LearningCapability lastCommitCapability;PhraseNotice phraseNotice;std::vector<std::string> phraseTexts,phraseReadings;bool phraseBroken=false;std::wstring lastFlushCommit;RECT lastAnchor{};UINT lastAnchorDpi=96;
   void phraseReset(){phraseTexts.clear();phraseReadings.clear();phraseBroken=false;}
   static std::string joined(const std::vector<std::string>&parts,const char *separator){std::string out;for(size_t i=0;i<parts.size();++i){if(i)out+=separator;out+=parts[i];}return out;}
   static bool firstAnnouncement(const std::wstring &key){HKEY store=nullptr;if(RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\LingheInput\\AutoPhraseAnnounced",0,nullptr,0,KEY_QUERY_VALUE|KEY_SET_VALUE,nullptr,&store,nullptr)!=ERROR_SUCCESS)return false;bool fresh=RegQueryValueExW(store,key.c_str(),nullptr,nullptr,nullptr,nullptr)==ERROR_FILE_NOT_FOUND;if(fresh){DWORD one=1;fresh=RegSetValueExW(store,key.c_str(),0,REG_DWORD,reinterpret_cast<const BYTE*>(&one),sizeof(one))==ERROR_SUCCESS;}RegCloseKey(store);return fresh;}
   // Called after a Rime candidate commit; mirrors Android/Apple AutoPhraseTracker semantics.
-  void autoPhraseAfter(const std::string &prefix,const std::string &text,const std::string &reading){
+  void autoPhraseAfter(const std::string &prefix,const std::string &text,const std::string &reading,bool allowed){
+    if(!allowed){phraseReset();return;}
     if(prefix.empty())phraseReset();else if(phraseBroken||prefix!=joined(phraseTexts,"")){phraseBroken=true;return;}
     if(text.empty()||reading.empty()){phraseBroken=true;return;}
     phraseTexts.push_back(text);phraseReadings.push_back(reading);
     if(lastFlushCommit.empty())return;
     const auto commit=utf8(lastFlushCommit);const bool match=!phraseBroken&&commit==joined(phraseTexts,"");const auto fullReading=joined(phraseReadings," ");phraseReset();
-    if(!match||privateSchema||pi_auto_phrase_status(commit.c_str())!=2||!firstAnnouncement(lastFlushCommit+L"\x1f"+wide(fullReading.c_str())))return;
-    phraseNotice.show(g_instance,lastAnchor,lastAnchorDpi,lastFlushCommit,[commit,fullReading]{pi_forget_phrase(fullReading.c_str(),commit.c_str());});
+    if(!match||!lastCommitCapability.generation||!private_input::activity::hasLearningIntentID(lastCommitCapability.token))return;
+    const auto phrase=lastFlushCommit;const auto anchor=lastAnchor;const auto dpi=lastAnchorDpi;const auto capability=lastCommitCapability;
+    phraseNotice.prepare(g_instance,[commit]{return pi_auto_phrase_status(commit.c_str())==2;},[this,commit,fullReading,phrase,anchor,dpi,capability]{
+      if(secure||!learningReader.read()->localLearningEnabled)return;
+      if(!firstAnnouncement(phrase+L"\x1f"+wide(fullReading.c_str())))return;
+      phraseNotice.show(g_instance,anchor,dpi,phrase,[this,commit,fullReading,capability,request=std::shared_ptr<private_input::activity::LearningForgetRequest>{}]()mutable{
+        if(request&&request->delivery->complete.load()&&request->delivery->status.load()==private_input::activity::LearningIntentStatus::Expired)request.reset(); // Explicit “重新撤销”: new event, same original authority.
+        if(!request)request=archiveEmitter.makeForget(wide(fullReading.c_str()),wide(commit.c_str()),capability);
+        if(!request)return std::shared_ptr<private_input::activity::LearningDelivery>{};
+        archiveEmitter.sendForget(request);return request->delivery;
+      });
+    });
   }
   std::optional<PrivateInputEnginePaths> enginePaths;
   DesktopInputPreferences inputPreferences;CandidateGlyphFilter glyphFilter;private_input::DesktopCandidates navigation;private_input::CandidateStream candidates;std::vector<std::wstring> words;
@@ -359,7 +372,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
     ComPtr<ITfRange> caret;if(SUCCEEDED(range->Clone(&caret))){caret->Collapse(cookie,TF_ANCHOR_END);TF_SELECTION selection{caret.Get(),{TF_AE_NONE,FALSE}};ctx->SetSelection(cookie,1,&selection);}
     // Once SetText succeeds, never queue the same text again. A host that
     // refuses EndComposition is retried separately without another insertion.
-    if(finish){archiveCommit(ctx,cookie,text);if(!enginePaths&&!secure&&scopeOf(ctx,cookie)==FieldScope::normal){size_t offset=0;ComPtr<ITfContextView>view;HWND hwnd=nullptr;if(SUCCEEDED(ctx->GetActiveView(&view)))view->GetWnd(&hwnd);for(const auto&selected:learningSelections){if(text.compare(offset,selected.second.size(),selected.second)==0){if(selected.second.find_first_of(L"\t\r\n")==std::wstring::npos)archiveEmitter.emitLearning(selected.first,selected.second,hwnd);offset+=selected.second.size();}}}learningSelections.clear();finishComposition(cookie);}return S_OK;
+    if(finish){lastCommitCapability={};archiveCommit(ctx,cookie,text);if(!enginePaths&&!secure&&scopeOf(ctx,cookie)==FieldScope::normal){ComPtr<ITfContextView>view;HWND hwnd=nullptr;if(SUCCEEDED(ctx->GetActiveView(&view)))view->GetWnd(&hwnd);for(const auto&selected:private_input::committedLearningSelections(learningSelections,text,true)){archiveEmitter.emitLearning(selected.first,selected.second,hwnd,3,&lastCommitCapability);}}learningSelections.clear();finishComposition(cookie);}return S_OK;
   }
   std::vector<private_input::CandidateChoice> readNative(size_t offset,size_t limit){
     std::vector<private_input::CandidateChoice> rows;const auto count=pi_load_candidate_batch(session,offset,limit);
@@ -433,7 +446,7 @@ class TextService final:public ITfTextInputProcessorEx,public ITfKeyEventSink,pu
       const std::string phrasePrefix=pi_selected_prefix(session);
       if(!pi_select_candidate_absolute(session,choice.absolute)){learningSelections.resize(previousSelections);return E_FAIL;}
       ++revision;lastFlushCommit.clear();auto flushed=flushResult(ctx,cookie);
-      if(SUCCEEDED(flushed))autoPhraseAfter(phrasePrefix,choice.text,private_input::activity::canonicalLearningReading(choice.reading));
+      if(SUCCEEDED(flushed))autoPhraseAfter(phrasePrefix,choice.text,private_input::activity::canonicalLearningReading(choice.reading),private_input::phraseNoticeAllowed(enginePaths?&*enginePaths:nullptr,scopeOf(ctx,cookie),disabled(ctx),secure,learningReader.read()->localLearningEnabled));
       return flushed;
     }
     const auto committed=wide(pi_commit_repair_candidate(session,choice.repair));
@@ -621,7 +634,7 @@ public:
     hr=keystrokes->AdviseKeyEventSink(client,this,TRUE);keySinkAdvised=SUCCEEDED(hr);
     if(FAILED(hr)){if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();}return hr;
   }
-  STDMETHODIMP Deactivate()override{learningReader.stop();if(anchorLeaseWindow){DestroyWindow(anchorLeaseWindow);anchorLeaseWindow=nullptr;}if(clipboardPollWindow){DestroyWindow(clipboardPollWindow);clipboardPollWindow=nullptr;}retireClipboard();clipboardReader.close();detachComposition();if(keystrokes&&keySinkAdvised)keystrokes->UnadviseKeyEventSink(client);keySinkAdvised=false;if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();client=PrivateInputClientNull;return S_OK;}
+  STDMETHODIMP Deactivate()override{phraseNotice.hide();learningReader.stop();if(anchorLeaseWindow){DestroyWindow(anchorLeaseWindow);anchorLeaseWindow=nullptr;}if(clipboardPollWindow){DestroyWindow(clipboardPollWindow);clipboardPollWindow=nullptr;}retireClipboard();clipboardReader.close();detachComposition();if(keystrokes&&keySinkAdvised)keystrokes->UnadviseKeyEventSink(client);keySinkAdvised=false;if(session)pi_destroy_session(session);session=0;keystrokes.Reset();manager.Reset();client=PrivateInputClientNull;return S_OK;}
   STDMETHODIMP OnCompositionTerminated(TfEditCookie,ITfComposition *ended)override{
     // Treat our own ending exactly like a host that never calls this sink;
     // explicit finish paths own cleanup. External termination still resets it.
@@ -652,7 +665,7 @@ public:
   STDMETHODIMP OnSetFocus(BOOL foreground)override{phraseNotice.hide();if(!foreground){shiftTap.reset();retireClipboard();detachComposition();archiveContext=nullptr;archiveExpectedCaret.reset();}return S_OK;}
   STDMETHODIMP OnTestKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();if(!eaten)return E_POINTER;if(key!=VK_BACK||modifiedBackspace(key))clearAutomaticPair();if(key!=VK_SHIFT&&key!=VK_LSHIFT&&key!=VK_RSHIFT)shiftTap.otherKey();if(key=='V'&&GetKeyState(VK_CONTROL)<0)clipboardPolicy.resumeEditing();if(key!=VK_DELETE&&key!=VK_BACK&&key!=VK_SHIFT&&key!=VK_CONTROL&&key!=VK_MENU&&key!=VK_LWIN&&key!=VK_RWIN){retireClipboard(GetClipboardSequenceNumber());}if(key!=VK_SHIFT&&technicalIdlePassThrough(ctx)){*eaten=FALSE;return S_OK;}*eaten=(key==VK_SHIFT&&!secure&&session&&ctx&&!disabled(ctx))||accepts(ctx,key);return S_OK;}
   STDMETHODIMP OnTestKeyUp(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_DELETE||key==VK_BACK)clipboardPolicy.releaseDelete();if(!eaten)return E_POINTER;const bool toggle=key==VK_SHIFT&&shiftTap.ready(reinterpret_cast<uintptr_t>(ctx))&&!secure;if(key==VK_SHIFT&&!toggle)shiftTap.reset();*eaten=toggle;return S_OK;}
-  STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(phraseNotice.visible())phraseNotice.hide();if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();
+  STDMETHODIMP OnKeyDown(ITfContext *ctx,WPARAM key,LPARAM,BOOL *eaten)override{if(key==VK_BACK&&!(GetKeyState(VK_CONTROL)&0x8000)&&!(GetKeyState(VK_MENU)&0x8000))phraseNotice.rejectByDelete();else phraseNotice.hide();if(key!=VK_OEM_PERIOD&&key!=VK_DECIMAL)clearLiteralDigit();
     if(!eaten)return E_POINTER;*eaten=FALSE;if(modifiedBackspace(key)){clearAutomaticPair();return S_OK;}if(key==VK_SHIFT){shiftTap.press(reinterpret_cast<uintptr_t>(ctx),secure||GetKeyState(VK_CONTROL)<0||GetKeyState(VK_MENU)<0||GetKeyState(VK_LWIN)<0||GetKeyState(VK_RWIN)<0);return S_OK;}shiftTap.otherKey();if((key==VK_DELETE||key==VK_BACK)&&clipboardVisible&&!clipboardPolicy.deleteHeld){clipboardPolicy.hideForDelete(clipboardOffer.sequence);retireClipboard();*eaten=TRUE;return S_OK;}if(key!=VK_DELETE&&key!=VK_BACK){retireClipboard(GetClipboardSequenceNumber());}if(!accepts(ctx,key))return S_OK;ComPtr<ITfContext> retained=ctx;bool handled=false;HRESULT result=E_FAIL;
     pairOwnRequest=true;
     HRESULT hr=request(ctx,TF_ES_SYNC|TF_ES_READWRITE,[this,retained,key,&handled](TfEditCookie cookie){return handleArchivedKey(retained.Get(),cookie,key,&handled);},&result);

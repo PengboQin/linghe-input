@@ -37,7 +37,7 @@ add_executable(LingheLearningDeltaFixture learning_delta_publication.cpp
  "${ACTIVITY}/ContentStore.cpp" "${ACTIVITY}/ContentModel.cpp" "${ACTIVITY}/Json.cpp" "${ACTIVITY}/ArchiveCore.cpp"
  "${ACTIVITY}/GroupProtocol.cpp" "${ACTIVITY}/PairAdmission.cpp"
  "${SYNC}/SecureProtocol.cpp" "${SYNC}/Membership.cpp" "${SYNC}/MembershipWire.cpp")
-target_include_directories(LingheLearningDeltaFixture PRIVATE "${SODIUM_INCLUDE}")
+target_include_directories(LingheLearningDeltaFixture PRIVATE "${SODIUM_INCLUDE}" "${PRIVATE_INPUT_CORE_ROOT}/include")
 target_compile_definitions(LingheLearningDeltaFixture PRIVATE SODIUM_STATIC)
 target_link_libraries(LingheLearningDeltaFixture PRIVATE "${SODIUM_LIBRARY}")
 add_test(NAME LearningDeltaPublication COMMAND LingheLearningDeltaFixture)
@@ -113,3 +113,24 @@ add_executable(LingheInstallerReviewFixture ../installer_review.cpp)
 add_test(NAME InstallerProductReview COMMAND LingheInstallerReviewFixture)
 add_executable(LingheCandidateAnchorFixture ../candidate_anchor_policy.cpp)
 add_test(NAME CandidateAnchorPolicy COMMAND LingheCandidateAnchorFixture)
+
+add_executable(LingheLearningIntentInboxHost learning_intent_inbox.cpp
+ "${ACTIVITY}/ContentStore.cpp" "${ACTIVITY}/ContentModel.cpp" "${ACTIVITY}/Json.cpp" "${ACTIVITY}/ArchiveCore.cpp"
+ "${ACTIVITY}/GroupProtocol.cpp" "${ACTIVITY}/PairAdmission.cpp"
+ "${SYNC}/SecureProtocol.cpp" "${SYNC}/Membership.cpp" "${SYNC}/MembershipWire.cpp")
+target_include_directories(LingheLearningIntentInboxHost PRIVATE "${SODIUM_INCLUDE}" "${PRIVATE_INPUT_CORE_ROOT}/include")
+target_compile_definitions(LingheLearningIntentInboxHost PRIVATE SODIUM_STATIC)
+target_link_libraries(LingheLearningIntentInboxHost PRIVATE "${SODIUM_LIBRARY}")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/learning-inbox")
+add_test(NAME LearningIntentInboxHost COMMAND LingheLearningIntentInboxHost "${CMAKE_CURRENT_BINARY_DIR}/learning-inbox/forget-fixture")
+
+add_executable(LingheCommittedLearningHost committed_learning.cpp)
+add_test(NAME CommittedLearningHost COMMAND LingheCommittedLearningHost)
+
+add_executable(LingheRecentBatchHost recent_batch.cpp "${ACTIVITY}/RecentModel.cpp" "${ACTIVITY}/ContentModel.cpp" "${ACTIVITY}/Json.cpp" "${ACTIVITY}/ArchiveCore.cpp" "${SYNC}/SecureProtocol.cpp" "${SYNC}/Membership.cpp" "${SYNC}/MembershipWire.cpp")
+target_include_directories(LingheRecentBatchHost PRIVATE "${SODIUM_INCLUDE}" "${PRIVATE_INPUT_CORE_ROOT}/include")
+target_compile_definitions(LingheRecentBatchHost PRIVATE SODIUM_STATIC)
+target_link_libraries(LingheRecentBatchHost PRIVATE "${SODIUM_LIBRARY}")
+add_test(NAME RecentBatchHost COMMAND LingheRecentBatchHost)
+add_test(NAME GroupClientRecentBatch COMMAND LingheGroupClientFixture --recent-batch-only)
+set_tests_properties(GroupClientRecentBatch PROPERTIES WORKING_DIRECTORY "${PROJECT_ROOT}" RUN_SERIAL TRUE ENVIRONMENT "PRIVATE_INPUT_FIXTURE_PYTHON=${Python3_EXECUTABLE};PRIVATE_INPUT_FIXTURE_CANONICAL_SERVER=1" TIMEOUT 180)

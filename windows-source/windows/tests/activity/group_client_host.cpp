@@ -16,7 +16,7 @@ namespace fs=std::filesystem;
 
 namespace {fs::path fixtureRoot;
 std::map<std::string,private_input::DeviceIdentity>identities;
-bool offline=false,recency=true,legacyConditional=false;
+bool offline=false,recency=true,legacyConditional=false,failLegacyLearning=false;
 unsigned recentRequests=0,recentOwnEnvelopes=0,recentPeerEnvelopes=0;uint64_t recentDownloadJSONBytes=0;Json lastRecentHello,lastRecentPull;
 std::string loseAck,lastPushedEvent;GroupClient* raceSource=nullptr;bool supersedeAck=false;
 uint64_t tick=100000;
@@ -88,6 +88,7 @@ return Json::parse(std::string((std::istreambuf_iterator<char>(in)),{}),8388608)
 }
 Json post(const std::string&origin,const std::string&path,const Json&body){endpoint(origin);
 if(offline)throw JsonError("HTTPS request unavailable");
+if(failLegacyLearning&&(path.find("/recency")!=std::string::npos||path.find("/events")!=std::string::npos))throw JsonError("synthetic legacy learning outage");
 if(!recency&&path.find("/recency")!=std::string::npos)throw HTTPError(404,"not_found");
 if(path.find("/recency")!=std::string::npos){++recentRequests;auto raw=unbase64(body.at("body").str());auto payload=Json::parse(std::string(raw.begin(),raw.end()),8388608);auto op=body.at("operation").num();if(legacyConditional)require(!payload.has("knownEvent")&&!payload.has("knownSnapshots"),"old server received conditional fields");if(op==1)lastRecentHello=payload;if(op==3)lastRecentPull=payload;}
 const bool isPull=path.rfind("/v1/groups/",0)==0&&path.size()>4&&path.substr(path.size()-4)=="/rpc"&&body.at("operation").num()==2;
@@ -130,7 +131,7 @@ try{f();
 void queueRecoveryTests();
 void automaticPublicationTests();
 void conditionalRecencyTests();
-void cloudLearningTests();
+void clipboardDuringLearningDeferralTests();void recentBatchPersistenceTests();void cloudLearningTests();void cloudRemoteRelearnTests();
 void fixturePathBoundaryChecks(){
  auto inside=[](const fs::path&p){return p.lexically_normal().generic_string().find(fixtureRoot.lexically_normal().generic_string()+"/")==0;};
  check(inside(fixtureRoot/"owner"/"content-v1.dpapi"));
@@ -147,12 +148,13 @@ fixtureRoot=fs::absolute("build/windows-activity/group-fixture");
 fixturePathBoundaryChecks();
 if(argc==2&&std::string(argv[1])=="--path-boundary-only"){std::cout<<"fixture paths: native separators, lexical normalization, own-root children, sibling-prefix and dot-dot escapes passed\n";return 0;}
 const bool clipboardOnly=argc==2&&std::string(argv[1])=="--clipboard-only";
+const bool batchOnly=argc==2&&std::string(argv[1])=="--recent-batch-only";
 const bool cloudOnly=argc==2&&std::string(argv[1])=="--cloud-only";
 const bool conditionalOnly=argc==2&&std::string(argv[1])=="--recency-conditional-only";
-check(argc==1||clipboardOnly||conditionalOnly||cloudOnly);
+check(argc==1||clipboardOnly||conditionalOnly||cloudOnly||batchOnly);
 check(!fs::exists(fixtureRoot));
 fs::create_directories(fixtureRoot);
-try{if(cloudOnly){cloudLearningTests();fs::remove_all(fixtureRoot);return 0;}if(conditionalOnly){conditionalRecencyTests();fs::remove_all(fixtureRoot);return 0;}if(clipboardOnly){automaticPublicationTests();fs::remove_all(fixtureRoot);return 0;}auto aPath=fixtureRoot/"owner",bPath=fixtureRoot/"new",cPath=fixtureRoot/"third";
+try{if(batchOnly){recentBatchPersistenceTests();clipboardDuringLearningDeferralTests();fs::remove_all(fixtureRoot);return 0;}if(cloudOnly){cloudLearningTests();cloudRemoteRelearnTests();fs::remove_all(fixtureRoot);return 0;}if(conditionalOnly){conditionalRecencyTests();fs::remove_all(fixtureRoot);return 0;}if(clipboardOnly){automaticPublicationTests();fs::remove_all(fixtureRoot);return 0;}auto aPath=fixtureRoot/"owner",bPath=fixtureRoot/"new",cPath=fixtureRoot/"third";
 GroupClient a(aPath),b(bPath),c(cPath);
 a.recordContent("ni hao","你好");
 check(!a.contentSnapshot().at("learningEnabled").boolean()&&a.contentSnapshot().at("archive").at("entries").items.size()==1);
@@ -239,3 +241,5 @@ throw;
 #include "recent_conditional_cases.inc"
 
 #include "cloud_learning_cases.inc"
+
+#include "recent_batch_cases.inc"

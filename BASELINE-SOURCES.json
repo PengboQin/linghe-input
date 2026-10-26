@@ -1,9 +1,1 @@
-{
-  "schemaVersion": 1,
-  "tag": "v0.2026.10.25-preview.2",
-  "mainSnapshot": "Current reviewed source; equals Android63, Windows066, Mac85 and iOS102 builds",
-  "overrides": [],
-  "usage": "All packages in this release were built from the main snapshot; no override directory is needed.",
-  "privateSigningAndOperatorURLsSanitized": true,
-  "cleanRoomOrByteIdenticalRebuildClaimed": false
-}
+{"schemaVersion": 1, "tag": "v0.2026.10.26-preview.1", "mainSnapshot": "Current reviewed source; equals Android69, Mac88, Windows074 and iOS105 builds", "overrides": [], "usage": "All packages in this release were built from the main snapshot; no override directory is needed.", "privateSigningAndOperatorURLsSanitized": true, "cleanRoomOrByteIdenticalRebuildClaimed": false}

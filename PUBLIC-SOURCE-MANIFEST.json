@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1792976022,
-  "member_count": 1177,
-  "uncompressed_bytes": 146734019,
+  "created_at_unix": 1793037885,
+  "member_count": 1199,
+  "uncompressed_bytes": 146914231,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -222,6 +222,11 @@
       "count": 1
     },
     {
+      "file": "windows-source/core/tests/unmatched_remainder.cpp",
+      "kind": "canonical_core_forwarding_include",
+      "count": 1
+    },
+    {
       "file": "windows-source/core/tests/windows_legacy_export.cpp",
       "kind": "canonical_core_forwarding_include",
       "count": 1
@@ -257,7 +262,7 @@
     {
       "path": "android/app/src/main/AndroidManifest.xml",
       "bytes": 1943,
-      "sha256": "2b7a7e76860e2599d48b67099c34a27518d66fd72f87298e4c5f6384054e4b88"
+      "sha256": "dc014b6574df437853a6efde533d980660175cdb39a2be402f2374858851471f"
     },
     {
       "path": "android/app/src/main/cpp/CMakeLists.txt",
@@ -336,8 +341,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoPhrase.java",
-      "bytes": 4521,
-      "sha256": "67cb586a5bd1556f69aceb9db1eb0c25777b62f739f9500447a940d162de1064"
+      "bytes": 4761,
+      "sha256": "0fa2644b42d180d842feb5393fc69f69bf01006b9861b8427fb576f70574eaee"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutomaticReadingAdmission.java",
@@ -436,8 +441,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningRankSnapshot.java",
-      "bytes": 6197,
-      "sha256": "3b2c68af1d49bc08b306ae584cb8dfca6a6338e41a2ee25e715fad3f99f0a29d"
+      "bytes": 6952,
+      "sha256": "1e1e0bf79ffd89bb3fc917937f6ec6a7fedb213cb0fb00f1f58b7a7b4d8ad097"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningState.java",
@@ -446,13 +451,13 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningStore.java",
-      "bytes": 8043,
-      "sha256": "6715d83a072b9613c4b8c38833112061d73371c7af48be14f48a91be33e0067b"
+      "bytes": 8654,
+      "sha256": "4d800ff0af24bbe2a6ee2d16fffb3f9c0e4ebde78cce1aa2b01ce5e1769a2d8e"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CloudLearningSync.java",
-      "bytes": 12068,
-      "sha256": "c437e20f1bf494b0edc6c1e6ab969e557011910aea16f07d88685487df5c3b42"
+      "bytes": 15407,
+      "sha256": "dcee13f5b1abebf224691a8dafdd400e7687a33066d391a7f11574f6918495dc"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CoalescedWork.java",
@@ -566,8 +571,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningCoordinator.java",
-      "bytes": 16377,
-      "sha256": "c2fc3c2fa2cd219e338e694d6367e3c67bdea386e5fcf10cd8da12352d57b03c"
+      "bytes": 17365,
+      "sha256": "199658a36dc25ca5824ae797b938231fc588262325f0e4c3abd2cb6aa01dfef3"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningDeltaDiagnostics.java",
@@ -591,8 +596,13 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningModel.java",
-      "bytes": 13572,
-      "sha256": "be846a33b10d37fc6d7e681047387827894391fa7ece2ba23a9dbe524ee48632"
+      "bytes": 15185,
+      "sha256": "40098ac4b316624344246c289b64c736c73ecf5b10943f9a0d841e2bd6d80dd4"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/LearningRelearnGate.java",
+      "bytes": 1114,
+      "sha256": "5004a61cb1e01b080f6eb5d98e85b194f6f2d01096eea5f946c5b5c15d2e1abf"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearningSnapshotFile.java",
@@ -616,8 +626,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LingheInputService.java",
-      "bytes": 122366,
-      "sha256": "b3e7cc7f205390a5bee92de218eafd122cf884756f598d7899fb02dd9f4bd1a9"
+      "bytes": 124769,
+      "sha256": "43a34c75ebb85272eb25d679d4faad7ab3dbb5991d5a5de2303125ad827d0703"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LosslessJson.java",
@@ -681,8 +691,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/PersonalReset.java",
-      "bytes": 4375,
-      "sha256": "40afff1fd935ff15afb41bca8b95b435bcec551062ab59592d79ad6c0a40e0d6"
+      "bytes": 4473,
+      "sha256": "4b71a06112a23c9c0fbff17d18302eacc3ab6266e6952c86f794084778998815"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/PinyinCorrector.java",
@@ -877,7 +887,7 @@
     {
       "path": "android/tests/AndroidManifest.xml",
       "bytes": 3499,
-      "sha256": "60100e91dcedf0137dfae73cf9c2f62fa9833701a44f1c1feed391e5d0440ce4"
+      "sha256": "6ba3895fc74c5f1162f10ab810135d518a16ee85e706103b188d23e4682d5df0"
     },
     {
       "path": "android/tests/cli/CliAppleParity15.java",
@@ -948,6 +958,11 @@
       "path": "android/tests/cli/CliRimeZeroRoundtrip.java",
       "bytes": 6484,
       "sha256": "5819ef5d298d109f61a39eb95b8b5437377a669ff7bd6dc72b3b0e915f0e3c5f"
+    },
+    {
+      "path": "android/tests/cli/CloudForgetConsistencyTest.java",
+      "bytes": 6579,
+      "sha256": "6d4c99f7409b245024022253e1430ae010dad821afdfdb0f4ddfe013cc524058"
     },
     {
       "path": "android/tests/cli/LearningCapacityOldConsumerTest.java",
@@ -1141,8 +1156,8 @@
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/AutoPhraseForgottenTest.java",
-      "bytes": 3545,
-      "sha256": "4716051e62a2cfcd04f7b11cbd855aa1f6f9ae42b3204427fc0fad2bbaa23d61"
+      "bytes": 4145,
+      "sha256": "fd206b63e9ff12430247bf68b727abd559d1dd3b33b8f0575790b925d5dc1f72"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/AutoPhraseTrackerTest.java",
@@ -1196,13 +1211,18 @@
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/LearningForgetTest.java",
-      "bytes": 1640,
-      "sha256": "32d2532edb13e9149e0ec52a0e020923c424d7e0729a9f9aea3c9a6a9028b94b"
+      "bytes": 3394,
+      "sha256": "5bcfa69662c9dd3e02e502993241ecab176f0b2d2a8da7b63c21267ad79fd37c"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/LearningProof.java",
       "bytes": 2458,
       "sha256": "1b3ebf686a31ea71895097c5cc0d82b7ba3424b3dc7a62bfe15ccd80da03d531"
+    },
+    {
+      "path": "android/tests/java/live/linghe/privateinput/LearningRelearnGateTest.java",
+      "bytes": 2598,
+      "sha256": "39ab94e85c7e2bf448b375ce91dad2e4a4631f6e14e7381e9e45aaa9425f17c2"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/LexiconAcceptanceActivity.java",
@@ -1262,7 +1282,7 @@
     {
       "path": "apple/project.yml",
       "bytes": 12389,
-      "sha256": "2feb556a1bf1a21faa5ea75957de21e95f99f4e6290c3186e4e264324d889cb9"
+      "sha256": "9f7648cb8cc927a80f31522ba8e7b3fd660a9d6de36c60b534cb8330d056ff08"
     },
     {
       "path": "apple/Shared/ActivityArchiveController.swift",
@@ -1336,8 +1356,8 @@
     },
     {
       "path": "apple/Shared/DeviceSyncSession.swift",
-      "bytes": 69434,
-      "sha256": "cd026cdbf26772942e409537f6445f5276623ca9d1a483c1884c299a9931bc6f"
+      "bytes": 72642,
+      "sha256": "7045e7ae32ff8a71250dc32e612918b6badbead700f711a29b3888f5c4dbeb85"
     },
     {
       "path": "apple/Shared/InlineComposition.swift",
@@ -1386,18 +1406,18 @@
     },
     {
       "path": "apple/Shared/LocalLearningCoordinator.swift",
-      "bytes": 64756,
-      "sha256": "bb9f0e070a1be0a168e4b24f05d4dd801b5fc1d65e3178cb0a59e04a06c6c2de"
+      "bytes": 67891,
+      "sha256": "56c0a2ffc6cb66df973ed9ff2897d1a2f375e8fcde5de9210bd5bb6760598b67"
     },
     {
       "path": "apple/Shared/NativeEngine.swift",
-      "bytes": 201117,
-      "sha256": "6abb0f7743af14bbf630e1925e230655a56496a2e9657d97611c80bdc709dcf8"
+      "bytes": 205289,
+      "sha256": "a90697c0fc8d22d16c3329eecc12dae6bd31b75cdec60e9d5d7efcfe27f5e05b"
     },
     {
       "path": "apple/Shared/PersonalDataReset.swift",
-      "bytes": 5985,
-      "sha256": "fac8979d29ebbf58d0a2fb70a7b7167413ed78e6563f973be29530a5b0c7f4e7"
+      "bytes": 6816,
+      "sha256": "1390f12b43f7a55be902d1a595f9bdb46b82edeff98f2d922642775cffdb5f8b"
     },
     {
       "path": "apple/Shared/PersonalLexiconSettings.swift",
@@ -1761,8 +1781,8 @@
     },
     {
       "path": "apple/iOS/Keyboard/KeyboardViewController.swift",
-      "bytes": 154361,
-      "sha256": "18bb69b94bd454eee2666f9d660586f2843e8c456c537b7e1d3eb928194ca7fa"
+      "bytes": 155046,
+      "sha256": "e44ff55ad127ac98cbcc4e6daddeba10c95a9307a3ce8f50e61b50a792578dc1"
     },
     {
       "path": "apple/iOS/Keyboard/PrivacyInfo.xcprivacy",
@@ -1811,8 +1831,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/InputController.swift",
-      "bytes": 27907,
-      "sha256": "536cbf0db827fa86fb6edd75a3e391a9f86d35d37ab71e71be7461bce83ca10d"
+      "bytes": 28266,
+      "sha256": "9025c3cd24b0a8e3a53021d92dd02f3ff7fa0106d886eb7dddab92a53aa2eaf3"
     },
     {
       "path": "apple/macOS/InputMethod/LingheCraneLightTemplate.tiff",
@@ -1866,8 +1886,8 @@
     },
     {
       "path": "apple/macOS/InputMethod/MacPhraseNotice.swift",
-      "bytes": 3258,
-      "sha256": "88ebb5027f52ffc78307b9ff60fe964c130c00d8d6778fab69047b149199bea1"
+      "bytes": 3471,
+      "sha256": "e3266d0fba5c00578d5a04543d670b6d2416aec66acbd02ab18626999ea6b05a"
     },
     {
       "path": "apple/macOS/InputMethod/MacSemanticRanker.swift",
@@ -1976,8 +1996,8 @@
     },
     {
       "path": "core/src/private_input.cpp",
-      "bytes": 74994,
-      "sha256": "ef05ff978a9a75173a98317aa5a14dce300914bf97d4a975a038870d911b0707"
+      "bytes": 76132,
+      "sha256": "e79c5c6b73115d9421b949872c15b71f0580e8e7630e254712fe262116551b8e"
     },
     {
       "path": "core/tests/auto_phrase_engine.cpp",
@@ -2031,8 +2051,8 @@
     },
     {
       "path": "core/tests/mainland_candidate_policy.cpp",
-      "bytes": 5871,
-      "sha256": "0a94cce952f6b5889f2826fd6f4331060f2badc3f7736d74c36b2a700b5c65b6"
+      "bytes": 6207,
+      "sha256": "a6d8389ba9891372b2fadbcf99bfc0bfca1cf8a834e49575e6c2837226066352"
     },
     {
       "path": "core/tests/modern_reading_native.cpp",
@@ -2078,6 +2098,11 @@
       "path": "core/tests/shared_core_contract.cpp",
       "bytes": 1558,
       "sha256": "cb7e5a574f5327278a5626506cbe419e845407dd593f5a3e1bafbabcaa7ca59e"
+    },
+    {
+      "path": "core/tests/unmatched_remainder.cpp",
+      "bytes": 1750,
+      "sha256": "e367893bffbd2abd75413114e51433e6d1048df08d99841e7fa39c5cd9604ea5"
     },
     {
       "path": "core/tests/windows_legacy_export.cpp",
@@ -2691,8 +2716,8 @@
     },
     {
       "path": "scripts/tests/apple_cloud_permission_runtime.swift",
-      "bytes": 5709,
-      "sha256": "c8f2565525f74e3c7ea3d6404041d681a9d6da4dd7195320bb2fddb82e28b6f5"
+      "bytes": 5832,
+      "sha256": "99e285b02267d827af9c3b609fcf6f3a659da84e1641262555e2c5f5fe3b8b57"
     },
     {
       "path": "scripts/tests/apple_cloud_seed_runtime.swift",
@@ -3015,14 +3040,19 @@
       "sha256": "6aaed7650fdd56a12e66aa084c78755f3126b33d1c8644a4f40d287ae36c7463"
     },
     {
+      "path": "server/cloud_learning/personal.py",
+      "bytes": 5827,
+      "sha256": "8fd12b8d6f5a0dda23bee2ece08529dc354a2dd9096c87cae409c54a83909e95"
+    },
+    {
       "path": "server/cloud_learning/production.py",
       "bytes": 990,
       "sha256": "a1ca3891618c870f604194fa99b14da7fbbb4a02a5f133b3f92d4a724eff2915"
     },
     {
       "path": "server/cloud_learning/service.py",
-      "bytes": 37866,
-      "sha256": "ee57d48f7058d0651999cceaf7d985604100a0c82c4b820f9a8ed41541ae7171"
+      "bytes": 38092,
+      "sha256": "1a52c5b336e2f73428196c09f38f78e383e991dc3799bd9ea15498ab4044fed4"
     },
     {
       "path": "server/cloud_learning/worker.py",
@@ -3068,6 +3098,11 @@
       "path": "server/cloud_learning/tests/test_learning.py",
       "bytes": 19236,
       "sha256": "6c6c9ff83c232973087b9643d1b101838556cb2f640fd09cd49131e68dc64540"
+    },
+    {
+      "path": "server/cloud_learning/tests/test_personal.py",
+      "bytes": 4652,
+      "sha256": "167b198377e45d4b4a94af470f64cf3c7ee985ba89696ef48553ac7ea853f236"
     },
     {
       "path": "server/deploy/README.md",
@@ -3177,12 +3212,12 @@
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningClient.swift",
       "bytes": 14773,
-      "sha256": "307d39c60fb5a2ea9fb6da80b7ecf81444f124df629d4f9d0b00947335dffb12"
+      "sha256": "0a3d2cdec640e9d8ca2247d7d509bb47ec82c3294daf9c42cde4020fedb4f971"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningComponents.swift",
-      "bytes": 16296,
-      "sha256": "24f621e380745b47a27f767578ccb237db1288cbdfa8c1722fecab0982515843"
+      "bytes": 16678,
+      "sha256": "603f279f5ec4a325d1533ed923bfe5eb55193e27bf9a8dc2f2c2a7e79328e521"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningReplica.swift",
@@ -3198,6 +3233,11 @@
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudLearningSyncPass.swift",
       "bytes": 2438,
       "sha256": "c83b5e209467bc2f8a2d4d8b04334742cb36280e6779c1d1a461f9d41ec191c1"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/CloudPersonalRecords.swift",
+      "bytes": 4551,
+      "sha256": "dd11af2d74b9ee1518cb70bbeb83787f69a77bcd481c03c0044100d1bebc52da"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ContinuationLexicon.swift",
@@ -3226,8 +3266,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Learning.swift",
-      "bytes": 16106,
-      "sha256": "226de89c70cb9465395c634037115f629a7746844407f10810e405851aca2262"
+      "bytes": 17499,
+      "sha256": "cc694132a5eec3aec07a4bc0f4d54284c2f5aaf402f8dd7f3571ef4b16019d0e"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/LearningCapacityProfiles.swift",
@@ -3336,8 +3376,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/RimeCheckpoint.swift",
-      "bytes": 9065,
-      "sha256": "e1dfde294b6a82461f88902309b5f321b4efb083305621f97c4d33ef3ec73627"
+      "bytes": 9803,
+      "sha256": "3f6ff5f25c9a54050d7eb5eb9262ee7b933d9c22a6c202e101873edc084d9006"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/SecureMessage.swift",
@@ -3435,6 +3475,11 @@
       "sha256": "cce6a064b2276a68931499fc4538b71c1e42bd75f85ca3ef410f515d8fdecbd4"
     },
     {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/CloudPersonalRecordsTests.swift",
+      "bytes": 2151,
+      "sha256": "3b16b88be3666dc76b3359c21fb12e9c173a127f308a74d2818d338aa2edd56c"
+    },
+    {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/DesktopCandidateLayoutTests.swift",
       "bytes": 1510,
       "sha256": "eae591033b07f53b5ce8c99a350152173043015fb6bdf4c30d464dafed7b3c31"
@@ -3461,8 +3506,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningForgetTests.swift",
-      "bytes": 1834,
-      "sha256": "011e2393c9ef66dc8cfadfe83009e4f47b873e8e01f389086818031da2df00af"
+      "bytes": 6875,
+      "sha256": "0ef39f935d3a23fb7e22bc56379da0e87a1ff0aba1a04b84eaf8515d9ddb4bc4"
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/LearningImportJournalTests.swift",
@@ -3895,6 +3940,11 @@
       "sha256": "e049ddf57cf1d65d514750061a5a33c8360602552050ee64c2bfa5937017a754"
     },
     {
+      "path": "windows-source/core/tests/unmatched_remainder.cpp",
+      "bytes": 127,
+      "sha256": "230ccd121913b2e413e94cd28523e4fa00e9c33a2518b3704f717fdf172ad4a6"
+    },
+    {
       "path": "windows-source/core/tests/windows_legacy_export.cpp",
       "bytes": 129,
       "sha256": "646a82faa67258941b07bfd39c75da43dc1b18e41c840cc086d674a312ea0126"
@@ -4276,23 +4326,23 @@
     },
     {
       "path": "windows-source/windows/activity/AutomaticClipboardWorker.inc",
-      "bytes": 15695,
-      "sha256": "b9f07c2cad6450793d59d9e2f4352941fa40f2829281189a24c6fde645c5b87a"
+      "bytes": 15744,
+      "sha256": "5a8647c9a54200fa1444433c0e8b2a1d807fe241fbd457c57acae1c1d94ba9bb"
     },
     {
       "path": "windows-source/windows/activity/CMakeLists.txt",
-      "bytes": 6196,
-      "sha256": "de7cc66c351ea2adf00d6da5f7f3480da5d64182c5549db93e0e4fd9bda75634"
+      "bytes": 7223,
+      "sha256": "e76b210f8bbc6ea6caa46bfa749d5ae556f2b22bd4920c6a47355f07be723800"
     },
     {
       "path": "windows-source/windows/activity/CaptureIPC.cpp",
-      "bytes": 14201,
-      "sha256": "9e23260509dfc31c874f16c6f2cbcc80e98b6a52bab3d3423c67284293035767"
+      "bytes": 18016,
+      "sha256": "740f4aa348b7cf83833111597730ecf2dc7c043c38b29775412be0d2de308018"
     },
     {
       "path": "windows-source/windows/activity/CaptureIPC.h",
-      "bytes": 1714,
-      "sha256": "4e04b1ff10941e0548d7862fae2bc0708d3e052b7f3bfb947e7f121784ecb15f"
+      "bytes": 2690,
+      "sha256": "c8c768b7dbe929318dd1c25cf1cce0b8d1ea8c91f06ca05f4818f30d58aeb9ab"
     },
     {
       "path": "windows-source/windows/activity/CaptureWire.h",
@@ -4361,8 +4411,8 @@
     },
     {
       "path": "windows-source/windows/activity/CloudLearningShadow.cpp",
-      "bytes": 16315,
-      "sha256": "ce630a8ea32ba7e56d953efd545d6f73a41b167c94aba7b62b2f007a2a72be7c"
+      "bytes": 16988,
+      "sha256": "e3ed5173ff343944fbac8449b2fa5da4144d1e7c60612e953cdd411470556bfa"
     },
     {
       "path": "windows-source/windows/activity/CloudLearningShadow.h",
@@ -4386,13 +4436,13 @@
     },
     {
       "path": "windows-source/windows/activity/ContentStore.cpp",
-      "bytes": 24195,
-      "sha256": "1f61ac5905e456a2fe1528cc9fc6cad43ab8fe2f43d7f5b4c644197721871f5e"
+      "bytes": 26484,
+      "sha256": "74ef44454acee157bb21bf2c119681e7ed72bed78036d944033dfd43fbaceff4"
     },
     {
       "path": "windows-source/windows/activity/ContentStore.h",
-      "bytes": 2376,
-      "sha256": "b3d74f19def89c497365dda16baf3c3e436e8274d32c7f70347877f8ab06258e"
+      "bytes": 2427,
+      "sha256": "74dc8cb31651e05af5991bbb81ced3ae08de228a5018efcef4bf8066a66595b2"
     },
     {
       "path": "windows-source/windows/activity/DecisionCapture.h",
@@ -4411,18 +4461,18 @@
     },
     {
       "path": "windows-source/windows/activity/GroupClient.cpp",
-      "bytes": 38862,
-      "sha256": "1a801bcd273035a2d44fcdd52e4dafb9a8a2eb7b5bbaf6631dd5eaa234cd44df"
+      "bytes": 41354,
+      "sha256": "85745de23ca901d26f1e23a06f8540f763fda1bebbfb88f0014fbc013e971b87"
     },
     {
       "path": "windows-source/windows/activity/GroupClient.h",
-      "bytes": 3924,
-      "sha256": "f717b365de77222eb16684b09d4fb49cf80d537cbc6dcbccf4facba84d43c6e3"
+      "bytes": 4411,
+      "sha256": "f63c6f6afee55a23d8af4ae367645559dbedcb031fda449a4e826daf026284a5"
     },
     {
       "path": "windows-source/windows/activity/GroupClientCloud.inc",
-      "bytes": 12461,
-      "sha256": "574aae2278c60e02fe691ae93a8f81c63ec32232bb7c8713e68f86df22f68b4d"
+      "bytes": 17290,
+      "sha256": "cb54d548a2f42cdaba76e1b39ab0f8a16f2a8843ff3b3f48a5059f9a47f0cf3c"
     },
     {
       "path": "windows-source/windows/activity/GroupProtocol.cpp",
@@ -4451,28 +4501,28 @@
     },
     {
       "path": "windows-source/windows/activity/LearningIPC.cpp",
-      "bytes": 5434,
-      "sha256": "cd4544162796a3040f97f35276843b47ca408de0354ca7ec3435d6b8630d3b82"
+      "bytes": 5469,
+      "sha256": "96bc5007e196f4a2f3371d32feb3c4d5077bd9f3dfa9f903d85dccd49af3ab3e"
     },
     {
       "path": "windows-source/windows/activity/LearningIPC.h",
-      "bytes": 2234,
-      "sha256": "bbbe7fbe15e73ec1757702d6e603987b7dd12b3b29f870f4bd3f8768194d0b1a"
+      "bytes": 2261,
+      "sha256": "578da7877938081ddd7a4ea1e851d4ac203cd82e48dc922f7e7d35e85a9f5da8"
     },
     {
       "path": "windows-source/windows/activity/LearningInbox.h",
-      "bytes": 7104,
-      "sha256": "74bff6528ce64a220a2a5e6b7fc6a30485b7ff184917a1f0e36e682f2e39016a"
+      "bytes": 7986,
+      "sha256": "a8cd37eea8c564eaeae36b2072fb19439f89b7e968e9f7435eed12e02c1e4469"
     },
     {
       "path": "windows-source/windows/activity/LearningIntent.h",
-      "bytes": 608,
-      "sha256": "83ae9091769d0e6a64b6a613d318359a7ae88c2537cb2a55524c9efa2b57857a"
+      "bytes": 721,
+      "sha256": "91b4689e424e6dfb4333e9e87a38c0724aa1046d52ac85af87d7603586d71778"
     },
     {
       "path": "windows-source/windows/activity/LearningIntentWire.h",
-      "bytes": 1877,
-      "sha256": "afc34b53db90319f4f16b95368e57571c08684bc84e6d8cb7d963387b7a898d6"
+      "bytes": 2377,
+      "sha256": "c5701769fa57e9ecd54bdd2f84d47c2dd7dd11360db8e733d7fa23c0e5310831"
     },
     {
       "path": "windows-source/windows/activity/LearningReadingAdmission.h",
@@ -4521,13 +4571,13 @@
     },
     {
       "path": "windows-source/windows/activity/RecentModel.cpp",
-      "bytes": 7203,
-      "sha256": "5187ba1a5323713bf19bfbba0808865812bf8fff40cea612260cc593a6448965"
+      "bytes": 9337,
+      "sha256": "678784f30116edd5109b398d04b4d1c2a0a7b52a5925682a5d7febcc1550912b"
     },
     {
       "path": "windows-source/windows/activity/RecentModel.h",
-      "bytes": 547,
-      "sha256": "b4c6a8406b8f7679eb1114b2926b7ea22b4303eeb4241b1e679e3d8b573202d3"
+      "bytes": 959,
+      "sha256": "74d302b31effdb2c771b9ea331e7521d68da51bc9c9833872416acd4d93d1335"
     },
     {
       "path": "windows-source/windows/activity/RecentProtocol.cpp",
@@ -4546,8 +4596,8 @@
     },
     {
       "path": "windows-source/windows/activity/SettingsPane.inc",
-      "bytes": 9362,
-      "sha256": "1aceb6bad66f82086590d9b89eea9f580f54368ff49db58d1a4b6c37bc2584eb"
+      "bytes": 14226,
+      "sha256": "179de6a0efa60c16ce31ffa3535a1fd284fa17a3e8475e835765befe9c6a7233"
     },
     {
       "path": "windows-source/windows/activity/SourceContext.h",
@@ -4561,8 +4611,8 @@
     },
     {
       "path": "windows-source/windows/activity/Worker.cpp",
-      "bytes": 66721,
-      "sha256": "e58cb4c384c27779378bb2859e1d7ca971b20d1743f8d77ddca0d4bd645d623c"
+      "bytes": 70348,
+      "sha256": "40be0b3518b7fcf13b1a5b3e07c17dd6443cd7d4a08d9a250df06adad6effce4"
     },
     {
       "path": "windows-source/windows/cmake/SharedCore.cmake",
@@ -4601,8 +4651,8 @@
     },
     {
       "path": "windows-source/windows/installer/PayloadManifest.h",
-      "bytes": 7605,
-      "sha256": "c979e85faa44c0031c11715d092bfd4a26363b332ad2302c4354aa985be42473"
+      "bytes": 8109,
+      "sha256": "5c1d52423ad784c7a59114e9540216f761a16e596a233ede1233524414f44a30"
     },
     {
       "path": "windows-source/windows/installer/ProtectedJournalFile.h",
@@ -4636,13 +4686,13 @@
     },
     {
       "path": "windows-source/windows/installer/Settings.cpp",
-      "bytes": 15717,
-      "sha256": "057081e24841938a61cc89df8b128bee56fe4711b79799dbe317a9a48e505f00"
+      "bytes": 16293,
+      "sha256": "5ea210771db82bd6427c501818844ea3912a2967bbbe871fc07e34eaabf6d2a3"
     },
     {
       "path": "windows-source/windows/installer/Setup.cpp",
       "bytes": 49309,
-      "sha256": "f25a80e0ddc06bc5db69d9957f6d6378194ec237e4f0bf389596deaf4d14e78f"
+      "sha256": "5b452c4a80074251922ba5ae71d296bfa3573a47a61075a9a8ba2f37c6345134"
     },
     {
       "path": "windows-source/windows/installer/UpgradeState.h",
@@ -4710,6 +4760,11 @@
       "sha256": "05eb2346d428a7c56bbf1f7cab5dde7d03046f87a3406810a4b47ea7ab8abddb"
     },
     {
+      "path": "windows-source/windows/src/CommittedLearning.h",
+      "bytes": 1240,
+      "sha256": "350937b674e752c8cc829c07b45a72281c9d4c469d15753951e34366e8280ad9"
+    },
+    {
       "path": "windows-source/windows/src/DesktopPreferences.h",
       "bytes": 2174,
       "sha256": "23748fa8eb7f2febaf93ca8fa91f3e37ad87c7e32b6b6332b3a3691486de238a"
@@ -4751,8 +4806,13 @@
     },
     {
       "path": "windows-source/windows/src/PhraseNotice.h",
-      "bytes": 4936,
-      "sha256": "a488ec7b8a12f97926fb77c3408b5d5937dfa40ed1900efbd15854c004cbee5c"
+      "bytes": 8386,
+      "sha256": "29926b72d2f4dde4a5753cc014759db14c8b709e84a39176c5929c2854b538b4"
+    },
+    {
+      "path": "windows-source/windows/src/PhraseNoticePolicy.h",
+      "bytes": 519,
+      "sha256": "025b548ea32663168b9f8ad79831a736517ec7b387623e6c54972c67c125a353"
     },
     {
       "path": "windows-source/windows/src/PrivateInputTSF.h",
@@ -4791,8 +4851,8 @@
     },
     {
       "path": "windows-source/windows/src/TextService.cpp",
-      "bytes": 79155,
-      "sha256": "8c3457cecc512d9ab70bf9cc0399b9306ab455fc1df789c40f08c0f39e700f63"
+      "bytes": 80476,
+      "sha256": "82a1e50562ff3e4a830cc3d79455c3323d2af892756ffe47a352b25e9ff4646a"
     },
     {
       "path": "windows-source/windows/src/TsfBranding.h",
@@ -4925,6 +4985,16 @@
       "sha256": "f1db3628075a7884584cb831990441fea7f8bb2b64dea65e4331d51dfdee4d17"
     },
     {
+      "path": "windows-source/windows/tests/installed_phrase_acceptance.cpp",
+      "bytes": 14632,
+      "sha256": "0233f5c87c351d6f3c7d06b381a3e9a2d9a6e112a6543425a7adefcf9aba0af5"
+    },
+    {
+      "path": "windows-source/windows/tests/installed_stability_acceptance.cpp",
+      "bytes": 8700,
+      "sha256": "c6a2afd9207210b8427ce9949f5cd086921e0319a1e8af2e9471e8ee5027cbd6"
+    },
+    {
       "path": "windows-source/windows/tests/installer_failure_feedback.cpp",
       "bytes": 1405,
       "sha256": "8a71995c44712c2e88a71dde3ddb52e393821c4c58a8d8875437fd8c45a6d413"
@@ -4983,6 +5053,16 @@
       "path": "windows-source/windows/tests/payload_manifest.cpp",
       "bytes": 2746,
       "sha256": "267de102ccbcb94814768027e511c03c1165ff1ea0aa9256c25462a5aca00085"
+    },
+    {
+      "path": "windows-source/windows/tests/phrase_notice_async.cpp",
+      "bytes": 4610,
+      "sha256": "a00e08e5a54dd3400b2023c4e21f77fbcf2759f04a0364c287f5aa102b36a6d5"
+    },
+    {
+      "path": "windows-source/windows/tests/phrase_notice_commit_probe.cpp",
+      "bytes": 2735,
+      "sha256": "6d940814982153b1cabbf57617306ffbca146de7695c676eeeb46510a46eee09"
     },
     {
       "path": "windows-source/windows/tests/physical_quality.cpp",
@@ -5081,18 +5161,23 @@
     },
     {
       "path": "windows-source/windows/tests/activity/CMakeLists.txt",
-      "bytes": 9164,
-      "sha256": "0cfb951710f0a0478c8003e6b2e44b78003dd9d9f5a2e0dc6d5370d4bc91f153"
+      "bytes": 11058,
+      "sha256": "9ff3cb650568d3b19e8e28f6738bca9b9311ad5b024bbe78ad18972a290cc23b"
     },
     {
       "path": "windows-source/windows/tests/activity/FixtureIPC.cpp",
-      "bytes": 2079,
-      "sha256": "185326802ef91a9345fd096f176b0ef376f4aa028086109538c1ba0e366f9f6c"
+      "bytes": 2344,
+      "sha256": "51365600e2bf6d76610ace38657ed8f9b027bac1a9ce56b7a6590ac0536f985f"
     },
     {
       "path": "windows-source/windows/tests/activity/FixtureIPC.h",
       "bytes": 269,
       "sha256": "af88c502cb5fdd163d26fd6562cb3d70c8ad9eb5c2b9c9e32b696f4517f953b0"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/SyntheticSnapshot.h",
+      "bytes": 1362,
+      "sha256": "7be6c726ffb0a63f2dcc681b8503f467e3e66b3914f9e0e92290b54fb6dcb4cb"
     },
     {
       "path": "windows-source/windows/tests/activity/admission.cpp",
@@ -5131,8 +5216,8 @@
     },
     {
       "path": "windows-source/windows/tests/activity/cloud_learning_cases.inc",
-      "bytes": 6818,
-      "sha256": "e794a59de4e9bf2d42be426d6ac17f3d98fd457d7b3724afec7df0de64f3aa30"
+      "bytes": 13575,
+      "sha256": "a527422bce95baee054e93a54b728f02ab18dfe0f21cb078947400232548c9f7"
     },
     {
       "path": "windows-source/windows/tests/activity/cloud_learning_rank.cpp",
@@ -5143,6 +5228,11 @@
       "path": "windows-source/windows/tests/activity/cloud_learning_shadow.cpp",
       "bytes": 12269,
       "sha256": "e74d8eee62944919e1d41034a1ab5723b7febfb16400c472de36537c546d3f23"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/committed_learning.cpp",
+      "bytes": 1370,
+      "sha256": "efeeecd59308e4c3d5389d75ff37404f5b5a7da6338a21e2aac29d7a0e97c8c9"
     },
     {
       "path": "windows-source/windows/tests/activity/content.cpp",
@@ -5161,8 +5251,8 @@
     },
     {
       "path": "windows-source/windows/tests/activity/group_client_host.cpp",
-      "bytes": 14907,
-      "sha256": "7c67ecf63b7e5dc27fd8a47419bd35666d513d56f092c6e717d59ddb1431c2f8"
+      "bytes": 15470,
+      "sha256": "a4fb818492506032776324430c3d239a3fd2de07c907432dc416eb293acbc4a5"
     },
     {
       "path": "windows-source/windows/tests/activity/input_diagnostics.cpp",
@@ -5173,6 +5263,11 @@
       "path": "windows-source/windows/tests/activity/join_probe.cpp",
       "bytes": 1852,
       "sha256": "5295056655242112d96e0945d68965f9bf91b821463cf5920a582bab7ad47e7f"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/learning_burst_pipe.cpp",
+      "bytes": 6649,
+      "sha256": "b7a76c4d363b6d732ed7408926f1fb951118f70605ef86e59dfba6dc9e1ca30a"
     },
     {
       "path": "windows-source/windows/tests/activity/learning_capacity_boundary.cpp",
@@ -5186,8 +5281,18 @@
     },
     {
       "path": "windows-source/windows/tests/activity/learning_intent_inbox.cpp",
-      "bytes": 17130,
-      "sha256": "7780b8025ff4519e667461370f6eb955df2b29bd43fee05485979ea5be22d3b3"
+      "bytes": 24966,
+      "sha256": "c808b6120261a7c700f074af9231fe3106dd3ee59252dfbb47623b91cff83d89"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/learning_large_pipe.cpp",
+      "bytes": 5637,
+      "sha256": "c639a525bd2b7aa311dc81ef682840b8958a81c35f5e24bd32c646b21fb2e67e"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/learning_pipe_acceptance.cpp",
+      "bytes": 9808,
+      "sha256": "32683e0bbc0455837bfb6243c79d5d46edf87bd509a4e43bde881eaa4cfb1143"
     },
     {
       "path": "windows-source/windows/tests/activity/learning_projection_capacity.cpp",
@@ -5218,6 +5323,16 @@
       "path": "windows-source/windows/tests/activity/recent.cpp",
       "bytes": 4896,
       "sha256": "33bdc104538fc959b92d8acfdbb8d11bf2000839c51cba0728cabdf3242bcecc"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/recent_batch.cpp",
+      "bytes": 2979,
+      "sha256": "b9b1faae99cbe19f2a7385a79b97808a8b48917dc366fe65ca3caa6b085387a3"
+    },
+    {
+      "path": "windows-source/windows/tests/activity/recent_batch_cases.inc",
+      "bytes": 3153,
+      "sha256": "4807ad49c06c8f86097929d49c2a842e683f7d7b72840b5951e41f2798da8cee"
     },
     {
       "path": "windows-source/windows/tests/activity/recent_conditional_cases.inc",
@@ -6046,23 +6161,23 @@
     },
     {
       "path": "BASELINE.md",
-      "bytes": 1712,
-      "sha256": "2a333c9ffcf5687a5b99d1023d8f812032c582bbfa3188fd436a7c45ffc935a9"
+      "bytes": 1911,
+      "sha256": "a320aa08808acf7bbb69b5cc76882cb075b9b4f3c5377a4d07eb984827e652c2"
     },
     {
       "path": "BASELINE-PACKAGES.json",
-      "bytes": 1091,
-      "sha256": "96edd5935089b13bd470368f93e6e5c22dcf4cf8900cd50fee6cf5b315a7a3cd"
+      "bytes": 1277,
+      "sha256": "39266d5eeb8df3febb2865a73f0c19c077f0cf1de4515b832a928db9c173d9b9"
     },
     {
       "path": "BASELINE-SOURCES.json",
-      "bytes": 392,
-      "sha256": "c3fd7c0195cb47b40d9441dc45f453e738b5c377fc62641535901315d95cb479"
+      "bytes": 375,
+      "sha256": "6f492352f1c428eb73f0d2bbe7bedcf517a53d067e532bfa0662a85f1dc15181"
     },
     {
       "path": "windows-source/SHARED-VERSIONS.json",
-      "bytes": 21228,
-      "sha256": "c473449ce5b77792ce9a470e014e5cc52dc6f6256a57a2c8cbc0ff315046155c"
+      "bytes": 21500,
+      "sha256": "b3b3a8d726a63594ec592fe34302b40133026127f95ee9bee517c8660fddd686"
     },
     {
       "path": "windows-source/docs/stages/P1/dependencies.lock.json",
@@ -6440,6 +6555,12 @@
       {
         "consumer": "windows-source/windows/tests/activity/group_client_host.cpp",
         "dependency": "windows-source/windows/tests/activity/cloud_learning_cases.inc",
+        "kind": "local-include-fragment",
+        "included": true
+      },
+      {
+        "consumer": "windows-source/windows/tests/activity/group_client_host.cpp",
+        "dependency": "windows-source/windows/tests/activity/recent_batch_cases.inc",
         "kind": "local-include-fragment",
         "included": true
       }

@@ -65,7 +65,7 @@ public struct CloudLearningRequest: Codable {
     public let operation: UInt8
     public let body, signature: Data
     public func canonical() throws -> Data {
-        guard version == 1, (1...7).contains(operation), body.count <= 524288 else { throw CloudLearningError.invalid }
+        guard version == 1, (1...9).contains(operation), body.count <= 524288 else { throw CloudLearningError.invalid }
         var bytes = Data("PrivateInput/cloud-learning-request/v1\0".utf8)
         bytes.append(version); bytes.appendUUID(group); bytes.appendUUID(sender); bytes.appendUUID(nonce)
         bytes.appendBE(issuedAt); bytes.append(operation); bytes.append(contentsOf: SHA256.hash(data: body)); return bytes

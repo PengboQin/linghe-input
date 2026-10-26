@@ -1006,6 +1006,12 @@ actor DeviceSyncSession {
                 try cloudMigration?.stage(delta, policy: policy); try persist()
                 if !delta.hasMore { break }
             }
+            // P5 personal records: isolated so an older server or one failed
+            // record batch never blocks the model publication below.
+            do { try await synchronizePersonalRecords(client: client, generation: status.generation, consentVersion: consent.version,
+                     installation: installation, group: group, identity: identity, check: check) }
+            catch CloudLearningError.http(let code) where code == 400 || code == 404 {}
+            catch { cloudPhase = "个人词条待重试" }
             if let state = cloudMigration, state.ready {
                 try AppleCloudLearningRankState.publish(state, membershipEpoch: membershipEpoch, directory: directory, now: now)
                 let preferences = UserDefaults(suiteName: LocalLearningCoordinator.groupID)
@@ -1024,4 +1030,36 @@ actor DeviceSyncSession {
             cloudRetryAfter = now + 60
         }
     }
+    /// Pull first (CRDT merge never overwrites a newer local record), then upload
+    /// only records whose content the server has not acknowledged yet.
+    private func synchronizePersonalRecords(client: CloudLearningClient, generation: UInt64, consentVersion: UInt64, installation: UUID,
+                                            group: UUID, identity: DeviceIdentity, check: () throws -> Void) async throws {
+        guard let directory = PersonalLexiconLocation.directory else { return }
+        let file = base.appendingPathComponent("cloud-personal-v1.json")
+        let scope = "\(group.uuidString)/\(identity.device.uuidString)/\(installation.uuidString)/\(generation)/\(consentVersion)/\(PersonalDataReset.generation)"
+        var progress = (try? JSONDecoder().decode(CloudPersonalProgress.self, from: Data(contentsOf: file))) ?? CloudPersonalProgress(scope: scope)
+        if progress.scope != scope { progress = CloudPersonalProgress(scope: scope) }
+        func persist() throws { try check(); try JSONEncoder().encode(progress).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+        let lexicon = PersonalLexiconStore(directory: directory)
+        for _ in 0..<16 {
+            let page = try await client.pullPersonal(after: progress.pulled, generation: generation, consentVersion: consentVersion,
+                                                     installation: installation, group: group, identity: identity, now: now); try check()
+            if !page.records.isEmpty {
+                let before = try lexicon.load(), after = try lexicon.mergeSynchronized(try CloudPersonalProgress.incoming(page.records))
+                if before.entries != after.entries { NotificationCenter.default.post(name: .init("PrivateInputPersonalLexiconChanged"), object: nil) }
+                for row in page.records { progress.acked[row.entry.id.uuidString] = try CloudPersonalProgress.digest(row.record) }
+            }
+            progress.pulled = page.nextVersion; try persist()
+            if !page.hasMore { break }
+        }
+        let pending = try progress.pending(lexicon.syncSnapshot())
+        for start in stride(from: 0, to: pending.count, by: 256) {
+            let batch = Array(pending[start..<min(start + 256, pending.count)])
+            _ = try await client.putPersonal(batch, generation: generation, consentVersion: consentVersion, installation: installation,
+                                             group: group, identity: identity, now: now); try check()
+            for row in batch { progress.acked[row.id] = try CloudPersonalProgress.digest(row.record) }
+            try persist()
+        }
+    }
+
 }

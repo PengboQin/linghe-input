@@ -28,12 +28,19 @@ enum PersonalDataReset {
         return value
     }
     static var notification:CFNotificationName {CFNotificationName("live.linghe.privateinput.personal-reset" as CFString)}
-    static func request(reason:String) throws {
+    /// Both stores can hold this personal deduplication history: the standard
+    /// domain is the announcement path's fallback when the app group is absent.
+    private static func clearAutoPhraseAnnouncements(preferences:UserDefaults?,fallbackPreferences:UserDefaults) {
+        preferences?.removeObject(forKey:"auto-phrase-announced")
+        fallbackPreferences.removeObject(forKey:"auto-phrase-announced")
+    }
+    static func request(reason:String,preferences:UserDefaults?=UserDefaults(suiteName:LocalLearningCoordinator.groupID),fallbackPreferences:UserDefaults = .standard) throws {
         guard let root=directory else {throw InputDataError.invalidRecord}
         try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true)
         let generation=UUID().uuidString
         try Data(generation.utf8).write(to:root.appendingPathComponent(marker),options:.atomic)
-        let prefs=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
+        let prefs=preferences
+        clearAutoPhraseAnnouncements(preferences:prefs,fallbackPreferences:fallbackPreferences)
         prefs?.set(generation,forKey:"clipboard-once-reset-generation")
         prefs?.set(reason,forKey:"privacy-departed-reason")
         prefs?.set(false,forKey:"learning-sharing-enabled");prefs?.set(false,forKey:"clipboard-sharing-enabled")
@@ -55,16 +62,17 @@ enum PersonalDataReset {
         let current=epoch ?? generation,applied=try? String(contentsOf:base.appendingPathComponent("privacy-applied-v1.txt"),encoding:.utf8)
         return current != "initial" && applied != current
     }
-    static func applyLocal(base:URL,epoch:String?=nil,shared:URL?=directory) throws {
+    static func applyLocal(base:URL,epoch:String?=nil,shared:URL?=directory,preferences:UserDefaults?=UserDefaults(suiteName:LocalLearningCoordinator.groupID),fallbackPreferences:UserDefaults = .standard) throws {
         let current=epoch ?? generation
         if current != "initial",needsApply(base:base,epoch:current) {
             try LocalLearningCoordinator.withAuthorityLock(base: base, wait: true) {
+            clearAutoPhraseAnnouncements(preferences:preferences,fallbackPreferences:fallbackPreferences)
             let names=["Rime","nine-choice-memory-v1.json","nine-choice-memory-v2.json","nine-choice-memory-v3.json","learning-checkpoint-v1.json","learning-import-pending-v1.json","learning-runtime-v2.json","hidden-native-maintenance-v1.txt","learning-native-phase-v2.txt","learning-recency-v2.json","learning-recency-anchor-v2.json","cloud-learning-replica-v1.json","cloud-learning-components-v1.json","cloud-learning-ranking-v1.json","CloudLearningProducers","local-replica-id.txt","Shared","personal-lexicon-v1.json","personal-replica-id.txt","symbol-usage-v1.json"]
             for name in names {try remove(base.appendingPathComponent(name))}
             for item in (try? FileManager.default.contentsOfDirectory(at:base,includingPropertiesForKeys:nil)) ?? [] {
                 if item.lastPathComponent.hasPrefix("Checkpoint-"),UUID(uuidString:String(item.lastPathComponent.dropFirst(11))) != nil {try remove(item)}
             }
-            UserDefaults.standard.removeObject(forKey:"symbol-usage-v1")
+            fallbackPreferences.removeObject(forKey:"symbol-usage-v1")
             if let shared {try removeSharedData(shared)}
             }
         }

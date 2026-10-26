@@ -71,15 +71,30 @@ final class LearningModel {
  void setPinned(String reading,String text,boolean pinned,String device)throws Exception {
   Entry old=get(reading,text);require(!old.deleted,"Cannot pin deleted entry");BigInteger highest=BigInteger.ZERO;for(Entry entry:entries.values())highest=highest.max(entry.pinVersion.sequence);require(highest.compareTo(LosslessJson.UINT64_MAX)<0,"Pin version exhausted");put(new Entry(old.reading,old.text,old.generation,false,old.counts,pinned,new Version(highest.add(BigInteger.ONE),device)));
  }
- void resetFrequency(String reading,String text)throws Exception {
-  Entry old=get(reading,text);require(!old.deleted&&old.generation.compareTo(LosslessJson.UINT64_MAX)<0,"Reset generation exhausted");put(new Entry(old.reading,old.text,old.generation.add(BigInteger.ONE),false,Collections.emptyMap(),old.pinned,old.pinVersion));
+ void resetFrequency(String reading,String text)throws Exception {resetFrequency(reading,text,BigInteger.ZERO);}
+ void resetFrequency(String reading,String text,BigInteger knownCloudGeneration)throws Exception {
+  Entry old=get(reading,text);BigInteger base=old.generation.max(knownCloudGeneration);require(base.compareTo(LosslessJson.UINT64_MAX)<0,"Reset generation exhausted");put(new Entry(old.reading,old.text,base.add(BigInteger.ONE),false,Collections.emptyMap(),old.pinned,old.pinVersion));
  }
  /** Forget a term everywhere: a deletion one generation above both the local and the
   *  known cloud generation, so the shared model publishes a tombstone that stale producers cannot revive. */
  void forget(String reading,String text,BigInteger knownCloudGeneration)throws Exception {
   Entry old=get(reading,text);BigInteger base=old.generation.max(knownCloudGeneration==null?BigInteger.ZERO:knownCloudGeneration);
   require(base.compareTo(LosslessJson.UINT64_MAX)<0,"Forget generation exhausted");
-  put(new Entry(old.reading,old.text,base.add(BigInteger.ONE),true,Collections.emptyMap(),false,old.pinVersion));
+  put(new Entry(old.reading,old.text,base.add(BigInteger.ONE),true,Collections.emptyMap(),old.pinned,old.pinVersion));
+ }
+ /** Keep an owned zero component for a local control, including a never-learned term. */
+ void claimControl(String reading,String text,String device)throws Exception {
+  Entry old=get(reading,text);LinkedHashMap<String,Long> counts=new LinkedHashMap<>(old.counts);counts.put(canonical(device),counts.getOrDefault(canonical(device),0L));
+  Version pin=old.pinVersion;boolean pinned=old.pinned;
+  if(old.deleted&&pinned){BigInteger highest=BigInteger.ZERO;for(Entry entry:entries.values())highest=highest.max(entry.pinVersion.sequence);require(highest.compareTo(LosslessJson.UINT64_MAX)<0,"Pin version exhausted");pin=new Version(highest.add(BigInteger.ONE),device);pinned=false;}
+  put(new Entry(old.reading,old.text,old.generation,old.deleted,counts,pinned,pin));
+ }
+ /** Only an explicit new selection may cross a deletion fence; old exports cannot. */
+ boolean selectedAgain(String reading,String text,String device,BigInteger cloudGeneration,boolean cloudDeleted)throws Exception {
+  if(!learningEnabled)return false;Entry old=get(reading,text);
+  if(!old.deleted&&(!cloudDeleted||old.generation.compareTo(cloudGeneration)>0))return false;
+  BigInteger base=old.generation.max(cloudGeneration);require(base.compareTo(LosslessJson.UINT64_MAX)<0,"Restore generation exhausted");
+  put(new Entry(old.reading,old.text,base.add(BigInteger.ONE),false,Collections.singletonMap(canonical(device),1L),old.pinned,old.pinVersion));return true;
  }
  void restore(String id)throws Exception {
   Entry old=get(id);if(old==null||!old.deleted)return;require(old.generation.compareTo(LosslessJson.UINT64_MAX)<0,"Restore generation exhausted");put(new Entry(old.reading,old.text,old.generation.add(BigInteger.ONE),false,Collections.emptyMap(),old.pinned,old.pinVersion));

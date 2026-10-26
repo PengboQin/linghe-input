@@ -97,8 +97,17 @@ public struct RimeLearningCheckpoint: Codable {
     public mutating func setPinned(reading: String, text: String, pinned: Bool, device: String) throws {
         try model.setPinned(reading: reading, text: text, pinned: pinned, device: device)
     }
-    public mutating func resetFrequency(reading: String, text: String) throws { try model.resetFrequency(reading: reading, text: text) }
-    public mutating func forget(reading: String, text: String, knownCloudGeneration: UInt64 = 0) throws { try model.forget(reading: reading, text: text, knownCloudGeneration: knownCloudGeneration) }
+    public mutating func resetFrequency(reading: String, text: String, knownCloudGeneration: UInt64 = 0) throws { try model.resetFrequency(reading: reading, text: text, knownCloudGeneration: knownCloudGeneration) }
+    /// Only an explicit candidate selection may revive a forgotten term. Native
+    /// exports and old peer snapshots never call this path.
+    @discardableResult public mutating func relearnForgotten(reading: String, text: String, device: String, knownCloudGeneration: UInt64 = 0, cloudDeleted: Bool = false) throws -> Bool {
+        var next = self
+        guard try next.model.relearnDeleted(reading: reading, text: text, device: device,
+            knownCloudGeneration: knownCloudGeneration, cloudDeleted: cloudDeleted) else { return false }
+        try next.validateState(); self = next
+        return true
+    }
+    public mutating func forget(reading: String, text: String, knownCloudGeneration: UInt64 = 0, device: String? = nil) throws { try model.forget(reading: reading, text: text, knownCloudGeneration: knownCloudGeneration, device: device) }
     public var pendingResets: [LearningEntry] { model.entries.values.filter { !$0.deleted && $0.generation > (appliedGenerations?[$0.id] ?? 0) } }
     // Call ONLY after the actual engine import succeeded and its export was
     // re-read while input was quiescent. Imported counts are not local typing.

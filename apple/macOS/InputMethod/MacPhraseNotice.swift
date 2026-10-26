@@ -10,7 +10,7 @@ final class MacPhraseNotice: NSObject {
     private let window = NoticeWindow(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
     private let label = NSTextField(labelWithString: "")
     private let undo = NSButton(title: "撤销", target: nil, action: nil)
-    private var onUndo: (() -> Void)?
+    private var onUndo: (() -> Bool)?
     private(set) var phrase: String?
 
     override init() {
@@ -31,7 +31,7 @@ final class MacPhraseNotice: NSObject {
         window.contentView = surface
     }
 
-    func show(phrase: String, caret: NSRect, onUndo: @escaping () -> Void) {
+    func show(phrase: String, caret: NSRect, onUndo: @escaping () -> Bool) {
         self.phrase = phrase; self.onUndo = onUndo
         let palette = MacThemePreferences.current.palette(dark: NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
         window.contentView?.layer?.backgroundColor = palette.background.cgColor
@@ -50,5 +50,11 @@ final class MacPhraseNotice: NSObject {
 
     func hide() { phrase = nil; onUndo = nil; window.orderOut(nil) }
 
-    @objc private func undoPressed() { let action = onUndo; hide(); action?() }
+    /// Delete right after the phrase: drop the learning, no retry UI.
+    func rejectByDelete() { let undo = onUndo; hide(); _ = undo?() }
+
+    @objc private func undoPressed() {
+        if onUndo?() == true { hide() }
+        else { label.stringValue = "撤销未完成，请重试" }
+    }
 }

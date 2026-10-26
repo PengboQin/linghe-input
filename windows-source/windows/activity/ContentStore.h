@@ -13,7 +13,7 @@ public:
  bool learningEnabled()const{return state.at("learningEnabled").boolean();}bool clipboardEnabled()const{return state.at("clipboardEnabled").boolean();}
  void configure(const Id&,uint64_t,bool learning,bool clipboard,bool preserveLocal=false);void record(const std::string&reading,const std::string&text,const std::string&device);
  void bindLearningOwner(const LearningOwner&);void setLocalLearningEnabled(bool);
- Json learningAuthority()const;LearningIntentResult acceptLearningIntent(const LearningIntent&,uint64_t now);
+ Json learningAuthority()const;LearningIntentResult acceptLearningIntent(const LearningIntent&,uint64_t now,uint64_t knownGeneration=0,bool knownDeleted=false);
  size_t retryLearningIntents(uint64_t now,size_t budget=16);
  void upgradeLearningCapacity(const std::string&id,uint64_t version);
  bool mustReload()const{return reloadRequired;}

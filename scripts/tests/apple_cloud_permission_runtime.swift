@@ -45,17 +45,17 @@ struct LearningRefreshSource { let name: String; let url: URL; let maximum: Int;
         prefs.set(true, forKey: "learning-sharing-enabled"); prefs.set(true, forKey: "cloud-learning-enabled")
         let fresh = try LocalLearningCoordinator(base: root.appendingPathComponent("NoLegacyAnchor"), rankingPreferences: prefs)
         let candidateSnapshot = state.snapshot(producer: UUID(), entries: [], uptime: ProcessInfo.processInfo.systemUptime)
-        fresh.stageCloudSnapshot(candidateSnapshot, group: group, epoch: 1)
+        fresh.stageCloudSnapshot(candidateSnapshot, group: group, epoch: 1, expectedRevision: fresh.rankingRevision)
         check(!fresh.scoreSnapshot.isCurrent()) // staging cannot move visible candidates
         fresh.beginComposition()
         check(fresh.scoreSnapshot.isCurrent()); check(fresh.scoreSnapshot.scores == candidateSnapshot.scores)
         prefs.set(UInt64(2), forKey: "cloud-learning-epoch")
         check(!fresh.scoreSnapshot.isCurrent()) // epoch invalidates cached/frozen source
-        fresh.stageCloudSnapshot(candidateSnapshot, group: group, epoch: 1); fresh.beginComposition()
+        fresh.stageCloudSnapshot(candidateSnapshot, group: group, epoch: 1, expectedRevision: fresh.rankingRevision); fresh.beginComposition()
         check(!fresh.scoreSnapshot.isCurrent())
         prefs.set(UInt64(1), forKey: "cloud-learning-epoch")
         prefs.set(false, forKey: "cloud-learning-enabled")
-        fresh.stageCloudSnapshot(candidateSnapshot, group: group, epoch: 1); fresh.beginComposition()
+        fresh.stageCloudSnapshot(candidateSnapshot, group: group, epoch: 1, expectedRevision: fresh.rankingRevision); fresh.beginComposition()
         check(!fresh.scoreSnapshot.isCurrent())
         print("{\"assertions\":\(assertions),\"nativeWrites\":0,\"realUserPreferencesTouched\":false}")
     }

@@ -75,7 +75,7 @@
     },
     {
       "path": "core/src/private_input.cpp",
-      "main_sha256": "ef05ff978a9a75173a98317aa5a14dce300914bf97d4a975a038870d911b0707",
+      "main_sha256": "e79c5c6b73115d9421b949872c15b71f0580e8e7630e254712fe262116551b8e",
       "windows_sha256": "09dcc2126bf32ffa2f7cb7d30b25528ec6718fd3440ecc9fc08395ac48c4b744",
       "same_bytes": false
     },
@@ -141,7 +141,7 @@
     },
     {
       "path": "core/tests/mainland_candidate_policy.cpp",
-      "main_sha256": "0a94cce952f6b5889f2826fd6f4331060f2badc3f7736d74c36b2a700b5c65b6",
+      "main_sha256": "a6d8389ba9891372b2fadbcf99bfc0bfca1cf8a834e49575e6c2837226066352",
       "windows_sha256": "bdb77d6bf4b217090f1823fc5780fd5518b2f9c71a2d0dc0ed7f2e54ebe73506",
       "same_bytes": false
     },
@@ -197,6 +197,12 @@
       "path": "core/tests/shared_core_contract.cpp",
       "main_sha256": "cb7e5a574f5327278a5626506cbe419e845407dd593f5a3e1bafbabcaa7ca59e",
       "windows_sha256": "83a7352f8850ed513de99b8c43aff68dcd11fd15e4cf56812e494c1045d20137",
+      "same_bytes": false
+    },
+    {
+      "path": "core/tests/unmatched_remainder.cpp",
+      "main_sha256": "e367893bffbd2abd75413114e51433e6d1048df08d99841e7fa39c5cd9604ea5",
+      "windows_sha256": "08a6a781b1c024c4cf9fe5c97531ea5241705baa44f83f120f5bae7a6215cf2d",
       "same_bytes": false
     },
     {

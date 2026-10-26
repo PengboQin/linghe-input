@@ -1,5 +1,6 @@
 #include "GroupClient.h"
 #include "PairAdmission.h"
+#include "LearningInbox.h"
 #include "LegacyLearning.h"
 #include "ClipboardLiveProtocol.h"
 #include "CloudLearningShadow.h"
@@ -8,6 +9,9 @@
 #include <sodium.h>
 #include <algorithm>
 #include <cmath>
+#include <chrono>
+#include <fstream>
+#include <ctime>
 namespace private_input::activity {
 namespace {Data raw(const Key&k){return Data(k.begin(),k.end());}}
 GroupClient::GroupClient(const std::filesystem::path&p):root(p),state(Json::object()){
@@ -58,7 +62,7 @@ bool GroupClient::pollAdmissions(){require(connected(),"not connected");
 protocol::VerifiedMembership GroupClient::verified()const{return anchorOf(state.at("anchor")).verify(protocol::decodeMembershipJSON(state.at("membership").dump()));}
 Key GroupClient::master()const{auto value=unbase64(state.at("groupKey").str(),32);Key key;std::copy(value.begin(),value.end(),key.begin());return key;}
 ContentStore& GroupClient::contentStore(){
- PersonalDataLock lock(root);if(content&&content->mustReload())content.reset();
+ PersonalDataLock lock(root);if(content&&content->mustReload()){content.reset();recentLearningDirty=true;}
  if(!content){auto file=root/L"content-v1.dpapi";content=std::make_unique<ContentStore>(std::filesystem::exists(file)?loadPrivate(file):Json(),[this,file,epoch=personalEpoch()](const Json&j){PersonalDataLock lock(root);auto reset=loadPrivate(root/L"personal-reset-v1.dpapi");require(!reset.at("pending").boolean()&&reset.at("epoch").str()==epoch,"personal epoch changed");savePrivate(file,j);});
   // One explicit, known local migration at current-owner startup, never selected
   // by a remote archive's size or metadata. Unknown schemas fail in constructor.
@@ -68,7 +72,7 @@ ContentStore& GroupClient::contentStore(){
 }
 void GroupClient::noteLegacyMigration(const std::string&status){require(status=="none"||status=="pending"||status=="migrated"||status=="deferred"||status=="retired","migration status");if(!state.has("legacyMigration")||state.at("legacyMigration").str()!=status){state["legacyMigration"]=status;save();}}
 bool GroupClient::legacyCleanupComplete()const{auto reset=loadPrivate(root/L"personal-reset-v1.dpapi");return reset.at("epoch").str()==personalEpoch()&&reset.has("legacyCleanupDone")&&reset.at("legacyCleanupDone").boolean();}
-void GroupClient::importLegacyLearning(const std::string&tsv,const std::string&expectedEpoch){cloudProducerCache.clear();PersonalDataLock lock(root);auto current=loadPrivate(root/L"personal-reset-v1.dpapi");require(!current.at("pending").boolean()&&!current.at("retireLegacy").boolean()&&current.at("epoch").str()==expectedEpoch&&expectedEpoch==personalEpoch(),"legacy personal epoch retired");auto seedFile=root/L"legacy-rime-replica-v1.dpapi";Json seed;if(std::filesystem::exists(seedFile))seed=loadPrivate(seedFile);else{seed=Json::object({{"version",1},{"replica",uuidText(newId())}});savePrivate(seedFile,seed);}require(seed.at("version").num()==1,"legacy replica version");auto archive=legacyLearningSeed(tsv,seed.at("replica").str());auto&s=contentStore();s.mergeRemoteLearning(archive);loadRecent();auto next=recentState;next["archive"]=mergeLegacyRecent(next.at("archive"),s.current().at("archive"),next.at("referenceDay").num());saveRecent(next);}
+void GroupClient::importLegacyLearning(const std::string&tsv,const std::string&expectedEpoch){cloudProducerCache.clear();PersonalDataLock lock(root);auto current=loadPrivate(root/L"personal-reset-v1.dpapi");require(!current.at("pending").boolean()&&!current.at("retireLegacy").boolean()&&current.at("epoch").str()==expectedEpoch&&expectedEpoch==personalEpoch(),"legacy personal epoch retired");auto seedFile=root/L"legacy-rime-replica-v1.dpapi";Json seed;if(std::filesystem::exists(seedFile))seed=loadPrivate(seedFile);else{seed=Json::object({{"version",1},{"replica",uuidText(newId())}});savePrivate(seedFile,seed);}require(seed.at("version").num()==1,"legacy replica version");auto archive=legacyLearningSeed(tsv,seed.at("replica").str());auto&s=contentStore();s.mergeRemoteLearning(archive);markRecentLearningDirty();}
 bool GroupClient::clipboardLiveAuthorityMatches(const Json&j){try{auto m=verified();auto grant=ClipboardLiveGrant::decode(j,unixTime());if(!connected()||!contentStore().clipboardEnabled()||grant.group!=group()||grant.parent!=identity.device||grant.epoch!=m.statement().epoch||grant.personal!=personalEpoch()||grant.endpoint!=state.at("relayEndpoint").str())return false;auto trust=m.trust(protocol::MembershipDomain::clipboard);if(trust.members.size()!=grant.members.size())return false;for(const auto&row:trust.members){auto found=grant.members.find(row.first);if(found==grant.members.end()||found->second.signingPublic!=row.second)return false;}auto automatic=loadPrivate(root/L"auto-clipboard-v1.dpapi"),sharing=loadPrivate(root/L"content-v1.dpapi"),reset=loadPrivate(root/L"personal-reset-v1.dpapi");return automatic.at("enabled").boolean()&&automatic.at("group").str()==j.at("group").str()&&automatic.at("epoch").num()==grant.epoch&&automatic.at("personal").str()==grant.personal&&sharing.at("clipboardEnabled").boolean()&&sharing.at("group").str()==j.at("group").str()&&sharing.at("epoch").num()==grant.epoch&&!reset.at("pending").boolean()&&reset.at("epoch").str()==grant.personal;}catch(...){return false;}}
 Json GroupClient::clipboardLiveAuthority(const std::string&scope,uint64_t issuedAt){
  require(connected()&&contentStore().clipboardEnabled(),"live clipboard sharing disabled");auto m=verified();auto automatic=loadPrivate(root/L"auto-clipboard-v1.dpapi");auto saved=loadPrivate(root/L"content-v1.dpapi");auto personal=personalEpoch();auto reset=loadPrivate(root/L"personal-reset-v1.dpapi");require(!reset.at("pending").boolean()&&reset.at("epoch").str()==personal&&automatic.at("enabled").boolean()&&automatic.at("group").str()==uuidText(group())&&automatic.at("epoch").num()==m.statement().epoch&&automatic.at("personal").str()==personal&&saved.at("clipboardEnabled").boolean()&&saved.at("group").str()==uuidText(group())&&saved.at("epoch").num()==m.statement().epoch,"live clipboard persisted authority changed");auto key=master();try{auto grant=issueClipboardLiveGrant(identity,m,key,state.at("relayEndpoint").str(),scope,personal,issuedAt);sodium_memzero(key.data(),32);return grant.encode();}catch(...){sodium_memzero(key.data(),32);throw;}
@@ -76,39 +80,53 @@ Json GroupClient::clipboardLiveAuthority(const std::string&scope,uint64_t issued
 Json GroupClient::clipboardLiveRevocation(const Json&certificate,uint64_t now){require(connected()&&parseId(certificate.at("group").str())==group()&&parseId(certificate.at("parent").str())==identity.device&&certificate.at("epoch").num()==verified().statement().epoch,"live revoke authority no longer current");return clipboardLiveRevoke(certificate,identity.signingSeed,now);}
 void GroupClient::sendClipboardCompatibility(const std::string&value,const Id&event,uint64_t expiresAt){auto m=verified();auto key=master();try{contentStore().sendCompatibility(value,event,expiresAt,m,identity,key,unixTime());sodium_memzero(key.data(),32);}catch(...){sodium_memzero(key.data(),32);throw;}}
 void GroupClient::consentContent(bool learning,bool clipboard){require(connected(),"not connected");auto&s=contentStore();s.configure(group(),verified().statement().epoch,learning,clipboard);if(!learning){recentReady=false;recentSyncBudget.reset();auto permission=root/L"cloud-learning-permission-v1.dpapi";if(std::filesystem::exists(permission))consentCloudLearning(false);}}
-void GroupClient::changeCandidate(const std::string&reading,const std::string&text,unsigned action){PersonalDataLock lock(root);auto&s=contentStore();s.changeWord(reading,text,uuidText(identity.device),action);loadRecent();auto next=recentState;next["archive"]=mergeLegacyRecent(next.at("archive"),s.current().at("archive"),next.at("referenceDay").num());saveRecent(next);}
+void GroupClient::changeCandidate(const std::string&reading,const std::string&text,unsigned action){PersonalDataLock lock(root);auto&s=contentStore();s.changeWord(reading,text,uuidText(identity.device),action);markRecentLearningDirty();}
 Json GroupClient::learningIntentAuthority(){PersonalDataLock lock(root);return contentStore().learningAuthority();}
 void GroupClient::setLocalLearningEnabled(bool enabled){PersonalDataLock lock(root);contentStore().setLocalLearningEnabled(enabled);}
-LearningIntentResult GroupClient::recordLearningIntent(const LearningIntent&intent,uint64_t now){
- PersonalDataLock lock(root);auto&s=contentStore();const auto&in=s.current().at("learningInbox");const auto id=uuidText(intent.event);Json before;if(!in.at("pending").has(id)&&!in.at("processed").has(id)&&in.at("token").str()==uuidText(intent.token))before=s.current().at("archive");auto result=s.acceptLearningIntent(intent,now);
+LearningIntentResult GroupClient::recordLearningIntent(const LearningIntent&intent,uint64_t now,std::function<void(LearningIntentStatus)>durable){
+ auto clock=[](){return uint64_t(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());};auto started=learningTiming?clock():0;
+ PersonalDataLock lock(root);auto&s=contentStore();const auto&in=s.current().at("learningInbox");const auto id=uuidText(intent.event);const bool fresh=!in.at("pending").has(id)&&!in.at("processed").has(id)&&in.at("token").str()==uuidText(intent.token);ensureRecentLearningScope();auto day=recentDay();Json before;if(fresh)if(auto word=learning_inbox::word(s.current().at("archive"),intent.reading,intent.text))before=*word;bool deleted=false;auto knownGeneration=fresh?cloudTermGeneration(intent.reading,intent.text,&deleted):0;auto result=s.acceptLearningIntent(intent,now,knownGeneration,deleted);if(learningTiming)learningTiming("content",clock()-started,unsigned(result.status));if(durable)durable(result.status);auto recentStarted=learningTiming?clock():0;
  if(result.archiveChanged){
-  // Cumulative archive+receipt already committed atomically. Recency is a
-  // separate existing file: its failure must not turn a durable ACK into retry.
-  try{loadRecent();auto day=recentDay();auto next=recentState;if(day)next["referenceDay"]=std::max(next.at("referenceDay").num(),*day);next["archive"]=confirmRecentDelta(next.at("archive"),before,s.current().at("archive"),uuidText(identity.device),next.at("referenceDay").num(),day);saveRecent(next);recentLearningRepairPending=false;}catch(...){recentLearningRepairPending=true;recentLoaded=false;}
+  if(intent.action==12)cloudSyncBudget.reset();
+  markRecentLearningDirty();
+  if(intent.action==3)if(auto after=learning_inbox::word(s.current().at("archive"),intent.reading,intent.text))if(auto delta=confirmedRecentLocalDelta(before,*after,uuidText(identity.device),day)){
+   // One bounded batch. A failed derived save never blocks authoritative counts;
+   // overflow during failure is recovered as undated, never invented today.
+   const bool overflow=recentLocalDeltas.size()>=512;
+   if(!overflow)recentLocalDeltas.push_back(*delta);else recentLearningRepairPending=true;
+   if(recentLocalDeltas.size()>=512)try{flushRecentLearning(true);if(overflow)recentLearningRepairPending=true;}catch(...){}
+  }
  }
- return result;
+ if(learningTiming&&result.archiveChanged)learningTiming("recent",clock()-recentStarted,unsigned(result.status));return result;
 }
-size_t GroupClient::retryLearningIntents(uint64_t now){PersonalDataLock lock(root);auto&s=contentStore();auto count=s.retryLearningIntents(now);if(count)try{loadRecent();auto next=recentState;next["archive"]=mergeLegacyRecent(next.at("archive"),s.current().at("archive"),next.at("referenceDay").num());saveRecent(next);recentLearningRepairPending=false;}catch(...){recentLearningRepairPending=true;recentLoaded=false;}return count;}
+size_t GroupClient::retryLearningIntents(uint64_t now){PersonalDataLock lock(root);auto count=contentStore().retryLearningIntents(now);if(count)markRecentLearningDirty();return count;}
+void GroupClient::ensureRecentLearningScope(){auto scope=uuidText(activeContentGroup())+"|"+personalEpoch();if(scope==recentLearningScope)return;recentLearningScope=scope;recentLocalDeltas.clear();recentLearningDirty=true;recentState=Json();recentLoaded=false;recentReady=false;}
+void GroupClient::markRecentLearningDirty(){ensureRecentLearningScope();recentLearningDirty=true;recentLearningChangedTick=monotonicMilliseconds();}
+bool GroupClient::flushRecentLearning(bool force){
+ PersonalDataLock lock(root);auto&s=contentStore();ensureRecentLearningScope();if(!recentLearningDirty)return false;auto now=monotonicMilliseconds();if(!force&&now>=recentLearningChangedTick&&now-recentLearningChangedTick<1000)return false;
+ auto began=now;try{loadRecent();auto day=recentDay();auto next=recentState;auto reference=next.at("referenceDay").num();if(day)reference=std::max(reference,*day);for(const auto&d:recentLocalDeltas)reference=std::max(reference,d.day);next["referenceDay"]=reference;next["archive"]=applyRecentLocalDeltas(next.at("archive"),s.current().at("archive"),recentLocalDeltas,uuidText(identity.device),reference);saveRecent(next);recentLocalDeltas.clear();recentLearningDirty=false;recentLearningRepairPending=false;if(learningTiming)learningTiming("recent_flush",(monotonicMilliseconds()-began)*1000,1);return true;}catch(...){recentLearningRepairPending=true;recentLoaded=false;throw;}
+}
 void GroupClient::recordContent(const std::string&reading,const std::string&text){auto authority=learningIntentAuthority();if(!authority.at("enabled").boolean())return;auto now=unixTime();auto result=recordLearningIntent({newId(),parseId(authority.at("token").str()),now,reading,text},now);require(learningDurableAccepted(result.status),"learning intent not durably accepted");}
 
-Json GroupClient::contentSnapshot(){auto&s=contentStore();auto snapshot=s.current();snapshot["recentLearningSaveFailedThisProcess"]=recentLearningRepairPending;snapshot["learningIntentAuthority"]=s.learningAuthority();snapshot["connected"]=connected();snapshot["legacySourceRetired"]=legacyRetired();snapshot["legacyCleanupPending"]=legacyRetired()&&!legacyCleanupComplete();snapshot["personalEpoch"]=personalEpoch();snapshot["legacyMigration"]=state.has("legacyMigration")?state.at("legacyMigration"):Json("none");if(s.current().at("localLearningEnabled").boolean()){loadRecent();auto day=recentDay();auto scores=Json::object();if(day){auto merged=mergeLegacyRecent(recentState.at("archive"),snapshot.at("archive"),*day);for(const auto&e:merged.at("entries").items){auto key=e.at("word").at("reading").str()+char(31)+e.at("word").at("text").str();scores[key]=uint64_t(std::round(recentScore(e,day)*1000000000));}}snapshot["recentScores"]=scores;}auto cloud=cloudRankingView();snapshot["cloudRankActive"]=cloud.kind==Json::Kind::object;if(cloud.kind==Json::Kind::object){snapshot["cloudRankRows"]=cloud.at("rows");snapshot["cloudRankFallback"]=cloud.at("localFallback");snapshot["cloudRankScores"]=cloud.at("scores");snapshot["cloudRankToken"]=cloud.at("token");snapshot["cloudAuthorizationSerial"]=cloud.at("authorizationSerial");snapshot["cloudModelVersion"]=cloud.at("modelVersion");}return snapshot;}
+Json GroupClient::contentSnapshot(){auto&s=contentStore();ensureRecentLearningScope();auto snapshot=s.current();snapshot["recentLearningSaveFailedThisProcess"]=recentLearningRepairPending;snapshot["learningIntentAuthority"]=s.learningAuthority();snapshot["connected"]=connected();snapshot["legacySourceRetired"]=legacyRetired();snapshot["legacyCleanupPending"]=legacyRetired()&&!legacyCleanupComplete();snapshot["personalEpoch"]=personalEpoch();snapshot["legacyMigration"]=state.has("legacyMigration")?state.at("legacyMigration"):Json("none");if(s.current().at("localLearningEnabled").boolean()){loadRecent();auto day=recentDay();auto scores=Json::object();if(day){auto merged=applyRecentLocalDeltas(recentState.at("archive"),snapshot.at("archive"),recentLocalDeltas,uuidText(identity.device),*day);for(const auto&e:merged.at("entries").items){auto key=e.at("word").at("reading").str()+char(31)+e.at("word").at("text").str();scores[key]=uint64_t(std::round(recentScore(e,day)*1000000000));}}snapshot["recentScores"]=scores;}auto cloud=cloudRankingView();snapshot["cloudRankActive"]=cloud.kind==Json::Kind::object;if(cloud.kind==Json::Kind::object){snapshot["cloudRankRows"]=cloud.at("rows");snapshot["cloudRankFallback"]=cloud.at("localFallback");snapshot["cloudRankScores"]=cloud.at("scores");snapshot["cloudRankToken"]=cloud.at("token");snapshot["cloudAuthorizationSerial"]=cloud.at("authorizationSerial");snapshot["cloudModelVersion"]=cloud.at("modelVersion");}return snapshot;}
 void GroupClient::sendSharedText(const std::string&text,bool automatic){auto m=verified();auto key=master();try{contentStore().sendText(text,m,identity,key,unixTime(),automatic);}catch(...){sodium_memzero(key.data(),32);throw;}sodium_memzero(key.data(),32);}
-void GroupClient::syncContent(std::function<void()> transportComplete){
- lastContentSyncObservation={};refresh();auto&s=contentStore();if(!s.learningEnabled()&&!s.clipboardEnabled())return;
+void GroupClient::syncContent(std::function<void()> transportComplete,bool learningMaintenance){
+ if(learningMaintenance)syncCloudShadow(); // Independently budgeted; legacy transport/recency failures cannot starve cloud contribution.
+ lastContentSyncObservation={};if(!learningMaintenance&&!contentStore().clipboardEnabled())return;refresh();auto&s=contentStore();if(!s.learningEnabled()&&!s.clipboardEnabled())return;
  auto m=verified();auto key=master();const auto personal=personalEpoch(),groupID=uuidText(group());const auto membership=m.canonicalBytes();const auto epoch=m.statement().epoch;
- const unsigned domains=(s.learningEnabled()?1:0)|(s.clipboardEnabled()?2:0);
+ const unsigned consentDomains=(s.learningEnabled()?1:0)|(s.clipboardEnabled()?2:0);const unsigned domains=learningMaintenance?consentDomains:(consentDomains&2);if(!domains){sodium_memzero(key.data(),32);return;}
  // Every receive and ACK remains bound to the membership, personal-data epoch
  // and explicit sharing choices observed at the start of this bounded phase.
  // A second process may revoke them while WinHTTP is waiting, so the in-memory
  // flags alone are not sufficient evidence for deleting a server recipient.
  auto scope=[&]{
   require(connected()&&uuidText(group())==groupID&&personalEpoch()==personal&&verified().canonicalBytes()==membership,"content sync scope changed");
-  require(((s.learningEnabled()?1u:0u)|(s.clipboardEnabled()?2u:0u))==domains,"content sync consent changed");
+  require(((s.learningEnabled()?1u:0u)|(s.clipboardEnabled()?2u:0u))==consentDomains,"content sync consent changed");
   auto reset=loadPrivate(root/L"personal-reset-v1.dpapi");require(!reset.at("pending").boolean()&&reset.at("epoch").str()==personal,"personal epoch changed");
   auto savedGroup=loadPrivate(root/L"group.dpapi");auto signedGroup=protocol::decodeMembershipJSON(savedGroup.at("membership").dump());
   require(m.anchor().verify(signedGroup,&m).canonicalBytes()==membership,"content sync membership changed");
   auto saved=loadPrivate(root/L"content-v1.dpapi");
-  require(saved.at("group").str()==groupID&&saved.at("epoch").num()==epoch&&((saved.at("learningEnabled").boolean()?1u:0u)|(saved.at("clipboardEnabled").boolean()?2u:0u))==domains,"content sync persisted scope changed");
+  require(saved.at("group").str()==groupID&&saved.at("epoch").num()==epoch&&((saved.at("learningEnabled").boolean()?1u:0u)|(saved.at("clipboardEnabled").boolean()?2u:0u))==consentDomains,"content sync persisted scope changed");
  };
  try{
   auto drain=[&]{
@@ -131,20 +149,19 @@ void GroupClient::syncContent(std::function<void()> transportComplete){
   // publication. A full group queue otherwise rejects the new outbox forever.
   drain();
   auto push=[&]{for(const auto&wire:s.pending(unixTime())){
-   scope();if(wire.at("domain").num()==2&&allowClipboardPublication)require(allowClipboardPublication(s.automaticEvent(wire.at("event").str())),"clipboard publication locally revoked");auto response=post(state.at("relayEndpoint").str(),"/v1/groups/"+groupID+"/events",wire);
+   if(!learningMaintenance&&wire.at("domain").num()==1)continue;scope();if(wire.at("domain").num()==2&&allowClipboardPublication)require(allowClipboardPublication(s.automaticEvent(wire.at("event").str())),"clipboard publication locally revoked");auto response=post(state.at("relayEndpoint").str(),"/v1/groups/"+groupID+"/events",wire);
    require(response.at("accepted").boolean()&&parseId(response.at("event").str())==parseId(wire.at("event").str()),"content publication ack");scope();s.sent(wire);
   }};
   // A remaining quota error deliberately propagates. Exact pending envelopes
   // stay on disk; the next normal sync can drain two more, without pretending
   // that a partially completed phase was a complete successful sync.
-  push();scope();s.publishLearning(m,identity,key,unixTime());push();
+  push();scope();if(learningMaintenance)s.publishLearning(m,identity,key,unixTime());push();
   for(unsigned pass=1;pass<16;++pass)if(!drain())break;
   // Clipboard transport is durably complete before optional recency upkeep.
   // Notify once per transport phase so cold-drain and newest-row arbitration
   // keep their original complete-pass semantics.
   if(transportComplete){scope();transportComplete();scope();}
-  syncRecent(m,key);
-  syncCloudShadow();
+  if(learningMaintenance)syncRecent(m,key);
  }catch(...){sodium_memzero(key.data(),32);throw;}
  sodium_memzero(key.data(),32);
 }
@@ -156,7 +173,7 @@ void GroupClient::saveRecent(const Json&next){PersonalDataLock lock(root);auto r
 std::optional<uint64_t> GroupClient::recentDay(){if(!recentReady)return {};auto tick=monotonicMilliseconds();if(tick<recentAnchorTick||tick<recentLastTick||tick-recentAnchorTick>604800000){recentReady=false;return {};}auto expected=recentAnchorTime+(tick-recentAnchorTick)/1000,wall=unixTime();if((wall>=expected?wall-expected:expected-wall)>86400){recentReady=false;return {};}recentLastTick=tick;auto day=expected/86400;if(day<recentState.at("referenceDay").num()||day>3000000){recentReady=false;return {};}return day;}
 Json GroupClient::recentRPC(uint8_t operation,const Json&body,const protocol::VerifiedMembership&m){auto request=recentRequest(group(),identity,operation,body,unixTime());auto began=monotonicMilliseconds();auto response=post(state.at("relayEndpoint").str(),"/v1/groups/"+uuidText(group())+"/recency",request);auto ended=monotonicMilliseconds();validateRecentStatus(response,request,m,began,ended);require(response.at("referenceDay").num()>=recentState.at("referenceDay").num(),"recent reference rollback");recentReady=response.at("ready").boolean();if(recentReady){recentAnchorTime=response.at("serverTime").num();recentAnchorTick=recentLastTick=ended;}auto next=recentState;next["referenceDay"]=response.at("referenceDay");if(next.dump()!=recentState.dump())saveRecent(next);return response;}
 void GroupClient::syncRecent(const protocol::VerifiedMembership&m,const Key&key){
- auto&s=contentStore();
+ flushRecentLearning(true);auto&s=contentStore();
  if(!s.learningEnabled()){recentReady=false;recentSyncBudget.reset();return;}
  const auto scope=Json::object({{"endpoint",state.at("relayEndpoint")},{"group",uuidText(group())},{"epoch",m.statement().epoch},{"revision",m.statement().revision},{"personal",personalEpoch()}}).dump();
  // Cloud replaces recent ranking; keep the old full latest-slot protocol as

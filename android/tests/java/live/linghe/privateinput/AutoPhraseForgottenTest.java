@@ -35,7 +35,8 @@ public final class AutoPhraseForgottenTest {
   f.forget("灵鹤","ling he","v1");
   check(f.suppressed("灵鹤","ling he","v1"),"suppressed under the same rank snapshot");
   check(f.suppressed("灵鹤","Ling'He","v1"),"reading normalization matches apostrophe/case");
-  check(!f.suppressed("灵鹤","ling he","v2"),"new rank snapshot ends suppression");
+  check(f.suppressed("灵鹤","ling he","v2"),"unrelated model update cannot undo a local deletion");
+  check(new AutoPhrase.Forgotten(prefs).suppressed("灵鹤","ling he","v3"),"suppression survives owner recreation");
   check(!f.suppressed("凌河","ling he","v1"),"other text unaffected");
   f.forget("另送","ling song",null);
   check(f.suppressed("另送","ling song",null),"suppressed without a cloud rank (recent learning)");
@@ -46,6 +47,12 @@ public final class AutoPhraseForgottenTest {
   check(prefs.getStringSet(AutoPhrase.FORGOTTEN,new HashSet<>()).size()==1,"one record per term");
   for(int i=0;i<AutoPhrase.ANNOUNCED_LIMIT+20;i++)f.forget("词"+i,"ci",null);
   check(prefs.getStringSet(AutoPhrase.FORGOTTEN,new HashSet<>()).size()<=AutoPhrase.ANNOUNCED_LIMIT,"bounded storage");
+  prefs.edit().putString("theme","rose").commit();
+  AutoPhrase.firstAnnouncement(prefs,"测试","ce shi");f.forget("测试","ce shi","v9");
+  check(AutoPhrase.clearPersonalState(prefs),"personal reset committed");
+  check(!f.suppressed("测试","ce shi","v9"),"old-group suppression cleared");
+  check(AutoPhrase.firstAnnouncement(prefs,"测试","ce shi"),"new group can announce again");
+  check("rose".equals(prefs.getString("theme","")),"appearance preserved");
   System.out.println("PASS "+checks+" forgotten-term checks");
  }
 }

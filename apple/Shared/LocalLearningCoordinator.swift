@@ -149,7 +149,9 @@ final class LocalLearningCoordinator {
     private var storedScoreSnapshot = RecencyCoordinator.Snapshot.empty
     private var pendingObservationScore: (RecencyCoordinator.Snapshot, Bool, UUID?, UInt64?)?
     private var pendingCloudSnapshot: (RecencyCoordinator.Snapshot, UUID, UInt64)?
-    func stageCloudSnapshot(_ snapshot: RecencyCoordinator.Snapshot, group: UUID, epoch: UInt64) {
+    private(set) var rankingRevision: UInt64 = 0
+    func stageCloudSnapshot(_ snapshot: RecencyCoordinator.Snapshot, group: UUID, epoch: UInt64, expectedRevision: UInt64) {
+        guard rankingRevision == expectedRevision else { return }
         pendingCloudSnapshot = (snapshot, group, epoch)
     }
     /// O(1) pointer adoption at the next composition start, never reload a
@@ -250,7 +252,8 @@ final class LocalLearningCoordinator {
             completedNativeNonce = completingNative ?? completedNativeNonce
             runtimeCacheVersion = try ObservationFileVersion.read(runtimeURL)
         }
-        pendingObservationScore = nil
+        rankingRevision &+= 1
+        pendingObservationScore = nil; pendingCloudSnapshot = nil
         cloudScoreActive = false
         scoreSnapshot = self.recent?.snapshot(wall: Date().timeIntervalSince1970,
             uptime: ProcessInfo.processInfo.systemUptime, boot: boot) ?? .empty
@@ -293,6 +296,7 @@ final class LocalLearningCoordinator {
     }
     func suspendRecency() {
         recent?.suspend(); scoreSnapshot = .empty
+        rankingRevision &+= 1
         pendingObservationScore = nil; pendingCloudSnapshot = nil
     }
     func invalidateDatedObservation() { recent?.invalidateObservation() }
@@ -333,9 +337,24 @@ final class LocalLearningCoordinator {
         let expectedRuntime = try ObservationFileVersion.read(runtimeURL), expectedLegacy = try ObservationFileVersion.read(stateURL)
         let old = try readJournal(); guard old.pending == nil else { throw LearningSyncFailure.busy }
         var state = old.checkpoint
-        try state.forget(reading: reading, text: text, knownCloudGeneration: knownCloudGeneration)
+        // An explicit forget must outrank the last verified shared model, even
+        // when this device has never learned the term itself. Use only this
+        // membership's authenticated projection; no network request here.
+        let cloudGeneration = max(knownCloudGeneration, knownCloudGenerationFor(reading: reading, text: text))
+        try state.forget(reading: reading, text: text, knownCloudGeneration: cloudGeneration, device: device)
         try recent?.mergeCumulative(state)
         try persist(LearningImportJournal(checkpoint: state), expectedRuntime: expectedRuntime, expectedLegacy: expectedLegacy)
+    }
+    private func knownCloudGenerationFor(reading: String, text: String) -> UInt64 {
+        var cloudGeneration: UInt64 = 0
+        if let directory = refreshSharedDirectory,
+           let cloud = AppleCloudLearningRankState.read(directory: directory,
+                group: rankingPreferences?.string(forKey: "cloud-learning-group").flatMap(UUID.init(uuidString:)) ?? recencyGroup,
+                epoch: (rankingPreferences?.object(forKey: "cloud-learning-epoch") as? NSNumber)?.uint64Value ?? recencyMembershipEpoch,
+                preferences: rankingPreferences) {
+            cloudGeneration = max(cloudGeneration, cloud.projection.generation(reading: reading, text: text))
+        }
+        return cloudGeneration
     }
     func manage(reading: String, text: String, pinned: Bool?) throws {
         try requireAuthorityWrite()
@@ -345,7 +364,7 @@ final class LocalLearningCoordinator {
         // migration belongs to the next admitted idle/host checkpoint.
         var state = old.checkpoint
         if let pinned { try state.setPinned(reading: reading, text: text, pinned: pinned, device: device) }
-        else { try state.resetFrequency(reading: reading, text: text) }
+        else { try state.resetFrequency(reading: reading, text: text, knownCloudGeneration: knownCloudGenerationFor(reading: reading, text: text)) }
         try recent?.mergeCumulative(state)
         try persist(LearningImportJournal(checkpoint: state), expectedRuntime: expectedRuntime, expectedLegacy: expectedLegacy)
     }
@@ -552,6 +571,7 @@ final class LocalLearningCoordinator {
         fileprivate let legacyVersion: ObservationFileVersion
         let entries: [LearningEntry]
         let metrics: LearningCheckpointMetrics
+        let relearnIntentsProcessed: Bool
     }
     private struct NativePlan: Codable {
         var version = 1
@@ -612,7 +632,26 @@ final class LocalLearningCoordinator {
     }
     /// Utility-only derived preparation. No authoritative pending journal is
     /// published until a native batch really begins; cancellation loses no use.
-    func prepareNativeCheckpoint(exported: Data?, directory: URL, allowDatedLearning: Bool) throws -> PreparedNativeCheckpoint {
+    private func applyRelearnIntents(_ intents: [LearningEntry], to journal: inout LearningImportJournal) throws {
+        guard journal.pending == nil, !intents.isEmpty else { return }
+        var state = journal.checkpoint
+        let cloud = refreshSharedDirectory.flatMap { directory in
+            AppleCloudLearningRankState.read(directory: directory,
+                group: rankingPreferences?.string(forKey: "cloud-learning-group").flatMap(UUID.init(uuidString:)) ?? recencyGroup,
+                epoch: (rankingPreferences?.object(forKey: "cloud-learning-epoch") as? NSNumber)?.uint64Value ?? recencyMembershipEpoch,
+                preferences: rankingPreferences)
+        }
+        for intent in intents {
+            let current = state.model.entries[intent.id]
+            guard (current?.generation ?? 0) == intent.generation,
+                  (current?.deleted ?? false) == intent.deleted else { continue }
+            _ = try state.relearnForgotten(reading: intent.reading, text: intent.text, device: device,
+                knownCloudGeneration: cloud?.projection.generation(reading: intent.reading, text: intent.text) ?? 0,
+                cloudDeleted: cloud?.projection.deleted.contains(intent.id) == true)
+        }
+        journal = try LearningImportJournal(checkpoint: state)
+    }
+    func prepareNativeCheckpoint(exported: Data?, directory: URL, allowDatedLearning: Bool, relearnIntents: [LearningEntry] = []) throws -> PreparedNativeCheckpoint {
         try ensureEpoch()
         if let phase = try nativeCheckpointPhase() {
             let existingDirectory = nativeDirectory(phase.nonce), plan = try readNativePlan(existingDirectory)
@@ -652,6 +691,7 @@ final class LocalLearningCoordinator {
             intent = pending
         } else {
             try adoptCurrentCapacity(&journal); try consumeSharedRecency(journal.checkpoint)
+            try applyRelearnIntents(relearnIntents, to: &journal)
             let before = journal.checkpoint
             var remote = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
             try remote.merge(shared?.read() ?? before.outboundArchive())
@@ -758,7 +798,8 @@ final class LocalLearningCoordinator {
         }
         lastCheckpointMetrics.completed = true
         return .init(owner: self, runtimeVersion: runtime, legacyVersion: legacy,
-            entries: Array(complete.checkpoint.model.entries.values), metrics: lastCheckpointMetrics)
+            entries: Array(complete.checkpoint.model.entries.values), metrics: lastCheckpointMetrics,
+            relearnIntentsProcessed: prepared.hasPreparedRecency && !plan.originalPending)
     }
     /// Main adopts only metadata/pointers. A later local control wins over this
     /// result; no JSON reload, native call or visible candidate refresh occurs.
@@ -789,7 +830,7 @@ final class LocalLearningCoordinator {
     enum NativeCheckpointStage { case preparing, prepared, applying, committed }
     /// A learning-specific scheduler. Only the two supplied native closures run
     /// on main; full model IO/JSON and authority commits stay on the utility lane.
-    func synchronizeNativeCheckpoint(queue: DispatchQueue, allowDatedLearning: Bool,
+    func synchronizeNativeCheckpoint(queue: DispatchQueue, allowDatedLearning: Bool, relearnIntents: [LearningEntry] = [],
         mayCommit: @escaping () -> Bool, stage: @escaping (NativeCheckpointStage) -> Void,
         exportNative: @escaping (URL) throws -> Void,
         applyNative: @escaping (PreparedNativeCheckpoint, () throws -> Void, () throws -> Void) throws -> Void,
@@ -838,7 +879,7 @@ final class LocalLearningCoordinator {
                 let phase = try self.nativeCheckpointPhase()
                 if let phase, phase.phase != .started {
                     stage(.preparing)
-                    let value = try autoreleasepool { try self.prepareNativeCheckpoint(exported: nil, directory: directory, allowDatedLearning: allowDatedLearning) }
+                    let value = try autoreleasepool { try self.prepareNativeCheckpoint(exported: nil, directory: directory, allowDatedLearning: allowDatedLearning, relearnIntents: relearnIntents) }
                     prepared(value); return
                 }
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -851,7 +892,7 @@ final class LocalLearningCoordinator {
                         queue.async {
                             do {
                                 stage(.preparing)
-                                let value = try autoreleasepool { try self.prepareNativeCheckpoint(exported: Data(contentsOf: initialExport), directory: directory, allowDatedLearning: allowDatedLearning) }
+                                let value = try autoreleasepool { try self.prepareNativeCheckpoint(exported: Data(contentsOf: initialExport), directory: directory, allowDatedLearning: allowDatedLearning, relearnIntents: relearnIntents) }
                                 if value.directory != directory { try? FileManager.default.removeItem(at: directory) }
                                 prepared(value)
                             } catch { try? FileManager.default.removeItem(at: directory); DispatchQueue.main.async { completion(.failure(error)) } }
@@ -862,7 +903,7 @@ final class LocalLearningCoordinator {
         }
     }
 
-    func checkpoint(exportFile: URL, importFile: URL, publish: SnapshotPublisher?, engineExport: (URL) -> Int32, engineImport: (URL) -> Int32, engineReset: (LearningEntry) -> Int32, allowDatedLearning: Bool = true) throws -> [LearningEntry] {
+    func checkpoint(exportFile: URL, importFile: URL, publish: SnapshotPublisher?, engineExport: (URL) -> Int32, engineImport: (URL) -> Int32, engineReset: (LearningEntry) -> Int32, allowDatedLearning: Bool = true, relearnIntents: [LearningEntry] = []) throws -> [LearningEntry] {
         try requireAuthorityWrite()
         let started = ProcessInfo.processInfo.systemUptime
         lastCheckpointMetrics = LearningCheckpointMetrics()
@@ -913,6 +954,7 @@ final class LocalLearningCoordinator {
         }
         try adoptCurrentCapacity(&journal)
         try consumeSharedRecency(journal.checkpoint)
+        try applyRelearnIntents(relearnIntents, to: &journal)
         let before = journal.checkpoint
         var remoteModel = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
         try remoteModel.merge(shared?.read() ?? before.outboundArchive())
