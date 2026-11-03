@@ -287,6 +287,13 @@ final class MacInputSession {
     }
     deinit {stopResetObservation?();rankWork?.cancel();ranker?.cancel()}
 
+    /// Keyboard selection must not turn a mixed-English fragment into a
+    /// Chinese composition commit. Mouse/tap can still choose it explicitly;
+    /// in Chinese mode the keyboard skips it and leaves the draft editable.
+    private func keyboardSelectable(_ row:InputCandidate?)->InputCandidate? {
+        guard let row else{return nil}
+        return english || row.latinInput==nil ? row:nil
+    }
     func input(_ text: String?, keyCode: Int, flags: Int, client: MacInputClient) -> Bool {
         refreshPersonalEpoch()
         guard engine.ready else { emptySymbolPair.invalidate();return false }
@@ -333,7 +340,16 @@ final class MacInputSession {
         }
         if code != 0xff08 || !previous.isEmpty || !engine.rawInput.isEmpty {emptySymbolPair.invalidate()}
         if code == 0xff0d, !previous.isEmpty, !english {
-            // Physical Return commits typed Latin spelling, preserving an
+            if engine.isNineKeyInput {
+                // Never commit the raw/mixed-Latin draft on Return. Prefer the
+                // first Chinese candidate; if none exists, keep editing.
+                forgetCorrection();navigationLocked=true;rankWork?.cancel();ranker?.cancel()
+                if let first=candidateRows.first(where:{$0.latinInput==nil}) {
+                    chooseCandidate(first,client:client)
+                }
+                return true
+            }
+            // Physical Return commits a 26-key Latin spelling, preserving an
             // already selected Chinese prefix. Space still selects a word.
             forgetCorrection();navigationLocked=true;rankWork?.cancel();ranker?.cancel()
             let typed=engine.takePendingInput()
@@ -401,7 +417,10 @@ final class MacInputSession {
                 return true
             }
             if code == 0xff1b,expanded {toggleExpanded();return true}
-            if code == 0xff0d,expanded,let row=highlightedCandidate {chooseCandidate(row,client:client);return true}
+            if code == 0xff0d,expanded {
+                if let row=keyboardSelectable(highlightedCandidate) {chooseCandidate(row,client:client)}
+                return true
+            }
             if code == 0xff55 || code == 0xff56 {
                 navigationLocked=true;rankWork?.cancel();ranker?.cancel()
                 let stride=expanded ? candidateLayout.pageSize:activeColumns
@@ -425,8 +444,8 @@ final class MacInputSession {
                     let literal=raw+String(UnicodeScalar(UInt32(code))!)
                     engine.noteLiteralInput(literal);deliver(literal,client:client);refreshRows();return true
                 }
-                if code == 32,let row=highlightedCandidate {chooseCandidate(row,client:client)}
-                else {let shown=candidateRows,index=Int(code-49);if shown.indices.contains(index) {chooseCandidate(shown[index],client:client)}}
+                if code == 32,let row=keyboardSelectable(highlightedCandidate) {chooseCandidate(row,client:client)}
+                else {let shown=candidateRows,index=Int(code-49);if shown.indices.contains(index),let row=keyboardSelectable(shown[index]) {chooseCandidate(row,client:client)}}
                 return true
             }
         }

@@ -10,6 +10,7 @@ struct LearningCheckpointMetrics {
     var recoveredPending = false
     var persistedBytes = 0
     var skippedWriteBytes = 0
+    var persistMilliseconds = 0.0
     var completed = false
 }
 
@@ -325,7 +326,7 @@ final class LocalLearningCoordinator {
     /// Immutable committed state only, no native export/import or key access.
     func cloudBootstrapLocation(publisher: SnapshotPublisher?) -> (UUID, URL)? {
         let permitted: Bool
-        switch publisher { case .containingApp?: permitted = true; case .keyboard(let full)?: permitted = full; case nil: permitted = false }
+        switch publisher { case .containingApp?: permitted = true; case .containingAppLocal?: permitted = false; case .keyboard(let full, let remote)?: permitted = full && remote; case nil: permitted = false }
         guard permitted, let id = UUID(uuidString: device), let directory = refreshSharedDirectory else { return nil }
         return (id, directory)
     }
@@ -428,24 +429,37 @@ final class LocalLearningCoordinator {
         var remoteModel = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
         try remoteModel.merge(shared?.read() ?? before.outboundArchive())
         if let recent { try remoteModel.merge(recent.model.cumulativeProjection()) }
+        let remoteArchive = try remoteModel.export()
         var observed = before; try observed.observeExport(exported, device: device); try ensureEpoch()
+        // No local delta, no remote archive delta and no pending reset means
+        // there is nothing to plan or publish. Avoid the full recency/model
+        // passes for the common idle maintenance round; the caller simply
+        // skips this round and a later native/remote change retries.
+        if observed.observedCounts == before.observedCounts,
+           remoteModel.entries == before.model.entries,
+           remoteModel.learningEnabled == before.model.learningEnabled,
+           remoteModel.personalLexicon == before.model.personalLexicon,
+           before.pendingResets.isEmpty {
+            return nil
+        }
         try recent?.observe(before: before, after: observed, replica: device,
             wall: Date().timeIntervalSince1970, uptime: ProcessInfo.processInfo.systemUptime,
             boot: boot, canDate: allowDatedLearning, validating: maintenancePermitted)
         try ensureEpoch()
-        let intent = try journal.prepare(finalLocalExport: exported, remoteArchive: remoteModel.export(), device: device)
-        let actual = Dictionary(uniqueKeysWithValues: try RimeLearningFormat.parseExport(exported, capacityProfile: LearningCapacityProfiles.expanded10000).map { ($0.id, $0.count) })
+        let intent = try journal.prepare(observed: observed, remoteArchive: remoteArchive, device: device)
+        let actualCounts = observed.observedCounts
         guard intent.target.model.entries.values.allSatisfy({ entry in
             let prior = before.model.entries[entry.id]
-            return (actual[entry.id] ?? 0) == (entry.deleted ? 0 : entry.frequency) &&
+            return (actualCounts[entry.id] ?? 0) == (entry.deleted ? 0 : entry.frequency) &&
                 entry.pinned == (prior?.pinned ?? false) && entry.pinVersion == (prior?.pinVersion ?? .init(sequence: 0, device: "")) &&
                 entry.generation == (prior?.generation ?? 0) && entry.deleted == (prior?.deleted ?? false)
         }) else { return nil }
         try recent?.mergeCumulative(intent.target)
-        try journal.commit(transactionID: intent.id, actualEngineExport: exported)
+        try journal.commit(transactionID: intent.id, observedCounts: actualCounts)
         guard let recent else { throw InputDataError.invalidRecord }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
-        let runtime = try encoder.encode(RuntimeState(journal: journal.persistedData(), recency: recent.persisted(), group: recencyGroup, membershipEpoch: recencyMembershipEpoch,
+        let journalData = try journal.persistedData()
+        let runtime = try encoder.encode(RuntimeState(journal: journalData, recency: recent.persisted(), group: recencyGroup, membershipEpoch: recencyMembershipEpoch,
             completedNativeNonce: completedNativeNonce, personalEpoch: personalEpoch))
         let legacy = try encoder.encode(journal.checkpoint)
         guard runtime.count <= 12 * 1024 * 1024, legacy.count <= 8 * 1024 * 1024 else { throw InputDataError.oversized }
@@ -462,10 +476,12 @@ final class LocalLearningCoordinator {
         }
         guard try ObservationFileVersion.read(runtimeURL) == runtimeVersion,
               try ObservationFileVersion.read(stateURL) == legacyVersion else { throw LearningSyncFailure.busy }
+        let outbound = try journal.outboundArchive()
+        let recency = try self.recent?.export()
         return .init(runtimeVersion: runtimeVersion, legacyVersion: legacyVersion, owner: self, runtime: runtime, legacy: legacy,
             runtimeChanged: (try? Data(contentsOf: runtimeURL, options: .mappedIfSafe)) != runtime,
             legacyChanged: (try? Data(contentsOf: stateURL, options: .mappedIfSafe)) != legacy,
-            outbound: try journal.outboundArchive(), recency: try self.recent?.export(),
+            outbound: outbound, recency: recency,
             entries: Array(journal.checkpoint.model.entries.values))
     }
     struct CompletedObservation {
@@ -534,15 +550,26 @@ final class LocalLearningCoordinator {
     func publishObservation(_ prepared: PreparedObservation, by publish: SnapshotPublisher?) throws {
         try ensureEpoch()
         guard let publish, let shared else { return }
+        let sharedStart = ProcessInfo.processInfo.systemUptime
         try ensureEpoch(); try shared.publish(prepared.outbound, by: publish)
+        let sharedMilliseconds = (ProcessInfo.processInfo.systemUptime - sharedStart) * 1000
         try ensureEpoch()
-        if let root = refreshSharedDirectory, let producer = UUID(uuidString: device) {
-            try AppleCloudProducerSnapshot.publish(prepared.entries, producer: producer, directory: root)
+        var cloudMilliseconds = 0.0, recencyMilliseconds = 0.0
+        if publish.allowsRemoteSync {
+            if let root = refreshSharedDirectory, let producer = UUID(uuidString: device) {
+                let cloudStart = ProcessInfo.processInfo.systemUptime
+                try AppleCloudProducerSnapshot.publish(prepared.entries, producer: producer, directory: root)
+                cloudMilliseconds = (ProcessInfo.processInfo.systemUptime - cloudStart) * 1000
+            }
+            if let group = prepared.owner.recencyGroup, let epoch = prepared.owner.recencyMembershipEpoch,
+               let archive = prepared.recency {
+                let recencyStart = ProcessInfo.processInfo.systemUptime
+                _ = try recencyBridge?.mergeIfCurrent(archive, group: group, epoch: epoch, validating: maintenancePermitted)
+                recencyMilliseconds = (ProcessInfo.processInfo.systemUptime - recencyStart) * 1000
+            }
         }
-        if let group = prepared.owner.recencyGroup, let epoch = prepared.owner.recencyMembershipEpoch,
-           let archive = prepared.recency {
-            _ = try recencyBridge?.mergeIfCurrent(archive, group: group, epoch: epoch, validating: maintenancePermitted)
-        }
+        KeyboardRuntimeDiagnostics.record(.checkpointPublishParts, [.sharedPublishMilliseconds: sharedMilliseconds,
+            .cloudPublishMilliseconds: cloudMilliseconds, .recencyPublishMilliseconds: recencyMilliseconds])
     }
     enum NativePhase: String { case started = "S", done = "D", replayDone = "R" }
     struct NativePhaseStamp {
@@ -744,6 +771,7 @@ final class LocalLearningCoordinator {
         if FileManager.default.fileExists(atPath: plan.directory.path) { try FileManager.default.removeItem(at: plan.directory) }
     }
     func finishPreparedNative(_ prepared: PreparedNativeCheckpoint) throws -> CompletedNativeCheckpoint {
+        let persistStart = ProcessInfo.processInfo.systemUptime
         try ensureEpoch()
         guard let phase = try nativeCheckpointPhase(), phase.nonce == prepared.nonce,
               phase.phase != .started else { throw LearningSyncFailure.busy }
@@ -797,6 +825,7 @@ final class LocalLearningCoordinator {
             if FileManager.default.fileExists(atPath: prepared.directory.path) { try FileManager.default.removeItem(at: prepared.directory) }
         }
         lastCheckpointMetrics.completed = true
+        lastCheckpointMetrics.persistMilliseconds = (ProcessInfo.processInfo.systemUptime - persistStart) * 1000
         return .init(owner: self, runtimeVersion: runtime, legacyVersion: legacy,
             entries: Array(complete.checkpoint.model.entries.values), metrics: lastCheckpointMetrics,
             relearnIntentsProcessed: prepared.hasPreparedRecency && !plan.originalPending)
@@ -816,16 +845,43 @@ final class LocalLearningCoordinator {
     }
     func publishCompletedNative(_ value: CompletedNativeCheckpoint, by publisher: SnapshotPublisher?) throws {
         try ensureEpoch()
-        guard let publisher, let shared else { return }
+        guard let publisher, let shared else {
+            KeyboardRuntimeDiagnostics.record(.sharedPublishSkipped, [.publisherAvailable: 0])
+            return
+        }
         let journal = try readJournal()
-        try shared.publish(journal.outboundArchive(), by: publisher)
+        let archive = try journal.outboundArchive()
+        let sharedStart = ProcessInfo.processInfo.systemUptime
+        do {
+            try shared.publish(archive, by: publisher)
+            let sharedMilliseconds = (ProcessInfo.processInfo.systemUptime - sharedStart) * 1000
+            KeyboardRuntimeDiagnostics.record(.sharedPublished, [.publisherAvailable: 1, .publishedBytes: Double(archive.count)])
+            var cloudMilliseconds = 0.0, recencyMilliseconds = 0.0
+            if publisher.allowsRemoteSync {
+                if let directory = refreshSharedDirectory, let id = UUID(uuidString: device) {
+                    let cloudStart = ProcessInfo.processInfo.systemUptime
+                    try AppleCloudProducerSnapshot.publish(value.entries, producer: id, directory: directory)
+                    cloudMilliseconds = (ProcessInfo.processInfo.systemUptime - cloudStart) * 1000
+                }
+                if let group = recencyGroup, let epoch = recencyMembershipEpoch, let recent {
+                    let recencyStart = ProcessInfo.processInfo.systemUptime
+                    _ = try recencyBridge?.mergeIfCurrent(recent.export(), group: group, epoch: epoch, validating: maintenancePermitted)
+                    recencyMilliseconds = (ProcessInfo.processInfo.systemUptime - recencyStart) * 1000
+                }
+            }
+            KeyboardRuntimeDiagnostics.record(.checkpointPublishParts, [.sharedPublishMilliseconds: sharedMilliseconds,
+                .cloudPublishMilliseconds: cloudMilliseconds, .recencyPublishMilliseconds: recencyMilliseconds])
+        } catch {
+            let failure: Double
+            switch error {
+            case SnapshotStoreError.busy: failure = 1
+            case SnapshotStoreError.fullAccessRequired: failure = 2
+            default: failure = 3
+            }
+            KeyboardRuntimeDiagnostics.record(.sharedPublishFailed, [.publisherAvailable: 1, .failureClass: failure])
+            throw error
+        }
         try ensureEpoch()
-        if let directory = refreshSharedDirectory, let id = UUID(uuidString: device) {
-            try AppleCloudProducerSnapshot.publish(value.entries, producer: id, directory: directory)
-        }
-        if let group = recencyGroup, let epoch = recencyMembershipEpoch, let recent {
-            _ = try recencyBridge?.mergeIfCurrent(recent.export(), group: group, epoch: epoch, validating: maintenancePermitted)
-        }
     }
     enum NativeCheckpointStage { case preparing, prepared, applying, committed }
     /// A learning-specific scheduler. Only the two supplied native closures run
@@ -839,8 +895,11 @@ final class LocalLearningCoordinator {
         func finish(_ prepared: PreparedNativeCheckpoint) {
             queue.async {
                 let result: Result<CompletedNativeCheckpoint, Error>
+                let persistStart = ProcessInfo.processInfo.systemUptime
                 do { result = .success(try prepared.owner.finishPreparedNative(prepared)) }
                 catch { result = .failure(error) }
+                KeyboardRuntimeDiagnostics.record(.checkpointPersisted,
+                    [.persistMilliseconds: (ProcessInfo.processInfo.systemUptime - persistStart) * 1000])
                 DispatchQueue.main.async {
                     if case .success = result { stage(.committed) }
                     completion(result)
@@ -968,7 +1027,7 @@ final class LocalLearningCoordinator {
             boot: boot, canDate: allowDatedLearning)
         let intent = try journal.prepare(finalLocalExport: exported, remoteArchive: remote, device: device)
         try recent?.mergeCumulative(intent.target)
-        let actualCounts = Dictionary(uniqueKeysWithValues: try RimeLearningFormat.parseExport(exported, capacityProfile: LearningCapacityProfiles.expanded10000).map { ($0.id, $0.count) })
+        let actualCounts = observed.observedCounts
         let alreadyApplied = intent.target.model.entries.values.allSatisfy { entry in
             (actualCounts[entry.id] ?? 0) == (entry.deleted ? 0 : entry.frequency)
         }
@@ -976,7 +1035,7 @@ final class LocalLearningCoordinator {
             // A local-only observation changes no native state. Commit the
             // proved actual baseline once, without a redundant import/reset or
             // durable pending intent on the common idle checkpoint path.
-            try journal.commit(transactionID: intent.id, actualEngineExport: exported)
+            try journal.commit(transactionID: intent.id, observedCounts: actualCounts)
         } else {
             try persist(journal) // durable intent BEFORE any native mutation
             for entry in intent.target.pendingResets {

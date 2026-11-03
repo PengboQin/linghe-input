@@ -171,6 +171,40 @@ public struct CloudLearningComponentMigration: Codable {
         guard ready else { return nil }
         return try? CloudLearningRankProjection(migration: self).scores(current: current)
     }
+    public struct MigrationAudit: Equatable {
+        public struct ProducerAudit: Equatable {
+            public let producerID: UUID
+            public let acceptedRecords: Int
+            public let representedRecords: Int
+            public let receiptRevision: UInt64?
+            public let bootstrapRevision: UInt64?
+            public let pendingPublication: Bool
+            public let baselineComplete: Bool
+        }
+        public let ready: Bool
+        public let modelVersion: UInt64
+        public let producers: [ProducerAudit]
+        public let pendingPublications: Int
+        public let legacyReadFallbackRequired: Bool
+    }
+    /// Read-only pre-migration audit. It never mutates, contacts the server or
+    /// retires a legacy read/write path; a pending publication or incomplete
+    /// producer keeps the fallback required.
+    public func audit() -> MigrationAudit {
+        let rows = producers.keys.sorted().compactMap { key -> MigrationAudit.ProducerAudit? in
+            guard let id = UUID(uuidString: key), let producer = producers[key] else { return nil }
+            return .init(producerID: id, acceptedRecords: producer.accepted.count,
+                representedRecords: producer.represented.count,
+                receiptRevision: producer.receipt?.producerRevision,
+                bootstrapRevision: producer.bootstrapWatermark?.producerRevision,
+                pendingPublication: producer.pending != nil,
+                baselineComplete: producer.baselineComplete)
+        }
+        let pendingCount = producers.values.filter { $0.pending != nil }.count
+        return .init(ready: ready, modelVersion: model.modelVersion, producers: rows,
+            pendingPublications: pendingCount,
+            legacyReadFallbackRequired: !ready || pendingCount > 0 || rows.contains { !$0.baselineComplete })
+    }
     public func data() throws -> Data {
         let result = try JSONEncoder().encode(self); guard result.count <= 12 * 1024 * 1024 else { throw CloudLearningError.oversized }; return result
     }

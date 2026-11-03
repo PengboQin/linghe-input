@@ -34,7 +34,7 @@ public struct ActivityHTTPTransport: ActivityArchiveTransport {
             // Only surface a bounded machine code, never an arbitrary server string/body.
             if let error = try? JSONDecoder().decode(ActivityRPCFailure.self, from: data), error.version == 1,
                error.error.utf8.count <= 96, error.error.utf8.allSatisfy({ (97...122).contains($0) || (48...57).contains($0) || $0 == 95 }) {
-                throw ActivityError.remote(error.error)
+                throw ActivityError.remoteStatus(response.statusCode, error.error)
             }
             throw ActivityError.httpStatus(response.statusCode)
         }
@@ -187,10 +187,10 @@ public final class ActivityArchiveWorker {
     private let stateLock = NSLock()
     private var running = false
     public init(queue: ActivityLocalEventQueue, client: ActivityArchiveClient) { self.queue = queue; self.client = client }
-    public func flush(identity: DeviceIdentity, membershipRevision: UInt64, now: UInt64, maxBatches: Int = 4) async throws -> ActivitySyncPassResult {
-        try await flush(signer: ActivityRequestSigner(identity: identity), membershipRevision: membershipRevision, now: now, maxBatches: maxBatches)
+    public func flush(identity: DeviceIdentity, membershipRevision: UInt64, now: UInt64, maxBatches: Int = 4, retryRejected: Bool = false) async throws -> ActivitySyncPassResult {
+        try await flush(signer: ActivityRequestSigner(identity: identity), membershipRevision: membershipRevision, now: now, maxBatches: maxBatches, retryRejected: retryRejected)
     }
-    public func flush(signer: ActivityRequestSigner, membershipRevision: UInt64, now: UInt64, maxBatches: Int = 4) async throws -> ActivitySyncPassResult {
+    public func flush(signer: ActivityRequestSigner, membershipRevision: UInt64, now: UInt64, maxBatches: Int = 4, retryRejected: Bool = false) async throws -> ActivitySyncPassResult {
         guard begin() else { throw ActivityError.staleAuthorization }
         defer { end() }
         guard signer.device == queue.device else { throw ActivityError.invalidConfiguration }
@@ -205,7 +205,9 @@ public final class ActivityArchiveWorker {
         guard signer.scope == .captureDelegate ? status.membershipRevision >= membershipRevision : status.membershipRevision == membershipRevision else { throw ActivityError.staleAuthorization }
         guard let consent = status.consent, consent.enabled, consent.version == lease.configuration.consentVersion,
               Set(consent.providers) == lease.configuration.providers else { try queue.invalidateAuthorization(); throw ActivityError.consentMismatch }
+        if retryRejected { _ = try queue.retryRejectedUploads(lease: lease, now: now) }
         var count = 0
+        var lastRejection: ActivityError?
         for _ in 0..<max(1, min(maxBatches, 16)) {
             try Task.checkCancellation(); try queue.validate(lease)
             guard let batch = try queue.nextBatch(lease: lease, now: now, limit: min(64, status.limits.maxBatchEvents)) else { break }
@@ -214,10 +216,20 @@ public final class ActivityArchiveWorker {
                 try queue.acknowledge(batch, eventIDs: Set(receipt.acceptedEventIDs + receipt.duplicateEventIDs), lease: lease, now: now)
                 count += batch.events.count
             } catch {
-                try? queue.recordFailure(batch, lease: lease, now: now)
+                if let rejection = error as? ActivityError, rejection.isPermanentUploadFailure {
+                    try queue.isolateRejected(batch, lease: lease, now: now, reason: rejection.uploadRejectionReason)
+                    lastRejection = rejection
+                    // Each request, including rejection, consumes this pass's budget.
+                    // No tight retry loop; the next immutable sub-batch may proceed.
+                    continue
+                }
+                try queue.recordFailure(batch, lease: lease, now: now)
+                // Next pass rechecks membership/consent through status before ingest.
+                // Unknown or authorization errors must not strand an entire batch.
                 throw error
             }
         }
+        if let lastRejection { throw lastRejection }
         return ActivitySyncPassResult(acknowledged: count, pending: try queue.status().pending)
     }
     private func begin() -> Bool { stateLock.lock(); defer { stateLock.unlock() }; guard !running else { return false }; running = true; return true }

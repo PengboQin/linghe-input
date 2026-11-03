@@ -121,6 +121,7 @@ struct InputSettingsView: View {
                 Text("离线记录选词习惯，常用词逐渐前移。关闭后暂停学习并使用基础词库，已有记忆保留。").font(.footnote).foregroundStyle(.secondary)
             }
             Section("词库") {
+                NavigationLink("已学习词汇") { LearnedVocabularySettings() }.accessibilityIdentifier("open-learned-vocabulary")
                 NavigationLink("个人词库与快捷短语") { PersonalLexiconSettings() }.accessibilityIdentifier("open-personal-lexicon")
             } }
         }
@@ -181,6 +182,9 @@ struct InputHelpView: View {
                 #else
                 Text("候选窗跟随文本光标，键盘输入使用系统 InputMethodKit。Escape 清除待选内容，保留已输入正文。")
                 #endif
+            }
+            Section("词库与学习") {
+                Text("已学习词汇显示键盘已保存到共享区的记录，主 App 不读取键盘私有容器。次数是保存记录的累计计数，不是候选排序权重。")
             }
             Section("隐私与权限") {
                 #if os(iOS)

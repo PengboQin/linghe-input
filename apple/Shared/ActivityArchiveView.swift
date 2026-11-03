@@ -120,8 +120,8 @@ import PrivateInputKit
     }
     /// Called while the main app is active, and by the Mac application background owner.
     /// It refreshes existing relay membership normally and never requires a settings window.
-    func backgroundPass(validating:()->Bool={true}) async {
-        guard !Task.isCancelled,validating(),!busy, !applying, Date().timeIntervalSince(lastBackground) >= 5 else { return }
+    func backgroundPass(validating:()->Bool={true}, retryRejected: Bool = false) async {
+        guard !Task.isCancelled,validating(),!busy, !applying, (retryRejected || Date().timeIntervalSince(lastBackground) >= 5) else { return }
         lastBackground = Date(); applying = true; defer { applying = false }
         do {
             // Do not create a sync identity/group or contact the archive by merely launching.
@@ -133,7 +133,7 @@ import PrivateInputKit
             ActivityArchiveCapture.shared.refresh(permitted: true)
             ActivityArchiveCapture.shared.observeClipboardIfPermitted(active:validating() && !Task.isCancelled)
             let client = try ActivityArchiveClient(endpoint: endpoint), worker = ActivityArchiveWorker(queue: q, client: client)
-            _ = try await worker.flush(identity: live.identity, membershipRevision: live.publicConnection.membership.revision, now: now)
+            _ = try await worker.flush(identity: live.identity, membershipRevision: live.publicConnection.membership.revision, now: now, retryRejected: retryRejected)
             guard !Task.isCancelled,validating() else{return}
             queueStatus = try q.status(); configuration = try q.configuration()
         } catch { if !Task.isCancelled,validating() {report(error)} }
@@ -247,6 +247,12 @@ struct ActivityArchiveView: View {
                         LabeledContent("已收到归档回执", value: String(status.acknowledged))
                         LabeledContent("正文与事件", value: ByteCountFormatter.string(fromByteCount: Int64(status.payloadBytes), countStyle: .file))
                         Button("立即上传") { Task { await model.backgroundPass() } }.disabled(model.busy || !model.configuration.collecting)
+                        if status.held > 0 {
+                            Button("重试上传被拒绝的记录") { Task { await model.backgroundPass(retryRejected: true) } }
+                                .disabled(model.busy || !model.configuration.collecting)
+                            Text("只重试当前授权下明确被服务器拒绝的记录；暂停或关闭前的隔离记录保持不动。")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
                         Text("关闭或暂停后，原待发记录不会在重新开启时自动上传。离组清除本机归档；服务器已有档案另按保留与删除策略处理。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }

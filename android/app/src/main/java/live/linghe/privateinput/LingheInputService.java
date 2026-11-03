@@ -4,7 +4,7 @@ import android.inputmethodservice.InputMethodService;import android.view.*;impor
 public class LingheInputService extends InputMethodService {
  private ActivityArchiveManager.InputProvider activityArchive;
  private final ImeTaskExecutors tasks=new ImeTaskExecutors();
- private final ExecutorService worker=tasks.nativeWorker,recentIO=tasks.recent,startupIO=tasks.optional,learningIO=tasks.learning;
+ private final ImeTaskExecutors.Prioritized worker=tasks.nativeWorker;private final ExecutorService recentIO=tasks.recent,startupIO=tasks.optional,learningIO=tasks.learning;
  private final EngineStartupState startup=new EngineStartupState();private final Runnable startupSlow=()->{if(!this.destroyed&&startup.slow(SystemClock.uptimeMillis()))render();};private final Handler main=new Handler(Looper.getMainLooper());
  private volatile NativeEnginePaths nativePaths;private volatile boolean recreateSamePair,literalSharedMatchesPrepared,literalUserMatchesPrepared;
  private long session=0,version=0,dismissedContinuationEpoch=-1;private volatile int document=0;private volatile boolean ready=false;private boolean english=false,nine=true,numbers=false,symbols=false,expanded=false,secure=false,privateInput=false,shift=false;
@@ -50,6 +50,7 @@ public class LingheInputService extends InputMethodService {
 
  private final LearningMaintenanceState maintenance=new LearningMaintenanceState();
  private final LearningTinyDiagnostics learningDiagnostics=new LearningTinyDiagnostics();
+ private volatile long learningRequestedAt,learningStartedAt;
  private final KeyboardRenderGate renderGate=new KeyboardRenderGate();
  private final java.util.concurrent.atomic.AtomicInteger queuedInputActions=new java.util.concurrent.atomic.AtomicInteger();
  private final CoalescedWork metadataRefresh=new CoalescedWork(recentIO,this::readMetadata);
@@ -186,15 +187,22 @@ public class LingheInputService extends InputMethodService {
  private void submitLiteral(Callable<String> action,boolean commit,Runnable after){submitLiteral(action,commit,after,()->0);}
  private void submitLiteral(Callable<String> action,boolean commit,Runnable after,java.util.function.IntSupplier caretBack){submitLiteral(action,commit,after,caretBack,"edit");}
  private void submitLiteral(Callable<String> action,boolean commit,Runnable after,java.util.function.IntSupplier caretBack,String diagnosticKey){submitLiteral(action,commit,after,caretBack,diagnosticKey,null);}
+ private void alignDraft(String[][] state,String[][] nativeState){
+  if(!nine||state==null||nativeState==null||state.length==0||nativeState.length==0||state[0].length<4||nativeState[0].length<3||state[0][2].isEmpty())return;
+  String reading=state.length>1&&state[1].length>=3?state[1][2]:"";
+  String aligned=InputQuality.keyAlignedDraft(nativeState[0][2],reading);
+  if(!aligned.isEmpty()){state[0][3]=aligned;nativeState[0][3]=aligned;}
+ }
  private void submitLiteral(Callable<String> action,boolean commit,Runnable after,java.util.function.IntSupplier caretBack,String diagnosticKey,SymbolPairing.Intent pairIntent){
   final long receivedMicros=SystemClock.elapsedRealtimeNanos()/1000;final ActivityArchiveManager.InputProvider traceProvider=activityArchive;final long traceToken=traceProvider==null||privateInput||recoveryPrivate||secure?0:traceProvider.diagnosticsToken();
   final InputDecisionEvidence selectedDecision=diagnosticKey.equals("select")?visibleDecision:diagnosticKey.equals(" ")&&!candidateItems.isEmpty()?decisionSelection(candidateItems.get(0),"space"):null;
   int target=document;long lifetime=predictions.inputLifetime(),cancellation=predictions.cancellation();boolean useNine=nine;String ownAtAction=ownContext;inputEpoch.incrementAndGet();browsing=false;if(qualityRefresh!=null)main.removeCallbacks(qualityRefresh);queuedInputActions.incrementAndGet();
   InputActionDelivery.execute(worker,()->target==document&&predictions.active(lifetime),()->{if(session==0)return;String traceBefore=traceToken!=0?NativeCore.draft(session)[0]:"";selectedIntent=null;adoptStagedMetadataIfIdle();String literal;try{literal=action.call();}catch(Exception error){main.post(()->{if(target==document)Toast.makeText(this,"输入处理未完成，请重试",Toast.LENGTH_SHORT).show();});return;}
-   adoptStagedMetadataIfIdle();repairPlans.clear();long token=++version;String[][] nativeState=NativeCore.snapshot(session);if(traceToken!=0)traceProvider.diagnostic(traceToken,diagnosticKey,traceBefore,nativeState[0][2]);int loaded=nativeState.length-1;String[][] state=withChoices(withPins(withPersonal(nativeState,useNine)),ownAtAction);
+   adoptStagedMetadataIfIdle();repairPlans.clear();long token=++version;String[][] nativeState=NativeCore.snapshot(session);if(traceToken!=0)traceProvider.diagnostic(traceToken,diagnosticKey,traceBefore,nativeState[0][2]);int loaded=nativeState.length-1;String[][] state=withChoices(withPins(withPersonal(nativeState,useNine)),ownAtAction);alignDraft(state,nativeState);
    // Empty native rows must receive deliberate repeated-initial recall before
    // publishing the first FIFO snapshot; touching it cannot cancel this phase.
    if(useNine&&state.length==1){List<InputQuality.Repair> repeated=InputQuality.immediateRepeatedHeads(session,nativeState,true);if(!repeated.isEmpty()){state=withChoices(withPins(InputQuality.mergeImmediateRepeated(state,repeated,repairPlans)),ownAtAction,repairPlans);if(state.length>1){String readable=NativeCore.readableDraft(session,state[1][2]);state[0][3]=readable;nativeState[0][3]=readable;}}}
+   alignDraft(state,nativeState);
    final boolean repeatedReady=useNine&&nativeState.length==1&&state.length>1;final String[][] deliveredState=state;InputDecisionEvidence sampled=traceToken==0?null:traceProvider.snapshot(traceToken,nativeState[0][2],state);final InputDecisionEvidence decision=sampled==null?null:sampled.model(cloudRank!=null&&cloudRank.valid(this)?cloudRank.modelVersion:null,null);if(decision!=null)traceProvider.decision(traceToken,decision.event("input",null,null,null,null,receivedMicros));String[] readings=NativeCore.syllables(session);String output=nativeState[0][1]+literal;SelectionIntent selected=selectedIntent;final String[] learnedPair=autoPhraseDecision(selected,literal,nativeState[0][1],nativeState[0][2]);final String learnedPhrase=learnedPair==null?null:learnedPair[0];final String learnedPhraseReading=learnedPair==null?null:learnedPair[1];
    final InputDecisionEvidence outputDecision=selectedDecision!=null&&selectedDecision.selected!=null&&selected!=null&&selectedDecision.selected.text.equals(selected.text)&&selectedDecision.selected.reading.equals(selected.reading)?selectedDecision:selectedDecision!=null&&decision!=null?decision.event("commit",null,selectedDecision.method,"actual_selection_unresolved",null,SystemClock.elapsedRealtimeNanos()/1000):decision;
    if(!privateInput&&!recoveryPrivate&&(!nativeState[0][1].isEmpty()||selected!=null&&!literal.isEmpty()))nativeLearningChanged();
@@ -212,7 +220,7 @@ public class LingheInputService extends InputMethodService {
    if(target!=document||token!=visibleVersion||epoch!=inputEpoch.get()||browsing)return;
    context=captureContext();final ContextWindow surrounding=context;final boolean useNine=nine;
    final String[][] original=nativeSnapshot,augmented=snapshot;final String own=ownContext;
-   worker.execute(()->{
+   worker.executeSpeculative(()->{
     if(target!=document||token!=version||epoch!=inputEpoch.get()||browsing)return;
     Map<String,InputQuality.Repair> plans=new HashMap<>();String[][] predicted;
     if(original[0][2].isEmpty()) {
@@ -227,7 +235,7 @@ public class LingheInputService extends InputMethodService {
     if(target!=document||token!=version||epoch!=inputEpoch.get()||browsing||predictions.suppressed()&&original[0][2].isEmpty())return;
     // Preserve bound completion plans already published in the first batch.
     for(String[] row:predicted)if(row.length>=3&&row[0].startsWith("repair:")&&!plans.containsKey(row[0])){InputQuality.Repair prior=repairPlans.get(row[0]);if(prior!=null&&prior.raw.equals(original[0][2])&&prior.text.equals(row[1])&&prior.reading.equals(row[2]))plans.put(row[0],prior);}
-    final String[][] ranked=withChoices(withPins(predicted),own,plans);repairPlans.clear();repairPlans.putAll(plans);
+    final String[][] ranked=withChoices(withPins(predicted),own,plans);alignDraft(ranked,original);repairPlans.clear();repairPlans.putAll(plans);
     main.post(()->{
      if(target!=document||token!=visibleVersion||epoch!=inputEpoch.get()||browsing||predictions.suppressed()&&original[0][2].isEmpty())return;
      snapshot=ranked;shownChoice=new ShownChoice(target,token,ranked);if(activityArchive!=null){visibleDiagnosticToken=activityArchive.diagnosticsToken();visibleDecision=activityArchive.snapshot(visibleDiagnosticToken,ranked[0][2],ranked);if(visibleDecision!=null)activityArchive.decision(visibleDiagnosticToken,visibleDecision);}candidateItems.clear();for(int i=1;i<ranked.length;i++)candidateItems.add(new CandidateViews.Item(ranked[i]));render();
@@ -258,6 +266,9 @@ public class LingheInputService extends InputMethodService {
  }
  private String[][] withStableNinePath(String[][] rows){
   if(!nine||english||numbers||symbols||secure||rows.length==0||rows[0].length<5)return rows;
+  // A deliberate all-one-key run must not have an unrelated native path carried
+  // ahead of its repeated-character repair (e.g. 8 x 4 -> 红红火火…).
+  if(rows[0][2]!=null&&rows[0][2].length()>1&&rows[0][2].chars().distinct().count()==1)return rows;
   String preferred=NativeCore.preferredNineReading(session);if(preferred.isEmpty())return rows;
   int protectedCount=0;while(protectedCount+1<rows.length&&isPinned(new CandidateViews.Item(rows[protectedCount+1])))protectedCount++;
   String carried=NativeCore.preferredNineText(session);if(!carried.isEmpty()&&candidateRowDisplayable(new String[]{"path:full",carried,preferred})){
@@ -267,7 +278,7 @@ public class LingheInputService extends InputMethodService {
   }
   String[] readings=new String[rows.length-1];for(int i=1;i<rows.length;i++)readings[i-1]=rows[i].length>=3?rows[i][2]:"";
   String[][] ordered=NinePathOrder.apply(rows,NativeCore.ninePathPriorities(session,readings),protectedCount);if(ordered==rows)return rows;ordered[0]=ordered[0].clone();
-  String readable=NativeCore.readableDraft(session,preferred);if(!readable.isEmpty())ordered[0][3]=readable;
+  ordered[0][3]=InputQuality.keyAlignedDraft(rows[0][2],preferred);
   return ordered;
  }
  private void rememberShownNinePath(){
@@ -379,10 +390,13 @@ public class LingheInputService extends InputMethodService {
  private void nativeLearningChanged(){maintenance.localChanged();File flag=new File(getFilesDir(),"learning-maintenance-dirty-v1");if(!flag.exists())try(FileOutputStream out=new FileOutputStream(flag)){out.write(1);out.getFD().sync();}catch(IOException unavailable){/* Native userdb remains durable; retry the derived checkpoint later. */}main.post(this::scheduleLearning);}
  private void scheduleLearning(){
   if(learningRefresh!=null)main.removeCallbacks(learningRefresh);int skip=(learningCoordinator==null?1:0)|(destroyed?2:0)|(privateInput&&!recoveryPrivate?4:0);if(skip!=0){learningDiagnostics.event(2,2,skip);return;}long delay=maintenance.delay(SystemClock.uptimeMillis());learningDiagnostics.event(2,2,delay<0?8:0);if(delay<0)return;
-  learningRefresh=()->worker.execute(()->{if(!destroyed)synchronizeLearning(false);});main.postDelayed(learningRefresh,delay);
+  learningRequestedAt=SystemClock.uptimeMillis()+Math.max(0,delay);
+  learningRefresh=()->worker.executeSpeculative(()->{if(!destroyed)synchronizeLearning(false);});main.postDelayed(learningRefresh,delay);
  }
  /** Native worker snapshots/reopens immediately; large owner work is IO-only. */
  private void synchronizeLearning(boolean coldRecovery){
+  learningStartedAt=SystemClock.uptimeMillis();
+  if(learningRequestedAt>0)android.util.Log.i("LingheLearning","queue_wait_ms="+(learningStartedAt-learningRequestedAt));
   int skip=(learningCoordinator==null?1:0)|(session==0?2:0)|(!coldRecovery&&privateInput&&!recoveryPrivate?4:0);if(skip==0&&NativeCore.hasPending(session))skip|=8;learningDiagnostics.event(3,3,skip);if(skip!=0)return;
   final LearningMaintenanceState.Ticket ticket=maintenance.begin(SystemClock.uptimeMillis(),coldRecovery,false);if(ticket==null){learningDiagnostics.event(3,3,16);return;}learningDiagnostics.began();
   final LearningCoordinator coordinator=learningCoordinator;final String privacy=PersonalReset.generation(this);final long inputRevision=inputEpoch.get();final File work=new File(getCacheDir(),"learning-"+UUID.randomUUID()),observed=new File(work,"observed.tsv");
@@ -427,6 +441,7 @@ public class LingheInputService extends InputMethodService {
  }
  private void postLearningDone(LearningMaintenanceState.Ticket ticket,boolean success,List<LearningModel.Entry> entries,PersonalLexicon.Snapshot words,String privacy){if(destroyed||worker.isShutdown())return;try{worker.execute(()->learningDone(ticket,success,entries,words,privacy));}catch(RejectedExecutionException closed){}}
  private void learningDone(LearningMaintenanceState.Ticket ticket,boolean success,List<LearningModel.Entry> entries,PersonalLexicon.Snapshot words,String privacy){
+  if(learningStartedAt>0)android.util.Log.i("LingheLearning","total_ms="+(SystemClock.uptimeMillis()-learningStartedAt)+" success="+success);
   learningDiagnostics.event(success?9:10,0,0);maintenance.finish(ticket,success,SystemClock.uptimeMillis());if(!privacy.equals(PersonalReset.generation(this))||destroyed)return;
   stageRecoveryMode(learningCoordinator.mayRequirePrivateRecovery());
   if(success){if(!maintenance.localPending())new File(getFilesDir(),"learning-maintenance-dirty-v1").delete();refreshRecentLearning();metadataRefresh.request();}
@@ -566,7 +581,23 @@ public class LingheInputService extends InputMethodService {
  }
  private void traceCandidate(CandidateViews.Item item,String stage){if(activityArchive==null||visibleDecision==null)return;int rank=-1;for(int i=0;i<candidateItems.size();i++)if(candidateItems.get(i).id.equals(item.id)){rank=i;break;}if(rank<0)return;InputDecisionEvidence.Candidate selected=InputDecisionEvidence.candidate(visibleDecision.snapshot,new String[]{item.id,item.text,item.reading},rank);activityArchive.decision(visibleDiagnosticToken,visibleDecision.event(stage,selected,"touch",null,null,SystemClock.elapsedRealtimeNanos()/1000));}
  private InputDecisionEvidence decisionSelection(CandidateViews.Item item,String method){if(visibleDecision==null)return null;for(int i=0;i<candidateItems.size();i++)if(candidateItems.get(i).id.equals(item.id))return visibleDecision.event("selection",InputDecisionEvidence.candidate(visibleDecision.snapshot,new String[]{item.id,item.text,item.reading},i),method,null,null,SystemClock.elapsedRealtimeNanos()/1000);return null;}
- private void chooseItem(CandidateViews.Item item,long token){if(!ready)return;InputDecisionEvidence chosen=decisionSelection(item,"touch");final ActivityArchiveManager.InputProvider provider=activityArchive;final long expected=visibleDiagnosticToken;visibleDecision=chosen;resumeSuggestionsForExplicitEdit();feedback(root);submitLiteral(()->{if(version!=token){if(provider!=null&&chosen!=null)provider.decision(expected,chosen.event("cancel",chosen.selected,"touch","stale_snapshot",null,SystemClock.elapsedRealtimeNanos()/1000));return "";}if(provider!=null&&chosen!=null)provider.decision(expected,chosen);return selectKnown(item);},true,null,()->0,"select");}
+ /** Re-bind a tapped row to the current native generation. Long input
+  *  refreshes candidates asynchronously; dropping a stale tap made commits
+  *  intermittently disappear. Never use an old absolute index. */
+ private String selectCurrent(CandidateViews.Item item){
+  if(item==null)return "";
+  String[][] current=NativeCore.snapshot(session);
+  for(int i=1;i<current.length;i++){
+   if(current[i].length>=3&&item.text.equals(current[i][1])&&item.reading.equals(current[i][2])){
+    CandidateViews.Item fresh=new CandidateViews.Item(current[i]);CandidateViews.Item original=item;
+    // Keep the user's visible choice identity for repair/custom rows when it
+    // still exists; otherwise the fresh native row is the exact same word.
+    if(fresh.id.equals(original.id)||!original.id.startsWith("repair:"))return selectKnown(fresh);
+   }
+  }
+  return "";
+ }
+ private void chooseItem(CandidateViews.Item item,long token){if(!ready)return;InputDecisionEvidence chosen=decisionSelection(item,"touch");final ActivityArchiveManager.InputProvider provider=activityArchive;final long expected=visibleDiagnosticToken;visibleDecision=chosen;resumeSuggestionsForExplicitEdit();feedback(root);submitLiteral(()->{String selected=version==token?selectKnown(item):selectCurrent(item);if(provider!=null&&chosen!=null){if(selected.isEmpty())provider.decision(expected,chosen.event("cancel",chosen.selected,"touch","stale_snapshot",null,SystemClock.elapsedRealtimeNanos()/1000));else provider.decision(expected,chosen);}return selected;},true,null,()->0,"select");}
  private String enterLabel(){EditorInfo info=getCurrentInputEditorInfo();if(info==null)return "换行";switch(info.imeOptions&EditorInfo.IME_MASK_ACTION){case EditorInfo.IME_ACTION_SEND:return "发送";case EditorInfo.IME_ACTION_SEARCH:return "搜索";case EditorInfo.IME_ACTION_GO:return "前往";case EditorInfo.IME_ACTION_DONE:return "完成";case EditorInfo.IME_ACTION_NEXT:return "下一项";default:return "换行";}}
  private void editorAction(){symbolPairs.invalidate();InputConnection c=getCurrentInputConnection();if(c==null)return;EditorInfo info=getCurrentInputEditorInfo();int action=info==null?EditorInfo.IME_ACTION_NONE:info.imeOptions&EditorInfo.IME_MASK_ACTION;if(action!=EditorInfo.IME_ACTION_NONE&&action!=EditorInfo.IME_ACTION_UNSPECIFIED)c.performEditorAction(action);else{c.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN,KeyEvent.KEYCODE_ENTER));c.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP,KeyEvent.KEYCODE_ENTER));}}
  private void enter(){if(!ready||english||secure||numbers){editorAction();return;}boolean[] hadPending={false};submitLiteral(()->{hadPending[0]=NativeCore.hasPending(session);return hadPending[0]?acceptFirst():"";},true,()->{if(!hadPending[0])editorAction();});}
@@ -661,7 +692,6 @@ public class LingheInputService extends InputMethodService {
   List<String> englishWords=EnglishCompletion.choices(mixedEnglish,englishPrefix);
   ClipboardCandidateState.Value clipboard=clipboardSuggestions.visible(document,ready&&!pending()&&!secure&&!symbols&&englishPrefix.isEmpty(),repeating!=null);shownClipboardCandidate=clipboard;
   AutoPhrase.Notice notice=learnedNotice;if(notice!=null&&(notice.document!=document||pending()||english||secure||!ready))notice=learnedNotice=null;
-  if(notice!=null){final AutoPhrase.Notice shown=notice;TextView label=new TextView(this);label.setText("已记住 "+shown.text);label.setTextColor(Ui.muted(this));label.setTextSize(14);label.setSingleLine(true);label.setGravity(Gravity.CENTER_VERTICAL);label.setPadding(dp(10),0,dp(4),0);header.addView(label,new LinearLayout.LayoutParams(-2,-1));Button undo=button("撤销",()->undoLearned(shown));utility(undo);header.addView(undo,new LinearLayout.LayoutParams(dp(56),-1));}
   ArrayList<CandidateViews.Item> presented=new ArrayList<>();if(clipboard!=null)presented.add(new CandidateViews.Item(new String[]{clipboard.id,clipboard.preview,""}));if(!english&&!secure)presented.addAll(candidateItems);
   auxiliaryCandidatesShown=!englishWords.isEmpty()||!presented.isEmpty();
   int clipboardDocument=document;long clipboardEpoch=inputEpoch.get();

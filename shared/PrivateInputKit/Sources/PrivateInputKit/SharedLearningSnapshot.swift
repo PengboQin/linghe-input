@@ -3,9 +3,25 @@ import Darwin
 
 public enum SnapshotPublisher {
     case containingApp
-    case keyboard(fullAccess: Bool)
+    /// Host app local-only publication: writes the local snapshot but never
+    /// starts cloud/recency transport.
+    case containingAppLocal
+    /// `remote` controls cloud/recency publication, not the local snapshot
+    /// write. A full-access keyboard may keep the local learning list while
+    /// the user has disabled remote learning sharing.
+    case keyboard(fullAccess: Bool, remote: Bool)
     var canWrite: Bool {
-        switch self { case .containingApp: return true; case .keyboard(let fullAccess): return fullAccess }
+        switch self {
+        case .containingApp, .containingAppLocal: return true
+        case .keyboard(let fullAccess, _): return fullAccess
+        }
+    }
+    public var allowsRemoteSync: Bool {
+        switch self {
+        case .containingApp: return true
+        case .containingAppLocal: return false
+        case .keyboard(_, let remote): return remote
+        }
     }
 }
 public enum SnapshotStoreError: Error { case fullAccessRequired, busy }

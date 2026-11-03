@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput" android:versionCode="69" android:versionName="0.1.68">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="live.linghe.privateinput" android:versionCode="77" android:versionName="0.1.76">
  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36"/>
  <uses-permission android:name="android.permission.INTERNET"/>
  <uses-permission android:name="android.permission.VIBRATE"/>
@@ -11,6 +11,7 @@
   <activity android:name=".DeviceSyncActivity" android:exported="false"/>
   <activity android:name=".QRScanActivity" android:exported="false"/>
   <service android:name=".SyncJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+  <activity android:name=".LearnedVocabularyActivity" android:exported="false"/>
   <activity android:name=".PersonalLexiconActivity" android:exported="false"/>
   <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
   <service android:name=".LingheInputService" android:label="灵鹤输入法" android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">

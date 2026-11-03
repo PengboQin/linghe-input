@@ -67,7 +67,7 @@ private final class MacHiddenCheckpointCoordinator {
     private var completedPolicy:Policy?
     private struct Policy:Equatable {
         let epoch:String,remember:Bool,sharing:Bool,day:Int
-        var publisher:SnapshotPublisher? {remember && sharing ? .containingApp:nil}
+        var publisher:SnapshotPublisher? {remember ? (sharing ? .containingApp : .containingAppLocal) : nil}
     }
     private var policy:Policy {
         Policy(epoch:PersonalDataReset.generation,remember:KeyboardPreferences.rememberWords,
@@ -181,11 +181,9 @@ private final class MacHiddenCheckpointCoordinator {
         DispatchQueue.global(qos:.utility).async { [weak self,weak session] in
             let status=NativeEngine.autoPhraseStatus(phrase)
             DispatchQueue.main.async {
-                guard status==2,let self,let session,self.activated,self.focusGeneration==generation,self.input===session,
-                      NativeEngine.firstAutoPhraseAnnouncement(phrase,reading),let client=self.liveClient() else{return}
-                var caret=NSRect.zero
-                guard PIReadIMKCaret(client,&caret) else{return}
-                Self.phraseNotice.show(phrase:phrase,caret:caret) { [weak session] in session?.engine.forgetAutoPhrase(text:phrase,reading:reading) ?? false }
+                guard status==2,let self,let session,self.activated,self.focusGeneration==generation,self.input===session else{return}
+                // Remember in the background only; no foreground notice card.
+                _ = session.engine.learnAutoPhrase(text:phrase,reading:reading)
             }
         }
     }

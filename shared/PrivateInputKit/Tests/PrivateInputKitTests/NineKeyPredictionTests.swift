@@ -142,6 +142,19 @@ final class NineKeyPredictionTests:XCTestCase {
         tracker.stage(document:"field",anchor:"a",text:"你号",code:"64425",context:"",time:100,reading:"ni hao")
         XCTAssertNil(tracker.deleted(document:"field",anchor:"a",time:101));XCTAssertNil(tracker.partiallyDeleted(document:"field",anchor:"a",time:102))
     }
+    func testRepeatedCorrectionStrengthensSignalWithoutPermanentBlacklist() throws {
+        var memory=NineKeyChoiceMemory()
+        for _ in 0..<3 { try memory.record(code:"64426",reading:"ni hao",text:"拟好",context:"我说",strength:1) }
+        let old=try XCTUnwrap(memory.entries.first{$0.text=="拟好"})
+        XCTAssertEqual(old.count,3)
+        try memory.recordCorrection(code:"64426",reading:"ni hao",text:"你好",context:"我说")
+        let first=try XCTUnwrap(memory.entries.first{$0.text=="你好"})
+        try memory.recordCorrection(code:"64426",reading:"ni hao",text:"你好",context:"我说")
+        let second=try XCTUnwrap(memory.entries.first{$0.text=="你好"})
+        XCTAssertGreaterThanOrEqual(second.count,first.count)
+        XCTAssertTrue(memory.entries.contains{$0.text=="拟好"}, "weak correction must not permanently delete the old candidate")
+        try memory.validate()
+    }
     func testOnlyFullRemovalOfRecentOwnCommitCreatesCorrectionSignal() {
         var tracker=OwnCommitCorrectionTracker()
         tracker.stage(document:"field",anchor:"opaque-anchor",text:"你好",code:"64425",context:"我说",time:100)

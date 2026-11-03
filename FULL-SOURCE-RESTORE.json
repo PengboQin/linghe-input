@@ -1,13 +1,13 @@
 {
   "schema_version": 2,
-  "snapshot_kind": "baseline-20261024",
-  "complete_build_source_published": true,
+  "snapshot_kind": "preview-20261103",
+  "complete_build_source_published": false,
   "development_archive": {
-    "name": "LingheInput-Source-20261026-preview.zip",
-    "sha256": "4347ba79f382bae1ce44727777439f78ece1232e28a9d7de1f8c7ab0878bae53",
+    "name": "LingheInput-public-source-20261103.zip",
+    "sha256": "55130282a7df33ea2f956a3baee032719e155db938c04b360c1c456f89170368",
     "public_download_available": true
   },
-  "last_release_tag": "v0.2026.10.24-baseline.1",
+  "last_release_tag": "v0.2026.11.03-preview.1",
   "excluded_files": [
     {
       "path": "android/app/src/main/res/drawable/app_icon.png",

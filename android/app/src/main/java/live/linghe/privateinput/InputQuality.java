@@ -129,6 +129,9 @@ final class InputQuality {
   List<Repair> result=new ArrayList<>();repeatedHeads(session,state,raw,true,result,()->false,reading->reading.matches("[a-z]+(?:[ ']+[a-z]+)*"));result.sort((a,b)->{int c=Double.compare(b.score,a.score);return c!=0?c:a.text.compareTo(b.text);});return new ArrayList<>(result.subList(0,Math.min(32,result.size())));
  }
  private void repeatedHeads(long session,String[][] state,String raw,boolean nine,List<Repair> result,BooleanSupplier cancelled) {repeatedHeads(session,state,raw,nine,result,cancelled,this::fullySpelled);}
+ private static String preferredRepeatedSyllable(char digit) {
+  switch(digit){case '4':return "ha";default:return null;}
+ }
  private static void repeatedHeads(long session,String[][] state,String raw,boolean nine,List<Repair> result,BooleanSupplier cancelled,java.util.function.Predicate<String> fullySpelled) {
   if(raw.length()<2||raw.length()>96)return;int run=1;while(run<raw.length()&&raw.charAt(run)==raw.charAt(0))run++;
   if(run<2)return;LinkedHashSet<Integer> cuts=new LinkedHashSet<>();
@@ -137,14 +140,49 @@ final class InputQuality {
   String letters=nine?new String[]{"abc","def","ghi","jkl","mno","pqrs","tuv","wxyz"}[raw.charAt(0)-'2']:raw.substring(0,1);
   int queries=0;
   for(int cut:cuts){String suffix=raw.substring(cut);List<String[]> tails=new ArrayList<>();if(!suffix.isEmpty()&&suffix.length()<=16)for(String[] row:NativeCore.query(session,suffix,nine,96))if(fullySpelled.test(row[2])&&(nine?suffix.equals(code(row[2])):PinyinMatch.isFullSpelling(suffix,row[2]))&&tails.size()<8)tails.add(row);
+   char canonical=letters.charAt(letters.length()/2);boolean canonicalUniform=false;
    for(int letterIndex=0;letterIndex<letters.length()&&queries<8;letterIndex++){if(cancelled.getAsBoolean())return;char letter=letters.charAt(letterIndex);if("aeiouv".indexOf(letter)>=0)continue;String initials=String.join("",Collections.nCopies(cut,String.valueOf(letter)));queries++;
     int rank=0;for(String[] head:NativeCore.initials(session,initials,32)){if(cancelled.getAsBoolean())return;String[] parts=head[2].trim().split("[ ']+");if(parts.length!=cut||head[1].codePointCount(0,head[1].length())!=cut||!fullySpelled.test(head[2]))continue;boolean valid=true;for(String part:parts)if(part.charAt(0)!=letter){valid=false;break;}if(!valid)continue;
-     if(rank>=4)break;boolean uniform=head[1].codePoints().distinct().count()==1;double priority=(uniform?2:0)-rank++*.1;
+     if(rank>=4)break;boolean uniform=head[1].codePoints().distinct().count()==1;if(letter==canonical&&uniform)canonicalUniform=true;double priority=(uniform?2:0)-rank++*.1;
+     if(letter==canonical)priority+=0.4;
+     if(parts[0].length()==2&&parts[0].charAt(1)=='a')priority+=0.3;
      int tailRank=0;for(String[] tail:tails){String reading=head[2]+" "+tail[2];result.add(new Repair(state[0][2],normalized(reading),head[1]+tail[1],reading,"",8+priority+suffix.length()*.15-tailRank++*.08));}
      result.add(new Repair(state[0][2],normalized(head[2]),head[1],head[2],suffix,priority));if(result.size()>=256)return;
     }
    }
+   // Rime may have no uniform run for the canonical key letter (for example
+   // 8 x "4" has 干干… for g but no 哈哈哈哈… for h). Synthesize the canonical
+   // single character run from its exact reading; never let a non-canonical
+   // letter become the first candidate for a deliberate all-one-key run.
+   String syllable=preferredRepeatedSyllable(raw.charAt(0));
+   if(!canonicalUniform&&syllable!=null&&suffix.isEmpty()) {
+    for(String[] row:NativeCore.query(session,syllable,false,24)) {
+     if(row[1].codePointCount(0,row[1].length())!=1||!syllable.equals(row[2])||!fullySpelled.test(row[2]))continue;
+     StringBuilder text=new StringBuilder();for(int i=0;i<cut;i++)text.append(row[1]);
+     String reading=String.join(" ",Collections.nCopies(cut,syllable));
+     result.add(new Repair(state[0][2],normalized(reading),text.toString(),reading,"",14));if(result.size()>=256)return;break;
+    }
+   }
   }
+ }
+ /** First candidate's initials/full reading if exactly key-aligned; else one
+  * canonical initial per typed key. Never expand or drop visible positions. */
+ static String keyAlignedDraft(String raw,String reading) {
+  if(raw==null||raw.isEmpty())return "";
+  if(reading!=null&&!reading.trim().isEmpty()) {
+   String[] parts=reading.trim().split("[ ']+");
+   if(parts.length==raw.length()) {
+    StringBuilder out=new StringBuilder();for(String part:parts){if(part.isEmpty())return canonicalDraft(raw);if(out.length()>0)out.append(' ');out.append(part.charAt(0));}return out.toString();
+   }
+   String full=reading.replace(" ","").replace("'","");
+   if(full.length()==raw.length())return reading.trim();
+  }
+  return canonicalDraft(raw);
+ }
+ private static String canonicalDraft(String raw) {
+  String groups="abcdefghijklmnopqrstuvwxyz";StringBuilder out=new StringBuilder();
+  for(int i=0;i<raw.length();i++){int digit=raw.charAt(i)-'0';if(digit<2||digit>9)return "";String key=new String[]{"abc","def","ghi","jkl","mno","pqrs","tuv","wxyz"}[digit-2];if(out.length()>0)out.append(' ');out.append(key.charAt(key.length()/2));}
+  return out.toString();
  }
  private List<NineSpelling.Alternative> nineAlternatives(String raw) {
   // Exhaustively enumerate one edit at <=12 keys; query only 32 Rime drafts.

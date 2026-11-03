@@ -1,4 +1,4 @@
-2026-10-24 四端开发基线：iOS101（源码）、Android55 /0.1.54-r1、Mac82 /0.36.5、Windows062 /0.6.2-win1。下载[固定基线与安装附件](https://github.com/PengboQin/linghe-input/releases/tag/v0.2026.10.24-baseline.1)，平台验证范围见[BASELINE.md](BASELINE.md)。当前源码包含少量未进入桌面包的后续改动，重建已发布桌面包时使用`BASELINE-SOURCES.json`列出的覆盖文件。此为开发预览基线，当前不推进下一阶段开发；输入过程诊断仍独立、默认关闭。
+2026-11-03 开发预览：iOS115（源码）、Android77 /0.1.76、Mac97 /0.38.0、Windows 0.7.6 标准安装器。下载[预览与源码附件](https://github.com/PengboQin/linghe-input/releases/tag/v0.2026.11.03-preview.1)，平台验证范围见[BASELINE.md](BASELINE.md)。当前源码包含少量未进入桌面包的后续改动，重建已发布桌面包时使用`BASELINE-SOURCES.json`列出的覆盖文件。此为开发预览，不代表四端已通过日用验收；输入过程诊断仍独立、默认关闭。
 
 # 灵鹤输入法 · Linghe Input
 

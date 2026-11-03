@@ -14,12 +14,16 @@ enum KeyboardRuntimeDiagnostics {
         case nativeLanguageBegin, nativeLanguageEnd, nativeJournalReady, nativeStartEnd
         case checkpointScheduled, checkpointPreflight, checkpointPreflightEnd
         case checkpointBegin, checkpointEnd, checkpointFailed, checkpointSkipped
+        case sharedPublishSkipped, sharedPublished, sharedPublishFailed
+        case checkpointNativeExported, checkpointObservationReady, checkpointPersisted, checkpointPublishParts
         case candidateBatchSlow, nativeBatchSlow, clipboardReadSlow, clipboardWriteSlow, hostContextSlow, checkpointSlow
     }
     enum Metric: String, CaseIterable {
         case ready, elapsedMilliseconds, persistedBytes, skippedWriteBytes
         case nativeImports, nativeResets, completed, skipped, sourceCount
         case owner, nativeSessionCount, failureStage, failureClass, validationReasons
+        case fullAccess, learningSharing, privacyEpochPresent, publisherAvailable, publishedBytes
+        case queueWaitMilliseconds, preflightMilliseconds, nativeMilliseconds, ioMilliseconds, publishMilliseconds, observationMilliseconds, persistMilliseconds, sharedPublishMilliseconds, cloudPublishMilliseconds, recencyPublishMilliseconds
     }
     /// Fixed numeric categories only. Never bridge an NSError description,
     /// pointer, filesystem path, device/group or host identity into metadata.

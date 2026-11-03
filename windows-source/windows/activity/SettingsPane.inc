@@ -1,4 +1,6 @@
 // Native settings UI only. Background transport/archiving remains in Worker.cpp.
+HWND learnedList=nullptr,learnedSummary=nullptr;std::string learnedDisplayDigest;
+void updateContent();
 HWND contentWindow=nullptr,learningSyncBox=nullptr,textSyncBox=nullptr,contentStatus=nullptr;
 HWND settingsTitle=nullptr,settingsNav[2]{},settingsLearningNav=nullptr,syncSaveButton=nullptr,syncNowButton=nullptr;HFONT settingsTitleFont=nullptr,settingsSectionFont=nullptr;
 std::vector<HWND>settingsSections;
@@ -12,7 +14,7 @@ int px(int n){return MulDiv(n,int(uiDpi),96);}
 void setFont(){
  HFONT next=settingsBodyFont(uiDpi),section=settingsHeadingFont(uiDpi);
  RECT area{};GetClientRect(window,&area);const int height=MulDiv(area.bottom,96,int(uiDpi));
- for(const auto&c:controls){int y=c.y,h=c.h;if(c.hwnd==statusField){y=height-50;h=38;}else if(c.hwnd==syncSaveButton||c.hwnd==syncNowButton||GetDlgCtrlID(c.hwnd)==5||GetDlgCtrlID(c.hwnd)==7||GetDlgCtrlID(c.hwnd)==8)y=height-94;SetWindowPos(c.hwnd,nullptr,px(c.x),px(y),px(c.w),px(h),SWP_NOZORDER|SWP_NOACTIVATE);SendMessageW(c.hwnd,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);}
+ for(const auto&c:controls){int y=c.y,h=c.h;if(c.hwnd==learnedList)h=std::max(80,height-326);if(c.hwnd==statusField){y=height-50;h=38;}else if(c.hwnd==syncSaveButton||c.hwnd==syncNowButton||GetDlgCtrlID(c.hwnd)==5||GetDlgCtrlID(c.hwnd)==7||GetDlgCtrlID(c.hwnd)==8||GetDlgCtrlID(c.hwnd)==161)y=height-94;SetWindowPos(c.hwnd,nullptr,px(c.x),px(y),px(c.w),px(h),SWP_NOZORDER|SWP_NOACTIVATE);SendMessageW(c.hwnd,WM_SETFONT,reinterpret_cast<WPARAM>(next),TRUE);}
  for(auto control:settingsSections)SendMessageW(control,WM_SETFONT,reinterpret_cast<WPARAM>(section),TRUE);
  for(auto field:inputFields)if(field){SendMessageW(field,CB_SETITEMHEIGHT,WPARAM(-1),px(24));SendMessageW(field,CB_SETITEMHEIGHT,0,px(24));}
  if(uiFont)DeleteObject(uiFont);uiFont=next;if(settingsSectionFont)DeleteObject(settingsSectionFont);settingsSectionFont=section;
@@ -33,6 +35,7 @@ void selectSettingsPage(int page){
  ShowWindow(inputSaveButton,page>=3?SW_SHOW:SW_HIDE);
  for(int id:{201,202,203,204,205})InvalidateRect(GetDlgItem(window,id),nullptr,TRUE);
  SetFocus(GetDlgItem(window,settingsNavId(page)));
+ if(page==2)submit([]{updateContent();});
 }
 void saveInputPreferences(){
  int values[3];for(int i=0;i<3;i++){auto index=SendMessageW(inputFields[i],CB_GETCURSEL,0,0);require(index>=0&&index<=6,"input selection");values[i]=int(index)+3;}
@@ -74,7 +77,9 @@ void createControls(){
  controlPage=2;
  section(L"输入习惯",78);
  learningSyncBox=control(L"BUTTON",L"同步本组词库与输入习惯",188,118,504,32,21,WS_TABSTOP|BS_AUTOCHECKBOX);
- control(L"STATIC",L"包含个人词条、快捷短语和使用频率。",188,164,504,40,0);
+ learnedSummary=control(L"STATIC",L"正在读取已学习词汇…",188,164,504,24,0);
+ learnedList=control(L"LISTBOX",L"",188,198,504,202,160,WS_TABSTOP|WS_VSCROLL|WS_HSCROLL|LBS_NOINTEGRALHEIGHT);
+ control(L"BUTTON",L"刷新词汇",188,426,128,34,161,WS_TABSTOP);
  controlPage=1;
  control(L"STATIC",L"归档服务器",188,82,504,22,0);
  archiveField=control(L"EDIT",L"",188,110,504,32,103,WS_TABSTOP|ES_AUTOHSCROLL);settingsInputScope(archiveField,IS_URL);SendMessageW(archiveField,EM_SETLIMITTEXT,2048,0);
@@ -106,11 +111,23 @@ void createControls(){
  contentWindow=window;controlPage=-1;setFont();selectSettingsPage(requestedSettingsPage);
  for(int id:{21,22,23,24})EnableWindow(GetDlgItem(window,id),FALSE);
 }
+void renderLearnedVocabulary(const Json&snapshot){
+ if(!snapshot.has("learnedView"))return;
+ const auto&view=snapshot.at("learnedView");auto digest=view.dump();if(digest==learnedDisplayDigest)return;learnedDisplayDigest=std::move(digest);
+ auto top=SendMessageW(learnedList,LB_GETTOPINDEX,0,0);SendMessageW(learnedList,WM_SETREDRAW,FALSE,0);SendMessageW(learnedList,LB_RESETCONTENT,0,0);
+ int extent=0;auto dc=GetDC(learnedList);auto old=SelectObject(dc,uiFont);
+ for(const auto&row:view.items){auto line=wide(row.at("text").str())+L"    "+wide(row.at("reading").str())+L"    "+std::to_wstring(row.at("frequency").num())+L" 次";if(row.at("pinned").boolean())line+=L" · 置顶";
+  SendMessageW(learnedList,LB_ADDSTRING,0,reinterpret_cast<LPARAM>(line.c_str()));SIZE size{};GetTextExtentPoint32W(dc,line.c_str(),int(line.size()),&size);extent=std::max(extent,int(size.cx)+px(16));}
+ SelectObject(dc,old);ReleaseDC(learnedList,dc);SendMessageW(learnedList,LB_SETHORIZONTALEXTENT,extent,0);if(!view.items.empty())SendMessageW(learnedList,LB_SETTOPINDEX,std::min<size_t>(std::max<LRESULT>(0,top),view.items.size()-1),0);
+ SendMessageW(learnedList,WM_SETREDRAW,TRUE,0);InvalidateRect(learnedList,nullptr,TRUE);
+ auto label=view.items.empty()?L"暂无已学习词汇。选词后可点击刷新。":L"本机学习记录 · "+std::to_wstring(view.items.size())+L" 条 · 按学习次数排序";SetWindowTextW(learnedSummary,label.c_str());
+}
 void renderSharedTexts(){/* No desktop history or message presentation. */}
-void updateContent(){publishLearning();if(!client)return;refreshAutomaticClipboard();auto snapshot=client->contentSnapshot();snapshot["automaticClipboardEnabled"]=automaticClipboard&&automaticClipboard->enabled();snapshot["automaticClipboardReady"]=automaticClipboard&&automaticClipboard->ready();auto*value=new Json(snapshot);if(!PostMessageW(window,ContentMessage,0,reinterpret_cast<LPARAM>(value)))delete value;}
+void updateContent(){publishLearning();if(!client)return;refreshAutomaticClipboard();auto snapshot=client->contentSnapshot();snapshot["learnedView"]=learnedVocabularyView(snapshot.at("archive"));snapshot["automaticClipboardEnabled"]=automaticClipboard&&automaticClipboard->enabled();snapshot["automaticClipboardReady"]=automaticClipboard&&automaticClipboard->ready();auto*value=new Json(snapshot);if(!PostMessageW(window,ContentMessage,0,reinterpret_cast<LPARAM>(value)))delete value;}
 
 void openContent(){selectSettingsPage(0);submit([]{updateContent();});}
 bool settingsCommand(int id){
+ if(id==161){submit([]{updateContent();});return true;}
  if(id==201||id==202||id==204){selectSettingsPage(id==204?2:id-201);return true;}
  if(id==203||id==205){selectSettingsPage(id==203?3:4);return true;}
  if(id>=140&&id<=144){EnableWindow(inputSaveButton,TRUE);return true;}

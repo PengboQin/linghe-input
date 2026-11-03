@@ -3,7 +3,7 @@ import XCTest
 
 final class LearningDeltaPublicationTests: XCTestCase {
     func testBootstrapChangeRetryAndResetConverge() throws {
-        let group = UUID(); var source = LearningModel(), peer = LearningModel()
+        let group = UUID(); var source = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000), peer = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
         for index in 0..<100 {
             try source.record(reading: "ci", text: "词\(index)", device: "a")
         }
@@ -30,11 +30,11 @@ final class LearningDeltaPublicationTests: XCTestCase {
     }
 
     func testContextChangesBootstrapAndSilentLossRejected() throws {
-        let group = UUID(); var model = LearningModel()
+        let group = UUID(); var model = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
         try model.record(reading: "ren", text: "人", device: "a")
         let first = try LearningDeltaPublication.prepare(archive: model.export(), group: group, epoch: 1, previous: nil)
         XCTAssertTrue(try LearningDeltaPublication.prepare(archive: model.export(), group: group, epoch: 2, previous: first.checkpoint).bootstrap)
         XCTAssertTrue(try LearningDeltaPublication.prepare(archive: model.export(), group: UUID(), epoch: 1, previous: first.checkpoint).bootstrap)
-        XCTAssertThrowsError(try LearningDeltaPublication.prepare(archive: LearningModel().export(), group: group, epoch: 1, previous: first.checkpoint))
+        XCTAssertThrowsError(try LearningDeltaPublication.prepare(archive: try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000).export(), group: group, epoch: 1, previous: first.checkpoint))
     }
 }

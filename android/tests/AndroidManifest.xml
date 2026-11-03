@@ -9,6 +9,7 @@
  <instrumentation android:name="live.linghe.privateinput.DocumentHarnessProbe" android:targetPackage="live.linghe.privateinput.tests"/>
  <instrumentation android:name="live.linghe.privateinput.InputInteractionCheck" android:targetPackage="live.linghe.privateinput.tests"/>
  <instrumentation android:name="live.linghe.privateinput.LearningProof" android:targetPackage="live.linghe.privateinput.tests"/>
+ <instrumentation android:name="live.linghe.privateinput.LearnedVocabularyInstrumentation" android:targetPackage="live.linghe.privateinput.tests"/>
  <uses-permission android:name="android.permission.INTERNET"/>
  <uses-permission android:name="android.permission.VIBRATE"/>
  <instrumentation android:name="live.linghe.privateinput.SyncBacklogRecoveryCheck" android:targetPackage="live.linghe.privateinput.tests"/>

@@ -75,6 +75,20 @@ public struct LearningImportJournal: Codable {
         try Self.validateDevice(device)
         var target = checkpoint
         try target.observeExport(finalLocalExport, device: device)
+        return try prepare(observed: target, remoteArchive: remoteArchive,
+                           device: device, transactionID: transactionID)
+    }
+
+    /// Variant for an adapter that already observed the same export on its
+    /// refresh snapshot. Avoids a second parse/validate of a multi-megabyte
+    /// native export while keeping the same validation and persistence order.
+    @discardableResult
+    public mutating func prepare(observed checkpoint: RimeLearningCheckpoint, remoteArchive: Data,
+                                 device: String, transactionID: UUID = UUID()) throws -> Intent {
+        guard pending == nil else { throw JournalError.importPending }
+        try Self.validateDevice(device)
+        try Self.validate(checkpoint)
+        var target = checkpoint
         try target.mergeRemoteArchive(remoteArchive)
         try Self.validate(target)
         _ = try target.engineImport()
@@ -96,6 +110,16 @@ public struct LearningImportJournal: Codable {
         guard intent.id == transactionID else { throw JournalError.staleTransaction }
         var next = intent.target
         try next.establishBaselineAfterImport(actualEngineExport)
+        try Self.validate(next)
+        checkpoint = next; pending = nil
+    }
+
+    /// Commit with counts already parsed from the identical pre-import export.
+    public mutating func commit(transactionID: UUID, observedCounts: [String: UInt64]) throws {
+        guard let intent = pending else { throw JournalError.noPendingImport }
+        guard intent.id == transactionID else { throw JournalError.staleTransaction }
+        var next = intent.target
+        try next.establishBaselineAfterImport(observedCounts: observedCounts)
         try Self.validate(next)
         checkpoint = next; pending = nil
     }

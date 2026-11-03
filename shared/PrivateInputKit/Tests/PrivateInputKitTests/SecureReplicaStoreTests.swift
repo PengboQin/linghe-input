@@ -33,7 +33,7 @@ final class SecureReplicaStoreTests: XCTestCase {
         return (a, b, setup.membership.anchor.group)
     }
     func sampleLearning(_ peer: Peer, text: String, count: UInt64) throws -> Data {
-        var model = LearningModel(); try model.setDeviceCount(reading: "ni hao", text: text, device: peer.identity.device.uuidString, count: count)
+        var model = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try model.setDeviceCount(reading: "ni hao", text: text, device: peer.identity.device.uuidString, count: count)
         return try model.export()
     }
     func sqlite(_ peer: Peer, _ sql: String) throws {
@@ -50,7 +50,7 @@ final class SecureReplicaStoreTests: XCTestCase {
         XCTAssertEqual(try peers.joiner.store.receive(a.encoded(), now: 1012, receivingEnabled: true), .applied)
         XCTAssertEqual(try peers.owner.store.receive(b.encoded(), now: 1013, receivingEnabled: true), .duplicate)
         XCTAssertEqual(try peers.joiner.store.receive(a.encoded(), now: 1013, receivingEnabled: true), .duplicate)
-        var left = LearningModel(), right = LearningModel()
+        var left = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000), right = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000)
         try left.merge(peers.owner.store.learningArchive(group: peers.group)); try right.merge(peers.joiner.store.learningArchive(group: peers.group))
         XCTAssertEqual(left.entries, right.entries)
         XCTAssertEqual(left.entries.values.first(where: { $0.text == "拟好" })?.frequency, 9)
@@ -150,7 +150,7 @@ final class SecureReplicaStoreTests: XCTestCase {
         let peers = try pair(), learned = try sampleLearning(peers.owner, text: "拟好", count: 12)
         let message = try peers.owner.store.enqueue(learned, domain: .learning, group: peers.group, sharingEnabled: true, now: 1010)
         _ = try peers.joiner.store.receive(message.encoded(), now: 1011, receivingEnabled: true)
-        var model = LearningModel(); try model.merge(peers.joiner.store.learningArchive(group: peers.group))
+        var model = try LearningModel(capacityProfile: LearningCapacityProfiles.expanded10000); try model.merge(peers.joiner.store.learningArchive(group: peers.group))
         let tsv = peers.joiner.root.appendingPathComponent("synthetic-import.tsv")
         try RimeLearningFormat.importTSV(from: model).write(to: tsv)
         let process = Process(); process.executableURL = URL(fileURLWithPath: driver)

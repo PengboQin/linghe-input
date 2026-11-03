@@ -52,6 +52,24 @@ final class PersonalLexiconTests:XCTestCase {
         XCTAssertThrowsError(try store.save(PersonalLexicon()));XCTAssertEqual(try Data(contentsOf:store.url),bad)
         XCTAssertThrowsError(try PersonalLexiconStore.decode(Data(repeating:0,count:PersonalLexicon.maximumBytes+1)))
     }
+    func testSnapshotDigestCoversExactReadBytes() throws {
+        let directory=FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at:directory) }
+        let store=PersonalLexiconStore(directory:directory)
+        XCTAssertNil(try store.loadSnapshot())
+        var value=PersonalLexicon();try value.upsert(.init(kind:.word,text:"拟好",trigger:"ni hao"));try store.save(value)
+        let first=try XCTUnwrap(try store.loadSnapshot())
+        XCTAssertEqual(first.value.entries,value.entries);XCTAssertEqual(first.digest.count,64);XCTAssertGreaterThan(first.byteCount,0)
+        let originalBytes=try Data(contentsOf:store.url)
+        try originalBytes.write(to:store.url)
+        let second=try XCTUnwrap(try store.loadSnapshot())
+        XCTAssertEqual(first,second,"same bytes must keep the same digest")
+        var changed=value;try changed.upsert(.init(kind:.phrase,text:"新内容",trigger:"xin"));try store.save(changed)
+        let third=try XCTUnwrap(try store.loadSnapshot())
+        XCTAssertNotEqual(first.digest,third.digest,"different bytes must change the revision")
+        let raw=Data("broken archive".utf8);try raw.write(to:store.url)
+        XCTAssertThrowsError(try store.loadSnapshot())
+    }
     func testRecallBudgetIncludesMiddleDictionaryRanksAndRetainsBounds() {
         let legacy=(0..<64).map{(input:"legacy\($0)",cost:1.0)}
         let dictionary=(0..<12).map{(input:"dictionary\($0)",cost:1.5)}

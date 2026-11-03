@@ -22,6 +22,35 @@ public final class ImeTaskExecutorsTest {
    check(saved.get()==1&&staged.get()==0,"last selection saved even when coalesced follow-up queues behind close sentinel");
   }finally{release.countDown();tasks.close(()->{},drain);tasks.nativeWorker.awaitTermination(3,TimeUnit.SECONDS);tasks.recent.awaitTermination(3,TimeUnit.SECONDS);tasks.learning.awaitTermination(3,TimeUnit.SECONDS);tasks.optional.awaitTermination(3,TimeUnit.SECONDS);}
  }
+ private static void priorityInputAheadOfQueuedSpeculation()throws Exception{
+  ImeTaskExecutors tasks=new ImeTaskExecutors();CountDownLatch entered=new CountDownLatch(1),release=new CountDownLatch(1);
+  List<String> order=Collections.synchronizedList(new ArrayList<>());
+  try{
+   tasks.nativeWorker.execute(()->{entered.countDown();try{release.await();}catch(InterruptedException failed){Thread.currentThread().interrupt();}order.add("running");});
+   await(entered);
+   tasks.nativeWorker.executeSpeculative(()->order.add("speculation-1"));
+   tasks.nativeWorker.executeHigh(()->order.add("input"));
+   tasks.nativeWorker.executeSpeculative(()->order.add("speculation-2"));
+   release.countDown();
+   tasks.nativeWorker.submit(()->order.add("barrier")).get(3,TimeUnit.SECONDS);
+   check(order.equals(java.util.Arrays.asList("running","input","speculation-1","speculation-2","barrier")),"accepted input jumps ahead of queued speculation");
+  }finally{release.countDown();tasks.close(()->{},()->{});tasks.nativeWorker.awaitTermination(3,TimeUnit.SECONDS);tasks.recent.awaitTermination(3,TimeUnit.SECONDS);tasks.learning.awaitTermination(3,TimeUnit.SECONDS);tasks.optional.awaitTermination(3,TimeUnit.SECONDS);}
+ }
+ private static void lifecycleBoundaryPreservesNewInput()throws Exception{
+  ImeTaskExecutors tasks=new ImeTaskExecutors();CountDownLatch entered=new CountDownLatch(1),release=new CountDownLatch(1);
+  List<String> order=Collections.synchronizedList(new ArrayList<>());StringBuilder composition=new StringBuilder();AtomicBoolean privateMode=new AtomicBoolean();
+  try{
+   tasks.nativeWorker.execute(()->{entered.countDown();try{release.await();}catch(InterruptedException e){Thread.currentThread().interrupt();}});await(entered);
+   tasks.nativeWorker.executeHigh(()->order.add("old-input"));
+   tasks.nativeWorker.execute(()->{order.add("old-clear");composition.setLength(0);});
+   tasks.nativeWorker.execute(()->{order.add("new-config");privateMode.set(true);});
+   tasks.nativeWorker.executeSpeculative(()->order.add("prediction"));
+   tasks.nativeWorker.executeHigh(()->{order.add("new-input");if(!privateMode.get())throw new AssertionError("privacy configuration overtaken");composition.append("ni");});
+   release.countDown();tasks.nativeWorker.submit(()->order.add("barrier")).get(3,TimeUnit.SECONDS);
+   check(order.equals(Arrays.asList("old-input","old-clear","new-config","new-input","prediction","barrier")),"lifecycle/config boundaries cannot be overtaken");
+   check(composition.toString().equals("ni"),"old cleanup cannot erase new composition");
+  }finally{release.countDown();tasks.close(()->{},()->{});tasks.nativeWorker.awaitTermination(3,TimeUnit.SECONDS);tasks.recent.awaitTermination(3,TimeUnit.SECONDS);tasks.learning.awaitTermination(3,TimeUnit.SECONDS);tasks.optional.awaitTermination(3,TimeUnit.SECONDS);}
+ }
  public static void main(String[] args)throws Exception{
   ImeTaskExecutors tasks=new ImeTaskExecutors();
   CountDownLatch optionalEntered=new CountDownLatch(1),optionalRelease=new CountDownLatch(1),nativeEntered=new CountDownLatch(1),nativeRelease=new CountDownLatch(1),finishEntered=new CountDownLatch(1),finishRelease=new CountDownLatch(1),recentReleased=new CountDownLatch(1);
@@ -49,7 +78,7 @@ public final class ImeTaskExecutorsTest {
    check(tasks.nativeWorker.awaitTermination(3,TimeUnit.SECONDS)&&tasks.recent.awaitTermination(3,TimeUnit.SECONDS)&&tasks.optional.awaitTermination(3,TimeUnit.SECONDS),"all service executors terminate");
    check(optionalInterrupted.get(),"optional loading is cancelled independently");
    tasks.close(()->nativeClosed.incrementAndGet(),()->{});check(nativeClosed.get()==1,"duplicate close does not release native twice");
-   coalescedFinalSelection();
+   coalescedFinalSelection();priorityInputAheadOfQueuedSpeculation();lifecycleBoundaryPreservesNewInput();
    System.out.println("PASS assertions="+checks+" optionalIsolation=true nativeFinishDrained=true mainNonblocking=true syntheticFilesOnly=true");
   }finally{
    optionalRelease.countDown();nativeRelease.countDown();finishRelease.countDown();tasks.close(()->{},()->{});

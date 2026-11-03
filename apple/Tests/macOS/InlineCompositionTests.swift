@@ -37,6 +37,25 @@ final class InlineCompositionTests:XCTestCase {
         host.selection="选中文字";XCTAssertTrue(state.update("quan",host:host));XCTAssertTrue(state.finish(nil,host:host))
         XCTAssertEqual(host.prefix,"原文🙂你好选中文字");XCTAssertFalse(state.active)
     }
+    func testLongDraftAndEmojiRemainExactlyOnce() {
+        let host=MarkedHost(),state=InlineComposition()
+        let draft=String(repeating:"长",count:1200)+"🙂\u{FE0F}"
+        XCTAssertTrue(state.update(draft,host:host))
+        XCTAssertEqual(host.marked,draft)
+        XCTAssertTrue(state.finish("完成🙂️",host:host))
+        XCTAssertEqual(host.prefix,"原文🙂完成🙂️")
+        XCTAssertFalse(state.active)
+    }
+    func testLongDraftContextTruncationIsNotTreatedAsCaretMove() {
+        let host=MarkedHost(),state=InlineComposition()
+        let draft=String(repeating:"h",count:80)
+        XCTAssertTrue(state.update(draft,host:host))
+        // Simulate a host that truncates/changes readable context while the
+        // native marked range still belongs to this composition.
+        host.prefix="另一个上下文"
+        XCTAssertFalse(state.moved(in:host))
+        XCTAssertTrue(state.active)
+    }
     func testFieldAndCaretChangesNeverDeleteOtherText() {
         let host=MarkedHost(),state=InlineComposition();XCTAssertTrue(state.update("ni",host:host))
         host.compositionDocument=UUID();host.prefix="另一个框";host.marked=nil

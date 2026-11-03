@@ -132,3 +132,6 @@ if(WIN32)
   target_link_options(LingheLearningBurstPipe PRIVATE -municode -static)
  endif()
 endif()
+
+# Pure local archive projection; no device, network or user data required.
+add_executable(LingheLearnedVocabularyViewTests ../tests/activity/learned_vocabulary_view.cpp)

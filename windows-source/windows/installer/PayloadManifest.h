@@ -59,6 +59,7 @@ inline bool recognizedSetupHash(const std::string& hash,const std::string& runni
         hash=="aad708921cb7deae91b9ebe6dac2dda09e1077235894cee43ec98da854680f12" ||
         hash=="4a09a75b70eb6dbf309afd8809669df04d11dcef427d3d8b55e54598aeb0b120" ||
         hash=="41924eba956d0d51221afa89ea59b99399736f9cc007518865bc5c2e2777414e" ||
+        hash=="6d8d4a6f30ecd1a096350214bde6309bc8750c78a99ca1160ee4731131863685" ||
         hash=="9358e5f3628913dd999db4512d74cf2aebe52c2f3fa8821113d7cb7833c47ce3" ||
         hash=="7ac45b49b4a1c7a14c7284b14135b51653107412eede25d0b79eddc91f86e561" ||
         hash=="82afe64c935d8c22536bd3c529c61ed4e5a9fdd55a76923188c52c95bf95465c" ||

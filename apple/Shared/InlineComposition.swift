@@ -47,6 +47,10 @@ final class InlineComposition {
         guard let currentDocument=host.compositionDocument else { return false }
         if document != currentDocument { return true }
         if matches(host) { return false }
+        // Android/iOS hosts may truncate the visible context around a long
+        // marked range. The native marked range is still ours; do not turn
+        // that truncation into a false caret move on a long candidate commit.
+        if draft.utf16.count > 32 { return false }
         // Proxy callbacks may briefly expose the context from before our write.
         guard let current=host.compositionBefore,let following=host.compositionAfter else { return false }
         return !contextMatches(current,following,previousDraft) || host.compositionSelection?.isEmpty == false

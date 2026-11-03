@@ -1,5 +1,6 @@
 import XCTest
 import CryptoKit
+import CSQLite
 @testable import PrivateInputKit
 
 private actor ActivityFixtureTransport: ActivityArchiveTransport {
@@ -11,13 +12,18 @@ private actor ActivityFixtureTransport: ActivityArchiveTransport {
     var enabled = true
     var wrongACK = false
     var failIngest = false
+    var rejection: ActivityError?
+    var rejectText: String?
+    var rejectMultiple = false
+    var permanentIngest = false
     var suspendIngest = false
     var ingestStarted = false
     var operations: [ActivityOperation] = []
     init(group: UUID, device: UUID, version: UInt64 = 1) { self.group = group; self.device = device; self.version = version }
-    func set(wrongACK: Bool = false, fail: Bool = false, suspended: Bool = false, enabled: Bool = true) {
-        self.wrongACK = wrongACK; failIngest = fail; suspendIngest = suspended; self.enabled = enabled
+    func set(wrongACK: Bool = false, fail: Bool = false, suspended: Bool = false, enabled: Bool = true, permanent: Bool = false) {
+        self.wrongACK = wrongACK; failIngest = fail; suspendIngest = suspended; self.enabled = enabled; permanentIngest = permanent
     }
+    func reject(_ error: ActivityError?, text: String? = nil, multiple: Bool = false) { rejection=error; rejectText=text; rejectMultiple=multiple }
     func setRevision(_ revision: UInt64) { self.revision = revision }
     func setProviders(_ providers: [String]) { self.providers = providers }
     func send(_ request: SignedActivityRequest) async throws -> Data {
@@ -33,8 +39,11 @@ private actor ActivityFixtureTransport: ActivityArchiveTransport {
         case .ingest:
             ingestStarted = true
             if suspendIngest { try await Task.sleep(nanoseconds: 5_000_000_000) }
+            if permanentIngest { throw ActivityError.remoteStatus(400, "event_type") }
             if failIngest { throw ActivityError.httpStatus(503) }
             let batch = try JSONDecoder().decode(ActivityBatch.self, from: request.body)
+            if let rejection, (!rejectMultiple || batch.events.count > 1),
+               rejectText == nil || batch.events.contains(where: { $0.content.text == rejectText }) { throw rejection }
             result = ["batch_id": batch.batchID.uuidString,
                       "accepted_event_ids": wrongACK ? [UUID().uuidString] : batch.events.map { $0.eventID.uuidString },
                       "duplicate_event_ids": [], "received_ranges": [], "server_received_at": "2026-10-18T00:00:00.000Z", "high_watermark": batch.events.count]
@@ -192,6 +201,31 @@ final class ActivityArchiveTests: XCTestCase {
         XCTAssertNoThrow(try ActivityHTTPTransport(endpoint: URL(string: "http://127.0.0.1:9999")!, allowLoopbackHTTP: true))
         XCTAssertThrowsError(try ActivityHTTPTransport(endpoint: URL(string: "http://example.invalid")!, allowLoopbackHTTP: true))
     }
+    func testDefiniteSingleEventRejectionIsRetainedWithoutRetryStorm() async throws {
+        let id = try identity(), group = UUID(), q = try queue(group: group, device: id.device), lease = try q.configure(config())
+        _ = try q.capture(draft("永久失败仍保留"), safety: .safe, lease: lease)
+        let transport = ActivityFixtureTransport(group: group, device: id.device)
+        await transport.set(permanent: true)
+        let worker = ActivityArchiveWorker(queue: q, client: ActivityArchiveClient(transport: transport))
+        do { _ = try await worker.flush(identity: id, membershipRevision: 7, now: 1000); XCTFail("must reject permanent batch") }
+        catch { XCTAssertEqual(error as? ActivityError, .remoteStatus(400, "event_type")) }
+        let status = try q.status()
+        XCTAssertEqual(status.pending, 0); XCTAssertEqual(status.held, 1); XCTAssertEqual(status.acknowledged, 0)
+        XCTAssertNil(try q.nextBatch(lease: q.authorizationLease(), now: 10_000), "held batch must not re-enter automatic retry")
+        XCTAssertFalse(try q.status().payloadBytes == 0, "held data remains stored")
+    }
+    func testTransientServerFailureKeepsBatchDueForBackoff() async throws {
+        let id = try identity(), group = UUID(), q = try queue(group: group, device: id.device), lease = try q.configure(config())
+        _ = try q.capture(draft("临时失败"), safety: .safe, lease: lease)
+        let transport = ActivityFixtureTransport(group: group, device: id.device)
+        await transport.set(fail: true)
+        let worker = ActivityArchiveWorker(queue: q, client: ActivityArchiveClient(transport: transport))
+        do { _ = try await worker.flush(identity: id, membershipRevision: 7, now: 1000); XCTFail("must fail transiently") }
+        catch { XCTAssertEqual(error as? ActivityError, .httpStatus(503)) }
+        XCTAssertEqual(try q.status().pending, 1); XCTAssertEqual(try q.status().held, 0)
+        XCTAssertNil(try q.nextBatch(lease: q.authorizationLease(), now: 1000))
+        XCTAssertNotNil(try q.nextBatch(lease: q.authorizationLease(), now: 2000))
+    }
     func testWorkerStatusBeforeIngestAndSuccessfulExactACK() async throws {
         let id = try identity(), group = UUID(), q = try queue(group: group, device: id.device), lease = try q.configure(config())
         _ = try q.capture(draft(), safety: .safe, lease: lease)
@@ -201,6 +235,105 @@ final class ActivityArchiveTests: XCTestCase {
         XCTAssertEqual(result.acknowledged, 1); XCTAssertEqual(result.pending, 0)
         let operations = await transport.operations
         XCTAssertEqual(operations, [.status, .ingest])
+    }
+    func testRecoverableConflictAndUnknownHTTPRemainPendingThenRetry() async throws {
+        for expectedError in [ActivityError.remoteStatus(409, "consent_stale"), .remoteStatus(403, "membership_stale"), .httpStatus(404), .httpStatus(400), .quotaExceeded] {
+            let id=try identity(), group=UUID(), q=try queue(group: group, device:id.device), lease=try q.configure(config())
+            let event=try q.capture(draft(), safety:.safe, lease:lease)
+            let original=try XCTUnwrap(q.nextBatch(lease:lease,now:1000))
+            let transport=ActivityFixtureTransport(group:group,device:id.device);await transport.reject(expectedError)
+            let worker=ActivityArchiveWorker(queue:q,client:ActivityArchiveClient(transport:transport))
+            do { _ = try await worker.flush(identity:id,membershipRevision:7,now:1000);XCTFail("expected rejection") } catch { XCTAssertEqual(error as? ActivityError, expectedError) }
+            XCTAssertEqual(try q.status().pending,1);XCTAssertEqual(try q.status().held,0)
+            let retry=try XCTUnwrap(q.nextBatch(lease:lease,now:2000));XCTAssertEqual(retry.batchID,original.batchID);XCTAssertEqual(retry.events.first?.eventID,event.eventID)
+            await transport.reject(nil)
+            let done=try await worker.flush(identity:id,membershipRevision:7,now:2000)
+            XCTAssertEqual(done.acknowledged,1)
+        }
+    }
+    func testOversizedRequestSplitsWithoutChangingEvents() async throws {
+        let id=try identity(), group=UUID(), q=try queue(group:group,device:id.device), lease=try q.configure(config())
+        for text in ["合成甲","合成乙"] { _ = try q.capture(draft(text),safety:.safe,lease:lease) }
+        let original=try XCTUnwrap(q.nextBatch(lease:lease,now:1000))
+        let transport=ActivityFixtureTransport(group:group,device:id.device)
+        await transport.reject(.remoteStatus(413,"request_size"),multiple:true)
+        let worker=ActivityArchiveWorker(queue:q,client:ActivityArchiveClient(transport:transport))
+        do { _ = try await worker.flush(identity:id,membershipRevision:7,now:1000,maxBatches:1);XCTFail("split reported") } catch { XCTAssertEqual(error as? ActivityError,.remoteStatus(413,"request_size")) }
+        let first=try XCTUnwrap(q.nextBatch(lease:lease,now:1000))
+        XCTAssertNotEqual(first.batchID,original.batchID);XCTAssertEqual(first.events.count,1)
+        XCTAssertEqual(try first.events[0].encoded(), try original.events[0].encoded())
+        let done=try await worker.flush(identity:id,membershipRevision:7,now:1001)
+        XCTAssertEqual(done.acknowledged,2);XCTAssertEqual(try q.status().held,0)
+    }
+    func testBadEventDoesNotStrandValidNeighbours() async throws {
+        let id=try identity(), group=UUID(), q=try queue(group:group,device:id.device), lease=try q.configure(config())
+        for text in ["合成坏","合成好"] { _ = try q.capture(draft(text),safety:.safe,lease:lease) }
+        let transport=ActivityFixtureTransport(group:group,device:id.device)
+        await transport.reject(.remoteStatus(409,"event_conflict"),text:"合成坏")
+        let worker=ActivityArchiveWorker(queue:q,client:ActivityArchiveClient(transport:transport))
+        do { _ = try await worker.flush(identity:id,membershipRevision:7,now:1000);XCTFail("partial failure reported") } catch { XCTAssertEqual(error as? ActivityError,.remoteStatus(409,"event_conflict")) }
+        XCTAssertEqual(try q.status().acknowledged,1);XCTAssertEqual(try q.status().held,1);XCTAssertEqual(try q.status().pending,0)
+    }
+    func testExplicitRetryRecoversPreFixCurrentConsentHold() async throws {
+        let id=try identity(),group=UUID(),file=directory().appendingPathComponent("legacy-held.sqlite")
+        let q=try ActivityLocalEventQueue(file:file,group:group,device:id.device),lease=try q.configure(config())
+        _ = try q.capture(draft("合成旧拒绝记录"),safety:.safe,lease:lease)
+        // The old implementation held a complete batch without a reason marker.
+        var db:OpaquePointer?;XCTAssertEqual(sqlite3_open(file.path,&db),SQLITE_OK)
+        defer { sqlite3_close(db) }
+        XCTAssertEqual(sqlite3_exec(db,"UPDATE activity_events SET state=1,batch_id=NULL",nil,nil,nil),SQLITE_OK)
+        let transport=ActivityFixtureTransport(group:group,device:id.device),worker=ActivityArchiveWorker(queue:q,client:ActivityArchiveClient(transport:transport))
+        let regular=try await worker.flush(identity:id,membershipRevision:7,now:1000)
+        XCTAssertEqual(regular.acknowledged,0);XCTAssertEqual(try q.status().held,1)
+        let explicit=try await worker.flush(identity:id,membershipRevision:7,now:1001,retryRejected:true)
+        XCTAssertEqual(explicit.acknowledged,1);XCTAssertEqual(try q.status().held,0)
+    }
+    func testExplicitRetryCannotReviveRevokedHolds() async throws {
+        let id=try identity(),group=UUID(),q=try queue(group:group,device:id.device)
+        let lease=try q.configure(config());_ = try q.capture(draft(),safety:.safe,lease:lease)
+        let batch=try XCTUnwrap(q.nextBatch(lease:lease,now:1000))
+        try q.isolateRejected(batch,lease:lease,now:1000,reason:"event_conflict")
+        let transport=ActivityFixtureTransport(group:group,device:id.device),worker=ActivityArchiveWorker(queue:q,client:ActivityArchiveClient(transport:transport))
+        let retried=try await worker.flush(identity:id,membershipRevision:7,now:1001,retryRejected:true)
+        XCTAssertEqual(retried.acknowledged,1)
+        _ = try q.capture(draft("暂停前的记录"),safety:.safe,lease:lease)
+        try q.invalidateAuthorization()
+        let next=try q.configure(config())
+        XCTAssertEqual(try q.retryRejectedUploads(lease:next,now:1002),0)
+        XCTAssertEqual(try q.status().held,1)
+        XCTAssertEqual(try q.status().pending,0)
+    }
+    func testSplitSurvivesReopenWithStableChildBatch() throws {
+        let id=try identity(),group=UUID(),file=directory().appendingPathComponent("queue.sqlite")
+        let q=try ActivityLocalEventQueue(file:file,group:group,device:id.device),lease=try q.configure(config())
+        for text in ["甲","乙","丙"] { _ = try q.capture(draft(text),safety:.safe,lease:lease) }
+        let batch=try XCTUnwrap(q.nextBatch(lease:lease,now:1000))
+        try q.isolateRejected(batch,lease:lease,now:1000,reason:"request_size")
+        let child=try XCTUnwrap(q.nextBatch(lease:lease,now:1000))
+        let reopened=try ActivityLocalEventQueue(file:file,group:group,device:id.device)
+        let retry=try XCTUnwrap(reopened.nextBatch(lease:try reopened.authorizationLease(),now:1000))
+        XCTAssertEqual(try retry.encoded(),try child.encoded())
+        XCTAssertEqual(try reopened.status().pending,3)
+    }
+    func testSplitRejectsStaleLeaseAndModifiedPayload() throws {
+        let q=try queue(),lease=try q.configure(config());_ = try q.capture(draft(),safety:.safe,lease:lease)
+        let original=try XCTUnwrap(q.nextBatch(lease:lease,now:1000))
+        let fake=ActivityBatch(batchID:original.batchID,events:[])
+        XCTAssertThrowsError(try q.isolateRejected(fake,lease:lease,now:1000,reason:"event_type"))
+        XCTAssertEqual(try q.status().pending,1)
+        _ = try q.configure(config(consent:2))
+        XCTAssertThrowsError(try q.isolateRejected(original,lease:lease,now:1000,reason:"event_type"))
+    }
+    func testNoChangeSecondPassDoesNotResendAcknowledgedBatch() async throws {
+        let id = try identity(), group = UUID(), q = try queue(group: group, device: id.device), lease = try q.configure(config())
+        _ = try q.capture(draft("只发送一次"), safety: .safe, lease: lease)
+        let transport = ActivityFixtureTransport(group: group, device: id.device)
+        let worker = ActivityArchiveWorker(queue: q, client: ActivityArchiveClient(transport: transport))
+        _ = try await worker.flush(identity: id, membershipRevision: 7, now: 1000)
+        _ = try await worker.flush(identity: id, membershipRevision: 7, now: 1001)
+        let operations = await transport.operations
+        XCTAssertEqual(operations, [.status, .ingest, .status], "no-change pass must not ingest the acknowledged batch again")
+        XCTAssertEqual(try q.status().pending, 0); XCTAssertEqual(try q.status().acknowledged, 1)
     }
     func testWorkerRejectsUnknownACKAndDoesNotLosePendingData() async throws {
         let id = try identity(), group = UUID(), q = try queue(group: group, device: id.device), lease = try q.configure(config())

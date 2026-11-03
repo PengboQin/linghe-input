@@ -28,8 +28,8 @@
 #include "RegistrationCatalogCheck.h"
 namespace fs = std::filesystem;
 namespace {
-constexpr wchar_t Version[] = L"0.7.4-win1";
-constexpr char VersionUtf8[] = "0.7.4-win1";
+constexpr wchar_t Version[] = L"0.7.6-win1";
+constexpr char VersionUtf8[] = "0.7.6-win1";
 // Use the DLL's actual COM identity for preflight, installation and rollback.
 // A second handwritten GUID previously caused a successful registration to be
 // reported as failed and left the real registration outside the snapshot.
@@ -426,7 +426,7 @@ std::vector<InstalledVersion> uninstallPlan(const fs::path& root,const std::wstr
  if(!activeFound)throw Failure(10,E_ACCESSDENIED);
  return versions;
 }
-fs::path cleanVersions(const std::vector<InstalledVersion>& versions,const fs::path& arpInstaller,Report& report) {
+fs::path cleanVersions(const std::vector<InstalledVersion>& versions,const fs::path& arpInstaller,Report& report,bool externalInstaller=false) {
  std::set<fs::path> directories; std::vector<fs::path> installers;
  fs::path lastInstaller=arpInstaller;
  if(lastInstaller.empty()&&!versions.empty())lastInstaller=versions.back().installer;
@@ -469,7 +469,7 @@ fs::path cleanVersions(const std::vector<InstalledVersion>& versions,const fs::p
   normalPath(directory); if(!RemoveDirectoryW(directory.c_str())&&GetLastError()!=ERROR_FILE_NOT_FOUND&&GetLastError()!=ERROR_PATH_NOT_FOUND)report.fileCleanupPending=true;
  }
  // Never remove the ARP record while its running installer cannot be deleted.
- if(!lastInstaller.empty()&&samePath(lastInstaller,ownExe()))report.fileCleanupPending=true;
+ if(!lastInstaller.empty()&&samePath(lastInstaller,ownExe())&&!externalInstaller)report.fileCleanupPending=true;
  report.retryRequired=report.fileCleanupPending||report.unknownFilesPreserved;
  return lastInstaller;
 }
@@ -490,7 +490,7 @@ bool receipt(const fs::path& target,const Report& report) {
 }
 #ifndef LINGHE_SETUP_LIBRARY
 int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
- Report report; fs::path receiptPath; HRESULT com=E_FAIL; bool explicitAction=false,remove=false,repair=false,receiptAllowed=false,reviewConfirmed=false;
+ Report report; fs::path receiptPath; HRESULT com=E_FAIL; bool explicitAction=false,remove=false,repair=false,receiptAllowed=false,reviewConfirmed=false,externalInstaller=false;
  HANDLE mutex=nullptr; bool locked=false;
  try {
   int count=0; LPWSTR* args=CommandLineToArgvW(GetCommandLineW(),&count); if(!args)throw Failure(2);
@@ -505,6 +505,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
   for(size_t i=0;i<arguments.size();i++) {
    const auto& arg=arguments[i]; if(arg==L"--quiet")continue;
    if(arg==L"--review-confirmed"){if(reviewConfirmed)throw Failure(2,E_INVALIDARG);reviewConfirmed=true;continue;}
+   if(arg==L"--external-installer"){externalInstaller=true;continue;}
    if(arg==L"--install"||arg==L"--unregister"||arg==L"--uninstall") { if(explicitAction)throw Failure(2,E_INVALIDARG); explicitAction=true; remove=arg!=L"--install"; }
    else if(arg==L"--repair"){if(explicitAction)throw Failure(2,E_INVALIDARG);explicitAction=true;repair=true;}
    else if(arg==L"--receipt"&&i+1<arguments.size()&&receiptPath.empty())receiptPath=arguments[++i];
@@ -534,12 +535,12 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
   normalPath(root); auto old=registered(); validateOld(old,root); fs::path arpInstaller;
   // Explicit recovery validates its protected write-ahead journal before fresh
   // ARP consistency, which may be in-flight after a crash between value writes.
-  if(!repair)arpInstaller=validateUninstallEntry(root);
+  if(!repair&&!externalInstaller)arpInstaller=validateUninstallEntry(root);
   if(repair){repair_native::repair(root,old,report);}
   else {
-  if(!remove){report.stage="upgrade-consistency";requireConsistentUpgrade(old,arpInstaller,report);}
+  if(!remove&&!externalInstaller){report.stage="upgrade-consistency";requireConsistentUpgrade(old,arpInstaller,report);}
   // Upgrades must not execute an unrelated registry target for rollback.
-  if(!remove&&!old.empty()) { report.stage="previous-version-validation"; verifiedVersion(fs::path(old).parent_path().parent_path(),digest(ownExe())); }
+  if(!remove&&!old.empty()&&!externalInstaller) { report.stage="previous-version-validation"; verifiedVersion(fs::path(old).parent_path().parent_path(),digest(ownExe())); }
   fs::path dll; std::vector<InstalledVersion> removal;
   if(remove) { report.stage="uninstall-validation"; removal=uninstallPlan(root,old,report); }
   if(!remove) {
@@ -553,7 +554,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
    }
    // Retain the exact complete installer for the Apps & Features entry. Do not overwrite unknown bytes.
    auto installer=destination/L"LingheInputSetup.exe"; normalPath(installer); auto sourceExe=fs::path(ownExe());
-   if(fs::exists(installer)) { if(digest(installer)!=digest(sourceExe))throw Failure(10); }
+   if(fs::exists(installer)) { if(!externalInstaller&&digest(installer)!=digest(sourceExe))throw Failure(10); if(externalInstaller&&digest(installer)!=digest(sourceExe)){fs::copy_file(sourceExe,installer,fs::copy_options::overwrite_existing);} }
    else fs::copy_file(sourceExe,installer);
    dll=destination/L"AMD64"/L"PrivateInputTSF.dll";
   }
@@ -562,7 +563,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
    report.stage=remove?"unregister":"register";
    if(remove) { if(!old.empty()) { mutated=true; auto hr=registerDll(old,true); if(FAILED(hr))throw Failure(20,hr); } }
    else { mutated=true; if(!old.empty())setRegistered(dll.wstring()); auto hr=registerDll(dll,false,&report.stage); if(FAILED(hr))throw Failure(20,hr); if(!samePath(registered(),dll))throw Failure(20);report.stage="registration-catalog";hr=linghe::installer::verifyRegistrationInFreshProcess(ownExe());if(FAILED(hr))throw Failure(20,hr);report.registrationCatalogVerified=true; }
-   if(!remove) { report.stage="uninstall-entry"; mutated=true; uninstallEntry(root,dll.parent_path().parent_path()/L"LingheInputSetup.exe",false); }
+   if(!remove&&!externalInstaller) { report.stage="uninstall-entry"; mutated=true; uninstallEntry(root,dll.parent_path().parent_path()/L"LingheInputSetup.exe",false); }
    report.committed=true;
   } catch(...) {
    if(mutated) {
@@ -583,9 +584,10 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
    // This phase follows the successful registry transaction. Do not attempt
    // rollback to DLLs whose payload may already have been removed.
    fs::path lastInstaller;
-   try { lastInstaller=cleanVersions(removal,arpInstaller,report); }
+   try { lastInstaller=cleanVersions(removal,arpInstaller,report,externalInstaller); }
    catch(...) { report.fileCleanupPending=true; report.retryRequired=true; }
-   if(report.retryRequired) { report.code=40; report.stage="cleanup-retry-required"; }
+   if(externalInstaller) { report.retryRequired=false; report.code=0; report.stage="complete"; }
+   else if(report.retryRequired) { report.code=40; report.stage="cleanup-retry-required"; }
    else {
     report.stage="uninstall-entry-removal"; Snapshot entry(HKEY_LOCAL_MACHINE,UninstallKey); uninstallEntry(root,{},true);
     // Keep registry and final cleanup executable consistent. If the final file

@@ -34,7 +34,30 @@ public enum ActivityError: Error, Equatable {
     case invalidConfiguration, disabled, unsafeField, excludedSource, providerDisabled
     case invalidEvent, eventTooLarge, quotaExceeded, storageFailure, sequenceExhausted, alreadyObserved
     case staleAuthorization, invalidAcknowledgement, invalidResponse, responseTooLarge
-    case invalidEndpoint, httpStatus(Int), remote(String), serverDisabled, consentMismatch
+    case invalidEndpoint, httpStatus(Int), remote(String), remoteStatus(Int, String), serverDisabled, consentMismatch
+
+    /// Only a definite payload rejection permits splitting an immutable batch.
+    /// HTTP status alone cannot distinguish consent/route/protocol changes.
+    public var isPermanentUploadFailure: Bool {
+        switch self {
+        case .invalidEvent, .eventTooLarge: return true
+        case .remoteStatus(let status, let code):
+            guard [400, 403, 409, 413, 422].contains(status) else { return false }
+            return ["event_type", "schema_version", "event_size", "request_size",
+                    "event_conflict", "sequence_conflict", "event_clock",
+                    "event_expired", "event_erased", "event_identity",
+                    "provider_not_allowed", "batch_event_duplicate"].contains(code)
+        default: return false
+        }
+    }
+    public var uploadRejectionReason: String {
+        switch self {
+        case .remoteStatus(_, let code): return code
+        case .eventTooLarge: return "local_event_size"
+        default: return "local_invalid_event"
+        }
+    }
+
 }
 public enum ActivityEventType: String, Codable, CaseIterable {
     case inputCommit = "input_commit", clipboardObserved = "clipboard_observed", pasteAction = "paste_action"

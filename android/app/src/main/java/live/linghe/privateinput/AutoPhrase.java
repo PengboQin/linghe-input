@@ -20,18 +20,31 @@ final class AutoPhrase {
   void selected(String prefix,String text,String reading){
    if(prefix==null||prefix.isEmpty()){reset();}
    else if(broken||!prefix.equals(joinedText())){broken=true;return;}
-   if(text==null||text.isEmpty()||reading==null||reading.trim().isEmpty()){broken=true;return;}
+   if(text==null||text.isEmpty()||reading==null||reading.trim().isEmpty()||!storableText(text)){broken=true;return;}
    texts.add(text);readings.add(reading.trim());
   }
   /** Returns the full reading when commit is exactly the tracked selections, then resets. */
   String committed(String commit){
    if(commit==null||commit.isEmpty())return null;
-   String result=!broken&&!texts.isEmpty()&&commit.equals(joinedText())?String.join(" ",readings):null;
+   String result=!broken&&!texts.isEmpty()&&commit.equals(joinedText())&&storableText(commit)?String.join(" ",readings):null;
    reset();return result;
   }
   void reset(){texts.clear();readings.clear();broken=false;}
  }
 
+ /** Keep emoji presentation/ZWJ/variation concatenation out of automatic phrase keys. */
+ static boolean storableText(String text){
+  if(text==null||text.isEmpty()||text.length()>256)return false;
+  for(int i=0;i<text.length();){int cp=text.codePointAt(i);i+=Character.charCount(cp);
+   if(cp==0x200D||cp==0xFE0E||cp==0xFE0F||cp==0x20E3)return false;
+   if(cp>=0x1F000&&cp<=0x1FAFF)return false;
+   if(cp>=0x2600&&cp<=0x27BF)return false;
+   if(cp>=0x1F1E6&&cp<=0x1F1FF)return false;
+   if(cp>=0x1F3FB&&cp<=0x1F3FF)return false;
+   if(Character.getType(cp)==Character.CONTROL)return false;
+  }
+  return true;
+ }
  static String key(String text,String reading){return text+"\u001f"+reading;}
 
  /** True once per text/reading so the same phrase is never announced twice. */

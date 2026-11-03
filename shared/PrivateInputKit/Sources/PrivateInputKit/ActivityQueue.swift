@@ -207,6 +207,61 @@ public final class ActivityLocalEventQueue: @unchecked Sendable {
             }
         }
     }
+    /// A definite rejected request was not acknowledged. Split it into new
+    /// immutable batches so one invalid event cannot hold its valid neighbours.
+    /// A singleton remains intact, with a reason; never auto-release consent holds.
+    public func isolateRejected(_ batch: ActivityBatch, lease: ActivityAuthorizationLease, now: UInt64, reason: String) throws {
+        lock.lock(); defer { lock.unlock() }
+        try transaction {
+            try validate(lease)
+            var storedCount = 0
+            try rows("SELECT COUNT(*) FROM activity_events WHERE state=0 AND generation=? AND batch_id=?", [.text(lease.generation.uuidString), .text(batch.batchID.uuidString)]) { storedCount = Int(sqlite3_column_int64($0, 0)) }
+            guard !batch.events.isEmpty, storedCount == batch.events.count,
+                  Set(batch.events.map(\.eventID)).count == storedCount else { throw ActivityError.invalidAcknowledgement }
+            for event in batch.events {
+                guard let payload = try firstBlob("SELECT payload FROM activity_events WHERE state=0 AND generation=? AND batch_id=? AND event_id=?", [.text(lease.generation.uuidString), .text(batch.batchID.uuidString), .text(event.eventID.uuidString)]),
+                      payload == (try event.encoded()) else { throw ActivityError.invalidAcknowledgement }
+            }
+            if batch.events.count == 1 {
+                try run("UPDATE activity_events SET state=1,batch_id=NULL,next_attempt=? WHERE state=0 AND generation=? AND batch_id=?", [.int(Self.integer(now)), .text(lease.generation.uuidString), .text(batch.batchID.uuidString)])
+                let record = try JSONEncoder().encode(UploadRejection(reason: reason, batchID: batch.batchID, generation: lease.generation))
+                try setMetadata("upload-rejection:" + batch.events[0].eventID.uuidString, record)
+            } else {
+                let left = UUID(), right = UUID()
+                for (index, event) in batch.events.enumerated() {
+                    try run("UPDATE activity_events SET batch_id=?,next_attempt=?,attempts=0 WHERE state=0 AND generation=? AND batch_id=? AND event_id=?", [.text((index < batch.events.count / 2 ? left : right).uuidString), .int(Self.integer(now)), .text(lease.generation.uuidString), .text(batch.batchID.uuidString), .text(event.eventID.uuidString)])
+                }
+            }
+        }
+    }
+    /// Explicit retry only for payload-rejection holds created under this exact
+    /// consent generation, including pre-fix upload holds without a reason.
+    /// Pause/revocation holds belong to older generations and stay isolated.
+    public func retryRejectedUploads(lease: ActivityAuthorizationLease, now: UInt64) throws -> Int {
+        lock.lock(); defer { lock.unlock() }
+        return try transaction {
+            try validate(lease)
+            var ids: [String] = []
+            try rows("SELECT event_id FROM activity_events WHERE state=1 AND generation=?", [.text(lease.generation.uuidString)]) { ids.append(self.string($0, 0)) }
+            var count = 0
+            for id in ids {
+                let key = "upload-rejection:" + id
+                if let data = try metadata(key) {
+                    guard let reason = try? JSONDecoder().decode(UploadRejection.self, from: data), reason.generation == lease.generation else { continue }
+                }
+                guard let payload = try firstBlob("SELECT payload FROM activity_events WHERE event_id=? AND state=1 AND generation=?", [.text(id), .text(lease.generation.uuidString)]),
+                      let event = try? JSONDecoder().decode(ActivityEvent.self, from: payload),
+                      event.deviceGroup == group, event.deviceID == device,
+                      event.consentVersion == lease.configuration.consentVersion,
+                      lease.configuration.providers.contains(event.providerID) else { continue }
+                try run("UPDATE activity_events SET state=0,batch_id=NULL,attempts=0,next_attempt=? WHERE state=1 AND generation=? AND event_id=?", [.int(Self.integer(now)), .text(lease.generation.uuidString), .text(id)])
+                count += Int(sqlite3_changes(db))
+                try run("DELETE FROM activity_meta WHERE key=?", [.text(key)])
+            }
+            return count
+        }
+    }
+    private struct UploadRejection: Codable { let reason: String; let batchID: UUID; let generation: UUID }
     public func recordFailure(_ batch: ActivityBatch, lease: ActivityAuthorizationLease, now: UInt64) throws {
         lock.lock(); defer { lock.unlock() }
         try transaction {
@@ -227,7 +282,10 @@ public final class ActivityLocalEventQueue: @unchecked Sendable {
     }
     public func discardHeldRecords() throws {
         lock.lock(); defer { lock.unlock() }
-        try execute("DELETE FROM activity_events WHERE state=1; PRAGMA wal_checkpoint(PASSIVE)")
+        try transaction {
+            try execute("DELETE FROM activity_meta WHERE key IN (SELECT 'upload-rejection:' || event_id FROM activity_events WHERE state=1); DELETE FROM activity_events WHERE state=1")
+        }
+        try execute("PRAGMA wal_checkpoint(PASSIVE)")
     }
     /// Only call after independently verified group departure/personal-data reset.
     /// Ordinary pause/disable never calls this. Installation and sequence remain
@@ -239,7 +297,7 @@ public final class ActivityLocalEventQueue: @unchecked Sendable {
             value.providers = []; value.endpoint = nil
             try setMetadata("configuration", JSONEncoder().encode(value))
             try setMetadata("generation", Data(UUID().uuidString.utf8))
-            try execute("DELETE FROM activity_events; DELETE FROM activity_observations")
+            try execute("DELETE FROM activity_events; DELETE FROM activity_observations; DELETE FROM activity_meta WHERE key LIKE 'upload-rejection:%'")
         }
         try execute("PRAGMA wal_checkpoint(TRUNCATE); VACUUM")
     }

@@ -1,5 +1,6 @@
 import Foundation
 import Darwin
+import CryptoKit
 
 /// Explicit user-authored entries, separate from learned frequency.
 /// Only the containing settings app writes; keyboards consume atomic snapshots.
@@ -78,6 +79,15 @@ public struct PersonalLexicon: Codable, Equatable {
     }
 }
 
+public struct PersonalLexiconSnapshot: Equatable {
+    public let value: PersonalLexicon
+    public let digest: String
+    public let byteCount: Int
+    public init(value: PersonalLexicon, digest: String, byteCount: Int) {
+        self.value = value; self.digest = digest; self.byteCount = byteCount
+    }
+}
+
 public struct PersonalLexiconStore {
     public let directory: URL
     public var url:URL { directory.appendingPathComponent("personal-lexicon-v1.json") }
@@ -88,6 +98,18 @@ public struct PersonalLexiconStore {
         let size=(try url.resourceValues(forKeys:[.fileSizeKey])).fileSize ?? 0
         guard size<=PersonalLexicon.maximumBytes else { throw InputDataError.oversized }
         let data=try Data(contentsOf:url);return try Self.decode(data)
+    }
+
+    /// One consistent read for a background consumer: the digest covers the
+    /// exact bytes that were decoded, not a later stat of a replaced file.
+    public func loadSnapshot() throws -> PersonalLexiconSnapshot? {
+        guard FileManager.default.fileExists(atPath:url.path) else { return nil }
+        let size=(try url.resourceValues(forKeys:[.fileSizeKey])).fileSize ?? 0
+        guard size<=PersonalLexicon.maximumBytes else { throw InputDataError.oversized }
+        let data=try Data(contentsOf:url)
+        guard data.count<=PersonalLexicon.maximumBytes else { throw InputDataError.oversized }
+        let value=try Self.decode(data)
+        return PersonalLexiconSnapshot(value:value,digest:SHA256.hash(data:data).map { String(format:"%02x",$0) }.joined(),byteCount:data.count)
     }
     public static func decode(_ data:Data) throws -> PersonalLexicon {
         guard data.count<=PersonalLexicon.maximumBytes else { throw InputDataError.oversized }

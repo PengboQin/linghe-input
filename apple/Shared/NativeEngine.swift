@@ -113,8 +113,12 @@ final class NativeEngine: ObservableObject {
     private var privateInput = false
     private var englishInput = false
     private var nineKeyInput = false
+    var isNineKeyInput:Bool { nineKeyInput }
     private var personalStore:PersonalLexiconStore?
     private var personalLexicon=PersonalLexicon()
+    private var personalLexiconSnapshot:PersonalLexiconSnapshot?
+    private var personalLexiconLoading=false
+    private var personalLexiconRequest:UInt64=0
     private var supplementaryLexicon=SupplementaryLexicon(pairs:[])
     private(set) var mixedEnglishEnabled=false
     private let mixedEnglishProvider:((String)->[String])?
@@ -365,7 +369,9 @@ final class NativeEngine: ObservableObject {
         CandidateGlyphSupport.clearCache()
         predictionProbe=0;session=0
         pendingLearningMetadata = nil
-        choiceMemory=NineKeyChoiceMemory();choiceMemoryWritable=true;coordinator=nil;personalStore=nil;pendingRelearnIntents.removeAll();stagedRelearnChoices.removeAll()
+        choiceMemory=NineKeyChoiceMemory();choiceMemoryWritable=true;coordinator=nil;personalStore=nil
+        personalLexicon=PersonalLexicon();personalLexiconSnapshot=nil;personalLexiconLoading=false;personalLexiconRequest &+= 1
+        pendingRelearnIntents.removeAll();stagedRelearnChoices.removeAll()
         resetPredictionContext();ownContext=""
         do {
             try start(sharedResources:originalSharedResources,storageBase:originalStorageBase)
@@ -396,7 +402,9 @@ final class NativeEngine: ObservableObject {
         let personalDirectory:URL?=base
         #endif
         personalStore=personalDirectory.map(PersonalLexiconStore.init)
-        refreshPersonalLexicon()
+        personalLexicon=PersonalLexicon();personalLexiconSnapshot=nil;personalLexiconLoading=false
+        personalLexiconRequest &+= 1
+        schedulePersonalLexiconRefresh()
         let semanticDirectory=shared.deletingLastPathComponent().appendingPathComponent("semantic",isDirectory:true)
         if useLexicon { nineLexicon=try? NineKeyLexicon(url:semanticDirectory.appendingPathComponent("nine-lexicon.bin")) }
         if useSemantic { semanticRanker=SemanticRanker(directory:semanticDirectory) }
@@ -461,7 +469,11 @@ final class NativeEngine: ObservableObject {
         if !privateInput, rawInput.isEmpty, preedit.isEmpty,
            (65...90).contains(code) || (97...122).contains(code) || (50...57).contains(code) { adoptPendingLearningMetadataIfIdle(); coordinator?.beginComposition() }
 
-        if rawInput.isEmpty { stagedRelearnChoices.removeAll(); refreshPersonalLexicon() }
+        if rawInput.isEmpty {
+            stagedRelearnChoices.removeAll()
+            adoptPendingPersonalLexiconIfIdle()
+            schedulePersonalLexiconRefresh()
+        }
         markNativeLearningChanged()
         let inputCode = !nineKeyInput && !englishInput && code==252 ? Int32(118):code
         let handled = pi_process_key(session, inputCode, modifiers) != 0
@@ -498,13 +510,13 @@ final class NativeEngine: ObservableObject {
             mixedRevision = -1;prefixCompletionRevision = -1;rareCompletionRevision = -1
             initialsRevision = -1;pinyinRevision = -1;recoveryRevision = -1
             candidateBatchCanContinue=true;candidateBatchWasDeferred=true
-            return Array(visibilityPage.rows.dropFirst(offset).prefix(limit))
+            return repeatedKeyOrder(Array(visibilityPage.rows.dropFirst(offset).prefix(limit)))
         }
         visibilityPage=page
         candidateBatchCanContinue = !page.exhausted || page.rows.count>offset+rows.count
         candidateBatchWasDeferred = incremental && rows.count<limit && !page.exhausted
         if offset==0,let first=rows.first {_ = rememberPublishedNineCandidate(first)}
-        return rows
+        return repeatedKeyOrder(rows)
     }
     /// Called only with an actual final publication, after platform revision and
     /// visibility admission. Shared core rechecks raw/prefix and bounded mapping.
@@ -656,6 +668,41 @@ final class NativeEngine: ObservableObject {
         }
         return result
     }
+    private func canonicalKeyLetter(_ character:Character)->Character? {
+        guard let digit=character.wholeNumberValue,digit>=2,digit<=9 else{return nil}
+        let groups=["abc","def","ghi","jkl","mno","pqrs","tuv","wxyz"]
+        let group=groups[digit-2]
+        return group[group.index(group.startIndex,offsetBy:group.count/2)]
+    }
+    private var repeatedCanonicalLetter:Character? {
+        guard nineKeyInput,rawInput.count>=2,Set(rawInput).count==1,let first=rawInput.first else{return nil}
+        return canonicalKeyLetter(first)
+    }
+    private func repeatedReadingKey(_ row:InputCandidate)->(Int,Int,String)? {
+        guard row.text.count>=2,Set(row.text).count==1 else{return nil}
+        let part=row.comment.split(whereSeparator:{$0==" " || $0=="'"}).first.map(String.init) ?? ""
+        guard !part.isEmpty else{return nil}
+        let canonical=repeatedCanonicalLetter
+        let rank=part.first==canonical ? 0:1
+        return (rank,part.count,part)
+    }
+    /// Keep an intentional all-one-key run anchored to its repeated-character
+    /// family. Pins remain first; shorter/simpler repeated readings (ha over
+    /// he, hei, hao) stay before longer or e-bearing variants.
+    private func repeatedKeyOrder(_ rows:[InputCandidate])->[InputCandidate] {
+        guard rawInput.count>=2,Set(rawInput).count==1 else{return rows}
+        return rows.enumerated().sorted { a,b in
+            func preferred(_ row:InputCandidate)->Bool { isPinned(row) || (row.text.count>=2 && Set(row.text).count==1) }
+            let pa=preferred(a.element),pb=preferred(b.element)
+            if pa != pb {return pa}
+            if pa,let ka=repeatedReadingKey(a.element),let kb=repeatedReadingKey(b.element) {
+                if ka.0 != kb.0 {return ka.0<kb.0}
+                if ka.1 != kb.1 {return ka.1<kb.1}
+                if ka.2 != kb.2 {return ka.2<kb.2}
+            }
+            return a.offset<b.offset
+        }.map(\.element)
+    }
     private func unrankedCandidateBatch(offset:Int,limit:Int)->[InputCandidate] {
         guard ready,offset>=0,limit>0 else{return []}
         guard nineKeyInput,!nativeBatch(offset:0,limit:1).isEmpty else{return baseCandidateBatch(offset:offset,limit:limit)}
@@ -673,7 +720,7 @@ final class NativeEngine: ObservableObject {
                 }
                 cursor+=rows.count;if rows.count<64{break}
             }
-            return result
+            return repeatedKeyOrder(result)
         }
         guard !extras.isEmpty else{return baseCandidateBatch(offset:offset,limit:limit)}
         let base=baseCandidateBatch(offset:0,limit:64)
@@ -681,8 +728,16 @@ final class NativeEngine: ObservableObject {
         let protectedCount=min(base.count,max(3,explicit))
         let leading=Array(base.prefix(protectedCount))
         let full=extras.filter{$0.initialsInput?.count==rawInput.count}
+        // A uniform key run (e.g. 44444) must not present a mixed "he ha..."
+        // candidate before the actual repeated-character family. The mixed
+        // candidate consumed all keys as initials but would commit an untyped
+        // e-bearing word; uniform candidates stay ahead even when Rime only
+        // returned a shorter repeated prefix.
+        let uniformRun=rawInput.count>=2 && Set(rawInput).count==1
+        let uniform=uniformRun ? extras.filter{$0.text.count>=2 && Set($0.text).count==1} : []
+        let prioritized=uniformRun ? uniform+full.filter{row in !uniform.contains(where:{$0.text==row.text && $0.comment==row.comment})} : full
         var seen=Set<String>()
-        let front=(leading+Array(full.prefix(8))+Array(base.dropFirst(protectedCount))+extras).filter{seen.insert($0.text).inserted}
+        let front=(leading+Array(prioritized.prefix(8))+Array(base.dropFirst(protectedCount))+extras).filter{seen.insert($0.text).inserted}
         var result=Array(front.dropFirst(offset).prefix(limit)),skip=max(0,offset-front.count),cursor=64
         while result.count<limit,base.count==64 {
             let rows=baseCandidateBatch(offset:cursor,limit:64)
@@ -691,7 +746,7 @@ final class NativeEngine: ObservableObject {
             }
             cursor+=rows.count;if rows.count<64{break}
         }
-        return result
+        return repeatedKeyOrder(result)
     }
     private var prefixCompletionRevision = -1
     private var prefixCompletionRows:[InputCandidate]=[]
@@ -1081,7 +1136,23 @@ final class NativeEngine: ObservableObject {
             }
         }
         initialsRows+=repeatedHeads
+        let uniformRun=tail.count>=2 && Set(tail).count==1
         initialsRows.sort{a,b in
+            // A long run of one key is an intentional repeated expression. A
+            // mixed "he ha..." candidate must not outrank the actual repeated
+            // character merely because Rime consumed all keys as initials;
+            // otherwise selecting the visible long "哈哈..." can commit an
+            // untyped e-bearing "和/呵" family.
+            if uniformRun {
+                let uniformA=a.text.count>=2 && Set(a.text).count==1
+                let uniformB=b.text.count>=2 && Set(b.text).count==1
+                if uniformA != uniformB {return uniformA}
+                if uniformA,uniformB,let ka=repeatedReadingKey(a),let kb=repeatedReadingKey(b) {
+                    if ka.0 != kb.0 {return ka.0<kb.0}
+                    if ka.1 != kb.1 {return ka.1<kb.1}
+                    if ka.2 != kb.2 {return ka.2<kb.2}
+                }
+            }
             let fullA=a.initialsInput?.count==tail.count,fullB=b.initialsInput?.count==tail.count
             if fullA != fullB {return fullA}
             if fullA,a.initialsSuffix != b.initialsSuffix {return a.initialsSuffix>b.initialsSuffix}
@@ -1180,9 +1251,38 @@ final class NativeEngine: ObservableObject {
         }
         return recoveryRows
     }
-    private func refreshPersonalLexicon() {
-        // Unreadable/revoked shared files do not retain stale private content.
-        personalLexicon=(try? personalStore?.load()) ?? PersonalLexicon()
+    private func adoptPendingPersonalLexiconIfIdle() {
+        guard let snapshot=personalLexiconSnapshot, rawInput.isEmpty, preedit.isEmpty else { return }
+        personalLexicon=snapshot.value
+    }
+    /// Version detection and JSON decoding run on the existing utility queue.
+    /// The input path only reads the current immutable snapshot; a new file is
+    /// adopted at an idle composition boundary, never mid-composition.
+    private func schedulePersonalLexiconRefresh() {
+        guard let store=personalStore, !personalLexiconLoading else { return }
+        personalLexiconLoading=true;personalLexiconRequest &+= 1
+        let request=personalLexiconRequest,epoch=personalEpoch,url=store.url
+        learningRefreshQueue.async { [weak self] in
+            let snapshot:PersonalLexiconSnapshot?
+            do { snapshot=try store.loadSnapshot() } catch { snapshot=nil }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                guard self.personalLexiconRequest==request, self.personalEpoch==epoch,
+                      self.personalStore?.url==url else { return }
+                self.personalLexiconLoading=false
+                guard let snapshot else {
+                    // Missing, unreadable or revoked file must not retain stale
+                    // private content. Clear immediately; a later write retries.
+                    self.personalLexiconSnapshot=nil
+                    self.personalLexicon=PersonalLexicon()
+                    return
+                }
+                self.personalLexiconSnapshot=snapshot
+                if self.rawInput.isEmpty, self.preedit.isEmpty {
+                    self.personalLexicon=snapshot.value
+                }
+            }
+        }
     }
     @discardableResult func setMixedEnglishEnabled(_ enabled:Bool) -> Bool {
         guard ready,rawInput.isEmpty,mixedEnglishEnabled != enabled else { return false }
@@ -2175,8 +2275,43 @@ final class NativeEngine: ObservableObject {
         guard recognized else{return nil};lastLatinDisplayInput=raw
         return (selected,pending)
     }
+    private func keyAlignedCompositionDisplay(_ reading:String)->String? {
+        let parts=reading.split(whereSeparator:{$0==" " || $0=="'"}).map(String.init)
+        guard !parts.isEmpty else{return nil}
+        if parts.count==rawInput.count {
+            let initials=parts.compactMap{$0.first}
+            if initials.count==parts.count {return initials.map(String.init).joined(separator:" ")}
+        }
+        let full=reading.filter{!$0.isWhitespace && $0 != "'"}
+        if full.count==rawInput.count {return reading.trimmingCharacters(in:.whitespaces)}
+        return nil
+    }
     func displayedPreedit(reading: String) -> String {
         guard ready else { return preedit }
+        if nineKeyInput {
+            let selected=String(cString:pi_selected_prefix(session)).trimmingCharacters(in:.whitespaces)
+            if selected.isEmpty,!rawInput.isEmpty {
+                // Prefer the first candidate's initials/full reading only when
+                // it is exactly as long as the typed key count. This makes
+                // 77777 show r q r s q for "燃气热水器", while never inventing
+                // or dropping visible positions.
+                if let aligned=keyAlignedCompositionDisplay(reading) {return aligned}
+            }
+            let value=reading.withCString { String(cString: pi_nine_display_preedit(session, $0)) }
+            if selected.isEmpty,!rawInput.isEmpty {
+                // No candidate-aligned representation exists. Show exactly one
+                // canonical initial per typed key; never surface a partial
+                // syllable expansion or a bare ellipsis.
+                let canonical=rawInput.compactMap(canonicalKeyLetter)
+                if canonical.count==rawInput.count {
+                    return canonical.map(String.init).joined(separator:" ")
+                }
+            }
+            return value
+        }
+        if let letter=repeatedCanonicalLetter {
+            return Array(repeating:String(letter),count:rawInput.count).joined(separator:" ")
+        }
         if !nineKeyInput {
             if let parts=latinDisplay() {return parts.selected+parts.pending}
             return preedit
@@ -2234,7 +2369,7 @@ final class NativeEngine: ObservableObject {
     /// The nine-key preferred path commits outside Rime; teach that new phrase once so
     /// “remembered” is true. Returns false when Rime could not learn it.
     func learnAutoPhrase(text: String, reading: String) -> Bool {
-        guard !privateInput else { return false }
+        guard !privateInput, PhraseLearningText.isStorable(text) else { return false }
         let value = readingParts(reading.lowercased().trimmingCharacters(in: .whitespaces)).joined(separator: " ")
         guard !value.isEmpty else { return false }
         markNativeLearningChanged()
@@ -2313,7 +2448,7 @@ final class NativeEngine: ObservableObject {
     private func learningRefreshContext(publish: SnapshotPublisher?) -> String {
         let wallNow=Date().timeIntervalSince1970
         let publisher: String
-        switch publish {case .containingApp?:publisher="app";case .keyboard(let access)?:publisher="keyboard-\(access)";case nil:publisher="local"}
+        switch publish {case .containingApp?:publisher="app";case .containingAppLocal?:publisher="app-local";case .keyboard(let access, let remote)?:publisher="keyboard-\(access)-\(remote)";case nil:publisher="local"}
         let consent: String
         if originalStorageBase == nil {
             let prefs=UserDefaults(suiteName:LocalLearningCoordinator.groupID)
@@ -2412,6 +2547,9 @@ final class NativeEngine: ObservableObject {
         let publisher = privateInput ? nil : publish, allowDated = !privateInput
         var expectedRevision = revision, nativeImports = 0, nativeResets = 0
         let started = ProcessInfo.processInfo.systemUptime
+        var queueWaitMilliseconds = 0.0, preflightMilliseconds = 0.0, nativeMilliseconds = 0.0
+        var ioMilliseconds = 0.0, publishMilliseconds = 0.0
+        var preflightStart = started
         fullLearningPreparationID = identifier; lastCompletedLearningPreparation = nil; learningRefreshWasSkipped = false
         func restoreSession() {
             session = pi_create_session(); ready = session != 0
@@ -2434,11 +2572,16 @@ final class NativeEngine: ObservableObject {
                 // Immutable metadata only: the preparing event can run on IO.
                 switch stage {
                 case .preparing:
+                    let now = ProcessInfo.processInfo.systemUptime
+                    queueWaitMilliseconds = (now - started) * 1000
+                    preflightStart = now
                     KeyboardRuntimeDiagnostics.record(.checkpointPreflight,
                         KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan))
                 case .prepared:
-                    KeyboardRuntimeDiagnostics.record(.checkpointPreflightEnd,
-                        KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan))
+                    preflightMilliseconds = (ProcessInfo.processInfo.systemUptime - preflightStart) * 1000
+                    var metrics = KeyboardRuntimeDiagnostics.maintenanceMetrics(owner: diagnosticOwner, stage: .observationPlan)
+                    metrics[.elapsedMilliseconds] = preflightMilliseconds
+                    KeyboardRuntimeDiagnostics.record(.checkpointPreflightEnd, metrics)
                 case .applying, .committed: break
                 }
             }, exportNative: { [self] output in
@@ -2447,9 +2590,13 @@ final class NativeEngine: ObservableObject {
                 releasePredictionProbe()
                 guard pi_active_session_count() == 1 else { throw LearningSyncFailure.busy }
                 let nativeStart = ProcessInfo.processInfo.systemUptime
+                defer { nativeMilliseconds += (ProcessInfo.processInfo.systemUptime - nativeStart) * 1000 }
                 pi_destroy_session(session); session = 0
                 defer { restoreSession() }
                 guard pi_export_learning(output.path) >= 0 else { throw LearningSyncFailure.exportFailed }
+                KeyboardRuntimeDiagnostics.record(.checkpointNativeExported,
+                    [.owner: Double(diagnosticOwner), .nativeMilliseconds: (ProcessInfo.processInfo.systemUptime - nativeStart) * 1000,
+                     .failureStage: Double(KeyboardRuntimeDiagnostics.MaintenanceStage.nativeExport.rawValue)])
                 KeyboardRuntimeDiagnostics.recordSlow(.checkpointSlow, startedUptime: nativeStart)
             }, applyNative: { [self] plan, begin, done in
                 guard current(), nativeWillBegin() else { throw LearningSyncFailure.busy }
@@ -2457,6 +2604,7 @@ final class NativeEngine: ObservableObject {
                 releasePredictionProbe()
                 guard pi_active_session_count() == 1 else { throw LearningSyncFailure.busy }
                 let nativeStart = ProcessInfo.processInfo.systemUptime
+                defer { nativeMilliseconds += (ProcessInfo.processInfo.systemUptime - nativeStart) * 1000 }
                 pi_destroy_session(session); session = 0
                 defer { restoreSession() }
                 try begin() // <=128B durable start, after admission, before mutation.
@@ -2514,9 +2662,15 @@ final class NativeEngine: ObservableObject {
                     let request = learningRefreshRequest(publish: publish)
                     learningRefreshQueue.async { [self] in
                         var failure: Error?
+                        let ioStart = ProcessInfo.processInfo.systemUptime
                         do {
                             try detached.completeHiddenNativeMaintenance()
-                            if fullyCurrent { try detached.publishCompletedNative(value, by: publisher) }
+                            ioMilliseconds = (ProcessInfo.processInfo.systemUptime - ioStart) * 1000
+                            if fullyCurrent {
+                                let publishStart = ProcessInfo.processInfo.systemUptime
+                                try detached.publishCompletedNative(value, by: publisher)
+                                publishMilliseconds = (ProcessInfo.processInfo.systemUptime - publishStart) * 1000
+                            }
                         } catch { failure = error }
                         let after = LearningRefreshReader.evaluate(request)
                         DispatchQueue.main.async { [self] in
@@ -2534,7 +2688,10 @@ final class NativeEngine: ObservableObject {
                                 [.owner: Double(diagnosticOwner), .elapsedMilliseconds: (ProcessInfo.processInfo.systemUptime - started) * 1000,
                                  .persistedBytes: Double(value.metrics.persistedBytes), .skippedWriteBytes: Double(value.metrics.skippedWriteBytes),
                                  .nativeImports: Double(nativeImports), .nativeResets: Double(nativeResets), .failureClass: 0,
-                                 .failureStage: Double(KeyboardRuntimeDiagnostics.MaintenanceStage.sharedPublication.rawValue)])
+                                 .failureStage: Double(KeyboardRuntimeDiagnostics.MaintenanceStage.sharedPublication.rawValue),
+                                 .queueWaitMilliseconds: queueWaitMilliseconds, .preflightMilliseconds: preflightMilliseconds,
+                                 .nativeMilliseconds: nativeMilliseconds, .ioMilliseconds: ioMilliseconds,
+                                 .publishMilliseconds: publishMilliseconds, .persistMilliseconds: value.metrics.persistMilliseconds])
                             completion(.success(certified))
                         }
                     }
@@ -2624,8 +2781,12 @@ final class NativeEngine: ObservableObject {
         let observationRevision = revision, observationEpoch = personalEpoch
         learningRefreshQueue.async { [weak self] in
             let result: Result<LocalLearningCoordinator.PreparedObservation?, Error>
+            let observationStart = ProcessInfo.processInfo.systemUptime
             do { result = .success(try detached.prepareObservation(exported: Data(contentsOf: output), allowDatedLearning: allowDated)) }
             catch { result = .failure(error) }
+            KeyboardRuntimeDiagnostics.record(.checkpointObservationReady,
+                [.owner: Double(diagnosticOwner), .observationMilliseconds: (ProcessInfo.processInfo.systemUptime - observationStart) * 1000,
+                 .failureStage: Double(KeyboardRuntimeDiagnostics.MaintenanceStage.observationPlan.rawValue)])
             try? FileManager.default.removeItem(at: directory)
             DispatchQueue.main.async {
                 // Losing the owner is cancellation, not an uncompleted job.
@@ -2898,7 +3059,10 @@ final class NativeEngine: ObservableObject {
     func afterLearningWork(_ completion: @escaping () -> Void) {
         learningRefreshQueue.async { DispatchQueue.main.async(execute: completion) }
     }
-    func finish() { markNativeLearningChanged();hostContext=nil;invalidatePrediction();releasePredictionProbe();if session != 0 {if personalEpoch==Self.initializedEpoch {pi_destroy_session(session)};session=0};ready=false }
+    func finish() {
+        personalLexiconRequest &+= 1;personalLexiconLoading=false;personalLexiconSnapshot=nil;personalLexicon=PersonalLexicon()
+        markNativeLearningChanged();hostContext=nil;invalidatePrediction();releasePredictionProbe();if session != 0 {if personalEpoch==Self.initializedEpoch {pi_destroy_session(session)};session=0};ready=false
+    }
     deinit { if let resetObserver {PersonalDataReset.unobserve(resetObserver)};if personalEpoch==Self.initializedEpoch {if predictionProbe != 0 {pi_destroy_session(predictionProbe)};if session != 0 {pi_destroy_session(session)}} }
 }
 

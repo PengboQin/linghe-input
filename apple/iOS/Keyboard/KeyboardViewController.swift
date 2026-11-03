@@ -207,7 +207,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
     private var sharedHeightRevision = UserDefaults.standard.string(forKey:"last-shared-height-revision")
     private let candidateBar = UIStackView()
     private let clipboardCandidate=ClipboardPasteCandidateView()
-    // “已记住 X　撤销” notice: first item in the candidate bar, hidden once input resumes.
+    // Internal delete-undo state for automatic phrase learning. No foreground bar.
     private let phraseNotice=UIStackView(),phraseNoticeLabel=UILabel(),phraseNoticeUndo=UIButton(type:.system)
     private var phraseNoticeUndoAction:(()->Bool)?
     private var phraseNoticeText=""
@@ -440,7 +440,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         phraseNotice.axis = .horizontal;phraseNotice.spacing=10;phraseNotice.alignment = .center
         phraseNotice.isLayoutMarginsRelativeArrangement=true;phraseNotice.layoutMargins=UIEdgeInsets(top:0,left:10,bottom:0,right:6)
         phraseNotice.addArrangedSubview(phraseNoticeLabel);phraseNotice.addArrangedSubview(phraseNoticeUndo)
-        phraseNotice.isHidden=true;candidateBar.insertArrangedSubview(phraseNotice,at:0)
+        phraseNotice.isHidden=true
         clipboardCandidate.translatesAutoresizingMaskIntoConstraints=false;candidateBar.insertArrangedSubview(clipboardCandidate,at:0)
         clipboardCandidate.isHidden=true
         clipboardCandidate.interactionBegan = { [weak self] in self?.cancelLearningForInteraction() }
@@ -556,7 +556,10 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         #endif
     }
     override func viewDidAppear(_ animated:Bool) {
-        KeyboardRuntimeDiagnostics.record(.viewDidAppear, [.owner: Double(learningDiagnosticOwner)])
+        let sharingEnabled=UserDefaults(suiteName:LocalLearningCoordinator.groupID)?.bool(forKey:"learning-sharing-enabled") == true
+        KeyboardRuntimeDiagnostics.record(.viewDidAppear, [.owner: Double(learningDiagnosticOwner),
+            .fullAccess: hasFullAccess ? 1 : 0, .learningSharing: sharingEnabled ? 1 : 0,
+            .privacyEpochPresent: PersonalDataReset.generation == "initial" ? 0 : 1])
         super.viewDidAppear(animated);keyboardAppeared=true;refreshAutomaticClipboard()
         engine.stageCachedCloudLearningBootstrap(publish: learningPublisher)
         clipboardTimer?.invalidate()
@@ -1224,7 +1227,9 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         rail.update(values.map { .init(id:(filtering ? "pinyin-":"symbol-")+$0,title:$0) },height:filtering ? 44:32,font:filtering ? 15:19,glyphCentered:!filtering)
     }
     private var learningPublisher: SnapshotPublisher? {
-        hasFullAccess && UserDefaults(suiteName: LocalLearningCoordinator.groupID)?.bool(forKey: "learning-sharing-enabled") == true ? .keyboard(fullAccess: hasFullAccess) : nil
+        guard hasFullAccess else { return nil }
+        let sharing = UserDefaults(suiteName: LocalLearningCoordinator.groupID)?.bool(forKey: "learning-sharing-enabled") == true
+        return .keyboard(fullAccess: true, remote: sharing)
     }
     private func manageCandidate(_ candidate: InputCandidate, revision: Int, pinned: Bool?) {
         guard engine.revision == revision, !english else { return }
@@ -1298,9 +1303,14 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         guard !text.isEmpty else { return }
         emptySymbolPair.unrelatedEdit()
         let hadMark=inlineComposition.active
-        if !inlineComposition.finish(text,host:compositionHost) {
+        if hadMark {
+            // Commit the replacement directly into the marked range. Marking
+            // the replacement and immediately unmarking races UIKit on long
+            // marked text and can commit the previous "h h h" draft instead.
+            inlineComposition.forget()
             textDocumentProxy.insertText(text)
-            if hadMark { inlineComposition.forget();textDocumentProxy.unmarkText() }
+        } else {
+            textDocumentProxy.insertText(text)
         }
         archiveOutput(text)
         expanded=false
@@ -1615,6 +1625,20 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         deleteDelay = delay; RunLoop.main.add(delay, forMode: .common)
     }
     private func stopDeletion() { deletionGeneration &+= 1; deleteDelay?.invalidate(); deleteRepeat?.invalidate(); deleteDelay = nil; deleteRepeat = nil }
+    /// A tap may race a prediction refresh; re-bind the row to the current
+    /// generation instead of silently dropping the commit. Never commit a
+    /// stale absolute index, only the same text/reading/path identity.
+    private func refreshedCandidate(_ candidate:InputCandidate)->InputCandidate? {
+        if lastRevision == engine.revision { return candidate }
+        let rows=engine.candidateBatch(offset:0,limit:max(96,choices.count+16))
+        return rows.first { row in
+            row.text==candidate.text && row.comment==candidate.comment &&
+            row.preservedNinePath==candidate.preservedNinePath &&
+            row.preservedNinePrefix==candidate.preservedNinePrefix &&
+            row.continuationContext==candidate.continuationContext &&
+            row.latinInput==candidate.latinInput
+        }
+    }
     private func choose(_ candidate: InputCandidate, method: String = "unknown") {
         emptySymbolPair.invalidate()
         stageDiagnosticSelection(candidate, method: method)
@@ -1629,20 +1653,21 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             commitHostText(candidate.text); render(); return
         }
         if let context=candidate.continuationContext {
-            guard lastRevision==engine.revision,textDocumentProxy.selectedText?.isEmpty != false,
-                  textDocumentProxy.documentContextBeforeInput?.hasSuffix(SentenceContextWindow.validationSuffix(context))==true else { render();return }
-            resumeAutomaticPredictionForUserInput();let text=engine.chooseContinuation(candidate)
+            guard textDocumentProxy.selectedText?.isEmpty != false,
+                  textDocumentProxy.documentContextBeforeInput?.hasSuffix(SentenceContextWindow.validationSuffix(context))==true,
+                  let chosen=refreshedCandidate(candidate) else { render();return }
+            resumeAutomaticPredictionForUserInput();let text=engine.chooseContinuation(chosen)
             if !text.isEmpty { ownCommitTracker.invalidate();commitHostText(text) }
             render();return
         }
-        guard lastRevision == engine.revision else { render(); return }
+        guard let chosen=refreshedCandidate(candidate) else { render();return }
         resumeAutomaticPredictionForUserInput()
         let originalInput=engine.rawInput
         let code=NineKeySpelling.rawCode(originalInput) ?? originalInput,context=engine.precedingOwnText
         let selectedBefore=engine.selectedPrefixText
-        let commit = engine.chooseCandidate(candidate)
-        autoPhrases.selected(prefix:selectedBefore,text:candidate.text,reading:candidate.comment)
-        if !commit.isEmpty,let reading=autoPhrases.committed(commit),engine.autoPhraseAllowed {autoPhraseCommitted(phrase:commit,reading:reading,outsideRime:candidate.preservedNinePath)}
+        let commit = engine.chooseCandidate(chosen)
+        autoPhrases.selected(prefix:selectedBefore,text:chosen.text,reading:chosen.comment)
+        if !commit.isEmpty,let reading=autoPhrases.committed(commit),engine.autoPhraseAllowed {autoPhraseCommitted(phrase:commit,reading:reading,outsideRime:chosen.preservedNinePath)}
         #if targetEnvironment(simulator)
         let probe=engine.candidateBatch(offset:0,limit:3)
         NSLog("INLINE_CHOICE text=%d commit=%d raw=%d preedit=%d first=%d",candidate.text.utf16.count,commit.utf16.count,engine.rawInput.utf16.count,engine.preedit.utf16.count,probe.first?.text.utf16.count ?? -1)
@@ -1654,7 +1679,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
                 let prefix=current?.hasSuffix(commit)==true ? current.map{String($0.dropLast(commit.count))} : nil
                 let validContext=prefix?.hasSuffix(SentenceContextWindow.validationSuffix(context))==true ? context : ""
                 engine.confirmOwnCommitContext(previous:validContext,text:commit)
-                if let document=documentID { ownCommitTracker.stage(document:document.uuidString,anchor:anchor(prefix),text:commit,code:code,context:validContext,time:Date.timeIntervalSinceReferenceDate,reading:commit==candidate.text && candidate.latinInput==nil && candidate.personalID==nil && candidate.supplementaryTrigger==nil ? candidate.comment:nil) }
+                if let document=documentID { ownCommitTracker.stage(document:document.uuidString,anchor:anchor(prefix),text:commit,code:code,context:validContext,time:Date.timeIntervalSinceReferenceDate,reading:commit==chosen.text && chosen.latinInput==nil && chosen.personalID==nil && chosen.supplementaryTrigger==nil ? chosen.comment:nil) }
             }
         }
         if commit.isEmpty && !engine.preedit.isEmpty { lastRevision = -1 }
@@ -1863,11 +1888,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
             DispatchQueue.main.async {
                 guard status==2,let self,self.documentID==document,self.engine.preedit.isEmpty else{return}
                 if outsideRime,!self.engine.learnAutoPhrase(text:phrase,reading:reading) {return}
-                guard NativeEngine.firstAutoPhraseAnnouncement(phrase,reading) else{return}
-                self.phraseNoticeLabel.text="已记住 "+phrase
-                self.phraseNoticeText=phrase
-                self.phraseNoticeUndoAction={ [weak self] in guard let self else { return false }; let success=self.engine.forgetAutoPhrase(text:phrase,reading:reading);self.render();return success }
-                self.phraseNotice.isHidden=false
+                // Remember in the background only; no foreground notice bar.
             }
         }
     }

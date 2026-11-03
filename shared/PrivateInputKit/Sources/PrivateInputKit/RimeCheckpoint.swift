@@ -112,8 +112,15 @@ public struct RimeLearningCheckpoint: Codable {
     // Call ONLY after the actual engine import succeeded and its export was
     // re-read while input was quiescent. Imported counts are not local typing.
     public mutating func establishBaselineAfterImport(_ data: Data) throws {
+        let counts = Dictionary(uniqueKeysWithValues: try RimeLearningFormat.parseExport(data, capacityProfile: capacityProfile).filter { $0.count > 0 }.map { ($0.id, $0.count) })
+        try establishBaselineAfterImport(observedCounts: counts)
+    }
+
+    /// Same validation as the export overload, for an adapter that already
+    /// parsed the identical pre-import export in this transaction.
+    public mutating func establishBaselineAfterImport(observedCounts: [String: UInt64]) throws {
         var next = self
-        next.observedCounts = Dictionary(uniqueKeysWithValues: try RimeLearningFormat.parseExport(data, capacityProfile: capacityProfile).filter { $0.count > 0 }.map { ($0.id, $0.count) })
+        next.observedCounts = observedCounts.filter { $0.value > 0 }
         next.appliedGenerations = Dictionary(uniqueKeysWithValues: model.entries.values.map { ($0.id, $0.generation) })
         try next.validateState(); self = next
     }

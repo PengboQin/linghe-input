@@ -624,6 +624,82 @@ final class MacInputSessionTests: XCTestCase {
         XCTAssertEqual(head.text,row.text);XCTAssertTrue(engine.isPinned(head));XCTAssertEqual(engine.rawInput,"4444")
         XCTAssertEqual(engine.chooseCandidate(head),"红红火火")
     }
+    func testRepeatedUniformKeyRunDoesNotPreferMixedInitials() throws {
+        let resources=try XCTUnwrap(Bundle(for:Self.self).url(forResource:"rime",withExtension:nil))
+        let engine=NativeEngine(sharedResources:resources,storageBase:Self.storage,useSemantic:false)
+        defer {engine.clear();engine.finish()}
+        _ = engine.privacy(true); _ = engine.nineKey(true)
+        for count in [5,8] {
+            engine.clear()
+            for _ in 0..<count { _ = engine.key(52) }
+            let rows=engine.candidateBatch(offset:0,limit:16)
+            let first=try XCTUnwrap(rows.first)
+            XCTAssertEqual(Set(first.text).count,1,"A uniform 4-run must not put a mixed he/ha candidate first")
+            XCTAssertFalse(first.text.contains("和") || first.text.contains("呵"),"No untyped e-bearing head")
+            let shown=engine.displayedPreedit(reading:first.comment)
+            XCTAssertFalse(shown.contains("…"),"Uniform run must not degrade to a bare ellipsis")
+            XCTAssertEqual(shown.replacingOccurrences(of:" ",with:""),String(repeating:"h",count:count))
+            XCTAssertEqual(engine.chooseCandidate(first),first.text)
+        }
+    }
+    func testPublicPinyinSamplesMapToExpectedNineKeyCandidates() throws {
+        // Sampled from public IME regression cases (MSIME-Windows test_pinyin.cpp)
+        // plus common public words; only a small attribution sample, not a full import.
+        let resources=try XCTUnwrap(Bundle(for:Self.self).url(forResource:"rime",withExtension:nil))
+        let engine=NativeEngine(sharedResources:resources,storageBase:Self.storage,useSemantic:false,useLexicon:true)
+        defer {engine.clear();engine.finish()}
+        _ = engine.privacy(true); _ = engine.nineKey(true)
+        let cases=[("jianmingeyao","简明扼要"),("niezi","镊子"),("gaotangangniezi","高碳钢镊子"),("nihao","你好"),("shijie","世界"),("henlaji","很垃圾")]
+        for (reading,want) in cases {
+            let code=try XCTUnwrap(NineKeySpelling.encode(reading))
+            engine.clear(); for c in code.utf8 { _ = engine.key(Int32(c)) }
+            let rows=engine.candidateBatch(offset:0,limit:160)
+            XCTAssertTrue(rows.contains{$0.text==want},"\(reading) -> \(code) missing \(want)")
+            XCTAssertEqual(rows.first?.text,want,"\(reading) should be first for the sampled public case")
+        }
+        engine.clear(); for _ in 0..<5 { _ = engine.key(55) }
+        let rows=engine.candidateBatch(offset:0,limit:16)
+        XCTAssertTrue(rows.contains{$0.text=="燃气热水器"},"77777 should still match legitimate word")
+        let shown=engine.displayedPreedit(reading:rows.first?.comment ?? "")
+        XCTAssertEqual(shown.filter{!$0.isWhitespace}.count,5,"77777 marked text must show five keys")
+    }
+    func testNineCompositionNeverAddsOrDropsTypedKeyCount() throws {
+        let resources=try XCTUnwrap(Bundle(for:Self.self).url(forResource:"rime",withExtension:nil))
+        let engine=NativeEngine(sharedResources:resources,storageBase:Self.storage,useSemantic:false)
+        defer {engine.clear();engine.finish()}
+        _ = engine.privacy(true); _ = engine.nineKey(true)
+        let expected=["77777":"r q r s q","77757":"s s p j s","44444":"h h h h h","647486742":"ni shuo sha","3332":"e e e b","8885":"u u u k"]
+        for raw in ["77777","77757","44444","647486742","3332","8885","44444426"] {
+            engine.clear()
+            for c in raw.utf8 { _ = engine.key(Int32(c)) }
+            let first=engine.candidateBatch(offset:0,limit:8).first
+            let shown=engine.displayedPreedit(reading:first?.comment ?? "")
+            let glyphs=shown.filter{!$0.isWhitespace}.count
+            XCTAssertEqual(glyphs,raw.count,"marked text must expose exactly the typed key count for \(raw): \(shown)")
+            XCTAssertFalse(shown.contains("…"),"unresolved display must not collapse to ellipsis")
+            if let want=expected[raw] { XCTAssertEqual(shown,want,"key-aligned display for \(raw)") }
+        }
+    }
+    func testNineKeyReturnDoesNotCommitMixedEnglishFragment() throws {
+        let engine=try engine();defer{engine.clear();engine.finish()}
+        _ = engine.privacy(true); _ = engine.nineKey(true); _ = engine.setMixedEnglishEnabled(true)
+        let input=MacInputSession(engine:engine),host=view(),client=TextViewClient(view:host)
+        for c in "274".utf8 { _ = engine.key(Int32(c)) }
+        let rows=input.allCandidateRows
+        guard rows.contains(where:{$0.latinInput != nil}) else { throw XCTSkip("No mixed-English sample for this dictionary") }
+        _ = input.input(nil,keyCode:36,flags:0,client:client)
+        XCTAssertFalse(host.string.uppercased().contains("API"),"Return must not commit a mixed-English fragment in Chinese nine-key mode")
+    }
+    func testPhraseLearningRejectsEmojiHiddenComposition() {
+        XCTAssertFalse(PhraseLearningText.isStorable("好🙂"))
+        XCTAssertFalse(PhraseLearningText.isStorable("👨‍👩‍👧‍👦"))
+        XCTAssertFalse(PhraseLearningText.isStorable("❤️"))
+        XCTAssertTrue(PhraseLearningText.isStorable("你好"))
+        XCTAssertTrue(PhraseLearningText.isStorable("OpenAI"))
+        var tracker=AutoPhraseTracker()
+        tracker.selected(prefix:"",text:"好🙂",reading:"hao")
+        XCTAssertNil(tracker.committed("好🙂"))
+    }
     func testNineInitialsFallbackRetainsLongTailAndRejectsStaleSelection() throws {
         let engine=try engine();defer{engine.clear();engine.finish()}
         _ = engine.nineKey(true);_ = engine.privacy(true)
