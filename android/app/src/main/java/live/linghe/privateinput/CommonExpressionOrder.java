@@ -17,9 +17,18 @@ final class CommonExpressionOrder {
   if(tier==0&&text.codePointCount(0,text.length())<=4&&frequency>=200&&Double.isFinite(isolated)&&isolated>-3.5){boolean common=true;for(int cp:text.codePoints().toArray())if(frequency(new String(Character.toChars(cp)))<5000){common=false;break;}if(common)tier=2;}
   if(tier<3&&!context.isEmpty()&&Double.isFinite(isolated)&&isolated>-11){double contextual=scorer.score(context,text);if(Double.isFinite(contextual)&&contextual-isolated>=1.5)tier=3;}return tier;
  }
+ private long repeatedFrequency(String text){
+  if(text.codePointCount(0,text.length())<2||text.codePoints().distinct().count()!=1)return 0;
+  return Math.max(frequency(text),frequency(new String(Character.toChars(text.codePointAt(0)))));
+ }
  String[][] apply(String[][] rows,boolean nine,String context,Predicate<String[]> protectedRow){
   if(rows.length<3||rows[0].length<5||!rows[0][4].isEmpty()||rows[0][2].length()<4)return rows;
-  String raw=rows[0][2],code=NineSpelling.rawCode(raw);if(code==null)return rows;Map<String,List<Integer>> groups=new LinkedHashMap<>();
+  String raw=rows[0][2],code=NineSpelling.rawCode(raw);if(code==null)return rows;
+  if(nine && raw.charAt(0)!='4' && raw.matches("([2-9])\\1+")) {
+   List<Integer> places=new ArrayList<>();for(int i=1;i<rows.length;i++)if(rows[i].length>=3&&!protectedRow.test(rows[i])&&code.equals(NineSpelling.encode(rows[i][2])))places.add(i);
+   final String[][] original=rows;List<Integer> ranked=new ArrayList<>(places);ranked.sort((a,b)->{int c=Long.compare(repeatedFrequency(original[b][1]),repeatedFrequency(original[a][1]));return c!=0?c:Integer.compare(a,b);});
+   String[][] ordered=rows.clone();for(int i=0;i<places.size();i++)ordered[places.get(i)]=rows[ranked.get(i)];rows=ordered;
+  }Map<String,List<Integer>> groups=new LinkedHashMap<>();
   for(int i=1;i<Math.min(rows.length,65);i++){String[] row=rows[i];if(row.length<3||!row[0].matches("[0-9]+")||row[1].codePointCount(0,row[1].length())<2||protectedRow.test(row)||!code.equals(NineSpelling.encode(row[2]))||!nine&&!PinyinMatch.isFullSpelling(raw,row[2]))continue;groups.computeIfAbsent(row[2].trim().replaceAll("[ ']+","'"),k->new ArrayList<>()).add(i);}
   String[][] result=rows.clone();String bounded=new ContextWindow(context,"").before;
   for(List<Integer> positions:groups.values()){if(positions.size()<2||frequency(rows[positions.get(0)][1])>=3000)continue;Map<Integer,Integer> tiers=new HashMap<>();for(int i:positions)tiers.put(i,tier(rows[i][1],bounded));List<Integer> order=new ArrayList<>(positions);order.sort((a,b)->{int c=Integer.compare(tiers.get(b),tiers.get(a));return c==0?Integer.compare(a,b):c;});for(int i=0;i<positions.size();i++)result[positions.get(i)]=rows[order.get(i)];}

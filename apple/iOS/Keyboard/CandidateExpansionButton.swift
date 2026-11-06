@@ -4,7 +4,7 @@ import UIKit
 final class CandidateExpansionButton:UIButton {
     static let touchWidth: CGFloat = 56
     static func canToggle(expanded:Bool,choicesAvailable:Bool,hasComposition:Bool,deferred:Bool,english:Bool)->Bool {
-        expanded || choicesAvailable || (!english && hasComposition && deferred)
+        expanded || choicesAvailable || (!english && hasComposition)
     }
     override func point(inside point:CGPoint,with event:UIEvent?)->Bool {
         bounds.contains(point)

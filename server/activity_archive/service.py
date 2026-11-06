@@ -4,6 +4,7 @@ No registration/accounts, model calls or clipboard scraping live in this module.
 The caller must explicitly enable a group and its own providers before ingest.
 """
 import base64
+import zlib
 from contextlib import contextmanager, closing
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -270,6 +271,20 @@ class ArchiveStore:
         CREATE TABLE IF NOT EXISTS admin_audit(id INTEGER PRIMARY KEY AUTOINCREMENT,group_id TEXT NOT NULL,device_id TEXT NOT NULL,operation INTEGER NOT NULL,created_at REAL NOT NULL,details BLOB NOT NULL);
         CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL);
         ''')
+        self.db.execute("""CREATE VIEW IF NOT EXISTS archive_analysis_v1 AS
+            SELECT group_id, device_id, event_id, observed_at, provider_id, event_type,
+              CASE WHEN provider_id='ime.diagnostic.v1' THEN 'diagnostic'
+                   WHEN event_type='clipboard_observed' THEN 'clipboard'
+                   WHEN event_type='paste_action' THEN 'paste'
+                   WHEN event_type IN ('text_revise','text_retract') THEN 'edit'
+                   WHEN event_type='input_commit' THEN 'output' ELSE 'system' END AS record_class,
+              CASE WHEN event_type IN ('input_commit','paste_action','clipboard_observed')
+                   AND provider_id!='ime.diagnostic.v1'
+                   THEN json_extract(CAST(event_json AS TEXT),'$.content.text') ELSE NULL END AS effective_text,
+              json_extract(CAST(event_json AS TEXT),'$.extensions."org.linghe.decision.v1".composition_id') AS composition_id,
+              json_extract(CAST(event_json AS TEXT),'$.extensions."org.linghe.decision.v1".output_event_id') AS output_event_id,
+              change_seq
+            FROM events""")
         self.fts = True
         try:
             self.db.execute('CREATE VIRTUAL TABLE IF NOT EXISTS event_search USING fts5(group_id UNINDEXED,event_id UNINDEXED,text,tokenize="unicode61")')
@@ -909,7 +924,7 @@ class ArchiveApplication:
         self.rate_lock = threading.Lock()
 
     def capabilities(self):
-        return {'protocol': 'private-input-activity', 'version': 1, 'storage': 'server_plaintext', 'default_enabled': False, 'max_wrapper_bytes': WRAPPER_LIMIT, 'max_body_bytes': BODY_LIMIT, 'max_batch_events': MAX_BATCH, 'max_event_bytes': EVENT_LIMIT, 'operations': list(range(1, 12)), 'event_types': sorted(TYPES), 'capture_scope': 'provider_observed_only', 'requires_group_policy_and_device_consent': True}
+        return {'protocol': 'private-input-activity', 'version': 1, 'storage': 'server_plaintext', 'default_enabled': False, 'max_wrapper_bytes': WRAPPER_LIMIT, 'request_content_encodings': ['identity', 'gzip'], 'max_body_bytes': BODY_LIMIT, 'max_batch_events': MAX_BATCH, 'max_event_bytes': EVENT_LIMIT, 'operations': list(range(1, 12)), 'event_types': sorted(TYPES), 'capture_scope': 'provider_observed_only', 'requires_group_policy_and_device_consent': True}
 
     def dispatch(self, raw):
         if len(raw) > WRAPPER_LIMIT:
@@ -943,7 +958,10 @@ class ArchiveApplication:
         result = self.store.process(who, operation, decode(body), nonce)
         if capture_delegate and operation == 1:
             result.pop("devices", None)
-        return {'version': 1, 'operation': operation, 'result': result}
+        response = {'version': 1, 'operation': operation, 'result': result}
+        if operation == 1:
+            response['transport'] = {'request_content_encodings': ['identity', 'gzip']}
+        return response
 
     def __call__(self, environ, start_response):
         status = 200
@@ -964,6 +982,19 @@ class ArchiveApplication:
                 raw = environ['wsgi.input'].read(int(length))
                 if len(raw) != int(length):
                     fail('request_length')
+                encoding = environ.get('HTTP_CONTENT_ENCODING', 'identity').strip().lower()
+                if encoding == 'gzip':
+                    try:
+                        decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+                        raw = decoder.decompress(raw, WRAPPER_LIMIT + 1)
+                        if len(raw) > WRAPPER_LIMIT or decoder.unconsumed_tail:
+                            fail('request_size', 413)
+                        if not decoder.eof or decoder.unused_data:
+                            fail('request_encoding', 400)
+                    except zlib.error:
+                        fail('request_encoding', 400)
+                elif encoding not in ('', 'identity'):
+                    fail('content_encoding', 415)
                 response = self.dispatch(raw)
             else:
                 fail('not_found', 404)

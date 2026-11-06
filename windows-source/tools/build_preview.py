@@ -5,7 +5,7 @@ import argparse,subprocess,json,zipfile,hashlib,shutil,re,os
 r=Path(__file__).resolve().parents[1]
 public_resources=canonical_resources(r)
 subprocess.run([os.sys.executable, str(r/'tools/check_shared_core.py')], check=True)
-p=argparse.ArgumentParser(description='Build a local unsigned Windows preview, without installation or publishing.');p.add_argument('--toolchain',type=Path,required=True);p.add_argument('--cmake',type=Path,required=True);p.add_argument('--version',default='0.6.0-win1');p.add_argument('--no-zip',action='store_true',help='Prepare payload without a duplicate zip before offline EXE packaging');a=p.parse_args()
+p=argparse.ArgumentParser(description='Build a local unsigned Windows preview, without installation or publishing.');p.add_argument('--toolchain',type=Path,required=True);p.add_argument('--cmake',type=Path,required=True);p.add_argument('--version',default='0.6.0-win1');p.add_argument('--no-zip',action='store_true',help='Prepare only the payload');p.add_argument('--offline-setup',action='store_true',help='Build one native, fully offline installer and audit its embedded files');p.add_argument('--clean-first',action='store_true',help='Recompile all application targets from source');a=p.parse_args()
 if not re.fullmatch(r'0\.\d{1,3}\.\d{1,3}-win[1-9]\d{0,2}',a.version):p.error('Expected a version such as 0.2.3-win1')
 version=a.version.split('-win')[0]
 stage=r/('artifacts/LingheInput-Windows-x64-'+version)
@@ -19,6 +19,7 @@ compiler=a.toolchain/'bin/x86_64-w64-mingw32-clang++';rc=a.toolchain/'bin/x86_64
 # Toolchain can be read from an existing installation; all build writes stay here.
 commands=[[str(a.cmake),'-S',str(r/'windows'),'-B',str(r/'build/windows-tsf/x64'),'-DCMAKE_SYSTEM_NAME=Windows','-DCMAKE_CXX_COMPILER='+str(compiler),'-DCMAKE_RC_COMPILER='+str(rc),'-DPRIVATE_RIME_PREFIX='+str(r/'build/rime/windows-x64'),'-DPRIVATE_SODIUM_PREFIX='+str(r/'build/sodium-membership/x64'),'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_SHARED_LINKER_FLAGS=-static','-DCMAKE_EXE_LINKER_FLAGS=-static'],[str(a.cmake),'--build',str(r/'build/windows-tsf/x64'),'--parallel','2','--target','PrivateInputTSF','LingheInputSetup','LingheInputSettings','LingheInputActivity','LingheLegacyExport']]
 with (e/'reproducible-build.log').open('w') as log:
+ if a.clean_first:commands[1].insert(3,'--clean-first')
  for cmd in commands:subprocess.run(cmd,cwd=r,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
 runtime=stage/'payload/AMD64';runtime.mkdir(parents=True)
 for name in ['LingheInputSetup.exe','LingheInputSettings.exe']:shutil.copy2(r/'build/windows-tsf/x64'/name,stage/name)
@@ -30,10 +31,14 @@ q=runtime/'data/semantic';q.mkdir(parents=True);shutil.copy2(public_resources/'s
 files={str(p.relative_to(stage/'payload')):hashlib.sha256(p.read_bytes()).hexdigest() for p in (stage/'payload').rglob('*') if p.is_file()}
 (stage/'payload/manifest.sha256').write_text('version='+a.version+'\n'+''.join(h+'  '+n+'\n' for n,h in sorted(files.items())))
 (stage/'使用说明.txt').write_text('灵鹤 Windows11 x64 '+a.version+' 工程预览\n\n本包未签受信任发行证书，未通过Windows真实输入验收，请勿作为正式日用版。\n本批增加默认关闭的设备组与活动归档组件。设置中可填写自部署同步服务器和独立归档服务器、六位码加入或新建设备组。归档分别要求本组开启和本设备明确授权，服务器存具体明文。关闭隔离旧待传，不自动补传；明确清本机或确认离组才清空。输入法成功提交异步送入DPAPI加密SQLite队列，后台HTTPS签名传输。剪贴板独立授权，可读文字不按网址、路径或提供方标签过滤；已识别密码字段、安全桌面及实际无法读取的内容不采集。复制观测不代表已粘贴。\n完整解压后运行 LingheInputSetup.exe；该工程安装器依赖旁置payload，不要只移动exe。\n基础：nihao / csm / shih；长句：wokankanzhegedaoshihounengyouduochang。\n左右选择、上下原位展开，数字仅选当前行；设置可调行列。单击Shift或Ctrl+Shift+空格切中英文；英文保留原文首候选并提供补全/纠错，选择不额外加空格。\n个人词库保留。系统若阻止未签名程序，请停止，不关闭安全防护。\n本批保留端到端加密词库/个人词条/快捷短语同步，剪贴板复制后自动组内转发，不提供消息收发或复制历史列表、独立在组节点限时发码与后台接入；近期词频仅在新协议与组内写入端均支持、且时间可信时启用，旧服务器保留累计同步。MacBERT等神经语义模型尚未包含；跨端真实运行仍待安装后验收。Windows原生组创建、六位码入组、后台归档已用隔离合成组实测；不保证捕获其他App的全部编辑或未知密码字段。单文件离线包另行构建核验。\n',encoding='utf-8-sig')
-if not a.no_zip:
+if not a.no_zip and not a.offline_setup:
  with zipfile.ZipFile(archive,'x',zipfile.ZIP_DEFLATED) as z:
   for p in stage.rglob('*'):
    if p.is_file():z.write(p,str(p.relative_to(stage.parent)))
  with zipfile.ZipFile(archive) as z:assert z.testzip() is None
-(e/'package-audit.json').write_text(json.dumps({'version':a.version,'arch':'x64','payloadFiles':files,'zipSHA256':None if a.no_zip else hashlib.sha256(archive.read_bytes()).hexdigest(),'signature':'unsigned engineering preview','executedOnWindows':False,'sourceWorkspace':str(r),'modifiedAppleMaster':False,'storeEligible':False},indent=2))
-print(stage if a.no_zip else archive)
+(e/'package-audit.json').write_text(json.dumps({'version':a.version,'arch':'x64','payloadFiles':files,'zipSHA256':hashlib.sha256(archive.read_bytes()).hexdigest() if archive.exists() else None,'signature':'unsigned engineering preview','executedOnWindows':False,'sourceWorkspace':str(r),'modifiedAppleMaster':False,'storeEligible':False},indent=2))
+if a.offline_setup:
+ output=r/'artifacts'/f'LingheInput-Windows11-x64-{version}-offline-setup.exe'
+ subprocess.run([os.sys.executable,str(r/'tools/build_offline_installer.py'),'--version',a.version,'--payload',str(stage/'payload'),'--output',str(output),'--unsigned-engineering-preview'],cwd=r,check=True)
+else:
+ print(stage if a.no_zip else archive)

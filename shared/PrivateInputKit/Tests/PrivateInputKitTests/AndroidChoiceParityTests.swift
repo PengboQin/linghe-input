@@ -35,6 +35,6 @@ final class AndroidChoiceParityTests:XCTestCase {
  }
  func testAndroidChoiceArchiveDecodesInSwift()throws {
   guard let path=ProcessInfo.processInfo.environment["ANDROID_CHOICE_RESULT"] else{throw XCTSkip("Explicit Android archive import")}
-  let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:URL(fileURLWithPath:path)));try memory.validate();XCTAssertEqual(memory.version,3);XCTAssertEqual(memory.entries.filter{$0.code=="64425" && $0.text=="你好"}.reduce(0){$0+$1.count},7)
+  let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:URL(fileURLWithPath:path)));try memory.validate();XCTAssertEqual(memory.version,4);XCTAssertEqual(memory.entries.filter{$0.code=="64425" && $0.text=="你好"}.reduce(0){$0+$1.count},7)
  }
 }

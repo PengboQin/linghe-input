@@ -28,8 +28,8 @@
 #include "RegistrationCatalogCheck.h"
 namespace fs = std::filesystem;
 namespace {
-constexpr wchar_t Version[] = L"0.7.6-win1";
-constexpr char VersionUtf8[] = "0.7.6-win1";
+constexpr wchar_t Version[] = L"0.7.8-win1";
+constexpr char VersionUtf8[] = "0.7.8-win1";
 // Use the DLL's actual COM identity for preflight, installation and rollback.
 // A second handwritten GUID previously caused a successful registration to be
 // reported as failed and left the real registration outside the snapshot.
@@ -41,9 +41,10 @@ const std::wstring OwnClass = [] {
 const std::wstring ClassBase = std::wstring(L"Software\\Classes\\CLSID\\") + OwnClass;
 const std::wstring ClassKey = ClassBase + L"\\InprocServer32";
 const std::wstring UninstallKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\LingheInput." + OwnClass.substr(1,36);
+constexpr wchar_t LegacyStandardUninstallKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\LingheInput.Standard";
 struct Failure { int code; HRESULT hr; explicit Failure(int c, HRESULT h = E_FAIL):code(c),hr(h){} };
 struct Report {
- int code = 1; HRESULT hr = S_OK;
+ int code = 1; HRESULT hr = S_OK, systrayCatalog = E_PENDING;
  std::string action = "install", stage = "arguments", rollback = "not-needed",repairTargetVersion;
  bool workerStartupMigrated=false,workerRestartRequired=false,userTipUpdated=false,registrationCatalogVerified=false;
  bool quiet = false, committed = false, fileCleanupPending = false, retryRequired = false, unknownFilesPreserved = false, shortcutUpdated = false;
@@ -426,7 +427,7 @@ std::vector<InstalledVersion> uninstallPlan(const fs::path& root,const std::wstr
  if(!activeFound)throw Failure(10,E_ACCESSDENIED);
  return versions;
 }
-fs::path cleanVersions(const std::vector<InstalledVersion>& versions,const fs::path& arpInstaller,Report& report,bool externalInstaller=false) {
+fs::path cleanVersions(const std::vector<InstalledVersion>& versions,const fs::path& arpInstaller,Report& report) {
  std::set<fs::path> directories; std::vector<fs::path> installers;
  fs::path lastInstaller=arpInstaller;
  if(lastInstaller.empty()&&!versions.empty())lastInstaller=versions.back().installer;
@@ -468,10 +469,23 @@ fs::path cleanVersions(const std::vector<InstalledVersion>& versions,const fs::p
   if(directory==lastInstaller.parent_path())continue;
   normalPath(directory); if(!RemoveDirectoryW(directory.c_str())&&GetLastError()!=ERROR_FILE_NOT_FOUND&&GetLastError()!=ERROR_PATH_NOT_FOUND)report.fileCleanupPending=true;
  }
- // Never remove the ARP record while its running installer cannot be deleted.
- if(!lastInstaller.empty()&&samePath(lastInstaller,ownExe())&&!externalInstaller)report.fileCleanupPending=true;
  report.retryRequired=report.fileCleanupPending||report.unknownFilesPreserved;
  return lastInstaller;
+}
+bool retireFinalInstaller(const fs::path& installer,const fs::path& root) {
+ if(!samePath(installer,ownExe()))return DeleteFileW(installer.c_str())!=FALSE;
+ // Move the running image out of the version tree before asking Windows to
+ // delete it at reboot. The unique path is never reused by a reinstall.
+ GUID id{};
+ wchar_t suffix[39]{};
+ if(FAILED(CoCreateGuid(&id))||!StringFromGUID2(id,suffix,39))return false;
+ auto retired=root/L"receipts"/(std::wstring(L"retired-setup-")+suffix+L".exe");
+ normalPath(retired);
+ fs::create_directories(retired.parent_path());
+ if(!MoveFileExW(installer.c_str(),retired.c_str(),MOVEFILE_WRITE_THROUGH))return false;
+ if(MoveFileExW(retired.c_str(),nullptr,MOVEFILE_DELAY_UNTIL_REBOOT))return true;
+ if(!MoveFileExW(retired.c_str(),installer.c_str(),MOVEFILE_WRITE_THROUGH))throw Failure(21);
+ return false;
 }
 #include "RepairExisting.inc"
 bool receipt(const fs::path& target,const Report& report) {
@@ -481,7 +495,7 @@ bool receipt(const fs::path& target,const Report& report) {
   if(fs::exists(target)) { std::ifstream in(target,std::ios::binary); std::string prefix(256,'\0'); in.read(prefix.data(),prefix.size()); if(prefix.find("\"application\":\"LingheInputSetup\"")==std::string::npos)return false; }
   temporary=target; temporary+=L"."+std::to_wstring(GetCurrentProcessId())+L"."+std::to_wstring(GetTickCount64())+L".tmp"; normalPath(temporary);
   HANDLE output=CreateFileW(temporary.c_str(),GENERIC_WRITE,0,nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr); if(output==INVALID_HANDLE_VALUE)return false;
-  std::ostringstream json; json<<"{\"application\":\"LingheInputSetup\",\"schemaVersion\":1,\"version\":\""<<VersionUtf8<<"\",\"action\":\""<<report.action<<"\",\"status\":\""<<(report.retryRequired?"incomplete":report.code==0?"succeeded":"failed")<<"\",\"exitCode\":"<<report.code<<",\"stage\":\""<<report.stage<<"\",\"hresult\":"<<static_cast<unsigned long>(report.hr)<<",\"rollbackStatus\":\""<<report.rollback<<"\",\"installationCommitted\":"<<(report.committed?"true":"false")<<",\"fileCleanupPending\":"<<(report.fileCleanupPending?"true":"false")<<",\"retryRequired\":"<<(report.retryRequired?"true":"false")<<",\"unknownFilesPreserved\":"<<(report.unknownFilesPreserved?"true":"false")<<",\"shortcutUpdated\":"<<(report.shortcutUpdated?"true":"false")<<",\"workerStartupMigrated\":"<<(report.workerStartupMigrated?"true":"false")<<",\"workerRestartRequired\":"<<(report.workerRestartRequired?"true":"false")<<",\"userTipUpdated\":"<<(report.userTipUpdated?"true":"false")<<",\"registrationCatalogVerified\":"<<(report.registrationCatalogVerified?"true":"false")<<",\"repairTargetVersion\":\""<<report.repairTargetVersion<<"\",\"userDataPreserved\":true}\n";
+  std::ostringstream json; json<<"{\"application\":\"LingheInputSetup\",\"schemaVersion\":1,\"version\":\""<<VersionUtf8<<"\",\"action\":\""<<report.action<<"\",\"status\":\""<<(report.retryRequired?"incomplete":report.code==0?"succeeded":"failed")<<"\",\"exitCode\":"<<report.code<<",\"stage\":\""<<report.stage<<"\",\"hresult\":"<<static_cast<unsigned long>(report.hr)<<",\"rollbackStatus\":\""<<report.rollback<<"\",\"installationCommitted\":"<<(report.committed?"true":"false")<<",\"fileCleanupPending\":"<<(report.fileCleanupPending?"true":"false")<<",\"retryRequired\":"<<(report.retryRequired?"true":"false")<<",\"unknownFilesPreserved\":"<<(report.unknownFilesPreserved?"true":"false")<<",\"shortcutUpdated\":"<<(report.shortcutUpdated?"true":"false")<<",\"workerStartupMigrated\":"<<(report.workerStartupMigrated?"true":"false")<<",\"workerRestartRequired\":"<<(report.workerRestartRequired?"true":"false")<<",\"userTipUpdated\":"<<(report.userTipUpdated?"true":"false")<<",\"registrationCatalogVerified\":"<<(report.registrationCatalogVerified?"true":"false")<<",\"systrayCatalogHresult\":"<<static_cast<unsigned long>(report.systrayCatalog)<<",\"repairTargetVersion\":\""<<report.repairTargetVersion<<"\",\"userDataPreserved\":true}\n";
   auto bytes=json.str(); DWORD written=0; bool ok=WriteFile(output,bytes.data(),DWORD(bytes.size()),&written,nullptr)&&written==bytes.size()&&FlushFileBuffers(output); CloseHandle(output);
   if(ok)ok=MoveFileExW(temporary.c_str(),target.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=FALSE;
   if(!ok)DeleteFileW(temporary.c_str()); return ok;
@@ -495,10 +509,15 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
  try {
   int count=0; LPWSTR* args=CommandLineToArgvW(GetCommandLineW(),&count); if(!args)throw Failure(2);
   std::vector<std::wstring> arguments; for(int i=1;i<count;i++)arguments.emplace_back(args[i]); LocalFree(args);
-  if(arguments.size()==1&&arguments[0]==L"--verify-owned-tsf-catalog"){
+  if(arguments.size()==1&&(arguments[0]==linghe::installer::ProfileProbe||
+     arguments[0]==linghe::installer::KeyboardProbe||arguments[0]==linghe::installer::SystrayProbe)){
    const auto initialized=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
    if(FAILED(initialized))return static_cast<int>(initialized);
-   const auto status=linghe::installer::ownedRegistrationCatalogStatus();CoUninitialize();return static_cast<int>(status);
+   HRESULT status;
+   if(arguments[0]==linghe::installer::ProfileProbe)status=linghe::installer::ownedRegistrationProfileStatus();
+   else status=linghe::installer::ownedRegistrationCategoryStatus(arguments[0]==linghe::installer::KeyboardProbe
+      ? GUID_TFCAT_TIP_KEYBOARD : linghe::tsf::SystrayCategory);
+   CoUninitialize();return static_cast<int>(status);
   }
   // Recognize quiet even when another argument is invalid: invalid CLI must never display UI in session 0.
   report.quiet=std::find(arguments.begin(),arguments.end(),L"--quiet")!=arguments.end();
@@ -535,13 +554,41 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
   normalPath(root); auto old=registered(); validateOld(old,root); fs::path arpInstaller;
   // Explicit recovery validates its protected write-ahead journal before fresh
   // ARP consistency, which may be in-flight after a crash between value writes.
-  if(!repair&&!externalInstaller)arpInstaller=validateUninstallEntry(root);
+  if(!repair&&!externalInstaller) {
+   report.stage="uninstall-entry-validation";
+   HKEY legacy=nullptr;
+   auto error=RegOpenKeyExW(HKEY_LOCAL_MACHINE,LegacyStandardUninstallKey,0,KEY_QUERY_VALUE|KEY_WOW64_64KEY,&legacy);
+   if(error==ERROR_SUCCESS) {
+    RegCloseKey(legacy);
+    report.stage="legacy-standard-uninstall-entry";
+    throw Failure(42,HRESULT_FROM_WIN32(ERROR_REVISION_MISMATCH));
+   }
+   if(error!=ERROR_FILE_NOT_FOUND&&error!=ERROR_PATH_NOT_FOUND)throw Failure(10,HRESULT_FROM_WIN32(error));
+   arpInstaller=validateUninstallEntry(root);
+  }
   if(repair){repair_native::repair(root,old,report);}
   else {
-  if(!remove&&!externalInstaller){report.stage="upgrade-consistency";requireConsistentUpgrade(old,arpInstaller,report);}
-  // Upgrades must not execute an unrelated registry target for rollback.
-  if(!remove&&!old.empty()&&!externalInstaller) { report.stage="previous-version-validation"; verifiedVersion(fs::path(old).parent_path().parent_path(),digest(ownExe())); }
-  fs::path dll; std::vector<InstalledVersion> removal;
+  auto previous=old;
+  if(!remove&&!externalInstaller) {
+   // A failed legacy uninstall can remove COM but leave the prior ARP entry
+   // and worker. Validate the pinned setup and every remaining payload byte,
+   // allowing only files that a partial uninstall already removed to be absent.
+   if(old.empty()&&!arpInstaller.empty()) {
+    report.stage="previous-registration-recovery";
+    const auto owned=verifiedVersion(arpInstaller.parent_path(),digest(ownExe()),linghe::installer::PayloadPurpose::CleanupRetry);
+    const auto runtime=owned.directory/L"AMD64";
+    if(!fs::is_regular_file(runtime/L"PrivateInputTSF.dll")||
+       !fs::is_regular_file(runtime/L"LingheInputActivity.exe"))throw Failure(42,E_ACCESSDENIED);
+    previous=(runtime/L"PrivateInputTSF.dll").wstring();
+   }
+   report.stage="upgrade-consistency";
+   requireConsistentUpgrade(previous,arpInstaller,report);
+   if(!old.empty()) {
+    report.stage="previous-version-validation";
+    verifiedVersion(fs::path(old).parent_path().parent_path(),digest(ownExe()));
+   }
+  }
+  fs::path dll, verificationExe; std::vector<InstalledVersion> removal;
   if(remove) { report.stage="uninstall-validation"; removal=uninstallPlan(root,old,report); }
   if(!remove) {
    report.stage="package-validation"; auto payload=package();
@@ -556,13 +603,31 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
    auto installer=destination/L"LingheInputSetup.exe"; normalPath(installer); auto sourceExe=fs::path(ownExe());
    if(fs::exists(installer)) { if(!externalInstaller&&digest(installer)!=digest(sourceExe))throw Failure(10); if(externalInstaller&&digest(installer)!=digest(sourceExe)){fs::copy_file(sourceExe,installer,fs::copy_options::overwrite_existing);} }
    else fs::copy_file(sourceExe,installer);
+   verificationExe=externalInstaller?sourceExe:installer;
+   if(!externalInstaller&&digest(verificationExe)!=digest(sourceExe))throw Failure(10,E_ACCESSDENIED);
    dll=destination/L"AMD64"/L"PrivateInputTSF.dll";
   }
   report.stage="snapshot"; auto before=snapshots(true); bool mutated=false;
   try {
    report.stage=remove?"unregister":"register";
    if(remove) { if(!old.empty()) { mutated=true; auto hr=registerDll(old,true); if(FAILED(hr))throw Failure(20,hr); } }
-   else { mutated=true; if(!old.empty())setRegistered(dll.wstring()); auto hr=registerDll(dll,false,&report.stage); if(FAILED(hr))throw Failure(20,hr); if(!samePath(registered(),dll))throw Failure(20);report.stage="registration-catalog";hr=linghe::installer::verifyRegistrationInFreshProcess(ownExe());if(FAILED(hr))throw Failure(20,hr);report.registrationCatalogVerified=true; }
+   else {
+    mutated=true;
+    if(!old.empty())setRegistered(dll.wstring());
+    auto hr=registerDll(dll,false,&report.stage);
+    if(FAILED(hr))throw Failure(20,hr);
+    report.stage="registration-com-path";
+    if(!samePath(registered(),dll))throw Failure(20);
+    report.stage="registration-catalog-profile";
+    hr=linghe::installer::runRegistrationProbe(verificationExe.wstring(),linghe::installer::ProfileProbe);
+    if(FAILED(hr))throw Failure(20,hr);
+    report.stage="registration-catalog-keyboard";
+    hr=linghe::installer::runRegistrationProbe(verificationExe.wstring(),linghe::installer::KeyboardProbe);
+    if(FAILED(hr))throw Failure(20,hr);
+    report.registrationCatalogVerified=true;
+    // Tray branding is independent of a usable keyboard profile.
+    report.systrayCatalog=linghe::installer::runRegistrationProbe(verificationExe.wstring(),linghe::installer::SystrayProbe);
+   }
    if(!remove&&!externalInstaller) { report.stage="uninstall-entry"; mutated=true; uninstallEntry(root,dll.parent_path().parent_path()/L"LingheInputSetup.exe",false); }
    report.committed=true;
   } catch(...) {
@@ -584,7 +649,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
    // This phase follows the successful registry transaction. Do not attempt
    // rollback to DLLs whose payload may already have been removed.
    fs::path lastInstaller;
-   try { lastInstaller=cleanVersions(removal,arpInstaller,report,externalInstaller); }
+   try { lastInstaller=cleanVersions(removal,arpInstaller,report); }
    catch(...) { report.fileCleanupPending=true; report.retryRequired=true; }
    if(externalInstaller) { report.retryRequired=false; report.code=0; report.stage="complete"; }
    else if(report.retryRequired) { report.code=40; report.stage="cleanup-retry-required"; }
@@ -592,7 +657,10 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
     report.stage="uninstall-entry-removal"; Snapshot entry(HKEY_LOCAL_MACHINE,UninstallKey); uninstallEntry(root,{},true);
     // Keep registry and final cleanup executable consistent. If the final file
     // is unexpectedly locked, restore its original retry entry immediately.
-    if(!lastInstaller.empty()&&!DeleteFileW(lastInstaller.c_str())) {
+    bool retired=false;
+    try { retired=lastInstaller.empty()||retireFinalInstaller(lastInstaller,root); }
+    catch(...) { if(!entry.restore())throw Failure(21); throw; }
+    if(!retired) {
      report.fileCleanupPending=true; report.retryRequired=true; report.code=40; report.stage="cleanup-retry-required";
      if(!entry.restore())throw Failure(21);
     } else {
@@ -601,7 +669,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
      report.code=0; report.stage="complete";
     }
    }
-  } else {report.stage="user-tip-enable";updateOwnUserTip(false,report);migrateOwnedWorkerStartup(fs::path(old),dll,report); std::vector<fs::path> shortcuts{dll.parent_path()/L"LingheInputSettings.exe"};if(!old.empty())shortcuts.push_back(fs::path(old).parent_path()/L"LingheInputSettings.exe");settingsShortcut(shortcuts,dll.parent_path()/L"LingheInputSettings.exe",false,report);report.code=0; report.stage="complete"; }
+  } else {report.stage="user-tip-enable";updateOwnUserTip(false,report);migrateOwnedWorkerStartup(fs::path(previous),dll,report); std::vector<fs::path> shortcuts{dll.parent_path()/L"LingheInputSettings.exe"};if(!previous.empty())shortcuts.push_back(fs::path(previous).parent_path()/L"LingheInputSettings.exe");settingsShortcut(shortcuts,dll.parent_path()/L"LingheInputSettings.exe",false,report);report.code=0; report.stage="complete"; }
   } // Ordinary install/uninstall; explicit repair never falls through.
  } catch(const Failure& error) {
   report.code=error.code; report.hr=error.hr;

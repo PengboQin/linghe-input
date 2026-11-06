@@ -14,7 +14,7 @@ public final class ActivityArchiveActivity extends Activity {
   private final Runnable refresh=()->{if(status!=null)status.setText(archive.health());if(!isFinishing())main.postDelayed(this.refresh,2000);};
   private int dp(float value){return Ui.dp(this,value);}
   private TextView label(String value,int size){TextView view=new TextView(this);view.setText(value);view.setTextColor(Ui.text(this));view.setTextSize(size);view.setPadding(0,dp(8),0,dp(8));return view;}
-  private Button button(String text,Runnable action){Button view=new Button(this);view.setText(text);view.setTextColor(Ui.accent(this));view.setAllCaps(false);Ui.pressable(view,Ui.surface(this),10);view.setOnClickListener(v->{if(!busy)action.run();});LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(-1,dp(50));size.topMargin=dp(8);body.addView(view,size);return view;}
+  private Button button(String text,Runnable action){Button view=Ui.settingsButton(this);view.setText(text);view.setTextColor(Ui.accent(this));view.setAllCaps(false);Ui.pressable(view,Ui.surface(this),10);view.setOnClickListener(v->{if(!busy)action.run();});LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(-1,dp(50));size.topMargin=dp(8);body.addView(view,size);return view;}
   private Switch toggle(String text,boolean selected){Switch view=new Switch(this);view.setText(text);view.setTextColor(Ui.text(this));view.setTextSize(16);view.setChecked(selected);body.addView(view,new LinearLayout.LayoutParams(-1,dp(54)));return view;}
   @Override public void onCreate(Bundle saved){
     Ui.prepareTheme(this);super.onCreate(saved);archive=ActivityArchiveManager.get(this);body=SettingsScreen.content(this,"隐私与归档",true);status=label(archive.health(),14);status.setTextColor(Ui.muted(this));body.addView(status);

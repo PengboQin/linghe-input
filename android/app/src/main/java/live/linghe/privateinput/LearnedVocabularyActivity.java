@@ -12,9 +12,9 @@ public final class LearnedVocabularyActivity extends Activity {
   LinearLayout root=SettingsScreen.content(this,"已学习词汇",true,false);
   EditText search=new EditText(this);search.setSingleLine(true);search.setHint("搜索词语或拼音");search.setTextColor(Ui.text(this));search.setHintTextColor(Ui.muted(this));root.addView(search,new LinearLayout.LayoutParams(-1,-2));
   status=new TextView(this);status.setTextColor(Ui.muted(this));root.addView(status);
-  list=new ListView(this);root.addView(list,new LinearLayout.LayoutParams(-1,0,1));
+  list=new ListView(this);list.setDivider(new android.graphics.drawable.ColorDrawable(Ui.divider(this)));list.setDividerHeight(Ui.dp(this,1));Ui.panel(list);list.setClipToOutline(true);root.addView(list,new LinearLayout.LayoutParams(-1,0,1));
   TextView note=new TextView(this);note.setText("显示本机已保存的学习记录；刚学到的词在键盘保存后更新。");note.setTextColor(Ui.muted(this));note.setTextSize(13);root.addView(note);
-  refresh=new Button(this);refresh.setText("刷新");refresh.setOnClickListener(v->load());root.addView(refresh);
+  refresh=Ui.settingsButton(this);refresh.setText("刷新");refresh.setOnClickListener(v->load());LinearLayout.LayoutParams actionSize=new LinearLayout.LayoutParams(-1,Ui.dp(this,48));actionSize.topMargin=Ui.dp(this,12);root.addView(refresh,actionSize);
   search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int before,int count){query=s.toString();render();}public void afterTextChanged(Editable e){}});
   load();
  }
@@ -37,8 +37,14 @@ public final class LearnedVocabularyActivity extends Activity {
   else status.setText(query.trim().isEmpty()?"已保存的学习记录 · "+rows.size()+" 条":"已保存的学习记录 · "+rows.size()+" 条（匹配 "+shown.size()+" 条）");
   if(shown.isEmpty()){list.setAdapter(null);return;}
   list.setAdapter(new BaseAdapter(){public int getCount(){return shown.size();}public Object getItem(int p){return shown.get(p);}public long getItemId(int p){return p;}
-   public View getView(int p,View old,ViewGroup parent){TextView v=old instanceof TextView?(TextView)old:new TextView(LearnedVocabularyActivity.this);LearningModel.Entry e=shown.get(p);
-    v.setText(e.text+"\n"+e.reading+" · "+e.frequency()+" 次"+(e.pinned?" · 置顶":""));v.setTextColor(Ui.text(LearnedVocabularyActivity.this));v.setTextSize(16);v.setSingleLine(false);v.setHorizontallyScrolling(false);v.setPadding(Ui.dp(LearnedVocabularyActivity.this,12),Ui.dp(LearnedVocabularyActivity.this,12),Ui.dp(LearnedVocabularyActivity.this,12),Ui.dp(LearnedVocabularyActivity.this,12));return v;}});
+   public View getView(int p,View old,ViewGroup parent){
+    LearningModel.Entry e=shown.get(p);android.content.Context c=LearnedVocabularyActivity.this;
+    LinearLayout row=old instanceof LinearLayout?(LinearLayout)old:new LinearLayout(c);row.removeAllViews();row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(Ui.dp(c,16),Ui.dp(c,12),Ui.dp(c,16),Ui.dp(c,12));
+    LinearLayout words=new LinearLayout(c);words.setOrientation(1);TextView word=new TextView(c);word.setText(e.text);word.setTextSize(16);word.setTextColor(Ui.text(c));words.addView(word);
+    TextView reading=new TextView(c);reading.setText(e.reading);reading.setTextSize(13);reading.setTextColor(Ui.muted(c));words.addView(reading);row.addView(words,new LinearLayout.LayoutParams(0,-2,1));
+    TextView count=new TextView(c);count.setText(e.frequency()+" 次"+(e.pinned?"\n置顶":""));count.setTextSize(13);count.setTextColor(Ui.muted(c));count.setGravity(Gravity.END);LinearLayout.LayoutParams trailing=new LinearLayout.LayoutParams(-2,-2);trailing.leftMargin=Ui.dp(c,16);row.addView(count,trailing);return row;
+   }});
+
  }
  @Override public boolean onOptionsItemSelected(MenuItem item){if(item.getItemId()==android.R.id.home){finish();return true;}return super.onOptionsItemSelected(item);}
  @Override protected void onDestroy(){request++;worker.shutdownNow();super.onDestroy();}

@@ -124,7 +124,8 @@ final class InputQuality {
  // Repeated initials are deliberate input, not insertion/deletion errors.
  // Each result owns its consumed prefix and keeps every unmatched tail key.
  static List<Repair> immediateRepeatedHeads(long session,String[][] state,boolean nine) {
-  if(!nine||state.length!=1)return Collections.emptyList();String raw=tail(session,state,true);
+  if(!nine)return Collections.emptyList();String raw=tail(session,state,true);
+  if(state.length!=1&&!shortRepeatedCode(raw))return Collections.emptyList();
   if(raw.length()<2||raw.length()>96)return Collections.emptyList();
   List<Repair> result=new ArrayList<>();repeatedHeads(session,state,raw,true,result,()->false,reading->reading.matches("[a-z]+(?:[ ']+[a-z]+)*"));result.sort((a,b)->{int c=Double.compare(b.score,a.score);return c!=0?c:a.text.compareTo(b.text);});return new ArrayList<>(result.subList(0,Math.min(32,result.size())));
  }
@@ -144,8 +145,8 @@ final class InputQuality {
    for(int letterIndex=0;letterIndex<letters.length()&&queries<8;letterIndex++){if(cancelled.getAsBoolean())return;char letter=letters.charAt(letterIndex);if("aeiouv".indexOf(letter)>=0)continue;String initials=String.join("",Collections.nCopies(cut,String.valueOf(letter)));queries++;
     int rank=0;for(String[] head:NativeCore.initials(session,initials,32)){if(cancelled.getAsBoolean())return;String[] parts=head[2].trim().split("[ ']+");if(parts.length!=cut||head[1].codePointCount(0,head[1].length())!=cut||!fullySpelled.test(head[2]))continue;boolean valid=true;for(String part:parts)if(part.charAt(0)!=letter){valid=false;break;}if(!valid)continue;
      if(rank>=4)break;boolean uniform=head[1].codePoints().distinct().count()==1;if(letter==canonical&&uniform)canonicalUniform=true;double priority=(uniform?2:0)-rank++*.1;
-     if(letter==canonical)priority+=0.4;
-     if(parts[0].length()==2&&parts[0].charAt(1)=='a')priority+=0.3;
+     if(raw.charAt(0)=='4'&&letter==canonical)priority+=0.4;
+     if(raw.charAt(0)=='4'&&parts[0].equals("ha"))priority+=0.3;
      int tailRank=0;for(String[] tail:tails){String reading=head[2]+" "+tail[2];result.add(new Repair(state[0][2],normalized(reading),head[1]+tail[1],reading,"",8+priority+suffix.length()*.15-tailRank++*.08));}
      result.add(new Repair(state[0][2],normalized(head[2]),head[1],head[2],suffix,priority));if(result.size()>=256)return;
     }
@@ -252,8 +253,23 @@ final class InputQuality {
   if(nine&&rows.size()>1&&rows.get(1)[0].startsWith("repair:"))rows.get(0)[3]=ordinary[0][4]+rows.get(1)[2].replace(' ', '\'');
   return rows.toArray(new String[0][]);
  }
+ static boolean shortRepeatedCode(String code){return code!=null&&code.length()==2&&code.charAt(0)==code.charAt(1)&&NineSpelling.isCode(code);}
  static String[][] mergeImmediateRepeated(String[][] state,List<Repair> repairs,Map<String,Repair> plans){
-  if(state.length!=1||repairs.isEmpty())return state;ArrayList<String[]> rows=new ArrayList<>();rows.add(state[0].clone());Set<String> used=new HashSet<>();for(Repair repair:repairs)if(used.add(repair.text)){String id=repairID(repair);plans.put(id,repair);rows.add(new String[]{id,repair.text,repair.reading});}return rows.toArray(new String[0][]);
+  if(repairs.isEmpty())return state;
+  ArrayList<String[]> rows=new ArrayList<>();
+  rows.add(state[0].clone());
+  Set<String> used=new HashSet<>();
+  int limit=state.length==1?32:4;
+  for(Repair repair:repairs){
+   if(rows.size()>limit)break;
+   if((state.length>1&&!repair.remainder.isEmpty())||!used.add(repair.text))continue;
+   String[] nativeRow=null;
+   for(int i=1;i<state.length;i++)if(OwnText.equal(state[i][1],repair.text)&&normalized(state[i][2]).equals(normalized(repair.reading))){nativeRow=state[i];break;}
+   if(nativeRow!=null)rows.add(nativeRow);
+   else {String id=repairID(repair);plans.put(id,repair);rows.add(new String[]{id,repair.text,repair.reading});}
+  }
+  for(int i=1;i<state.length;i++)if(!rows.contains(state[i]))rows.add(state[i]);
+  return rows.toArray(new String[0][]);
  }
  static String repairID(Repair repair) {
   try {

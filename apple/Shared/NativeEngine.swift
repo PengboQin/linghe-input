@@ -416,15 +416,18 @@ final class NativeEngine: ObservableObject {
             guard let code=NineKeySpelling.encode(value) else {return 0};return self?.nineLexicon?.frequency(code) ?? 0
         })
         continuationLexicon=try? ContinuationLexicon(url:semanticDirectory.appendingPathComponent("continuation.bin"))
-        let currentMemory=base.appendingPathComponent("nine-choice-memory-v3.json")
+        let currentMemory=base.appendingPathComponent("nine-choice-memory-v4.json")
+        let v3Memory=base.appendingPathComponent("nine-choice-memory-v3.json")
         let priorMemory=base.appendingPathComponent("nine-choice-memory-v2.json")
         let legacyMemory=base.appendingPathComponent("nine-choice-memory-v1.json")
-        let memoryFile=fileManager.fileExists(atPath:currentMemory.path) ? currentMemory:(fileManager.fileExists(atPath:priorMemory.path) ? priorMemory:legacyMemory)
+        let memoryFile=fileManager.fileExists(atPath:currentMemory.path) ? currentMemory:(fileManager.fileExists(atPath:v3Memory.path) ? v3Memory:(fileManager.fileExists(atPath:priorMemory.path) ? priorMemory:legacyMemory))
         if fileManager.fileExists(atPath:memoryFile.path) {
             do {
-                let data=try Data(contentsOf:memoryFile);guard data.count<=512*1024 else { throw InputDataError.oversized }
+                let handle=try FileHandle(forReadingFrom:memoryFile);defer {try? handle.close()}
+                let data=try handle.read(upToCount:NineKeyChoiceMemory.maximumBytes+1) ?? Data()
+                guard data.count<=NineKeyChoiceMemory.maximumBytes else { throw InputDataError.oversized }
                 let decoded=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:data)
-                if memoryFile==currentMemory { guard decoded.version==3 else { throw InputDataError.incompatibleSchema } }
+                if memoryFile==currentMemory { guard decoded.version==4 else { throw InputDataError.incompatibleSchema } }
                 if memoryFile==priorMemory { guard decoded.version==2 else { throw InputDataError.incompatibleSchema } }
                 choiceMemory=try decoded.migrated()
                 if memoryFile != currentMemory { try saveChoiceMemory(choiceMemory) }
@@ -679,27 +682,38 @@ final class NativeEngine: ObservableObject {
         return canonicalKeyLetter(first)
     }
     private func repeatedReadingKey(_ row:InputCandidate)->(Int,Int,String)? {
-        guard row.text.count>=2,Set(row.text).count==1 else{return nil}
-        let part=row.comment.split(whereSeparator:{$0==" " || $0=="'"}).first.map(String.init) ?? ""
-        guard !part.isEmpty else{return nil}
-        let canonical=repeatedCanonicalLetter
-        let rank=part.first==canonical ? 0:1
-        return (rank,part.count,part)
+        guard row.text.count>=2,Set(row.text)==Set("哈") else{return nil}
+        return (0,0,"")
     }
-    /// Keep an intentional all-one-key run anchored to its repeated-character
-    /// family. Pins remain first; shorter/simpler repeated readings (ha over
-    /// he, hei, hao) stay before longer or e-bearing variants.
+    /// Repeated keys are ambiguous pinyin. Preserve lexical/context order;
+    /// only the common laughter shorthand has an explicit recall preference.
     private func repeatedKeyOrder(_ rows:[InputCandidate])->[InputCandidate] {
-        guard rawInput.count>=2,Set(rawInput).count==1 else{return rows}
+        guard nineKeyInput,rawInput.count>=2,Set(rawInput).count==1 else{return rows}
         return rows.enumerated().sorted { a,b in
-            func preferred(_ row:InputCandidate)->Bool { isPinned(row) || (row.text.count>=2 && Set(row.text).count==1) }
-            let pa=preferred(a.element),pb=preferred(b.element)
+            let pa=isPinned(a.element) || a.element.learnedPreference || a.element.personalID != nil,pb=isPinned(b.element) || b.element.learnedPreference || b.element.personalID != nil
             if pa != pb {return pa}
-            if pa,let ka=repeatedReadingKey(a.element),let kb=repeatedReadingKey(b.element) {
-                if ka.0 != kb.0 {return ka.0<kb.0}
-                if ka.1 != kb.1 {return ka.1<kb.1}
-                if ka.2 != kb.2 {return ka.2<kb.2}
+            if rawInput.count == 2 {
+                func commonFullPhrase(_ row: InputCandidate) -> UInt64 {
+                    guard row.text.count >= 2,
+                          row.initialsInput == rawInput || NineKeySpelling.encode(row.comment) == rawInput else { return 0 }
+                    return commonWords?.frequency(row.text) ?? 0
+                }
+                let fa = commonFullPhrase(a.element), fb = commonFullPhrase(b.element)
+                if fa != fb { return fa > fb }
             }
+            if rawInput.first=="4" {
+                let ha=repeatedReadingKey(a.element) != nil,hb=repeatedReadingKey(b.element) != nil
+                if ha != hb {return ha}
+            }
+            // Frequency, never the centre letter or shortest spelling, resolves
+            // fully matched repeated expressions (de de versus e e e e).
+            func score(_ row:InputCandidate)->UInt64 {
+                guard row.text.count>=2,Set(row.text).count==1,
+                      NineKeySpelling.encode(row.comment)==rawInput else{return 0}
+                return max(commonWords?.frequency(row.text) ?? 0,commonWords?.frequency(String(row.text.prefix(1))) ?? 0)
+            }
+            let sa=score(a.element),sb=score(b.element)
+            if sa != sb {return sa>sb}
             return a.offset<b.offset
         }.map(\.element)
     }
@@ -711,7 +725,7 @@ final class NativeEngine: ObservableObject {
             let base=baseCandidateBatch(offset:0,limit:64)
             let protected=Array(base.prefix(while:{$0.personalID != nil || isPinned($0)}))
             var seen=Set<String>()
-            let front=(protected+completions+base+extras).filter{seen.insert($0.text).inserted}
+            let front=repeatedKeyOrder((protected+completions+base+extras).filter{seen.insert($0.text).inserted})
             var result=Array(front.dropFirst(offset).prefix(limit)),skip=max(0,offset-front.count),cursor=64
             while result.count<limit,base.count==64 {
                 let rows=baseCandidateBatch(offset:cursor,limit:64)
@@ -733,11 +747,11 @@ final class NativeEngine: ObservableObject {
         // candidate consumed all keys as initials but would commit an untyped
         // e-bearing word; uniform candidates stay ahead even when Rime only
         // returned a shorter repeated prefix.
-        let uniformRun=rawInput.count>=2 && Set(rawInput).count==1
+        let uniformRun=nineKeyInput && rawInput.count>=2 && Set(rawInput)==Set("4")
         let uniform=uniformRun ? extras.filter{$0.text.count>=2 && Set($0.text).count==1} : []
         let prioritized=uniformRun ? uniform+full.filter{row in !uniform.contains(where:{$0.text==row.text && $0.comment==row.comment})} : full
         var seen=Set<String>()
-        let front=(leading+Array(prioritized.prefix(8))+Array(base.dropFirst(protectedCount))+extras).filter{seen.insert($0.text).inserted}
+        let front=repeatedKeyOrder((leading+Array(prioritized.prefix(8))+Array(base.dropFirst(protectedCount))+extras).filter{seen.insert($0.text).inserted})
         var result=Array(front.dropFirst(offset).prefix(limit)),skip=max(0,offset-front.count),cursor=64
         while result.count<limit,base.count==64 {
             let rows=baseCandidateBatch(offset:cursor,limit:64)
@@ -1013,7 +1027,7 @@ final class NativeEngine: ObservableObject {
             if !completions.isEmpty {return completions}
         }
         if nineKeyInput {
-            guard nativeBatch(offset:0,limit:1).isEmpty || rawInput.prefix(while:{$0==rawInput.first}).count>=2 else{return []}
+            guard nativeBatch(offset:0,limit:1).isEmpty || (rawInput.count==2 && Set(rawInput).count==1) || (rawInput.first=="4" && rawInput.prefix(while:{$0=="4"}).count>=2) else{return []}
         } else {
             guard rawInput.prefix(while:{$0==rawInput.first}).count>=2,
                   !nativeBatch(offset:0,limit:32).contains(where:{PinyinInputMatch.isFullSpelling(rawInput,reading:$0.comment)}) else{return []}
@@ -1136,7 +1150,7 @@ final class NativeEngine: ObservableObject {
             }
         }
         initialsRows+=repeatedHeads
-        let uniformRun=tail.count>=2 && Set(tail).count==1
+        let uniformRun=nineKeyInput && tail.count>=2 && Set(tail)==Set("4")
         initialsRows.sort{a,b in
             // A long run of one key is an intentional repeated expression. A
             // mixed "he ha..." candidate must not outrank the actual repeated
@@ -1486,7 +1500,7 @@ final class NativeEngine: ObservableObject {
         predictionContext=SentenceContextWindow.append(predictionSelectedPrefix,to:ownContext)
         predictionModelBefore=modelContext.before;predictionModelAfter=modelContext.after
         predictionStart=Date.timeIntervalSinceReferenceDate;predictionMaxSliceMS=0;predictionQueryCount=0
-        predictionCacheHits=0;predictionProbeRequests=0;predictionProbeCache=[:]
+        predictionCacheHits=0;predictionProbeRequests=0;predictionProbeCache=[:];pendingPredictionProbeInput=nil
         semanticWaiting=false;semanticLocalStarted=false;semanticFinalStarted=false;sentenceExplored=false;sentenceReranked=false;sentenceExploration=nil;assemblyPlans=[:];semanticScores=[:];localSemanticRows=[];localSemanticContexts=[:];lexicalRanks=[:];semanticBatches=0;semanticElapsedMS=0
         predictionOriginal=nativeBatch(offset:0,limit:32);predictionCorrections=[];predictionHead=[];predictionComplete=false
         let tail=String(predictionInput.dropFirst(predictionOffset)),prefix=String(predictionInput.prefix(predictionOffset))
@@ -1984,6 +1998,7 @@ final class NativeEngine: ObservableObject {
         predictionLocalScoreCache[cacheKey]=score
         return score-Double(candidate.index)*0.16
     }
+    private var pendingPredictionProbeInput:String?
     private func probeNine(_ input:String,limit:Int=12) throws -> [InputCandidate] {
         let probe=predictionProbe;guard probe != 0 else { return [] }
         let key="\(limit)|"+input
@@ -1993,8 +2008,13 @@ final class NativeEngine: ObservableObject {
         predictionProbeRequests+=1;predictionQueryCount+=1
         let probeStart=Date.timeIntervalSinceReferenceDate
         defer { predictionMaxProbeMS=max(predictionMaxProbeMS,(Date.timeIntervalSinceReferenceDate-probeStart)*1000) }
-        guard pi_set_prediction_input(probe,input) != 0 else { return [] }
-        let count=Int(pi_load_candidate_batch(probe,0,limit))
+        if pendingPredictionProbeInput != input {
+            guard pi_set_prediction_input(probe,input) != 0 else { return [] }
+            pendingPredictionProbeInput=input
+        }
+        let count=Int(pi_load_candidate_batch_bounded(probe,0,limit,32))
+        if pi_candidate_batch_pending(probe) != 0 { throw PredictionYield.nextRunLoop }
+        pendingPredictionProbeInput=nil
         let result:[InputCandidate]=(0..<count).compactMap { index in
             let reading=String(cString:pi_batch_candidate_comment(probe,index))
             guard NineKeySpelling.encode(reading)==NineKeySpelling.rawCode(input) else { return nil }
@@ -2210,20 +2230,45 @@ final class NativeEngine: ObservableObject {
                 if retry { try next.recordCorrection(code:c,reading:candidate.comment,text:candidate.text,context:context) }
                 else { try next.record(code:c,reading:candidate.comment,text:candidate.text,context:context,strength:(codes.count>1 || corrected) ? 2:1) }
             }
-            try saveChoiceMemory(next);choiceMemory=next
+            guard let baseURL else { return }
+            let snapshot = next, epoch = personalEpoch, storage = originalStorageBase
+            choiceMemory = next
+            Self.choicePersistence.async {
+                try? Self.persistChoices(snapshot, base: baseURL, epoch: epoch, storage: storage)
+            }
         } catch { /* Preserve existing personalization; offline typing still works. */ }
     }
-    private func saveChoiceMemory(_ memory:NineKeyChoiceMemory) throws {
-        guard personalEpoch==currentPersonalEpoch else {throw InputDataError.invalidRecord}
-        guard let baseURL else { throw InputDataError.invalidRecord };try memory.validate()
-        let data=try JSONEncoder().encode(memory);guard data.count<=512*1024 else { throw InputDataError.oversized }
-        #if os(iOS)
-        try data.write(to:baseURL.appendingPathComponent("nine-choice-memory-v3.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
-        #else
-        try data.write(to:baseURL.appendingPathComponent("nine-choice-memory-v3.json"),options:.atomic)
-        #endif
+    private static let choicePersistence = DispatchQueue(label: "live.linghe.privateinput.choice-persistence", qos: .utility)
+    #if DEBUG
+    static func drainChoicePersistenceForTesting() { choicePersistence.sync {} }
+    #endif
+
+    private func saveChoiceMemory(_ memory: NineKeyChoiceMemory) throws {
+        guard let baseURL else { throw InputDataError.invalidRecord }
+        let epoch = personalEpoch, storage = originalStorageBase
+        try Self.choicePersistence.sync { try Self.persistChoices(memory, base: baseURL, epoch: epoch, storage: storage) }
+    }
+
+    private static func persistChoices(_ memory: NineKeyChoiceMemory, base: URL, epoch: String, storage: URL?) throws {
+        let data = try JSONEncoder().encode(memory)
+        guard data.count <= NineKeyChoiceMemory.maximumBytes else { throw InputDataError.oversized }
+        try LocalLearningCoordinator.withAuthorityLock(base: base, wait: true) {
+            let current: String
+            if let storage {
+                let marker = try? String(contentsOf: storage.appendingPathComponent(PersonalDataReset.marker), encoding: .utf8)
+                current = marker.flatMap { UUID(uuidString: $0) == nil ? nil : $0 } ?? "initial"
+            } else { current = PersonalDataReset.generation }
+            guard epoch == current else { throw InputDataError.invalidRecord }
+            let url = base.appendingPathComponent("nine-choice-memory-v4.json")
+            #if os(iOS)
+            try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            #else
+            try data.write(to: url, options: .atomic)
+            #endif
+        }
     }
     private func releasePredictionProbe() {
+        pendingPredictionProbeInput=nil
         if predictionProbe != 0,personalEpoch==Self.initializedEpoch {pi_destroy_session(predictionProbe)}
         predictionProbe=0
     }

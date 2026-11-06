@@ -2,6 +2,22 @@ import XCTest
 @testable import PrivateInputKit
 
 final class NineKeyPredictionTests:XCTestCase {
+    func testExpandedChoiceMemoryRetainsRecentAndFrequentEntries() throws {
+        let rows = (0..<NineKeyChoiceMemory.capacity).map { index in
+            ["code": "33", "reading": "de", "text": "合成\(index)", "context": "",
+             "count": index == 0 ? 20 : 1] as [String: Any]
+        }
+        let payload = try JSONSerialization.data(withJSONObject: ["version": 4, "entries": rows])
+        var memory = try JSONDecoder().decode(NineKeyChoiceMemory.self, from: payload)
+        try memory.validate()
+        try memory.record(code: "33", reading: "de", text: "新选择", context: "")
+        XCTAssertEqual(memory.entries.count, NineKeyChoiceMemory.capacity)
+        XCTAssertGreaterThan(memory.boost(code: "33", reading: "de", text: "合成0", context: ""), 0)
+        XCTAssertEqual(memory.boost(code: "33", reading: "de", text: "合成1", context: ""), 0)
+        XCTAssertGreaterThan(memory.boost(code: "33", reading: "de", text: "合成4095", context: ""), 0)
+        memory.reset(text: "新选择", reading: "de")
+        XCTAssertEqual(memory.boost(code: "33", reading: "de", text: "新选择", context: ""), 0)
+    }
     func testBoundaryEditsCoverCrossSpanSwapsWithoutChangingOriginalSearch() {
         let source="6442664426744543",spans=[NineKeySpan(start:0,end:8),NineKeySpan(start:8,end:15)]
         let old=NineKeySentencePlanner.alternatives(code:source,spans:spans)
@@ -67,7 +83,7 @@ final class NineKeyPredictionTests:XCTestCase {
     func testLegacyMigrationPreservesCountsAndNewContextPreferences() throws {
         let legacy=Data(#"{"version":1,"entries":[{"code":"64425","reading":"nihao","text":"你好","context":"我说","count":5}]}"#.utf8)
         let old=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:legacy);let migrated=try old.migrated()
-        XCTAssertEqual(migrated.version,3);XCTAssertEqual(migrated.entries,old.entries)
+        XCTAssertEqual(migrated.version,4);XCTAssertEqual(migrated.entries,old.entries)
         var model=migrated
         try model.record(code:"64425",reading:"ni hao",text:"你好",context:"今天这个时候我说",strength:2)
         XCTAssertGreaterThan(model.boost(code:"64425",reading:"nihao",text:"你好",context:"今天这个时候我说"),model.boost(code:"64425",reading:"nihao",text:"你好",context:"完全不同"))
@@ -128,7 +144,7 @@ final class NineKeyPredictionTests:XCTestCase {
         try memory.recordCorrection(code:"64426",reading:"ni hao",text:"你好",context:"我说")
         let old=try XCTUnwrap(memory.entries.first{$0.text=="拟好"}),new=try XCTUnwrap(memory.entries.first{$0.text=="你好"})
         XCTAssertEqual(old.count,24);XCTAssertGreaterThan(new.count,old.count)
-        XCTAssertEqual(memory.version,3);try memory.validate()
+        XCTAssertEqual(memory.version,4);try memory.validate()
         XCTAssertEqual(try JSONDecoder().decode(NineKeyChoiceMemory.self,from:JSONEncoder().encode(memory)),memory)
     }
     func testPartialOwnSuffixNeedsExactReadingAlignmentAndAnchor() {

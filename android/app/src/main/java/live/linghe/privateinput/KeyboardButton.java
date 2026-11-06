@@ -5,7 +5,7 @@ import android.widget.Button;
 import android.view.MotionEvent;
 /** Draw keyboard controls independently of font-dependent Unicode arrow glyphs. */
 final class KeyboardButton extends Button {
-  static final int TEXT=0,HIDE=1,EXPAND=2,COLLAPSE=3;
+  static final int TEXT=0,HIDE=1,EXPAND=2,COLLAPSE=3,DELETE=4,SHIFT=5;
   int glyph=TEXT;
   boolean opticalCenter=false;
   private Runnable action,pendingAction;private boolean touchCaptured;
@@ -50,6 +50,13 @@ final class KeyboardButton extends Button {
       path.moveTo(-5,8);
       path.lineTo(0,12);
       path.lineTo(5,8);
+    }
+    else if(glyph==DELETE){
+      path.moveTo(-11,0);path.lineTo(-5,-8);path.lineTo(10,-8);path.lineTo(10,8);path.lineTo(-5,8);path.close();
+      canvas.drawLine(-1,-3,5,3,p);canvas.drawLine(-1,3,5,-3,p);
+    }
+    else if(glyph==SHIFT){
+      path.moveTo(-10,0);path.lineTo(0,-9);path.lineTo(10,0);path.lineTo(5,0);path.lineTo(5,8);path.lineTo(-5,8);path.lineTo(-5,0);path.close();
     }
     else {
       float sign=glyph==COLLAPSE?-1:1;

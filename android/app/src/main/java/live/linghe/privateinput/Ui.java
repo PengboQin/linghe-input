@@ -20,6 +20,14 @@ final class Ui {
  static int surface(Context c){return InputTheme.key(dark(c));}
  static int accent(Context c){return InputTheme.accent(accentName(c),dark(c));}
  static int rail(Context c){return InputTheme.rail(dark(c));}
+ static final int PAGE_INSET=20,ROW_INSET=16,ROW_HEIGHT=56,BUTTON_HEIGHT=48,KEY_RADIUS=7;
+ static android.widget.Button settingsButton(Context c){
+  android.widget.Button b=new android.widget.Button(c);b.setAllCaps(false);b.setTextSize(14);b.setTextColor(accent(c));
+  b.setTypeface(android.graphics.Typeface.create("sans-serif-medium",0));b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(dp(c,BUTTON_HEIGHT));b.setMinimumHeight(dp(c,BUTTON_HEIGHT));b.setPadding(dp(c,16),0,dp(c,16),0);b.setGravity(android.view.Gravity.CENTER);b.setIncludeFontPadding(false);pressable(b,rail(c),10);return b;
+ }
+ static void primary(android.widget.Button b){Context c=b.getContext();b.setTextColor(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed},new int[]{}},new int[]{text(c),dark(c)?0xff202024:0xffffffff}));pressable(b,accent(c),10);}
+ static void textButton(android.widget.Button b){Context c=b.getContext();b.setTextColor(accent(c));pressable(b,android.graphics.Color.TRANSPARENT,10);}
+ static int divider(Context c){return dark(c)?0xff3c3c42:0xffdedee3;}
  static GradientDrawable shape(Context c,int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(c,radius));return d;}
  static void dialog(android.app.AlertDialog d){d.show();if(d.getWindow()!=null){d.getWindow().setBackgroundDrawable(shape(d.getContext(),surface(d.getContext()),16));d.getWindow().getDecorView().setClipToOutline(true);}}
  static void panel(View view){view.setBackground(shape(view.getContext(),surface(view.getContext()),14));}

@@ -1,4 +1,5 @@
 import base64
+import gzip
 import copy
 from datetime import datetime, timezone
 import hashlib
@@ -80,6 +81,19 @@ class ArchiveTests(unittest.TestCase):
 
     def ingest(self, *events, actor=None, group=None, batch=None):
         return self.call(4, {'batch_id': batch or identifier(), 'events': list(events)}, actor=actor, group=group)
+
+    def test_analysis_projection_separates_output_clipboard_and_diagnostics(self):
+        self.enable()
+        self.call(3, {'expected_version': 1, 'enabled': True, 'providers': ['ime.commit.v1','clipboard.observed.v1','ime.diagnostic.v1'], 'readers':[self.a]})
+        output=self.event('合成正文',consent_version=2)
+        clip=self.event('合成复制',consent_version=2,provider_id='clipboard.observed.v1',event_type='clipboard_observed')
+        trace=self.event('',consent_version=2,provider_id='ime.diagnostic.v1',event_type='source_import',source_kind='ime_diagnostic',commit_confirmation='not_applicable',extensions={'org.linghe.input.v1':{'raw_before':'33','raw_after':'3333','action':'key'}})
+        self.ingest(output,clip,trace)
+        rows=self.store.db.execute('SELECT record_class,effective_text FROM archive_analysis_v1 WHERE group_id=? ORDER BY change_seq',(self.group,)).fetchall()
+        self.assertEqual([(x[0],x[1]) for x in rows],[('output','合成正文'),('clipboard','合成复制'),('diagnostic',None)])
+        raw=self.store.db.execute('SELECT event_json FROM events WHERE event_id=?',(trace['event_id'],)).fetchone()[0]
+        self.assertEqual(decode(raw),trace)
+        self.assertEqual(self.store.db.execute('SELECT count(*) FROM archive_analysis_v1 WHERE group_id=?',(self.other_group,)).fetchone()[0],0)
 
     def test_device_inventory_is_current_group_and_reader_scoped(self):
         self.enable(actor=self.b)
@@ -598,6 +612,52 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(len(page['events']), 1)
         self.assert_error('cursor_filters', 5, {'cursor': page['next_cursor'], 'filters': {'event_type': 'clipboard_observed'}})
         self.assertEqual(self.call(5, {'filters': {'device_id': self.b}})['events'], [])
+
+    def compressed_wsgi(self, raw, encoding='gzip'):
+        statuses=[]
+        env={'REQUEST_METHOD':'POST','PATH_INFO':'/v1/activity/rpc','CONTENT_LENGTH':str(len(raw)),
+             'CONTENT_TYPE':'application/json','HTTP_CONTENT_ENCODING':encoding,'wsgi.input':io.BytesIO(raw)}
+        body=b''.join(self.app(env,lambda status,headers:statuses.append(status)))
+        return int(statuses[-1].split()[0]),decode(body)
+
+    def test_gzip_upload_preserves_signature_bytes_and_ack_on_replay(self):
+        self.enable()
+        event=self.event('合成压缩记录 🦢\n  空格保持'*500)
+        body={'batch_id':identifier(),'events':[event]}
+        original=encode(self.envelope(4,body))
+        status,response=self.compressed_wsgi(gzip.compress(original))
+        self.assertEqual(status,200)
+        self.assertEqual(response['result']['accepted_event_ids'],[event['event_id']])
+        stored=self.store.db.execute('SELECT event_json FROM events WHERE event_id=?',(event['event_id'],)).fetchone()[0]
+        self.assertEqual(bytes(stored),encode(event))
+        status,replay=self.compressed_wsgi(gzip.compress(encode(self.envelope(4,body))))
+        self.assertEqual(status,200)
+        self.assertEqual(replay['result']['batch_id'],response['result']['batch_id'])
+        self.assertEqual(replay['result']['accepted_event_ids']+replay['result']['duplicate_event_ids'],[event['event_id']])
+        self.assertEqual(self.store.db.execute('SELECT COUNT(*) FROM events').fetchone()[0],1)
+
+    def test_gzip_tampering_still_fails_request_signature(self):
+        self.enable();envelope=self.envelope(4,{'batch_id':identifier(),'events':[self.event('original')]})
+        body=decode(base64.b64decode(envelope['body']));body['events'][0]['content']['text']='changed'
+        envelope['body']=base64.b64encode(encode(body)).decode()
+        status,response=self.compressed_wsgi(gzip.compress(encode(envelope)))
+        self.assertEqual(status,401);self.assertEqual(self.store.db.execute('SELECT COUNT(*) FROM events').fetchone()[0],0)
+
+    def test_gzip_stream_and_inflated_size_bounds(self):
+        from activity_archive.service import WRAPPER_LIMIT
+        good=gzip.compress(encode(self.envelope(1,{})))
+        for bad in [good[:-1],good+b'extra',good+good,b'not gzip',good[:-8]+b'00000000']:
+            status,response=self.compressed_wsgi(bad)
+            self.assertEqual(status,400);self.assertEqual(response['error'],'request_encoding')
+        status,response=self.compressed_wsgi(gzip.compress(b'x'*(WRAPPER_LIMIT+1)))
+        self.assertEqual(status,413);self.assertEqual(response['error'],'request_size')
+        status,response=self.compressed_wsgi(b'x'*(WRAPPER_LIMIT+1))
+        self.assertEqual(status,413)
+        status,response=self.compressed_wsgi(good,'br')
+        self.assertEqual(status,415);self.assertEqual(response['error'],'content_encoding')
+        status,response=self.compressed_wsgi(good)
+        self.assertEqual(status,200)
+        self.assertIn('gzip',response['transport']['request_content_encodings'])
 
     def test_wsgi_content_type_length_capabilities_no_policy_leak(self):
         statuses = []

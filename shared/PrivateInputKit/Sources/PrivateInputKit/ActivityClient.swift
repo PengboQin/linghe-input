@@ -6,6 +6,7 @@ public protocol ActivityArchiveTransport {
 /// No shared cookies/cache, redirects, certificate overrides, plaintext body logs or credentials in URLs.
 public struct ActivityHTTPTransport: ActivityArchiveTransport {
     public let endpoint: URL
+    private let uploadNegotiation = ActivityUploadNegotiation()
     public init(endpoint: URL, allowLoopbackHTTP: Bool = false) throws {
         guard let host = endpoint.host, !host.isEmpty, endpoint.user == nil, endpoint.password == nil,
               endpoint.query == nil, endpoint.fragment == nil else { throw ActivityError.invalidEndpoint }
@@ -17,7 +18,18 @@ public struct ActivityHTTPTransport: ActivityArchiveTransport {
         var url = endpoint
         for part in ["v1", "activity", "rpc"] { url.appendPathComponent(part) }
         var http = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 15)
-        http.httpMethod = "POST"; http.httpBody = try request.encoded()
+        http.httpMethod = "POST"
+        let original = try request.encoded()
+        let negotiated = request.operation == .ingest && uploadNegotiation.supportsGzip
+        try Task.checkCancellation()
+        // A containing app may initiate a pass from its UI actor. Keep even
+        // this bounded compression off that actor and never wait on input.
+        let upload = try await Task.detached(priority: .utility) {
+            try ActivityUploadBody.prepare(original, negotiated: negotiated)
+        }.value
+        try Task.checkCancellation()
+        http.httpBody = upload.data
+        if let encoding = upload.contentEncoding { http.setValue(encoding, forHTTPHeaderField: "Content-Encoding") }
         http.setValue("application/json", forHTTPHeaderField: "Content-Type"); http.setValue("application/json", forHTTPHeaderField: "Accept")
         let session = PrivateInputHTTPSessions.activity
         try Task.checkCancellation()
@@ -38,6 +50,7 @@ public struct ActivityHTTPTransport: ActivityArchiveTransport {
             }
             throw ActivityError.httpStatus(response.statusCode)
         }
+        if request.operation == .status { uploadNegotiation.observeStatus(data) }
         return data
     }
 }

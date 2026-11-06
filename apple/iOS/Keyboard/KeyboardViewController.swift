@@ -1226,6 +1226,11 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
         rail.accessibilityIdentifier=filtering ? "pinyin-filter":"quick-symbols"
         rail.update(values.map { .init(id:(filtering ? "pinyin-":"symbol-")+$0,title:$0) },height:filtering ? 44:32,font:filtering ? 15:19,glyphCentered:!filtering)
     }
+    private var diagnosticSourceContext: ActivitySourceContext {
+        ActivitySourceContext(platform:"ios",inputMethodVersion:Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String,
+            inputMethodBuild:Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String,
+            layout:layout == .nine ? "nine":layout == .letters ? "letters":layout == .numbers ? "numbers":"symbols",captureComponent:"keyboard_extension")
+    }
     private var learningPublisher: SnapshotPublisher? {
         guard hasFullAccess else { return nil }
         let sharing = UserDefaults(suiteName: LocalLearningCoordinator.groupID)?.bool(forKey: "learning-sharing-enabled") == true
@@ -1345,7 +1350,7 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
                     guard let self, state.matchesOwner(scope: self.diagnosticScope(), document: self.documentID?.uuidString, epoch: self.archiveEpoch) else { return }
                     guard let diagnostic = DecisionTrace.decision(state, stage: "commit", nowUS: Self.diagnosticNowUS(), selection: selection,
                         reason: "insert_requested", outputEventID: eventID) else { return }
-                    capture.recordDecision(diagnostic, scope: state.scope, document: state.document, session: session, epoch: state.epoch)
+                    capture.recordDecision(diagnostic, scope: state.scope, document: state.document, session: session, epoch: state.epoch, sourceContext:diagnosticSourceContext)
                 }
             } else { completion = nil }
             capture.recordInput(text,sourceApp:nil,document:document,session:session,epoch:epoch,safety:safe,pasteEvent:pasteEvent,pasteSender:pasteSender,sourceContext:sourceContext,
@@ -1425,21 +1430,21 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
               let value = DecisionTrace.decision(state, stage: "candidates", nowUS: Self.diagnosticNowUS(), includeCandidates: true) else { return }
         if decisionSnapshotIDs.count >= 64 { decisionSnapshotIDs.removeAll() }
         decisionSnapshotIDs.insert(state.stateID)
-        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch, sourceContext:diagnosticSourceContext)
     }
     private func diagnosticCandidatePress(_ candidate: InputCandidate, rank: Int) {
         guard let owner = decisionTrace?.state, owner.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch),
               let selection = decisionTrace?.press(diagnosticCandidate(candidate), rank: rank, nowUS: Self.diagnosticNowUS()),
               let value = DecisionTrace.decision(selection.state, stage: "press", nowUS: Self.diagnosticNowUS(), selection: selection) else { return }
         emitReferencedDecisionSnapshot(selection.state)
-        ActivityArchiveCapture.shared.recordDecision(value, scope: selection.state.scope, document: selection.state.document, session: archiveSession, epoch: selection.state.epoch)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: selection.state.scope, document: selection.state.document, session: archiveSession, epoch: selection.state.epoch, sourceContext:diagnosticSourceContext)
     }
     private func diagnosticCandidateRelease(_ candidate: InputCandidate, accepted: Bool) {
         guard let owner = decisionTrace?.state, owner.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch),
               let selection = decisionTrace?.release(diagnosticCandidate(candidate), accepted: accepted, nowUS: Self.diagnosticNowUS()),
               let state = decisionTrace?.state,
               let value = DecisionTrace.decision(state, stage: accepted ? "release" : "cancel", nowUS: Self.diagnosticNowUS(), selection: selection, reason: accepted ? nil : "touch_cancelled") else { return }
-        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch, sourceContext:diagnosticSourceContext)
     }
     private func stageDiagnosticSelection(_ candidate: InputCandidate, method: String = "unknown") {
         guard let owner = decisionTrace?.state, owner.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch) else { return }
@@ -1448,14 +1453,14 @@ final class KeyboardViewController: UIInputViewController, UICollectionViewDataS
               let value = DecisionTrace.decision(selection.state, stage: "selection", nowUS: Self.diagnosticNowUS(), selection: selection) else { return }
         pendingDecisionSelection = selection
         emitReferencedDecisionSnapshot(selection.state)
-        ActivityArchiveCapture.shared.recordDecision(value, scope: selection.state.scope, document: selection.state.document, session: archiveSession, epoch: selection.state.epoch)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: selection.state.scope, document: selection.state.document, session: archiveSession, epoch: selection.state.epoch, sourceContext:diagnosticSourceContext)
     }
     private func cancelDiagnosticComposition(reason: String) {
         defer { decisionTrace?.endComposition(); pendingDecisionSelection = nil; diagnosticMarkedRequest = nil }
         guard let state = decisionTrace?.state, state.matchesOwner(scope: diagnosticScope(), document: documentID?.uuidString, epoch: archiveEpoch),
               let value = DecisionTrace.decision(state, stage: "cancel", nowUS: Self.diagnosticNowUS(), reason: reason) else { return }
         emitReferencedDecisionSnapshot(state)
-        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch)
+        ActivityArchiveCapture.shared.recordDecision(value, scope: state.scope, document: state.document, session: archiveSession, epoch: state.epoch, sourceContext:diagnosticSourceContext)
     }
     private func type(_ text: String) {
         emptySymbolPair.invalidate()

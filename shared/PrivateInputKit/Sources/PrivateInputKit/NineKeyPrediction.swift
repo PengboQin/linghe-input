@@ -124,16 +124,47 @@ public enum NineKeySpelling {
 
 /// Local-only confirmed choices. This format is separate from the synchronized
 /// word-frequency archive; neither surrounding host text nor typing traces enter it.
-public struct NineKeyChoiceMemory: Codable, Equatable {
-    public struct Entry: Codable, Equatable {
+public struct NineKeyChoiceMemory: Codable, Equatable, Sendable {
+    public struct Entry: Codable, Equatable, Sendable {
         public var code, reading, text, context: String
         public var count: Int
     }
-    public var version=3
-    public private(set) var entries:[Entry]=[]
+    public static let capacity = 4096
+    public static let maximumBytes = 2 * 1024 * 1024
+    public var version = 4
+    public private(set) var entries: [Entry] = [] {
+        didSet { byCode = Dictionary(grouping: entries, by: \.code) }
+    }
+    private var byCode: [String: [Entry]] = [:]
+    private enum CodingKeys: String, CodingKey { case version, entries }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        var rows = try container.nestedUnkeyedContainer(forKey: .entries)
+        let limit = Self.entryLimit(version)
+        guard (1...4).contains(version), (rows.count ?? 0) <= limit else { throw InputDataError.incompatibleSchema }
+        var decoded: [Entry] = []
+        while !rows.isAtEnd {
+            guard decoded.count < limit else { throw InputDataError.incompatibleSchema }
+            decoded.append(try rows.decode(Entry.self))
+        }
+        entries = decoded
+        byCode = Dictionary(grouping: decoded, by: \.code)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(entries, forKey: .entries)
+    }
+
+    private static func entryLimit(_ version: Int) -> Int {
+        version == 4 ? capacity : (version == 1 ? 512 : 1024)
+    }
     public init() {}
     public func validate() throws {
-        guard (1...3).contains(version), entries.count <= (version==1 ? 512:1024) else { throw InputDataError.incompatibleSchema }
+        guard (1...4).contains(version), entries.count <= Self.entryLimit(version) else { throw InputDataError.incompatibleSchema }
         var keys=Set<String>()
         for e in entries {
             guard (1...(version==1 ? 24:128)).contains(e.code.count), NineKeySpelling.isCode(e.code),
@@ -146,12 +177,18 @@ public struct NineKeyChoiceMemory: Codable, Equatable {
     }
     public mutating func record(code:String,reading:String,text:String,context:String,strength:Int=1) throws {
         guard (1...3).contains(strength) else { throw InputDataError.invalidRecord }
-        var next=self;next.version=3
+        var next=self;next.version=4
         let reading=reading.lowercased().replacingOccurrences(of:" ",with:"").replacingOccurrences(of:"'",with:""),context=SentenceContextWindow.preferenceContext(context)
         if let index=next.entries.firstIndex(where: { $0.code==code && $0.reading==reading && $0.text==text && $0.context==context }) {
             var entry=next.entries.remove(at:index);entry.count=min(1000,entry.count+strength);next.entries.append(entry)
         } else {
-            if next.entries.count >= 1024 { next.entries.removeFirst() }
+            if next.entries.count >= Self.capacity {
+                // Keep the newest quarter and preserve frequently used older choices.
+                let older = next.entries.indices.dropLast(Self.capacity / 4)
+                if let evict = older.min(by: { next.entries[$0].count < next.entries[$1].count }) {
+                    next.entries.remove(at: evict)
+                }
+            }
             next.entries.append(.init(code:code,reading:reading,text:text,context:context,count:strength))
         }
         try next.validate();self=next
@@ -167,7 +204,7 @@ public struct NineKeyChoiceMemory: Codable, Equatable {
     public func boost(code:String,reading:String,text:String,context:String) -> Double {
         let reading=reading.lowercased().replacingOccurrences(of:" ",with:"").replacingOccurrences(of:"'",with:"")
         let rawContext=String(context.suffix(12)),context=SentenceContextWindow.preferenceContext(context)
-        let matching=entries.filter{$0.code==code && $0.reading==reading && $0.text==text}
+        let matching=(byCode[code] ?? []).filter{$0.reading==reading && $0.text==text}
         let exact=matching.filter{$0.context==context || $0.context==rawContext}.map(\.count).max() ?? 0
         let short=matching.filter{!$0.context.isEmpty && $0.context.count<=4 && context.hasSuffix($0.context)}.map(\.count).max() ?? 0
         let total=min(1000,matching.reduce(0){$0+$1.count})
@@ -183,7 +220,7 @@ public struct NineKeyChoiceMemory: Codable, Equatable {
         let general=total>=2 ? min(4,log1p(Double(total))*1.2):0
         return max(local,general)
     }
-    public func migrated() throws -> Self { try validate();var result=self;result.version=3;try result.validate();return result }
+    public func migrated() throws -> Self { try validate();var result=self;result.version=4;try result.validate();return result }
 
     public mutating func reset(text:String,reading:String) {
         entries.removeAll { $0.text==text && NineKeySpelling.encode($0.reading)==NineKeySpelling.encode(reading) }

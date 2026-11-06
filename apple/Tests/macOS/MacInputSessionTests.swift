@@ -23,6 +23,14 @@ private struct TextViewClient: MacInputClient {
 }
 
 final class MacInputSessionTests: XCTestCase {
+    private func readChoiceAwareFile(_ url: URL) throws -> Data {
+        #if DEBUG
+        if url.lastPathComponent == "nine-choice-memory-v4.json" {
+            NativeEngine.drainChoicePersistenceForTesting()
+        }
+        #endif
+        return try Data(contentsOf: url)
+    }
     func testMainlandCandidatePolicyAlsoFiltersSupplementaryAndPersonalRows() throws {
         let store=PersonalLexiconStore(directory:Self.storage),saved=try? Data(contentsOf:store.url)
         defer {
@@ -150,7 +158,7 @@ final class MacInputSessionTests: XCTestCase {
     }
     private func runMacFrequencyScenario(_ scenario:String,expectsCorrection:Bool)throws {
         try FileManager.default.createDirectory(at:Self.storage,withIntermediateDirectories:true)
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),saved=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json"),saved=try? readChoiceAwareFile(file)
         defer {if let saved {try? saved.write(to:file,options:.atomic)} else {try? FileManager.default.removeItem(at:file)}}
         var prior=NineKeyChoiceMemory()
         for _ in 0..<8 {try prior.record(code:"64426",reading:"ni hao",text:"拟好",context:"",strength:3)}
@@ -167,7 +175,7 @@ final class MacInputSessionTests: XCTestCase {
         if scenario != "private" {XCTAssertEqual(input.allCandidateRows.first?.text,"拟好",scenario)}
         input.chooseCandidate(a,client:client)
         XCTAssertFalse(host.hasMarkedText());XCTAssertTrue(host.string.contains("拟好"))
-        let afterA=try Data(contentsOf:file)
+        let afterA=try readChoiceAwareFile(file)
         func configureEmptyComposition() {
             if engine.preedit.isEmpty {_ = engine.privacy(scenario=="private");_ = engine.setMixedEnglishEnabled(KeyboardPreferences.mixedEnglish)}
         }
@@ -185,14 +193,14 @@ final class MacInputSessionTests: XCTestCase {
             backspace(actuallyDelete:scenario != "missing-delete")
             if scenario != "partial" {backspace(actuallyDelete:scenario != "missing-delete")}
         }
-        if scenario=="delete-only" {XCTAssertEqual(try Data(contentsOf:file),afterA);return}
+        if scenario=="delete-only" {XCTAssertEqual(try readChoiceAwareFile(file),afterA);return}
         let spelling=scenario=="unrelated" ? "shijie":"nihao"
         for letter in spelling {configureEmptyComposition();XCTAssertTrue(input.input(String(letter),keyCode:-1,flags:0,client:client),scenario)}
         if scenario=="retype-move" {client.view.setSelectedRange(NSRange(location:0,length:0))}
         let target=scenario=="same-word" ? "拟好":(scenario=="unrelated" ? "世界":"你好")
         let b=try XCTUnwrap(input.allCandidateRows.first{$0.text==target},scenario)
         input.chooseCandidate(b,client:client)
-        let learned=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file))
+        let learned=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file))
         let correct=learned.entries.filter{$0.text=="你好" && $0.context.isEmpty}.map(\.count).max() ?? 0
         let rejected=learned.entries.filter{$0.text=="拟好" && $0.context.isEmpty}.map(\.count).max() ?? 0
         if expectsCorrection {
@@ -269,8 +277,8 @@ final class MacInputSessionTests: XCTestCase {
             let b=try XCTUnwrap(input.allCandidateRows.first{$0.text != "你好" && $0.comment.replacingOccurrences(of:" ",with:"")=="nihao"})
             input.chooseCandidate(b,client:client)
             XCTAssertEqual(host.string,b.text,"Ordinary typing and choice remain usable after reset")
-            let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json")
-            let after=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file))
+            let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json")
+            let after=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file))
             XCTAssertTrue(after.entries.allSatisfy{$0.context.isEmpty},"Old own context must never enter the new personal generation")
             XCTAssertEqual(after.entries.filter{$0.text==b.text}.map(\.count).max(),1,"This is an ordinary choice, not a correction from the retired generation")
         }
@@ -289,7 +297,7 @@ final class MacInputSessionTests: XCTestCase {
         let engine=try self.engine();defer{engine.clear();engine.finish()};_ = engine.privacy(false)
         try engine.synchronizeLearning()
         let file=Self.storage.appendingPathComponent("learning-checkpoint-v1.json")
-        func state()throws->RimeLearningCheckpoint {try JSONDecoder().decode(RimeLearningCheckpoint.self,from:Data(contentsOf:file))}
+        func state()throws->RimeLearningCheckpoint {try JSONDecoder().decode(RimeLearningCheckpoint.self,from:readChoiceAwareFile(file))}
         let key=target.comment.lowercased().trimmingCharacters(in:.whitespaces)+"\u{001F}"+target.text
         XCTAssertGreaterThan(try state().observedCounts[key] ?? 0,0)
         let input=MacInputSession(engine:engine),host=view(),client=TextViewClient(view:host)
@@ -350,7 +358,7 @@ final class MacInputSessionTests: XCTestCase {
         print("SYNTHETIC_DIN54 default=\(rows.map{($0.text,$0.comment,$0.index)}) mixed=\(mixedRows.map(\.text))")
     }
     func testAdmittedPrefixPinAndHistoricalLearningRespectMainlandInventory() throws {
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),saved=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json"),saved=try? readChoiceAwareFile(file)
         defer {if let saved {try? saved.write(to:file,options:.atomic)} else {try? FileManager.default.removeItem(at:file)}}
         try FileManager.default.createDirectory(at:Self.storage,withIntermediateDirectories:true)
         var historical=NineKeyChoiceMemory()
@@ -373,12 +381,12 @@ final class MacInputSessionTests: XCTestCase {
         XCTAssertEqual(engine.candidateBatch(offset:0,limit:64).first?.text,"定")
         let completion=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="定"})
         XCTAssertEqual(engine.chooseCandidate(completion),"定")
-        let afterCompletion=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file))
+        let afterCompletion=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file))
         XCTAssertEqual(afterCompletion.entries,historical.entries,"A valid prefix selection must not teach din as a misspelling of ding or erase unrelated history")
         engine.clear();engine.resetPredictionContext();for key in "din".utf8 {_ = engine.key(Int32(key))}
         let reopened=engine.candidateBatch(offset:0,limit:64)
         XCTAssertEqual(reopened.first?.text,"定");XCTAssertFalse(reopened.contains{$0.text=="𨈖"})
-        XCTAssertEqual(try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file)).entries,historical.entries,"Admission filters suggestions, not persisted source records")
+        XCTAssertEqual(try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file)).entries,historical.entries,"Admission filters suggestions, not persisted source records")
     }
     func testRareExactSyllablePolicyLeavesCommonCompleteSpellingsAlone() throws {
         let engine=try engine(displayable:{_ in true});defer{engine.clear();engine.finish()};_ = engine.privacy(true)
@@ -680,6 +688,26 @@ final class MacInputSessionTests: XCTestCase {
             if let want=expected[raw] { XCTAssertEqual(shown,want,"key-aligned display for \(raw)") }
         }
     }
+    func testNineKeyShortRepeatShowsFullPhraseBeforeSingleCharacter() throws {
+        let engine=try engine();defer{engine.clear();engine.finish()}
+        _ = engine.privacy(true);_ = engine.nineKey(true)
+        for key in "33".utf8 {_ = engine.key(Int32(key))}
+        let rows=engine.candidateBatch(offset:0,limit:24)
+        let first=try XCTUnwrap(rows.first)
+        XCTAssertGreaterThanOrEqual(first.text.count,2)
+        XCTAssertTrue(rows.contains{$0.text.count==1})
+        XCTAssertEqual(engine.chooseCandidate(first),first.text)
+    }
+    func testNineKeyFullSpellingDoesNotPreferRareRepeatedVowels() throws {
+        let engine=try engine();defer{engine.clear();engine.finish()}
+        _ = engine.privacy(true);_ = engine.nineKey(true)
+        for key in "3333".utf8 {_ = engine.key(Int32(key))}
+        let rows=engine.candidateBatch(offset:0,limit:24)
+        XCTAssertFalse(rows.isEmpty)
+        XCTAssertFalse(["呃呃","呃呃呃呃"].contains(rows[0].text))
+        XCTAssertEqual(rows[0].comment.replacingOccurrences(of:" ",with:"").replacingOccurrences(of:"'",with:""),"dede")
+        XCTAssertTrue(rows.contains{ $0.comment.replacingOccurrences(of:" ",with:"")=="dede" },"full spelling alternatives remain available")
+    }
     func testNineKeyReturnDoesNotCommitMixedEnglishFragment() throws {
         let engine=try engine();defer{engine.clear();engine.finish()}
         _ = engine.privacy(true); _ = engine.nineKey(true); _ = engine.setMixedEnglishEnabled(true)
@@ -859,7 +887,7 @@ final class MacInputSessionTests: XCTestCase {
         XCTAssertGreaterThan(hits,0,"Cache must avoid measured repeated Rime queries")
     }
     func testConfirmedTypoAlsoLearnsCanonicalSpellingAndPrivateModeDoesNotWrite() throws {
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),saved=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json"),saved=try? readChoiceAwareFile(file)
         defer { if let saved { try? saved.write(to:file,options:.atomic) } else { try? FileManager.default.removeItem(at:file) } }
         try FileManager.default.createDirectory(at:Self.storage,withIntermediateDirectories:true)
         try JSONEncoder().encode(NineKeyChoiceMemory()).write(to:file,options:.atomic)
@@ -867,19 +895,19 @@ final class MacInputSessionTests: XCTestCase {
         for c in "64425".unicodeScalars{_ = engine.key(Int32(c.value))};finishPrediction(engine)
         let word=try XCTUnwrap(engine.candidateBatch(offset:0,limit:128).first{$0.text=="你好" && $0.replacementInput != nil})
         XCTAssertEqual(engine.chooseCandidate(word),"你好")
-        let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file));try memory.validate()
+        let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file));try memory.validate()
         XCTAssertTrue(memory.entries.contains{$0.code=="64425" && $0.text=="你好"})
         XCTAssertTrue(memory.entries.contains{$0.code=="64426" && $0.text=="你好"})
-        let before=try Data(contentsOf:file);_ = engine.privacy(true);engine.resetPredictionContext()
+        let before=try readChoiceAwareFile(file);_ = engine.privacy(true);engine.resetPredictionContext()
         for c in "64425".unicodeScalars{_ = engine.key(Int32(c.value))};finishPrediction(engine)
         let privateWord=try XCTUnwrap(engine.candidateBatch(offset:0,limit:128).first{$0.text=="你好" && $0.replacementInput != nil})
-        XCTAssertEqual(engine.chooseCandidate(privateWord),"你好");XCTAssertEqual(try Data(contentsOf:file),before)
+        XCTAssertEqual(engine.chooseCandidate(privateWord),"你好");XCTAssertEqual(try readChoiceAwareFile(file),before)
         _ = engine.privacy(false);engine.resetPredictionContext()
         engine.noteFullyDeletedOwnCommit(code:"744543",context:"",rejectedText:"世界",reading:"shi jie")
         for c in "7445426".unicodeScalars{_ = engine.key(Int32(c.value))}
         let time=try XCTUnwrap(engine.candidateBatch(offset:0,limit:128).first{$0.text=="时间"})
         XCTAssertEqual(engine.chooseCandidate(time),"时间")
-        let corrected=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file))
+        let corrected=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file))
         XCTAssertEqual(corrected.entries.first{$0.code=="744543" && $0.text=="时间"}?.count,3)
         XCTAssertEqual(corrected.entries.first{$0.code=="7445426" && $0.text=="时间"}?.count,3)
         for old in memory.entries { XCTAssertTrue(corrected.entries.contains(old)) }
@@ -930,7 +958,7 @@ final class MacInputSessionTests: XCTestCase {
     }
     func testActualSameCodeReselectionWritesStrongCorrectionRatherThanOneOrdinaryUse() throws {
         try FileManager.default.createDirectory(at:Self.storage,withIntermediateDirectories:true)
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),saved=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json"),saved=try? readChoiceAwareFile(file)
         defer { if let saved { try? saved.write(to:file,options:.atomic) } else { try? FileManager.default.removeItem(at:file) } }
         var memory=NineKeyChoiceMemory();try memory.record(code:"64426",reading:"ni hao",text:"拟好",context:"",strength:3)
         try JSONEncoder().encode(memory).write(to:file,options:.atomic)
@@ -939,12 +967,12 @@ final class MacInputSessionTests: XCTestCase {
         for c in "64426".unicodeScalars{_ = engine.key(Int32(c.value))}
         let word=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="你好"})
         XCTAssertEqual(engine.chooseCandidate(word),"你好")
-        let after=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file))
+        let after=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file))
         XCTAssertGreaterThan(try XCTUnwrap(after.entries.first{$0.text=="你好"}).count,try XCTUnwrap(after.entries.first{$0.text=="拟好"}).count)
         XCTAssertEqual(after.entries.first{$0.text=="拟好"}?.count,3)
     }
     func testConfirmedHomophoneMemoryLoadsBeforeSemanticPredictionInBothLayouts() throws {
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),saved=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json"),saved=try? readChoiceAwareFile(file)
         defer { if let saved { try? saved.write(to:file,options:.atomic) } else { try? FileManager.default.removeItem(at:file) } }
         var memory=NineKeyChoiceMemory()
         for _ in 0..<8 { try memory.record(code:"64426",reading:"ni hao",text:"拟好",context:"",strength:3) }
@@ -1240,19 +1268,19 @@ final class MacInputSessionTests: XCTestCase {
     }
     func testAssembledSentenceRetainsSelectedPrefixAndLearnsOnlyOnSelection() throws {
         let engine=try engine();defer { engine.clear();engine.finish() };_ = engine.nineKey(true);_ = engine.privacy(false)
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),before=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json"),before=try? readChoiceAwareFile(file)
         let code=try XCTUnwrap(NineKeySpelling.encode("qing ba di zhi zai fa yi bian"))
         for c in code.unicodeScalars { _ = engine.key(Int32(c.value)) }
         let please=try XCTUnwrap(engine.candidateBatch(offset:0,limit:128).first{$0.text=="请"});XCTAssertEqual(engine.chooseAbsolute(please.index),"")
         let original=engine.rawInput;let native=engine.candidateBatch(offset:0,limit:8);finishPrediction(engine)
         print("SYNTHETIC_PREFIX scope=\(engine.predictionScope) input=\(original) preedit=\(engine.preedit) original=\(native.map{$0.text+":"+$0.comment}) final=\(engine.candidateBatch(offset:0,limit:50).map(\.text)) assemblies=\(engine.assembledCandidateCount) batches=\(engine.semanticBatches)")
         let target=try XCTUnwrap(engine.candidateBatch(offset:0,limit:160).first{$0.text=="把地址再发一遍"})
-        XCTAssertNotNil(target.assemblyID);XCTAssertEqual(try? Data(contentsOf:file),before);XCTAssertEqual(engine.rawInput,original)
+        XCTAssertNotNil(target.assemblyID);XCTAssertEqual(try? readChoiceAwareFile(file),before);XCTAssertEqual(engine.rawInput,original)
         XCTAssertEqual(engine.chooseCandidate(target),"请把地址再发一遍");XCTAssertTrue(engine.rawInput.isEmpty);XCTAssertEqual(pi_active_session_count(),1)
-        let learned=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file));XCTAssertTrue(learned.entries.contains{$0.text==target.text})
+        let learned=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file));XCTAssertTrue(learned.entries.contains{$0.text==target.text})
         try engine.manage(target,pinned:true);XCTAssertTrue(engine.isPinned(target))
         try engine.manage(target,pinned:nil)
-        let reset=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file));XCTAssertFalse(reset.entries.contains{$0.text==target.text})
+        let reset=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file));XCTAssertFalse(reset.entries.contains{$0.text==target.text})
         try engine.manage(target,pinned:false)
     }
     func testMissingSemanticResourcesFallBackWithoutBlockingTyping() {
@@ -1409,33 +1437,33 @@ final class MacInputSessionTests: XCTestCase {
         for c in source.unicodeScalars { _ = engine.key(Int32(c.value)) };finishPrediction(engine)
         let target=try XCTUnwrap(engine.candidateBatch(offset:0,limit:96).first{$0.text=="你好我想喝水" && $0.replacementInput != nil})
         XCTAssertEqual(engine.chooseCandidate(target),target.text)
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json")
-        let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file))
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json")
+        let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file))
         XCTAssertTrue(memory.entries.contains{$0.code==source && $0.text==target.text && $0.count>=2})
         engine.resetPredictionContext();for c in source.unicodeScalars { _ = engine.key(Int32(c.value)) };finishPrediction(engine)
         XCTAssertTrue(engine.candidateBatch(offset:0,limit:96).contains{$0.text==target.text && $0.replacementInput != nil})
         try engine.manage(target,pinned:nil)
-        let reset=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:file));XCTAssertFalse(reset.entries.contains{$0.code==source && $0.text==target.text})
+        let reset=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(file));XCTAssertFalse(reset.entries.contains{$0.code==source && $0.text==target.text})
     }
-    func testV2MigrationKeepsOriginalAndCorruptV3CannotResurrectV2() throws {
-        let v2=Self.storage.appendingPathComponent("nine-choice-memory-v2.json"),v3=Self.storage.appendingPathComponent("nine-choice-memory-v3.json")
+    func testV2MigrationKeepsOriginalAndCorruptV4CannotResurrectV2() throws {
+        let v2=Self.storage.appendingPathComponent("nine-choice-memory-v2.json"),v4=Self.storage.appendingPathComponent("nine-choice-memory-v4.json")
         try FileManager.default.createDirectory(at:Self.storage,withIntermediateDirectories:true)
-        let old2=try? Data(contentsOf:v2),old3=try? Data(contentsOf:v3)
-        defer { for (file,data) in [(v2,old2),(v3,old3)] { if let data { try? data.write(to:file) } else { try? FileManager.default.removeItem(at:file) } } }
-        try? FileManager.default.removeItem(at:v3)
+        let old2=try? Data(contentsOf:v2),old4=try? Data(contentsOf:v4)
+        defer { for (file,data) in [(v2,old2),(v4,old4)] { if let data { try? data.write(to:file) } else { try? FileManager.default.removeItem(at:file) } } }
+        try? FileManager.default.removeItem(at:v4)
         let data=Data(#"{"version":2,"entries":[{"code":"64425","reading":"nihao","text":"你好","context":"今天我说","count":8}]}"#.utf8)
         try data.write(to:v2)
         let migrated=try engine();migrated.finish()
         XCTAssertEqual(try Data(contentsOf:v2),data)
-        let new=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:v3));XCTAssertEqual(new.version,3);XCTAssertEqual(new.entries.first?.count,8)
-        let broken=Data("synthetic-corrupt-v3".utf8);try broken.write(to:v3)
+        let new=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:v4));XCTAssertEqual(new.version,4);XCTAssertEqual(new.entries.first?.count,8)
+        let broken=Data("synthetic-corrupt-v4".utf8);try broken.write(to:v4)
         let typing=try engine();defer { typing.clear();typing.finish() };_ = typing.nineKey(true)
         for c in "64426".unicodeScalars { _ = typing.key(Int32(c.value)) }
         let target=try XCTUnwrap(typing.candidateBatch(offset:0,limit:32).first{$0.text=="你好"});XCTAssertEqual(typing.chooseCandidate(target),"你好")
-        XCTAssertEqual(try Data(contentsOf:v3),broken);XCTAssertEqual(try Data(contentsOf:v2),data)
+        XCTAssertEqual(try Data(contentsOf:v4),broken);XCTAssertEqual(try Data(contentsOf:v2),data)
     }
     func testLegacyChoiceFileMigrationAndCorruptNewFilePreserveData() throws {
-        let legacy=Self.storage.appendingPathComponent("nine-choice-memory-v1.json"),current=Self.storage.appendingPathComponent("nine-choice-memory-v3.json")
+        let legacy=Self.storage.appendingPathComponent("nine-choice-memory-v1.json"),current=Self.storage.appendingPathComponent("nine-choice-memory-v4.json")
         try FileManager.default.createDirectory(at:Self.storage,withIntermediateDirectories:true)
         let originalLegacy=try? Data(contentsOf:legacy),originalCurrent=try? Data(contentsOf:current)
         defer {
@@ -1448,7 +1476,7 @@ final class MacInputSessionTests: XCTestCase {
         try data.write(to:legacy,options:.atomic)
         let migrated=try engine();migrated.finish()
         XCTAssertEqual(try Data(contentsOf:legacy),data)
-        let decoded=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:current));XCTAssertEqual(decoded.version,3);XCTAssertEqual(decoded.entries.first?.count,5)
+        let decoded=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:current));XCTAssertEqual(decoded.version,4);XCTAssertEqual(decoded.entries.first?.count,5)
         let broken=Data("synthetic-corrupt-v2".utf8);try broken.write(to:current,options:.atomic)
         let fallback=try engine();defer { fallback.clear();fallback.finish() };_ = fallback.nineKey(true)
         for c in "64426".unicodeScalars { _ = fallback.key(Int32(c.value)) }
@@ -1548,10 +1576,10 @@ final class MacInputSessionTests: XCTestCase {
         XCTAssertEqual(engine.rawInput,original,"Scoring must not rewrite composition")
         XCTAssertEqual(engine.chooseCandidate(target),"你好")
         XCTAssertTrue(engine.rawInput.isEmpty)
-        let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:Self.storage.appendingPathComponent("nine-choice-memory-v3.json")))
+        let memory=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(Self.storage.appendingPathComponent("nine-choice-memory-v4.json")))
         XCTAssertGreaterThan(memory.boost(code:original,reading:"ni hao",text:"你好",context:""),0)
         try engine.manage(target,pinned:nil)
-        let reset=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:Data(contentsOf:Self.storage.appendingPathComponent("nine-choice-memory-v3.json")))
+        let reset=try JSONDecoder().decode(NineKeyChoiceMemory.self,from:readChoiceAwareFile(Self.storage.appendingPathComponent("nine-choice-memory-v4.json")))
         XCTAssertEqual(reset.boost(code:original,reading:"ni hao",text:"你好",context:""),0)
     }
     func testStaleCorrectionAndLockedSyllablesNeverRewriteInput() throws {
@@ -1572,11 +1600,11 @@ final class MacInputSessionTests: XCTestCase {
     }
     func testPrivatePredictionDoesNotPersistConfirmedChoice() throws {
         let engine=try engine();defer { engine.clear();_ = engine.privacy(false);engine.finish() }
-        let file=Self.storage.appendingPathComponent("nine-choice-memory-v3.json"),before=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("nine-choice-memory-v4.json"),before=try? readChoiceAwareFile(file)
         _ = engine.privacy(true);_ = engine.nineKey(true)
         for c in "64425".unicodeScalars { _ = engine.key(Int32(c.value)) };finishPrediction(engine)
         let target=try XCTUnwrap(engine.candidateBatch(offset:0,limit:64).first{$0.text=="你好" && $0.replacementInput != nil})
-        XCTAssertEqual(engine.chooseCandidate(target),"你好");XCTAssertEqual(try? Data(contentsOf:file),before)
+        XCTAssertEqual(engine.chooseCandidate(target),"你好");XCTAssertEqual(try? readChoiceAwareFile(file),before)
     }
     func testBurstEventsAbortOldPredictionWithoutLossOrReordering() throws {
         let engine=try engine();defer { engine.clear();engine.finish() };_ = engine.nineKey(true)
@@ -1597,7 +1625,7 @@ final class MacInputSessionTests: XCTestCase {
         XCTAssertEqual(engine.chooseCandidate(target),"你好")
     }
     func testMacVisiblePersonalPhraseUsesSpaceAndNumberWithoutNativeSubstitution() throws {
-        let file=Self.storage.appendingPathComponent("personal-lexicon-v1.json"),saved=try? Data(contentsOf:file)
+        let file=Self.storage.appendingPathComponent("personal-lexicon-v1.json"),saved=try? readChoiceAwareFile(file)
         defer { if let saved { try? saved.write(to:file,options:.atomic) } else { try? FileManager.default.removeItem(at:file) } }
         var lexicon=PersonalLexicon();try lexicon.upsert(.init(kind:.phrase,text:"合成快捷短语",trigger:"cs"),syllables:[])
         try PersonalLexiconStore(directory:Self.storage).save(lexicon)

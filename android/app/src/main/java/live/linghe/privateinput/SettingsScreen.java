@@ -17,10 +17,10 @@ final class SettingsScreen {
  static LinearLayout content(Activity activity,String title,boolean up){return content(activity,title,up,true);}
  static LinearLayout content(Activity activity,String title,boolean up,boolean scrolling){
   LinearLayout shell=new LinearLayout(activity);shell.setOrientation(LinearLayout.VERTICAL);shell.setBackgroundColor(Ui.page(activity));
-  Toolbar bar=new Toolbar(activity);bar.setTitleTextColor(Ui.text(activity));bar.setSubtitleTextColor(Ui.muted(activity));bar.setBackgroundColor(Ui.page(activity));bar.setTitle(title);
+  Toolbar bar=new Toolbar(activity);bar.setTitleTextColor(Ui.text(activity));bar.setSubtitleTextColor(Ui.muted(activity));bar.setBackgroundColor(Ui.page(activity));bar.setTitle(title);bar.setContentInsetStartWithNavigation(Ui.dp(activity,16));bar.setElevation(0);
   shell.addView(bar,new LinearLayout.LayoutParams(-1,Ui.dp(activity,56)));activity.setActionBar(bar);
   if(activity.getActionBar()!=null){activity.getActionBar().setTitle(title);activity.getActionBar().setDisplayHomeAsUpEnabled(up);activity.getActionBar().setHomeActionContentDescription("返回");}
-  LinearLayout body=new LinearLayout(activity);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(Ui.dp(activity,20),Ui.dp(activity,8),Ui.dp(activity,20),Ui.dp(activity,24));
+  LinearLayout body=new LinearLayout(activity);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(Ui.dp(activity,Ui.PAGE_INSET),Ui.dp(activity,8),Ui.dp(activity,Ui.PAGE_INSET),Ui.dp(activity,24));
   if(scrolling){ScrollView scroll=new ScrollView(activity);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);scroll.addView(body,new ScrollView.LayoutParams(-1,-2));shell.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));}
   else shell.addView(body,new LinearLayout.LayoutParams(-1,0,1));
   activity.setContentView(shell);

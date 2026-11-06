@@ -34,11 +34,11 @@ public final class DeviceSyncActivity extends Activity {
     return t;
   }
   private void button(LinearLayout box,String title,Runnable action){
-    Button b=new Button(this);
+    Button b=Ui.settingsButton(this);
     b.setAllCaps(false);
     b.setText(title);
     b.setTextColor(Ui.accent(this));
-    Ui.pressable(b,Ui.surface(this),10);
+    Ui.pressable(b,Ui.rail(this),10);if(title.equals("加入设备组"))Ui.primary(b);
     b.setOnClickListener(v->action.run());
     LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(50));
     p.setMargins(0,dp(5),0,dp(5));

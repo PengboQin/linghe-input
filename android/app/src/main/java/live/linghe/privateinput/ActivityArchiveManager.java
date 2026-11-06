@@ -21,6 +21,7 @@ final class ActivityArchiveManager {
   private final ExecutorService storage=Executors.newSingleThreadExecutor();
   private final ScheduledExecutorService network=Executors.newSingleThreadScheduledExecutor();
   private final Handler main=new Handler(Looper.getMainLooper());private final ClipboardManager clipboard;
+  private volatile boolean supportsGzip;
   private volatile HttpsURLConnection activeConnection;private volatile String status="尚未开启";private volatile long pending,held;private final java.util.concurrent.atomic.AtomicInteger captureInFlight=new java.util.concurrent.atomic.AtomicInteger();
   private ScheduledFuture<?> scheduled;private int failures;private volatile int foreground;
   private volatile boolean imeSafe;private volatile String clipboardOriginToken="",clipboardOriginReference="";
@@ -67,7 +68,7 @@ final class ActivityArchiveManager {
     synchronized void diagnostic(long expected,String key,String before,String after){
       if(expected==0||!diagnosticScope.accepts(expected)||!safe||!diagnosticEnabled()||key==null||before==null||after==null||key.length()>128||before.length()>2048||after.length()>2048)return;
       try{JSONObject detail=new JSONObject().put("action",key.equals("backspace")?"delete":key.startsWith("literal:")?"literal":key.equals("edit")?"edit":"key").put("key",key).put("raw_before",before).put("raw_after",after).put("committed",false);
-        emit("ime.diagnostic.v1","source_import",after,"ime_diagnostic",source,session,epoch,"not_applicable",null,null,fieldType,returnKey,layout,detail);
+        emit("ime.diagnostic.v1","source_import","","ime_diagnostic",source,session,epoch,"not_applicable",null,null,fieldType,returnKey,layout,detail);
       }catch(Exception ignored){}
     }
     synchronized boolean diagnosticCurrent(long expected){return expected!=0&&diagnosticScope.accepts(expected)&&safe&&diagnosticEnabled();}
@@ -83,7 +84,7 @@ final class ActivityArchiveManager {
       emitDecision(expected,summary);if(emittedSnapshots.size()>32)emittedSnapshots.clear();
       if(value.stage.equals("commit")||value.stage.equals("cancel")){decisionPress=decisionRelease=null;}
     }
-    private void emitDecision(long expected,InputDecisionEvidence value){InputDecisionEvidence.Scope.Frozen captured=diagnosticScope.freeze(expected,safe,diagnosticEnabled(),session,epoch);if(captured==null)return;emit("ime.diagnostic.v1","source_import",value.raw,"ime_diagnostic",source,captured.session,captured.epoch,"not_applicable",null,null,fieldType,returnKey,layout,null,value,null,this,expected);}
+    private void emitDecision(long expected,InputDecisionEvidence value){InputDecisionEvidence.Scope.Frozen captured=diagnosticScope.freeze(expected,safe,diagnosticEnabled(),session,epoch);if(captured==null)return;emit("ime.diagnostic.v1","source_import","","ime_diagnostic",source,captured.session,captured.epoch,"not_applicable",null,null,fieldType,returnKey,layout,null,value,null,this,expected);}
     synchronized void compositionEnded(long expected){if(diagnosticCurrent(expected))decisions.reset();}
     synchronized void committedDecision(long expected,String text,boolean acknowledged,InputDecisionEvidence value){
       InputDecisionEvidence.CommitPermission allowed=new InputDecisionEvidence.CommitPermission(safe,inputEnabled(),diagnosticEnabled(),diagnosticScope.accepts(expected),value!=null);String output=allowed.output?ActivityArchiveRules.id():null;
@@ -287,7 +288,9 @@ final class ActivityArchiveManager {
     if(generation()!=token||requireEnabled&&!active(token))throw new IOException("归档操作已取消");
     HttpsURLConnection connection=(HttpsURLConnection)new URL(SyncClient.endpoint(endpoint)+"/v1/activity/rpc").openConnection();activeConnection=connection;
     connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(10000);connection.setReadTimeout(15000);connection.setUseCaches(false);connection.setRequestMethod("POST");connection.setRequestProperty("Content-Type","application/json");connection.setRequestProperty("Accept","application/json");
-    byte[] payload=ActivityArchiveRules.bytes(ActivityArchiveWire.envelope(identity.identity,identity.group,operation,body,System.currentTimeMillis()/1000).toString());connection.setDoOutput(true);connection.setFixedLengthStreamingMode(payload.length);
+    byte[] original=ActivityArchiveRules.bytes(ActivityArchiveWire.envelope(identity.identity,identity.group,operation,body,System.currentTimeMillis()/1000).toString());
+    ArchiveUploadCompression.Body upload=ArchiveUploadCompression.prepare(original,operation==4&&supportsGzip);byte[] payload=upload.bytes;
+    if(upload.gzip)connection.setRequestProperty("Content-Encoding","gzip");connection.setDoOutput(true);connection.setFixedLengthStreamingMode(payload.length);
     try{
       if(generation()!=token||requireEnabled&&!active(token))throw new IOException("归档操作已取消");
       try(OutputStream out=connection.getOutputStream()){if(generation()!=token||requireEnabled&&!active(token))throw new IOException("归档操作已取消");out.write(payload);}
@@ -295,7 +298,9 @@ final class ActivityArchiveManager {
       if(stream!=null)try(InputStream in=stream){byte[] buffer=new byte[8192];int count;while((count=in.read(buffer))!=-1){if(bytes.size()+count>1048576)throw new IOException("归档响应超限");bytes.write(buffer,0,count);}}
       JSONObject result=LosslessJson.object(SyncCrypto.utf8(bytes.toByteArray()),1048576);
       if(code!=200){String reason=result.optString("error","request_failed");if(!reason.matches("[a-z_]{1,64}"))reason="request_failed";throw new ArchiveFailure(code,reason);}
-      SyncCrypto.require(result.getInt("version")==1&&result.getInt("operation")==operation);return result.getJSONObject("result");
+      SyncCrypto.require(result.getInt("version")==1&&result.getInt("operation")==operation);
+      if(operation==1){JSONObject transport=result.optJSONObject("transport");JSONArray encodings=transport==null?null:transport.optJSONArray("request_content_encodings");boolean enabled=false;if(encodings!=null)for(int i=0;i<encodings.length();i++)if("gzip".equals(encodings.optString(i)))enabled=true;supportsGzip=enabled;}
+      return result.getJSONObject("result");
     }finally{connection.disconnect();if(activeConnection==connection)activeConnection=null;}
   }
 }

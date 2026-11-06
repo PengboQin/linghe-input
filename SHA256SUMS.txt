@@ -1,4 +1,0 @@
-4e8376b4507cace055ca2183bd2f34e42206e221856c7928e71e9792d0e5a79d  LingheInput-Android-arm64-0.1.76.apk
-9256a27b7d394fe5dc98d1a574464890afc3ea9fd9dedfada2ca258ef2ca1dad  LingheInput-Mac0.38.0-97-signed.zip
-348da3110a80ff5b407a3db3ad32d94e979e2a921f296b473a48268a6ecf2b59  LingheInput-Windows11-x64-0.7.6-standard-setup.exe
-55130282a7df33ea2f956a3baee032719e155db938c04b360c1c456f89170368  LingheInput-public-source-20261103.zip

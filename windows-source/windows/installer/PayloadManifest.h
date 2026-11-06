@@ -71,7 +71,11 @@ inline bool recognizedSetupHash(const std::string& hash,const std::string& runni
         hash=="7448c783c5374c2f4f5cd85a6cb9f4c2a52aa260b36cbb2a9f3a002505a60fb5" ||
         hash=="f55efde22ab08ec2abf4ca9d9889229c585005cf4c2be950242a39bf81c10c87" ||
         hash=="b64467fa3abff7bb34f81457f5a1bb18a64f6eb7e4b5fbd47f841953b2d8cd57" ||
-        hash=="64f04b406dfddc6271bd2ed429275865d9b4c9a7e826f1c2c9a7855d2cb7fc45";
+        hash=="64f04b406dfddc6271bd2ed429275865d9b4c9a7e826f1c2c9a7855d2cb7fc45" ||
+        // Installed 075 and retained native offline artifact matched byte-for-byte.
+        hash=="b4e3db100f8f18cbfda96a391ebc46911f4a300dc6fd171618e8a860a1edba21" ||
+        hash=="6859a70cd35051352eb8a0a85649f876d8bebc433fc6c5dbabd5108474386b11" ||
+        hash=="dc688487652a68074c40f5f80b46921f964c4337fe1a30e48b01767c96b2c3c6";
 }
 inline std::vector<PayloadEntry> parseManifest(const std::string& bytes, const std::string& version) {
  if(bytes.empty() || bytes.size()>256*1024 || bytes.find('\0')!=std::string::npos)throw std::runtime_error("Invalid manifest size");

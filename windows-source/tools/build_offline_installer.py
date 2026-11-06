@@ -203,8 +203,16 @@ def main():
         folded.add(name.upper()); size=path.stat().st_size; total+=size
         if not size or size>MAX_FILE or total>MAX_TOTAL: raise ValueError('Invalid payload size')
         entries.append((name,path,hashlib.sha256(path.read_bytes()).hexdigest()))
-    if not {'AMD64/PrivateInputTSF.dll','AMD64/LingheInputSettings.exe','AMD64/librime.dll'} <= {e[0] for e in entries}:
-        raise ValueError('Incomplete offline payload')
+    required = {
+        'AMD64/PrivateInputTSF.dll', 'AMD64/LingheInputSettings.exe', 'AMD64/librime.dll',
+        'AMD64/LingheInputActivity.exe', 'AMD64/LingheLegacyExport.exe',
+        'AMD64/data/rime/build/private_pinyin.table.bin',
+        'AMD64/data/rime/build/private_pinyin.prism.bin',
+        'AMD64/data/semantic/continuation.bin',
+    }
+    missing = required - {entry[0] for entry in entries}
+    if missing:
+        raise ValueError('Incomplete offline payload: ' + ', '.join(sorted(missing)))
     if not 1<=len(entries)<=256: raise ValueError('Invalid payload count')
     # Reject file/parent collisions, including case folding on case-sensitive build hosts.
     for name in folded:

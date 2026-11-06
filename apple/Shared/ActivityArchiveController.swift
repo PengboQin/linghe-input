@@ -205,6 +205,8 @@ final class ActivityArchiveCapture: @unchecked Sendable {
         var draft = draft
         if draft.extensions == nil { draft.extensions = [:] }
         draft.extensions?[ActivityDeviceDescription.extensionKey] = .object(ActivityDeviceDescription.fields)
+        let recordClass = draft.providerID == ActivityInputDiagnostic.provider ? "diagnostic" : draft.providerID == "clipboard.observed.v1" ? "clipboard" : ["ime.commit.v1", "ime.paste.v1"].contains(draft.providerID) ? "output" : "system"
+        draft.extensions?["org.linghe.record.v1"] = .object(["version": .integer(1), "record_class": .string(recordClass)])
         io.async { [weak self] in
             guard let self, self.isPermitted(generation, diagnosticScope: expectedScope), snapshot.connection.personalEpoch == PersonalDataReset.generation else {
                 if let completion { DispatchQueue.main.async { completion(nil) } }; return
@@ -224,15 +226,15 @@ final class ActivityArchiveCapture: @unchecked Sendable {
         var extras = sourceContextExtensions(sourceApp: sourceApp)
         extras[ActivityInputDiagnostic.extensionKey] = .object(diagnostic.fields)
         if let decision { extras[ActivityInputDecisionDiagnostic.extensionKey] = decision.extensionValue }
-        capture(ActivityEventDraft(providerID: ActivityInputDiagnostic.provider, eventType: .sourceImport, text: diagnostic.text,
+        capture(ActivityEventDraft(providerID: ActivityInputDiagnostic.provider, eventType: .sourceImport, text: "",
             inputSession: session, editorEpoch: epoch, sourceKind: "ime_diagnostic", sourceApp: sourceApp,
             documentID: document, commitConfirmation: .notApplicable, extensions: extras), safety: safety, diagnosticScope: diagnosticScope)
     }
-    func recordDecision(_ value: ActivityInputDecisionDiagnostic, scope: DiagnosticScope, document: String?, session: String, epoch: String) {
+    func recordDecision(_ value: ActivityInputDecisionDiagnostic, scope: DiagnosticScope, document: String?, session: String, epoch: String, sourceContext: ActivitySourceContext? = nil) {
         guard permits(ActivityInputDiagnostic.provider) else { return }
         capture(ActivityEventDraft(providerID: ActivityInputDiagnostic.provider, eventType: .sourceImport, text: "",
             inputSession: session, editorEpoch: epoch, sourceKind: "ime_diagnostic", documentID: document,
-            commitConfirmation: .notApplicable, extensions: [ActivityInputDecisionDiagnostic.extensionKey: value.extensionValue]),
+            commitConfirmation: .notApplicable, extensions: sourceContextExtensions(sourceApp: nil, supplied: sourceContext).merging([ActivityInputDecisionDiagnostic.extensionKey: value.extensionValue], uniquingKeysWith: { _,new in new })),
             safety: .safe, diagnosticScope: scope)
     }
     func recordInput(_ text: String, sourceApp: String?, document: String?, session: String, epoch: String,

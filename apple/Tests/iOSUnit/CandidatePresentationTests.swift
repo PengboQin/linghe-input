@@ -23,6 +23,7 @@ import XCTest
         button.isEnabled=CandidateExpansionButton.canToggle(expanded:false,choicesAvailable:false,hasComposition:true,deferred:true,english:false)
         XCTAssertTrue(button.isEnabled)
         XCTAssertTrue(button.point(inside:CGPoint(x:55,y:43),with:nil))
+        XCTAssertTrue(CandidateExpansionButton.canToggle(expanded:false,choicesAvailable:false,hasComposition:true,deferred:false,english:false),"Pending candidates must not disable expansion")
         XCTAssertTrue(CandidateExpansionButton.canToggle(expanded:true,choicesAvailable:false,hasComposition:false,deferred:false,english:false),"An empty final page must still allow collapse")
         XCTAssertFalse(CandidateExpansionButton.canToggle(expanded:false,choicesAvailable:false,hasComposition:false,deferred:true,english:false))
         XCTAssertFalse(CandidateExpansionButton.canToggle(expanded:false,choicesAvailable:false,hasComposition:true,deferred:true,english:true))

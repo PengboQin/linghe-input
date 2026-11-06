@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "positive-path-and-extension-allowlist-v1",
   "source_license": "GPL-3.0-only for original code; third-party licenses retained",
-  "created_at_unix": 1793680391,
-  "member_count": 1216,
-  "uncompressed_bytes": 147032367,
+  "created_at_unix": 1793924064,
+  "member_count": 1228,
+  "uncompressed_bytes": 147069694,
   "export_template_changes": [
     {
       "file": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
@@ -261,8 +261,8 @@
     },
     {
       "path": "android/app/src/main/AndroidManifest.xml",
-      "bytes": 2024,
-      "sha256": "1c8db2f3ed6208abb90599387bbdded3faa058e5296f2e21da1a72a570ff7104"
+      "bytes": 2065,
+      "sha256": "79c8f91d5b3cb0c605fe06650d617d8b876d0557b83b1aa575e1ea751d69ccb1"
     },
     {
       "path": "android/app/src/main/cpp/CMakeLists.txt",
@@ -276,8 +276,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveActivity.java",
-      "bytes": 6636,
-      "sha256": "24496d25ec9c6b5288dc1c6f45fab2a4190eafca2975a84aecdb9a5e7ba6a94b"
+      "bytes": 6643,
+      "sha256": "40e933a78aa534b45118166885bb4b7b2f0980be0e704cb50c9e23bdf3a3b71d"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveEditText.java",
@@ -291,8 +291,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveManager.java",
-      "bytes": 37811,
-      "sha256": "e59ce4ceab267f72495ea9b3e7e5078f3f338bb5f88674ac5b948b296e7d1c0f"
+      "bytes": 38393,
+      "sha256": "58573da10a6c79303712aaa2628bb5501d492fa2a203a42c35a689b0461f51f2"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ActivityArchiveProvider.java",
@@ -323,6 +323,11 @@
       "path": "android/app/src/main/java/live/linghe/privateinput/AppFiles.java",
       "bytes": 1972,
       "sha256": "d6037aef2d602c94a65933f1f6075517e4f900df9ea33dda00044c885ccd1c5e"
+    },
+    {
+      "path": "android/app/src/main/java/live/linghe/privateinput/ArchiveUploadCompression.java",
+      "bytes": 865,
+      "sha256": "3d576cd6c9f98c49732b83c5d2b2883b151f451d9112dbe429b9b786962e7877"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/AutoClipboardBridge.java",
@@ -366,8 +371,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ChoiceMemory.java",
-      "bytes": 7058,
-      "sha256": "3312eb27824fff20291e97dfe5cd15ab9ec972101b25fb4fe0bf341ba10b8cab"
+      "bytes": 7617,
+      "sha256": "a465bd04ee3c4a8f1450e1968052918e35f2356413522ae191a26adacc6ed7d7"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/ChoiceOrder.java",
@@ -466,8 +471,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CommonExpressionOrder.java",
-      "bytes": 3631,
-      "sha256": "35a08e52ffba9ad2e45a9221b6c7e3027a215bc59f66121eceba83a7f03f3732"
+      "bytes": 4475,
+      "sha256": "45e71d22637b8ed05d6787e08dcb9fd52497b591e3fb619e7f5dab6be169addb"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/CompositionCancellation.java",
@@ -486,8 +491,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/DeviceSyncActivity.java",
-      "bytes": 15771,
-      "sha256": "a72bb62a3a635fa2dd5579efaeb9033f20e36d69520921a65af19e40aec7ed7f"
+      "bytes": 15824,
+      "sha256": "bf8d8ba2cd6a98c5a100a0a205d0e5fb910728868324697b48b60791bf0e3052"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/EngineStartupState.java",
@@ -536,18 +541,18 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/InputQuality.java",
-      "bytes": 19576,
-      "sha256": "e1fd4951857a423415de25c95382697c2f9a336cc6d8cc97f986349b6d2998af"
+      "bytes": 20251,
+      "sha256": "d098d04134ff769ad56c12ff4a041747e733578e20131ae69ef88875a9a7c02a"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/InputTheme.java",
-      "bytes": 2130,
-      "sha256": "b7d110c4e8ec534e81c7c6e461be3a043dc1d3f4fc1d6ec5eca4d6ef77bb2cf8"
+      "bytes": 2106,
+      "sha256": "b74ea554643f2514c1af7ed3303ff2b7824e45db1cbaf5905015da9e9cf6da40"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/KeyboardButton.java",
-      "bytes": 2839,
-      "sha256": "6af024f643a9d0b49d11c8eb7d23ea99a0309adc5cbfe75bc9f409a883ff64bf"
+      "bytes": 3246,
+      "sha256": "d9a21b9393a5d01930541bf89d97dc9714958d52a340803ed198c82f5e00d167"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/KeyboardRenderGate.java",
@@ -561,8 +566,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearnedVocabularyActivity.java",
-      "bytes": 5129,
-      "sha256": "22cc3eebca159e269b31b51e61148257677dec20bb5cc067b93f335f7e747217"
+      "bytes": 5920,
+      "sha256": "7ca43f2bb3eb3367abe0f4747fb7a10f93b50615218024415aa2d034c129fd53"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LearnedVocabularyProjection.java",
@@ -636,8 +641,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LingheInputService.java",
-      "bytes": 126440,
-      "sha256": "9b04d87376b4fce87ffe06b4cd8ae6c394689534a6e1d308a89b553121081450"
+      "bytes": 127403,
+      "sha256": "4fa60f6792419999dabd77f3e1de1d52a9f50198faede60fb0f8aed590fed699"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/LosslessJson.java",
@@ -646,8 +651,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/MainActivity.java",
-      "bytes": 15680,
-      "sha256": "be0198aeb866ae3c0d517eead10f996f32dab53b57c6690c43ab0d4f7537b134"
+      "bytes": 16063,
+      "sha256": "3a361979e047eeac4a22096e063f47d40541b96d65a5362bcb9335ee55aa4323"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/MobileKeyboardRegions.java",
@@ -696,13 +701,13 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/PersonalLexiconActivity.java",
-      "bytes": 13415,
-      "sha256": "bbc15f39ac9f9631274b57e1eae46188b17744bc509056e10f50b3b30b2c1573"
+      "bytes": 13402,
+      "sha256": "7dd8263783ec58c7f976ed24b883e0a45b5b6721bf7da182984e90f4198baa6d"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/PersonalReset.java",
-      "bytes": 4473,
-      "sha256": "4b71a06112a23c9c0fbff17d18302eacc3ab6266e6952c86f794084778998815"
+      "bytes": 4502,
+      "sha256": "a8070c6f28990d1b887322d85f1ff1eb3fadafe1bcdfcdde4d15c61cb702fe9e"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/PinyinCorrector.java",
@@ -791,8 +796,8 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/SettingsScreen.java",
-      "bytes": 3005,
-      "sha256": "9e0189f16af3f0d0f1b851ac54b1e26e51645f4d4c9521412dc169529aec9c4f"
+      "bytes": 3106,
+      "sha256": "93a606ff5e718d9e6ad00bd608388b3c6f44f10182ad02cca916f0af9dec7e55"
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/SharedTextEntry.java",
@@ -866,13 +871,53 @@
     },
     {
       "path": "android/app/src/main/java/live/linghe/privateinput/Ui.java",
-      "bytes": 2456,
-      "sha256": "225e4c4ddc4e0fc58b5118729af86d283672a53b9a39aab2c0e509acde349997"
+      "bytes": 3548,
+      "sha256": "729e76d28b1512b11db5d4724c1113a53634bdab5e3ca0228d61f618f9f24956"
     },
     {
       "path": "android/app/src/main/res/drawable/app_icon.png",
       "bytes": 884136,
       "sha256": "36df48674c4c24a6ba63c4ffb33029febdadd3a64b8eb66d19f6c2e251d5f34e"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/brand_mark.xml",
+      "bytes": 790,
+      "sha256": "f85e14ffcbaea05d516380088fe06ff6fb03c7863316324e916c641af9fcbdc0"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/brand_mark_dark.xml",
+      "bytes": 790,
+      "sha256": "40915507f83e56e61e3686ec6fe13abb0f8f41e2e711e9abfee4be7be3a8149b"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/ic_chevron_right.xml",
+      "bytes": 365,
+      "sha256": "6e6d32f2f3e2d00d8997714b31142e67c77b8a3a856dd545b5101ee32c511617"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/ic_launcher_foreground.xml",
+      "bytes": 887,
+      "sha256": "a4f47a41e31174b6dabc355e3f4370d041f9616e5703be3c5557a8e0fa623446"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
+      "bytes": 895,
+      "sha256": "844a22312f4cfedefff1d6d03fda0a8ce77458578ac5d934b0fc9837f2d75cfa"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "bytes": 214,
+      "sha256": "38520c67a78f3185f304d4256a2a44ba5c997c58588fd587dfbf254b97bb0eb3"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher.xml",
+      "bytes": 279,
+      "sha256": "4919c800c785e7c7178fa941716fbd1a041df1fd12e80a0f3f783aefda32dba3"
+    },
+    {
+      "path": "android/app/src/main/res/values/brand_colors.xml",
+      "bytes": 72,
+      "sha256": "3652da43852ab59a3b061d98d7d77418b58bf97b3e5546d91c7bff7051b529f2"
     },
     {
       "path": "android/app/src/main/res/values/strings.xml",
@@ -912,7 +957,7 @@
     {
       "path": "android/tests/cli/CliChoiceCheck.java",
       "bytes": 7218,
-      "sha256": "c8d9ebc2d7f79934011fce2a6a8a16e4ae0c68e37a99a77b4bcea81eb78af51c"
+      "sha256": "6da36520c4346c0259defd5a222d59ce33303685e8aac0299332745873bc1351"
     },
     {
       "path": "android/tests/cli/CliData10Check.java",
@@ -1003,6 +1048,11 @@
       "path": "android/tests/fixtures/cloud-component-v1.json",
       "bytes": 6300,
       "sha256": "0a8e071d3978437447b0bbb463c830448faa8cd991cd308b1d6805708d449d01"
+    },
+    {
+      "path": "android/tests/host/ArchiveUploadCompressionTest.java",
+      "bytes": 1596,
+      "sha256": "41d0d633e9349865b09900e8c0be44ea52d056c9c57bd58ca73f0fb770714e07"
     },
     {
       "path": "android/tests/host/ClipboardPresentationPolicyTest.java",
@@ -1118,6 +1168,11 @@
       "path": "android/tests/host/RecentLearningSlotTest.java",
       "bytes": 1797,
       "sha256": "c3b49ebf38e129418ae81cb849e521231f6ea311c7ee311aefddecc7c74f848d"
+    },
+    {
+      "path": "android/tests/host/RepeatedFrequencyTest.java",
+      "bytes": 1067,
+      "sha256": "01165befceb6fe7cd73273bba3cab2c2ede1cce8583f9bcedf43ebebfe4ac831"
     },
     {
       "path": "android/tests/host/RimeCapacityBoundaryTest.java",
@@ -1237,7 +1292,7 @@
     {
       "path": "android/tests/java/live/linghe/privateinput/LearningProof.java",
       "bytes": 2458,
-      "sha256": "1b3ebf686a31ea71895097c5cc0d82b7ba3424b3dc7a62bfe15ccd80da03d531"
+      "sha256": "82ad46b4f5ba0bca1878316d0542bc566991e23d08bd38bbc3129847dff2c701"
     },
     {
       "path": "android/tests/java/live/linghe/privateinput/LearningRelearnGateTest.java",
@@ -1301,13 +1356,13 @@
     },
     {
       "path": "apple/project.yml",
-      "bytes": 12389,
-      "sha256": "0b98f10eb018225e8912c184a9fd181945e64f8ddb066d895ce1b25cbcbca3a0"
+      "bytes": 12390,
+      "sha256": "4db5734e98397d37103f114bc69f5eee0be0ee3547ec2f53414f00c6c0471505"
     },
     {
       "path": "apple/Shared/ActivityArchiveController.swift",
-      "bytes": 25865,
-      "sha256": "85783a8562bceb1fc8257f7d64098f17b6af66747fd00a280144174ea2873c3d"
+      "bytes": 26370,
+      "sha256": "18846d9b37b9fea05aa079d81c51e9c55fda8ecee4757483a18bd14d5a119b57"
     },
     {
       "path": "apple/Shared/ActivityArchiveView.swift",
@@ -1436,13 +1491,13 @@
     },
     {
       "path": "apple/Shared/NativeEngine.swift",
-      "bytes": 215577,
-      "sha256": "0ec0efbb1e39ee306707acaac676071e37d7b10050ec74749ab814057f4eb0a7"
+      "bytes": 218370,
+      "sha256": "93cea652fb282aa817cdc8bd08e540619f2364818f7b6e91750af3aa36752f72"
     },
     {
       "path": "apple/Shared/PersonalDataReset.swift",
-      "bytes": 6816,
-      "sha256": "1390f12b43f7a55be902d1a595f9bdb46b82edeff98f2d922642775cffdb5f8b"
+      "bytes": 6845,
+      "sha256": "329287ee5b0ed7c609374e6a6a8a1d057458c6fdd6a8998690fa951be2a7af19"
     },
     {
       "path": "apple/Shared/PersonalLexiconSettings.swift",
@@ -1521,8 +1576,8 @@
     },
     {
       "path": "apple/Tests/iOSUnit/CandidatePresentationTests.swift",
-      "bytes": 8810,
-      "sha256": "16d906332bf7d3f0123dfe2e25c884fc29dae1a4ec11acd29d9422e9e4aa8424"
+      "bytes": 9004,
+      "sha256": "a68d9023a564c871a65b2f8f1291043d5262fd120ff4eaa0d43fc8822a0df0e7"
     },
     {
       "path": "apple/Tests/iOSUnit/ClipboardCandidateLoadStateTests.swift",
@@ -1631,8 +1686,8 @@
     },
     {
       "path": "apple/Tests/macOS/MacInputSessionTests.swift",
-      "bytes": 160392,
-      "sha256": "a949db701f7897963c40186b518d755f2f90911d36d2fa04fc3be5db8ae3ebbb"
+      "bytes": 162036,
+      "sha256": "418a7acc60ec2cf1fdde3ec71d29faf24aa497fdefc846f3394f0a564c86d8b8"
     },
     {
       "path": "apple/Tests/macOS/MacLongCommitTests.swift",
@@ -1751,8 +1806,8 @@
     },
     {
       "path": "apple/iOS/Keyboard/CandidateExpansionButton.swift",
-      "bytes": 2693,
-      "sha256": "53b18fac4161e150a548b5b90026ffbaa1221bb44ba1fcab6727136f5ab2004e"
+      "bytes": 2681,
+      "sha256": "2a0803a468f707e1c153fcd3453d5416d2140285c5f01e0ce9e0ed3c565f179c"
     },
     {
       "path": "apple/iOS/Keyboard/CandidateListLayout.swift",
@@ -1821,8 +1876,8 @@
     },
     {
       "path": "apple/iOS/Keyboard/KeyboardViewController.swift",
-      "bytes": 156014,
-      "sha256": "2ba3c4203587a04f3075059dedc71dbeca355469c012ffe0ab3e370ce99c17bf"
+      "bytes": 156720,
+      "sha256": "8a57cb3d5dcbd429701571c6241980ed7f0b25381a2de2c55d56bbfe3d52f397"
     },
     {
       "path": "apple/iOS/Keyboard/PrivacyInfo.xcprivacy",
@@ -2981,8 +3036,8 @@
     },
     {
       "path": "server/activity_archive/service.py",
-      "bytes": 58260,
-      "sha256": "a00d15a8df57082a8bc0d7cd446c46d778b5640e0cdf8fbb8539ec0b402c86ad"
+      "bytes": 60349,
+      "sha256": "f7b839d10d61d4da8efe19027bf73411caaeda2968f088349d08d068295eccf9"
     },
     {
       "path": "server/activity_archive/deploy/private-input-activity-expire.service",
@@ -3011,8 +3066,8 @@
     },
     {
       "path": "server/activity_archive/tests/test_archive.py",
-      "bytes": 46245,
-      "sha256": "6c019a6f0df91822ee7b9101be1b2dee4a40b9aabd63331eeb23153af7513897"
+      "bytes": 50659,
+      "sha256": "a014184770375e255175d6b182c26a74293f38ac85e666e531f01d5ebda7edf0"
     },
     {
       "path": "server/activity_archive/tests/test_capacity.py",
@@ -3186,8 +3241,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityClient.swift",
-      "bytes": 17427,
-      "sha256": "5c7b792bcf0d5f32a17b1e76043e7addd1e1a693b85e369c9fbc63185759f8a2"
+      "bytes": 18207,
+      "sha256": "eeabf9ab154e961af8baf59ef9b5a3d622f345866135299d337b44276ba9b9aa"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityInputDecisionDiagnostic.swift",
@@ -3213,6 +3268,11 @@
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivitySourceContext.swift",
       "bytes": 2132,
       "sha256": "c52244c2027490c241388165d3bbc77f5a44f3f10410953f0a2dff9d83ec5ebd"
+    },
+    {
+      "path": "shared/PrivateInputKit/Sources/PrivateInputKit/ActivityUploadCompression.swift",
+      "bytes": 2325,
+      "sha256": "419257d198bd3986b15e80101b3e79ad0da36cf2e753153b0a2f62f38d7c21e6"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/AutoPhraseTracker.swift",
@@ -3361,8 +3421,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/NineKeyPrediction.swift",
-      "bytes": 13883,
-      "sha256": "351400d1f4ee7f1dfdf75d86f2a3f2cb4356baf5b7dd90f635aaab78b2c2f449"
+      "bytes": 15625,
+      "sha256": "e5f8199232623ff44c463371f12394c3c81ecd28bc3ebddaf325aabdb71dcf42"
     },
     {
       "path": "shared/PrivateInputKit/Sources/PrivateInputKit/Pairing.swift",
@@ -3480,9 +3540,14 @@
       "sha256": "2b394ad2171275bc0b6e89b4a948107f39261f4d56993cb2d6efef332a18b464"
     },
     {
+      "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/ActivityUploadCompressionTests.swift",
+      "bytes": 2627,
+      "sha256": "07966c5c7631be51fd5598da463cd0f6943a1cb17058aafadde9fe6c74ce8351"
+    },
+    {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidChoiceParityTests.swift",
       "bytes": 5119,
-      "sha256": "c7f169855deeea9cb1ea88bee04331c733bff7afab6514cd5620b65d3973052e"
+      "sha256": "1a85d4e57748a5cec3a4ae4ecf78bc6b03073d1f9ee4d6f2084c4b40dd64e86f"
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/AndroidDataParityTests.swift",
@@ -3611,8 +3676,8 @@
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/NineKeyPredictionTests.swift",
-      "bytes": 13338,
-      "sha256": "a698744cbbf127586944484101d7c95ff557415d2dc533e7b0e07915e6e60d5b"
+      "bytes": 14479,
+      "sha256": "ca3c691827c784e9174ad75be97481efb48473feb0618684d33b14a6dea15731"
     },
     {
       "path": "shared/PrivateInputKit/Tests/PrivateInputKitTests/PersonalLexiconSyncTests.swift",
@@ -4251,13 +4316,13 @@
     },
     {
       "path": "windows-source/tools/build_offline_installer.py",
-      "bytes": 17877,
-      "sha256": "6f1847e561db61718f643cdbb68cc2d3ac562b13beb28f44120dcf6cb5b75aa3"
+      "bytes": 18211,
+      "sha256": "b4c74b59461d8eb5b5936aa26416ffb70816e641562e436fe78fe59d051a8376"
     },
     {
       "path": "windows-source/tools/build_preview.py",
-      "bytes": 6527,
-      "sha256": "7af3488e466a2b08444e4eb8c8fde59534f59fe443fd46d9e65059562bd0dcc4"
+      "bytes": 7121,
+      "sha256": "8db3f96e23a1474d3c3b4f6eaeb461ad6db475e40add11d2a81ad5f1739da9a6"
     },
     {
       "path": "windows-source/tools/check_clipboard_live_vectors047.py",
@@ -4726,8 +4791,8 @@
     },
     {
       "path": "windows-source/windows/installer/PayloadManifest.h",
-      "bytes": 8193,
-      "sha256": "88dd92b7b8ffc4868864ade0cc9030161a0625fd9325531fb1d47d1247aed7af"
+      "bytes": 8530,
+      "sha256": "e38082cdc28b01b350c14df9c721749b49bf743c5534526e5e140d2f436ccf15"
     },
     {
       "path": "windows-source/windows/installer/ProtectedJournalFile.h",
@@ -4751,8 +4816,8 @@
     },
     {
       "path": "windows-source/windows/installer/RegistrationCatalogCheck.h",
-      "bytes": 3444,
-      "sha256": "5c25f0186a78c1e7571da73ff8fc26d16830d6a81ed03383fb33e5aad14f358d"
+      "bytes": 5385,
+      "sha256": "83b9289a1b8878991d1087c2e50c2d2342fa0735f9c464f7df6be02b8459c9bd"
     },
     {
       "path": "windows-source/windows/installer/RepairExisting.inc",
@@ -4766,18 +4831,13 @@
     },
     {
       "path": "windows-source/windows/installer/Setup.cpp",
-      "bytes": 49806,
-      "sha256": "44dd86f8d180e357929347e16a6599803549751dcaf4f49e1fd68a6b12c3ce91"
+      "bytes": 53002,
+      "sha256": "d8fe9609df199f27e57d00c209d49d30122c09dca3e45a3e2db2222cadc217e5"
     },
     {
       "path": "windows-source/windows/installer/UpgradeState.h",
       "bytes": 817,
       "sha256": "f6607c60955b889615902447f4a40a9ee4a9199faf704df7058dec0bb8cd4804"
-    },
-    {
-      "path": "windows-source/windows/installer/standard.nsi",
-      "bytes": 4363,
-      "sha256": "c88b9cd21a123f45e0553f25f5c02ad2cb17069b0ae9dccf74f0929c4104f99a"
     },
     {
       "path": "windows-source/windows/resources/AppIcon.ico",
